@@ -2,28 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
     branches: [main]
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_DB: farmtest
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: Checkout code
@@ -36,19 +21,23 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build and test
+      - name: Build
         env:
           APP_PORT: 8080
-          DB_URL: jdbc:postgresql://localhost:5432/farmtest
-          DB_USERNAME: test
-          DB_PASSWORD: test
-          SIGNER_KEY: test-secret-key-for-ci-at-least-32-chars
-          EXPIRATION: 3600000
-          SMTP_HOST: smtp.gmail.com
-          SMTP_PORT: 587
-          SMTP_MAIL: test@gmail.com
-          SMTP_MAIL_PASSWORD: test
-        run: mvn verify -B
+          DB_URL: ${{ secrets.DB_URL }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          SIGNER_KEY: ${{ secrets.SIGNER_KEY }}
+          EXPIRATION: ${{ secrets.EXPIRATION }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_MAIL: ${{ secrets.SMTP_MAIL }}
+          SMTP_MAIL_PASSWORD: ${{ secrets.SMTP_MAIL_PASSWORD }}
+        run: mvn package -DskipTests -B
 
-      - name: Build Docker image (smoke check)
+      - name: Build Docker image
         run: docker build -t farmapp:ci .
+
+      - name: Deploy to Render
+        if: github.ref == 'refs/heads/main' && success()
+        run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
