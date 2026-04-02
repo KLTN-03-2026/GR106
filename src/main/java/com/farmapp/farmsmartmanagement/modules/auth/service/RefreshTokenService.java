@@ -1,0 +1,82 @@
+package com.farmapp.farmsmartmanagement.modules.auth.service;
+
+import com.farmapp.farmsmartmanagement.common.exception.AppException;
+import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
+import com.farmapp.farmsmartmanagement.dto.response.auth.TokenResponse;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.RefreshTokenEntity;
+import com.farmapp.farmsmartmanagement.infrastructure.security.JwtProvider;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.RefreshTokenRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.security.MessageDigest;
+import java.time.Instant;
+import java.util.HexFormat;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class RefreshTokenService {
+
+    private final RefreshTokenRepository repo;
+    private final JwtProvider jwtProvider;
+    private final PermissionService permissionService;
+
+    private String hash(String val) {
+        try {
+            var md = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(md.digest(val.getBytes()));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // CREATE REFRESH TOKEN
+    public String create(UUID userId, String userAgent, String ip) {
+
+        String raw = UUID.randomUUID().toString();
+
+        // set fields
+        var now = Instant.now();
+
+        RefreshTokenEntity entity = new RefreshTokenEntity();
+        entity.setUserId(userId);
+        entity.setTokenHash(hash(raw));
+        entity.setExpiresAt(now.plusSeconds(7 * 24 * 3600)); // 7 days
+        entity.setUserAgent(userAgent);
+        entity.setIpAddress(ip);
+
+        repo.save(entity);
+
+        return raw;
+    }
+
+    // REFRESH (ROTATION + REUSE DETECT)
+    @Transactional
+    public TokenResponse refresh(String rawToken, String userAgent, String ipAddress) {
+
+        String hash = hash(rawToken);
+
+        RefreshTokenEntity token = repo.findByTokenHash(hash)
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_REFRESH_TOKEN));
+
+        if (token.getExpiresAt().isBefore(Instant.now())) {
+            throw new AppException(ErrorCode.REFRESH_TOKEN_EXPIRED);
+        }
+
+        if (token.getRevokedAt() != null) {
+            repo.revokeAll(token.getUserId(), Instant.now());
+            throw new AppException(ErrorCode.REFRESH_TOKEN_REUSED);
+        }
+
+        repo.revoke(hash, Instant.now());
+
+        // dùng IP/UA mới từ request hiện tại thay vì của token cũ
+        String newRefresh = create(token.getUserId(), userAgent, ipAddress);
+
+        String access = jwtProvider.generateUserToken(token.getUserId());
+
+        return new TokenResponse(access, newRefresh);
+    }
+}
