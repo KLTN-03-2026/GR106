@@ -58,5 +58,5 @@ logging:
 app:
   jwt:
     secret: ${SIGNER_KEY}
-    expiration: ${EXPIRATION}
+    expiration: ${EXPIRATION:3600000}
     refresh-expiration: 604800000
