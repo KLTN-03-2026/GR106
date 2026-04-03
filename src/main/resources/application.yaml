@@ -40,8 +40,8 @@ spring:
       mail.smtp.starttls.enable: true
   data:
     redis:
-      host: ${REDIS_URL:redis://localhost:6379}
-
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 springdoc:
   api-docs:
     enabled: true
