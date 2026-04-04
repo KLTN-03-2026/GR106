@@ -1,7 +1,6 @@
-package com.farmapp.farmsmartmanagement.dto.request.auth;
+package com.farmapp.farmsmartmanagement.modules.auth.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 public record LoginRequest(
         @NotBlank(message = "Email không được để trống")

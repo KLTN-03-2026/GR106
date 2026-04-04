@@ -2,7 +2,7 @@ package com.farmapp.farmsmartmanagement.modules.auth.service;
 
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
-import com.farmapp.farmsmartmanagement.dto.response.auth.TokenResponse;
+import com.farmapp.farmsmartmanagement.modules.auth.dto.response.TokenResponse;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.RefreshTokenEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.security.JwtProvider;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.RefreshTokenRepository;

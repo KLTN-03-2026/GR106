@@ -1,12 +1,12 @@
-package com.farmapp.farmsmartmanagement.controller;
+package com.farmapp.farmsmartmanagement.modules.auth.controller;
 
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
 
-import com.farmapp.farmsmartmanagement.dto.request.auth.LoginRequest;
-import com.farmapp.farmsmartmanagement.dto.request.auth.RefreshRequest;
-import com.farmapp.farmsmartmanagement.dto.request.auth.RegisterRequest;
-import com.farmapp.farmsmartmanagement.dto.request.auth.VerifyRequest;
-import com.farmapp.farmsmartmanagement.dto.response.auth.TokenResponse;
+import com.farmapp.farmsmartmanagement.modules.auth.dto.request.LoginRequest;
+import com.farmapp.farmsmartmanagement.modules.auth.dto.request.RefreshRequest;
+import com.farmapp.farmsmartmanagement.modules.auth.dto.request.RegisterRequest;
+import com.farmapp.farmsmartmanagement.modules.auth.dto.request.VerifyRequest;
+import com.farmapp.farmsmartmanagement.modules.auth.dto.response.TokenResponse;
 import com.farmapp.farmsmartmanagement.modules.auth.service.AuthService;
 import com.farmapp.farmsmartmanagement.modules.auth.service.RefreshTokenService;
 import jakarta.servlet.http.HttpServletRequest;

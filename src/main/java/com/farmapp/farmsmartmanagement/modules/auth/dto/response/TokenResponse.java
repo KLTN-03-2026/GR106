@@ -1,4 +1,4 @@
-package com.farmapp.farmsmartmanagement.dto.response.auth;
+package com.farmapp.farmsmartmanagement.modules.auth.dto.response;
 
 public record TokenResponse(
         String accessToken,
