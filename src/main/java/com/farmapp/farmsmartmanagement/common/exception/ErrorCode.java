@@ -18,7 +18,8 @@ public enum ErrorCode {
     REFRESH_TOKEN_REUSED(401, "Phát hiện token bị đánh cắp, đã đăng xuất tất cả thiết bị", HttpStatus.UNAUTHORIZED),
     ACCOUNT_HAS_BEEN_BLOCKED(401,"Tài khoản đã bị khoá", HttpStatus.CONFLICT),
     EMAIL_EXISTED(401, "Email đã tồn tại", HttpStatus.CONFLICT),
-    EMAIL_NOT_FOUND(404,"Không tìm thấy Email, vui lòng đăng ký",HttpStatus.NOT_FOUND)
+    EMAIL_NOT_FOUND(404,"Không tìm thấy Email, vui lòng đăng ký",HttpStatus.NOT_FOUND),
+    ACCOUNT_NOT_VERIFIED(401,"Tài khoản chưa được xác nhận", HttpStatus.UNAUTHORIZED),
     ;
 
     private final int code;
