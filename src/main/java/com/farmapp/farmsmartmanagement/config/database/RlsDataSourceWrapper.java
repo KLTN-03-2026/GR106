@@ -29,11 +29,15 @@ public class RlsDataSourceWrapper implements DataSource {
     }
 
     private void applyRls(Connection conn) throws SQLException {
-        if (!RlsContext.isPresent()) return;
+        if (!RlsContext.hasUser()) return;
 
         try (Statement stmt = conn.createStatement()) {
-            stmt.execute("SET app.current_farm_id = '" + RlsContext.getFarmId() + "'");
+
             stmt.execute("SET app.current_user_id = '" + RlsContext.getUserId() + "'");
+
+            if (RlsContext.getFarmId() != null) {
+                stmt.execute("SET app.current_farm_id = '" + RlsContext.getFarmId() + "'");
+            }
         }
     }
 

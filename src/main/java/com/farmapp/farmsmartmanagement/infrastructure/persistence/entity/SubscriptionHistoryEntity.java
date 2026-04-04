@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -42,5 +43,5 @@ public class SubscriptionHistoryEntity {
     private String notes;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }

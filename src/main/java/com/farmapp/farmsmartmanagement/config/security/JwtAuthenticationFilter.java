@@ -40,10 +40,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         null,
                         principal.getAuthorities()
                 );
+                System.out.println(principal);
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
                 // Set RLS context nếu là farm token
-                if (principal.getFarmId() != null) {
+                if (principal != null) {
                     RlsContext.set(principal.getFarmId(), principal.getUserId());
                 }
             }

@@ -1425,7 +1425,7 @@ CREATE POLICY farms_modify ON farms FOR ALL
 DO $$ DECLARE tbl TEXT;
 BEGIN
   FOR tbl IN SELECT unnest(ARRAY[
-    'farm_configs','farm_members','farm_subscriptions','subscription_history',
+    'farm_configs','farm_members',
     'payment_transactions','invitations','plots','soil_records','soil_ai_results',
     'plan_stage_status_transitions','task_status_transitions',
     'plans','plan_stage_status_histories',
@@ -1448,6 +1448,67 @@ ALTER TABLE plan_stages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE plan_stages FORCE ROW LEVEL SECURITY;
 CREATE POLICY plan_stages_iso ON plan_stages
     USING (plan_id IN (SELECT id FROM plans WHERE farm_id = current_farm_id()));
+
+CREATE POLICY farm_subscriptions_select ON farm_subscriptions
+FOR SELECT
+USING (farm_id = current_farm_id());
+
+CREATE POLICY farm_subscriptions_insert ON farm_subscriptions
+FOR INSERT
+WITH CHECK (
+    EXISTS (
+        SELECT 1 FROM farms f
+        WHERE f.id = farm_id
+        AND (
+            f.owner_id = current_app_user_id()
+            OR EXISTS (
+                SELECT 1 FROM farm_members fm
+                WHERE fm.farm_id = f.id
+                AND fm.user_id = current_app_user_id()
+                AND fm.is_active = TRUE
+            )
+        )
+    )
+);
+
+CREATE POLICY farm_subscriptions_update ON farm_subscriptions
+FOR UPDATE
+USING (farm_id = current_farm_id());
+
+CREATE POLICY farm_subscriptions_delete ON farm_subscriptions
+FOR DELETE
+USING (farm_id = current_farm_id());
+
+CREATE POLICY subscription_history_select ON subscription_history
+FOR SELECT
+USING (farm_id = current_farm_id());
+
+CREATE POLICY subscription_history_insert ON subscription_history
+FOR INSERT
+WITH CHECK (
+    EXISTS (
+        SELECT 1 FROM farms f
+        WHERE f.id = farm_id
+        AND (
+            f.owner_id = current_app_user_id()
+            OR EXISTS (
+                SELECT 1 FROM farm_members fm
+                WHERE fm.farm_id = f.id
+                AND fm.user_id = current_app_user_id()
+                AND fm.is_active = TRUE
+            )
+        )
+    )
+);
+
+CREATE POLICY subscription_history_update ON subscription_history
+FOR UPDATE
+USING (farm_id = current_farm_id())
+WITH CHECK (farm_id = current_farm_id());
+
+CREATE POLICY subscription_history_delete ON subscription_history
+FOR DELETE
+USING (FALSE);
 
 ALTER TABLE task_status_histories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE task_status_histories FORCE ROW LEVEL SECURITY;

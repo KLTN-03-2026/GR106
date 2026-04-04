@@ -5,6 +5,9 @@ import com.farmapp.farmsmartmanagement.domain.enums.SubscriptionStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -16,6 +19,8 @@ import java.util.UUID;
 public class FarmSubscriptionEntity {
 
     @Id
+    @GeneratedValue
+    @UuidGenerator
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -27,9 +32,13 @@ public class FarmSubscriptionEntity {
     private SubscriptionPlanEntity plan;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(columnDefinition = "subscription_status")
     private SubscriptionStatus status;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(columnDefinition = "billing_cycle")
     private BillingCycle billingCycle;
 
     @Column(name = "is_current", nullable = false)

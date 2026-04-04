@@ -17,8 +17,13 @@ public final class RlsContext {
     public static UUID getFarmId() { return FARM_ID.get(); }
     public static UUID getUserId() { return USER_ID.get(); }
 
-    public static boolean isPresent() { return FARM_ID.get() != null; }
+    public static boolean hasUser() {
+        return USER_ID.get() != null;
+    }
 
+    public static boolean hasFarm() {
+        return FARM_ID.get() != null;
+    }
     public static void clear() {
         FARM_ID.remove();
         USER_ID.remove();

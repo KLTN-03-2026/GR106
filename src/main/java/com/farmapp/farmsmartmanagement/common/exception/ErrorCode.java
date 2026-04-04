@@ -20,7 +20,8 @@ public enum ErrorCode {
     EMAIL_EXISTED(401, "Email đã tồn tại", HttpStatus.CONFLICT),
     EMAIL_NOT_FOUND(404,"Không tìm thấy Email, vui lòng đăng ký",HttpStatus.NOT_FOUND),
     ACCOUNT_NOT_VERIFIED(401,"Tài khoản chưa được xác nhận", HttpStatus.UNAUTHORIZED),
-    ;
+    USER_NOT_EXISTED(404, "Không tìm thấy người dùng", HttpStatus.NOT_FOUND),
+    DEFAULT_SUBSCRIPTION_PLAN_NOT_FOUND(404, "Không tìm thấy gói đăng ký mặc định" ,HttpStatus.NOT_FOUND ),;
 
     private final int code;
     private final String message;
