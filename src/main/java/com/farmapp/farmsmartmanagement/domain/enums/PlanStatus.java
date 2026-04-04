@@ -1,4 +1,4 @@
-package com.farmapp.farmsmartmanagement.common.constant;
+package com.farmapp.farmsmartmanagement.domain.enums;
 
 public enum PlanStatus {
     DRAFT,
