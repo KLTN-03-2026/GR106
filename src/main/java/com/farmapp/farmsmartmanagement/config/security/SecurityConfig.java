@@ -26,6 +26,14 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter
             jwtFilter;
 
+    private final String[] PUBLIC_ENDPOINT =
+            {
+                    "/api/v1/auth/**",
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**",
+                    "/actuator/health",
+                    "/api/v1/subscriptions"
+            };
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
@@ -33,12 +41,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/v1/auth/**",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/actuator/health"
-                        ).permitAll()
+                        .requestMatchers(PUBLIC_ENDPOINT).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

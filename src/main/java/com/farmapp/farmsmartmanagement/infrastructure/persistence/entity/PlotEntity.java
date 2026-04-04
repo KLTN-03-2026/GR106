@@ -1,6 +1,6 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.entity;
 
-import com.farmapp.farmsmartmanagement.common.constant.PlotStatus;
+import com.farmapp.farmsmartmanagement.domain.enums.PlotStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

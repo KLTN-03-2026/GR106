@@ -1,12 +1,12 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.entity;
 
-import com.farmapp.farmsmartmanagement.common.constant.BillingCycle;
-import com.farmapp.farmsmartmanagement.common.constant.SubscriptionStatus;
+import com.farmapp.farmsmartmanagement.domain.enums.BillingCycle;
+import com.farmapp.farmsmartmanagement.domain.enums.SubscriptionStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -36,16 +36,16 @@ public class FarmSubscriptionEntity {
     private Boolean isCurrent;
 
     @Column(name = "started_at")
-    private LocalDateTime startedAt;
+    private Instant startedAt;
 
     @Column(name = "expires_at")
-    private LocalDateTime expiresAt;
+    private Instant expiresAt;
 
     @Column(name = "grace_until")
-    private LocalDateTime graceUntil;
+    private Instant graceUntil;
 
     @Column(name = "cancelled_at")
-    private LocalDateTime cancelledAt;
+    private Instant cancelledAt;
 
     @Column(name = "cancellation_reason")
     private String cancellationReason;
@@ -53,9 +53,10 @@ public class FarmSubscriptionEntity {
     @Column(name = "auto_renew")
     private Boolean autoRenew;
 
+
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 }

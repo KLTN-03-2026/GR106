@@ -1,6 +1,6 @@
 package com.farmapp.farmsmartmanagement.modules.auth.service;
 
-import com.farmapp.farmsmartmanagement.common.constant.UserStatus;
+import com.farmapp.farmsmartmanagement.domain.enums.UserStatus;
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.common.util.HashUtils;

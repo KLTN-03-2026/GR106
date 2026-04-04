@@ -1,6 +1,6 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 
-import com.farmapp.farmsmartmanagement.common.constant.SubscriptionStatus;
+import com.farmapp.farmsmartmanagement.domain.enums.SubscriptionStatus;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.FarmSubscriptionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
