@@ -25,26 +25,66 @@ public class JwtProvider {
         return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
     }
 
-    // TOKEN LEVEL 1 (user only)
-    public String generateUserToken(UUID userId) {
+    // TOKEN LEVEL 1 — thêm system roles vào
+    public String generateUserToken(UUID userId, List<String> systemRoles) {
         return Jwts.builder()
                 .setSubject(userId.toString())
+                .claim("roles", systemRoles) // ["ROLE_ADMIN"] hoặc ["ROLE_USER"]
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
                 .signWith(getKey())
                 .compact();
     }
 
-    // TOKEN LEVEL 2 (user + farm)
-    public String generateFarmToken(UUID userId, UUID farmId, List<String> permissions) {
+    // TOKEN LEVEL 2 — thêm system roles + farm permissions
+    public String generateFarmToken(UUID userId, UUID farmId,
+                                    List<String> systemRoles, List<String> permissions) {
         return Jwts.builder()
                 .setSubject(userId.toString())
+                .claim("roles", systemRoles)
                 .claim("farmId", farmId.toString())
-                .claim("perms", permissions) // embed
+                .claim("perms", permissions)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
                 .signWith(getKey())
                 .compact();
+    }
+
+    public UserPrincipal getPrincipal(String token) {
+        Claims claims = parseClaims(token);
+
+        UUID userId = UUID.fromString(claims.getSubject());
+        String farmIdStr = claims.get("farmId", String.class);
+        UUID farmId = farmIdStr != null ? UUID.fromString(farmIdStr) : null;
+
+        List<SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
+
+        // ✅ Load system roles từ token
+        List<?> rawRoles = claims.get("roles", List.class);
+        if (rawRoles != null) {
+            rawRoles.stream()
+                    .filter(String.class::isInstance)
+                    .map(String.class::cast)
+                    .map(SimpleGrantedAuthority::new)
+                    .forEach(authorities::add);
+        }
+
+        // ✅ Load farm permissions từ token nếu có
+        List<?> rawPerms = claims.get("perms", List.class);
+        if (rawPerms != null) {
+            rawPerms.stream()
+                    .filter(String.class::isInstance)
+                    .map(String.class::cast)
+                    .map(SimpleGrantedAuthority::new)
+                    .forEach(authorities::add);
+        }
+
+        // ✅ Nếu không có gì trong token → load từ DB (fallback)
+        if (authorities.isEmpty()) {
+            authorities.addAll(permissionService.loadAuthorities(userId, farmId));
+        }
+
+        return new UserPrincipal(userId, farmId, authorities);
     }
 
     public boolean validate(String token) {
@@ -56,29 +96,7 @@ public class JwtProvider {
         }
     }
 
-    public UserPrincipal getPrincipal(String token) {
-        Claims claims = parseClaims(token);
 
-        UUID userId = UUID.fromString(claims.getSubject());
-        String farmIdStr = claims.get("farmId", String.class);
-        UUID farmId = farmIdStr != null ? UUID.fromString(farmIdStr) : null;
-
-        List<?> rawPerms = claims.get("perms", List.class);
-
-        Collection<? extends GrantedAuthority> authorities;
-
-        if (rawPerms != null) {
-            authorities = rawPerms.stream()
-                    .filter(String.class::isInstance)
-                    .map(String.class::cast)
-                    .map(SimpleGrantedAuthority::new)
-                    .toList();
-        } else {
-            authorities = permissionService.loadAuthorities(userId, farmId);
-        }
-
-        return new UserPrincipal(userId, farmId, authorities);
-    }
 
     private Claims parseClaims(String token) {
         return Jwts.parser()

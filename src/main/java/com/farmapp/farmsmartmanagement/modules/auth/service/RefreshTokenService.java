@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -75,7 +76,8 @@ public class RefreshTokenService {
         // dùng IP/UA mới từ request hiện tại thay vì của token cũ
         String newRefresh = create(token.getUserId(), userAgent, ipAddress);
 
-        String access = jwtProvider.generateUserToken(token.getUserId());
+        List<String> systemRoles = permissionService.loadSystemRoles(token.getUserId());
+        String access = jwtProvider.generateUserToken(token.getUserId(), systemRoles);
 
         return new TokenResponse(access, newRefresh);
     }

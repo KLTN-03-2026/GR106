@@ -3,6 +3,7 @@ package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PermissionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,4 +28,12 @@ public interface PermissionRepository extends JpaRepository<PermissionEntity, UU
           AND fm.is_active = true
     """, nativeQuery = true)
     List<String> findPermissions(UUID userId, UUID farmId);
+
+    @Query(value = """
+    SELECT CONCAT('ROLE_', r.name)
+    FROM user_roles ur
+    JOIN roles r ON r.id = ur.role_id
+    WHERE ur.user_id = :userId
+    """, nativeQuery = true)
+    List<String> findSystemRoles(@Param("userId") UUID userId);
 }

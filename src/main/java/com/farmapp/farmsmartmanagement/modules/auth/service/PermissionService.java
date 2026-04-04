@@ -35,4 +35,13 @@ public class PermissionService {
                 .map(SimpleGrantedAuthority::new)
                 .toList();
     }
+
+    public List<String> loadSystemRoles(UUID userId) {
+        List<String> cached = cache.get(userId, null);
+        if (cached != null) return cached;
+
+        List<String> roles = repository.findSystemRoles(userId);
+        cache.save(userId, null, roles);
+        return roles;
+    }
 }
