@@ -2,10 +2,12 @@ package com.farmapp.farmsmartmanagement.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Table(name = "user_roles")
+@NoArgsConstructor
 @Getter
 @Setter
 @IdClass(UserRoleId.class)

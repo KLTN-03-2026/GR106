@@ -42,7 +42,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 );
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
-                // ✅ Set RLS context nếu là farm token
+                // Set RLS context nếu là farm token
                 if (principal.getFarmId() != null) {
                     RlsContext.set(principal.getFarmId(), principal.getUserId());
                 }
@@ -51,7 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
 
         } finally {
-            // ✅ LUÔN clear — tránh leak giữa các request trong cùng thread (HikariCP thread reuse)
+            // LUÔN clear — tránh leak giữa các request trong cùng thread (HikariCP thread reuse)
             RlsContext.clear();
         }
     }

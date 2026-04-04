@@ -38,6 +38,7 @@ public class AuthService {
     PermissionRepository permissionRepository;
     JwtProvider jwtProvider;
     RefreshTokenService refreshTokenService;
+    RefreshTokenRepository refreshTokenRepository;
     PasswordEncoder passwordEncoder;
     EmailVerificationTokenRepository emailVerificationTokenRepository;
     EmailService emailService;
@@ -81,6 +82,7 @@ public class AuthService {
         emailService.sendHtml(user.getEmail(), "Xác thực tài khoản", html);
     }
 
+    @Transactional
     public TokenResponse login(LoginRequest req, String userAgent, String ip) {
 
         UserEntity user = userRepository.findByEmail(req.email())
@@ -99,9 +101,11 @@ public class AuthService {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
+        refreshTokenRepository.revokeAll(user.getId(), Instant.now());
         // Load system roles → đưa vào token
         List<String> systemRoles = permissionRepository.findSystemRoles(user.getId());
         String access = jwtProvider.generateUserToken(user.getId(), systemRoles);
+
 
         String refresh = refreshTokenService.create(user.getId(), userAgent, ip);
 

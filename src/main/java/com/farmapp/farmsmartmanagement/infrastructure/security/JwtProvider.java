@@ -4,6 +4,7 @@ import com.farmapp.farmsmartmanagement.config.app.JwtProperties;
 import com.farmapp.farmsmartmanagement.modules.auth.service.PermissionService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,22 +22,25 @@ public class JwtProvider {
 
     private final JwtProperties jwtProperties;
     private final PermissionService permissionService;
-    private Key getKey() {
-        return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
+
+    // Cache key — tạo 1 lần duy nhất khi bean init
+    private Key key;
+
+    @PostConstruct
+    public void init() {
+        this.key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
     }
 
-    // TOKEN LEVEL 1 — thêm system roles vào
     public String generateUserToken(UUID userId, List<String> systemRoles) {
         return Jwts.builder()
                 .setSubject(userId.toString())
-                .claim("roles", systemRoles) // ["ROLE_ADMIN"] hoặc ["ROLE_USER"]
+                .claim("roles", systemRoles)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
-                .signWith(getKey())
+                .signWith(key)
                 .compact();
     }
 
-    // TOKEN LEVEL 2 — thêm system roles + farm permissions
     public String generateFarmToken(UUID userId, UUID farmId,
                                     List<String> systemRoles, List<String> permissions) {
         return Jwts.builder()
@@ -46,7 +50,7 @@ public class JwtProvider {
                 .claim("perms", permissions)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
-                .signWith(getKey())
+                .signWith(key)
                 .compact();
     }
 
@@ -59,7 +63,6 @@ public class JwtProvider {
 
         List<SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
 
-        // ✅ Load system roles từ token
         List<?> rawRoles = claims.get("roles", List.class);
         if (rawRoles != null) {
             rawRoles.stream()
@@ -69,7 +72,6 @@ public class JwtProvider {
                     .forEach(authorities::add);
         }
 
-        // ✅ Load farm permissions từ token nếu có
         List<?> rawPerms = claims.get("perms", List.class);
         if (rawPerms != null) {
             rawPerms.stream()
@@ -79,7 +81,6 @@ public class JwtProvider {
                     .forEach(authorities::add);
         }
 
-        // ✅ Nếu không có gì trong token → load từ DB (fallback)
         if (authorities.isEmpty()) {
             authorities.addAll(permissionService.loadAuthorities(userId, farmId));
         }
@@ -96,14 +97,11 @@ public class JwtProvider {
         }
     }
 
-
-
     private Claims parseClaims(String token) {
         return Jwts.parser()
-                .setSigningKey(getKey())
+                .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
     }
 }
-
