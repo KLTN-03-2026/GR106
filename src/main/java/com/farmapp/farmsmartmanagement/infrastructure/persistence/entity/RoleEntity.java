@@ -8,10 +8,10 @@ import org.hibernate.annotations.UuidGenerator;
 import java.util.UUID;
 
 @Entity
-@Table(name = "permissions")
+@Table(name = "roles")
 @Getter
 @Setter
-public class PermissionEntity {
+public class RoleEntity {
 
     @Id
     @GeneratedValue

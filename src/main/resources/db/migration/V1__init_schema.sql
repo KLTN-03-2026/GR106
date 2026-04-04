@@ -829,7 +829,9 @@ CREATE TABLE task_assignees (
     user_id     UUID NOT NULL REFERENCES users(id),
     assigned_at TIMESTAMP NOT NULL DEFAULT NOW(),
     assigned_by UUID NOT NULL REFERENCES users(id),
-    deleted_at  TIMESTAMP,
+    removal_reason VARCHAR(200),
+    removed_by UUID REFERENCES users(id),
+    removed_at TIMESTAMP,
     UNIQUE (task_id, user_id)
 );
 CREATE INDEX idx_task_assignees_user ON task_assignees(user_id)
