@@ -55,6 +55,7 @@ logging:
     org.hibernate.SQL: WARN
 
 app:
+  front-end-url: ${FRONT_END_URL:http://localhost:3000}
   jwt:
     secret: ${SIGNER_KEY}
     expiration: ${EXPIRATION:3600000}
