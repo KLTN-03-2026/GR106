@@ -9,6 +9,7 @@ import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.request.CreateFarmRequest;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmResponse;
+import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmSummaryResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.mapper.FarmMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -27,42 +28,52 @@ import java.util.UUID;
 public class FarmService {
 
     FarmRepository farmRepository;
+    FarmMemberRepository farmMemberRepository;
+    FarmRoleRepository farmRoleRepository;
+    FarmConfigRepository farmConfigRepository;
     SubscriptionPlanRepository planRepository;
     FarmSubscriptionRepository subscriptionRepository;
     SubscriptionHistoryRepository historyRepository;
-
-    FarmMapper farmMapper;
-
     UserRepository userRepository;
-
+    FarmMapper farmMapper;
     SecurityUtils securityUtils;
-
 
     @Transactional
     public FarmResponse createFarm(CreateFarmRequest request) {
 
-        UserEntity owner = userRepository.findById(securityUtils.getCurrentUserId())
+        UUID userId = securityUtils.getCurrentUserId();
+
+        UserEntity owner = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         Instant now = Instant.now();
 
-        // 1. tạo farm
+        // 1. Tạo farm
         FarmEntity farm = new FarmEntity();
         farm.setName(request.getFarmName());
         farm.setDescription(request.getDescription());
         farm.setOwner(owner);
-        farm.setName(request.getFarmName());
         farm.setCreatedBy(owner);
         farm.setCreatedAt(now);
-
         farmRepository.save(farm);
 
-        // 2. lấy plan mặc định (TRIAL hoặc BASIC)
+        // 2. Tạo farm_configs
+        FarmConfigEntity config = new FarmConfigEntity();
+        config.setFarm(farm);
+        config.setTimezone("Asia/Ho_Chi_Minh");
+        config.setLocale("vi");
+        config.setCurrency("VND");
+        config.setAllowCropClone(true);
+        config.setTaskOverdueNotifyDays((short) 1);
+        config.setCreatedAt(now);
+        farmConfigRepository.save(config);
+
+        // 3. Lấy plan FREE
         SubscriptionPlanEntity plan = planRepository
                 .findByName("FREE")
                 .orElseThrow(() -> new AppException(ErrorCode.DEFAULT_SUBSCRIPTION_PLAN_NOT_FOUND));
 
-        // 3. tạo subscription
+        // 4. Tạo subscription TRIAL 14 ngày
         FarmSubscriptionEntity sub = new FarmSubscriptionEntity();
         sub.setFarm(farm);
         sub.setPlan(plan);
@@ -73,26 +84,59 @@ public class FarmService {
         sub.setExpiresAt(now.plus(14, ChronoUnit.DAYS));
         sub.setAutoRenew(false);
         sub.setCreatedAt(now);
-
         subscriptionRepository.save(sub);
 
-        // 4. history
+        // 5. Tạo subscription history
         SubscriptionHistoryEntity history = new SubscriptionHistoryEntity();
-        history.setId(UUID.randomUUID());
         history.setFarm(farm);
         history.setFarmSubscription(sub);
         history.setEventType("CREATED");
         history.setToPlan(plan);
-        history.setTriggeredBy(null); // system
+        history.setTriggeredBy(owner);
         history.setCreatedAt(now);
-
         historyRepository.save(history);
+
+        // 6. Gán OWNER role cho user
+        FarmRoleEntity ownerRole = farmRoleRepository.findByName("OWNER")
+                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+
+        FarmMemberEntity member = new FarmMemberEntity();
+        member.setFarm(farm);
+        member.setUser(owner);
+        member.setRole(ownerRole);
+        member.setIsActive(true);
+        member.setJoinedAt(now);
+
+        farmMemberRepository.save(member);
 
         return farmMapper.toResponse(farm);
     }
 
-    @Transactional
     public List<FarmResponse> getFarms() {
-        return farmRepository.findAll().stream().map(farmMapper::toResponse).toList();
+        UUID userId = securityUtils.getCurrentUserId();
+        return farmRepository.findAllByOwnerId(userId)
+                .stream()
+                .map(farmMapper::toResponse)
+                .toList();
+    }
+
+
+    public List<FarmSummaryResponse> getFarmsSummary() {
+        UUID userId = securityUtils.getCurrentUserId();
+
+        return farmRepository.findFarmSummariesByUserId(userId)
+                .stream()
+                .map(p -> FarmSummaryResponse.builder()
+                        .farmId(p.getFarmId())
+                        .farmName(p.getFarmName())
+                        .description(p.getDescription())
+                        .ownerId(p.getOwnerId())
+                        .ownerFullName(p.getOwnerFullName())
+                        .ownerAvatarUrl(p.getOwnerAvatarUrl())
+                        .myRole(p.getMyRole())
+                        .isOwner(p.getIsOwner())
+                        .build()
+                )
+                .toList();
     }
 }

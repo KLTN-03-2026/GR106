@@ -3,6 +3,7 @@ package com.farmapp.farmsmartmanagement.infrastructure.persistence.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -15,6 +16,8 @@ import java.util.UUID;
 public class SubscriptionHistoryEntity {
 
     @Id
+    @GeneratedValue
+    @UuidGenerator
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)

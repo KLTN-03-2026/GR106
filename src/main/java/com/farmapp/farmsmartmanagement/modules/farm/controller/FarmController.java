@@ -3,6 +3,7 @@ package com.farmapp.farmsmartmanagement.modules.farm.controller;
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.request.CreateFarmRequest;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmResponse;
+import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmSummaryResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.service.FarmService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -22,14 +23,16 @@ public class FarmController {
 
     FarmService farmService;
 
-    @PreAuthorize("hashAuthority('farm:read')")
     @GetMapping("/api/v1/farms")
     public ApiResponse<List<FarmResponse>> getFarms() {
         return ApiResponse.success(farmService.getFarms());
     }
 
 
-
+    @GetMapping("/api/v1/farms/summary")
+    public ApiResponse<List<FarmSummaryResponse>> getFarmSummary() {
+        return ApiResponse.success(farmService.getFarmsSummary());
+    }
 
 
     @PreAuthorize("hasRole('USER') or hasAuthority('farm:create')")
