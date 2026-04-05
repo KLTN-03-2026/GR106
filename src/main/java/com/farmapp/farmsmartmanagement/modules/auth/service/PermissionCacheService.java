@@ -20,6 +20,7 @@ public class PermissionCacheService {
     }
 
     public void save(UUID userId, UUID farmId, List<String> permissions) {
+        if (permissions == null || permissions.isEmpty()) return; //  không cache nếu rỗng
         redis.opsForValue().set(
                 key(userId, farmId),
                 String.join(",", permissions),
@@ -29,7 +30,7 @@ public class PermissionCacheService {
 
     public List<String> get(UUID userId, UUID farmId) {
         String val = redis.opsForValue().get(key(userId, farmId));
-        if (val == null) return null;
+        if (val == null || val.isBlank()) return null; //  treat blank như null
         return List.of(val.split(","));
     }
 
