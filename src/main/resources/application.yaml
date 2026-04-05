@@ -31,10 +31,10 @@ spring:
     locations: classpath:db/migration
 
   mail:
-    host: ${SMTP_HOST:localhost}
+    host: ${SMTP_HOST}
     port: ${SMTP_PORT:587}
-    username: ${SMTP_MAIL:}
-    password: ${SMTP_MAIL_PASSWORD:}
+    username: ${SMTP_MAIL}
+    password: ${SMTP_MAIL_PASSWORD}
     properties:
       mail:
         smtp:
