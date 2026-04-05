@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -88,5 +89,10 @@ public class FarmService {
         historyRepository.save(history);
 
         return farmMapper.toResponse(farm);
+    }
+
+    @Transactional
+    public List<FarmResponse> getFarms() {
+        return farmRepository.findAll().stream().map(farmMapper::toResponse).toList();
     }
 }

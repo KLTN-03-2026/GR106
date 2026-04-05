@@ -8,9 +8,12 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -18,6 +21,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class FarmController {
 
     FarmService farmService;
+
+    @PreAuthorize("hashAuthority('farm:read')")
+    @GetMapping("/api/v1/farms")
+    public ApiResponse<List<FarmResponse>> getFarms() {
+        return ApiResponse.success(farmService.getFarms());
+    }
+
+
+
+
 
     @PreAuthorize("hasRole('USER') or hasAuthority('farm:create')")
     @PostMapping("/api/v1/farm")
