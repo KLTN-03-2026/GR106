@@ -16,9 +16,11 @@ import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
 import com.farmapp.farmsmartmanagement.infrastructure.security.JwtProvider;
 import com.farmapp.farmsmartmanagement.infrastructure.service.EmailService;
 import com.farmapp.farmsmartmanagement.infrastructure.service.EmailTemplateService;
+import com.farmapp.farmsmartmanagement.modules.auth.event.SendVerifyEmailEvent;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +46,8 @@ public class AuthService {
     EmailService emailService;
     EmailTemplateService emailTemplateService;
     AppProperties appProperties; // thêm config frontend url
+
+    ApplicationEventPublisher eventPublisher;
 
     // AuthService.java — register
     @Transactional
