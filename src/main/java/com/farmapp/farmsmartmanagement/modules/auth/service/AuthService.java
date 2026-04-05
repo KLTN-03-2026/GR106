@@ -45,6 +45,7 @@ public class AuthService {
     EmailTemplateService emailTemplateService;
     AppProperties appProperties; // thêm config frontend url
 
+    // AuthService.java — register
     @Transactional
     public void register(RegisterRequest req) {
 
@@ -60,12 +61,10 @@ public class AuthService {
         user.setIsLocked(false);
         userRepository.save(user);
 
-        // Gán ROLE_USER mặc định
         RoleEntity userRole = roleRepository.findByName("USER")
                 .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
         userRoleRepository.save(new UserRoleEntity(user, userRole));
 
-        // Tạo email verification token
         String rawToken = UUID.randomUUID().toString();
         String hash = HashUtils.sha256(rawToken);
 
@@ -75,11 +74,12 @@ public class AuthService {
         token.setExpiresAt(Instant.now().plusSeconds(15 * 60));
         emailVerificationTokenRepository.save(token);
 
-        // Link đúng — đọc từ config
+        // KHÔNG gọi email ở đây nữa
+        // Dùng event — gửi sau khi transaction commit xong
         String link = appProperties.getFrontendUrl() + "/verify-email?token=" + rawToken;
-
-        String html = emailTemplateService.buildVerifyEmail(user.getFullName(), link);
-        emailService.sendHtml(user.getEmail(), "Xác thực tài khoản", html);
+        eventPublisher.publishEvent(
+                new SendVerifyEmailEvent(this, user.getFullName(), user.getEmail(), link)
+        );
     }
 
     @Transactional
