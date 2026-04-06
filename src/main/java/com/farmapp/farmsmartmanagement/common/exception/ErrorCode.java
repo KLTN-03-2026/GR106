@@ -22,7 +22,17 @@ public enum ErrorCode {
     ACCOUNT_NOT_VERIFIED(401,"Tài khoản chưa được xác nhận", HttpStatus.UNAUTHORIZED),
     USER_NOT_EXISTED(404, "Không tìm thấy người dùng", HttpStatus.NOT_FOUND),
     DEFAULT_SUBSCRIPTION_PLAN_NOT_FOUND(404, "Không tìm thấy gói đăng ký mặc định" ,HttpStatus.NOT_FOUND ),
-    FARM_NOT_FOUND(404, "Không tìm thấy trang trại" , HttpStatus.NOT_FOUND),;
+    FARM_NOT_FOUND(404, "Không tìm thấy trang trại" , HttpStatus.NOT_FOUND),
+    SUBSCRIPTION_PLAN_NOT_FOUND(404, "Không tìm thấy gói đăng ký", HttpStatus.NOT_FOUND ),
+    PAYMENT_NOT_FOUND(404, "Payment transaction not found", HttpStatus.NOT_FOUND),
+    PAYMENT_INVALID_SIGNATURE(400,     "Invalid payment signature", HttpStatus.BAD_REQUEST),
+    PAYMENT_ALREADY_PROCESSED(409,      "Payment already processed", HttpStatus.CONFLICT),
+    PAYMENT_EXPIRED(410,                "Payment link has expired", HttpStatus.CONFLICT),
+    PAYMENT_AMOUNT_MISMATCH(422,        "Payment amount does not match", HttpStatus.CONFLICT),
+    PAYMENT_GATEWAY_ERROR(502,          "Payment gateway error", HttpStatus.INTERNAL_SERVER_ERROR),
+
+
+    FARM_SUBSCRIPTION_NOT_FOUND(404, "Không tìm thấy farm đang đăng ký gói nào", HttpStatus.NOT_FOUND ),;
 
     private final int code;
     private final String message;

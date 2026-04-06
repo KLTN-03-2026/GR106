@@ -3,8 +3,7 @@ package com.farmapp.farmsmartmanagement.infrastructure.persistence.entity;
 import com.farmapp.farmsmartmanagement.domain.enums.BillingCycle;
 import com.farmapp.farmsmartmanagement.domain.enums.SubscriptionStatus;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
@@ -16,6 +15,9 @@ import java.util.UUID;
 @Table(name = "farm_subscriptions")
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class FarmSubscriptionEntity {
 
     @Id

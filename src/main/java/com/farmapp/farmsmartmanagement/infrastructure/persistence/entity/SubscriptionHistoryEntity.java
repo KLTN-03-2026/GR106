@@ -1,8 +1,7 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.Instant;
@@ -13,6 +12,9 @@ import java.util.UUID;
 @Table(name = "subscription_history")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class SubscriptionHistoryEntity {
 
     @Id

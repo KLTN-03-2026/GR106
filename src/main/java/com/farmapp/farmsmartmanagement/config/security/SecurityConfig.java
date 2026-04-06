@@ -32,7 +32,10 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "/actuator/health",
-                    "/api/v1/subscriptions"
+                    "/api/v1/subscriptions",
+
+                    "/api/v1/payments/vnpay/ipn",
+                    "/api/v1/payments/vnpay/return"
             };
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
