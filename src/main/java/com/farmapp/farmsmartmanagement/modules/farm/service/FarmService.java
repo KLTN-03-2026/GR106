@@ -3,6 +3,7 @@ package com.farmapp.farmsmartmanagement.modules.farm.service;
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
+import com.farmapp.farmsmartmanagement.config.database.RlsContext;
 import com.farmapp.farmsmartmanagement.domain.enums.BillingCycle;
 import com.farmapp.farmsmartmanagement.domain.enums.SubscriptionStatus;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
@@ -11,6 +12,8 @@ import com.farmapp.farmsmartmanagement.modules.farm.dto.request.CreateFarmReques
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmSummaryResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.mapper.FarmMapper;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -38,6 +41,9 @@ public class FarmService {
     FarmMapper farmMapper;
     SecurityUtils securityUtils;
 
+    @PersistenceContext
+    EntityManager em;
+
     @Transactional
     public FarmResponse createFarm(CreateFarmRequest request) {
 
@@ -56,6 +62,11 @@ public class FarmService {
         farm.setCreatedBy(owner);
         farm.setCreatedAt(now);
         farmRepository.save(farm);
+
+        em.createNativeQuery(
+                        "SELECT set_config('app.current_farm_id', :fid, true)"
+                ).setParameter("fid", farm.getId().toString())
+                .getSingleResult();
 
         // 2. Tạo farm_configs
         FarmConfigEntity config = new FarmConfigEntity();
