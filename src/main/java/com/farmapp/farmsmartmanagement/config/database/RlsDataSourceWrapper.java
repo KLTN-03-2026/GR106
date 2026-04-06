@@ -29,15 +29,15 @@ public class RlsDataSourceWrapper implements DataSource {
     }
 
     private void applyRls(Connection conn) throws SQLException {
-        if (!RlsContext.hasUser()) return;
+        String userId = RlsContext.hasUser()
+                ? RlsContext.getUserId().toString() : "";
+        String farmId = RlsContext.hasFarm()
+                ? RlsContext.getFarmId().toString() : "";
 
         try (Statement stmt = conn.createStatement()) {
-
-            stmt.execute("SET app.current_user_id = '" + RlsContext.getUserId() + "'");
-
-            if (RlsContext.getFarmId() != null) {
-                stmt.execute("SET app.current_farm_id = '" + RlsContext.getFarmId() + "'");
-            }
+            // SET (session) — không có true, nhưng LUÔN ghi đè kể cả empty
+            stmt.execute("SET app.current_user_id = '" + userId + "'");
+            stmt.execute("SET app.current_farm_id = '" + farmId + "'");
         }
     }
 
