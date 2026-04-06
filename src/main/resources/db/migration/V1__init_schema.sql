@@ -835,7 +835,7 @@
         UNIQUE (task_id, user_id)
     );
     CREATE INDEX idx_task_assignees_user ON task_assignees(user_id)
-        WHERE deleted_at IS NULL;
+        WHERE removed_at IS NULL;
 
 
     -- ============================================================
