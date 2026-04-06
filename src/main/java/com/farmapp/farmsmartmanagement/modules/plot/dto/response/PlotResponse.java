@@ -1,4 +1,19 @@
 package com.farmapp.farmsmartmanagement.modules.plot.dto.response;
 
-public record PlotResponse() {
+import com.farmapp.farmsmartmanagement.domain.enums.PlotStatus;
+import com.farmapp.farmsmartmanagement.modules.plot.dto.request.GeometryFormat;
+
+import java.util.UUID;
+
+public record PlotResponse(
+        UUID id,
+
+        String name,
+
+        Double areaHa,
+
+        PlotStatus status,
+
+        GeometryFormat geometry
+) {
 }

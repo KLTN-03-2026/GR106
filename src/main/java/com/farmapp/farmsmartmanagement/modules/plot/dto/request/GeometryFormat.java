@@ -2,7 +2,7 @@ package com.farmapp.farmsmartmanagement.modules.plot.dto.request;
 
 import java.util.List;
 
-public record GeometryRequest (
+public record GeometryFormat(
         String type, // "Polygon"
 
         List<List<List<Double>>> coordinates
