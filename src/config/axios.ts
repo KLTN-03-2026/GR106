@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { ENV } from './env';
+import { getUserFromToken } from '../utils/jwt';
 
 export const axiosInstance = axios.create({
   baseURL: ENV.API_BASE_URL,
@@ -52,6 +53,12 @@ axiosInstance.interceptors.response.use(
 
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', newRefreshToken);
+        
+        // Decode và cập nhật user info từ token mới
+        const user = getUserFromToken(accessToken);
+        if (user) {
+          localStorage.setItem('user', JSON.stringify(user));
+        }
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return axiosInstance(originalRequest);
@@ -59,6 +66,7 @@ axiosInstance.interceptors.response.use(
         // Refresh failed, log out user
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }

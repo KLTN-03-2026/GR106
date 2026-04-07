@@ -7,6 +7,7 @@ import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 import { authService } from '../../services/authService';
 import { setCredentials } from '../../store/authSlice';
+import { getUserFromToken } from '../../utils/jwt';
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Email là bắt buộc').email('Định dạng email không hợp lệ'),
@@ -17,8 +18,6 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function useLogin() {
   const [serverError, setServerError] = useState<string | null>(null);
-  const [failedAttempts, setFailedAttempts] = useState(0);
-  const [isLocked, setIsLocked] = useState(false);
   
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -27,49 +26,59 @@ export function useLogin() {
     resolver: zodResolver(loginSchema),
   });
 
-  const handleFailedAttempt = () => {
-    const newAttempts = failedAttempts + 1;
-    setFailedAttempts(newAttempts);
-    if (newAttempts >= 5) {
-      setIsLocked(true);
-      const lockMessage = 'Tài khoản bị khóa tạm thời do đăng nhập sai nhiều lần. Vui lòng thử lại sau 15 phút.';
-      setServerError(lockMessage);
-      
-      setTimeout(() => {
-        setIsLocked(false);
-        setFailedAttempts(0);
-        setServerError(null);
-      }, 15 * 60 * 1000);
-    }
-  };
-
   const onSubmit = form.handleSubmit(async (data: LoginFormValues) => {
-    if (isLocked) {
-      toast.error('Tài khoản đang bị khóa');
-      return;
-    }
-
-    // setServerError(null); (Removed to prevent UI flickering)
+    setServerError(null);
+    
     try {
       const response = await authService.login(data);
       if (response.success) {
-        dispatch(setCredentials(response.data));
+        const { accessToken, refreshToken } = response.data;
+        
+        // Decode JWT token để lấy user info
+        const user = getUserFromToken(accessToken);
+        
+        if (!user) {
+          setServerError('Token không hợp lệ');
+          toast.error('Token không hợp lệ');
+          return;
+        }
+        
+        // Lưu vào Redux với user info từ token
+        dispatch(setCredentials({
+          accessToken,
+          refreshToken,
+          user
+        }));
+        
         toast.success('Đăng nhập thành công');
-        navigate('/dashboard');
+        
+        // Redirect dựa vào role
+        switch (user.role) {
+          case 'owner':
+            navigate('/dashboard/owner');
+            break;
+          case 'manager':
+            navigate('/dashboard/manager');
+            break;
+          case 'employee':
+            navigate('/dashboard/employee');
+            break;
+          default:
+            navigate('/dashboard');
+        }
       } else {
-        handleFailedAttempt();
-        setServerError('Email hoặc mật khẩu không đúng');
+        // Hiển thị message từ server
+        const message = response.message || 'Đăng nhập thất bại';
+        setServerError(message);
+        toast.error(message);
       }
-    } catch (error: any) {
-      handleFailedAttempt();
-      
-      let message = error.response?.data?.message;
-      // Ghi đè các thông báo lỗi chung chung của server bằng thông báo thân thiện
-      if (!message || message.toLowerCase().includes('unauthorized') || message.toLowerCase().includes('chưa đăng nhập')) {
-        message = 'Email hoặc mật khẩu không đúng';
-      }
+    } catch (error) {
+      // Lấy message từ Backend
+      const apiError = error as { response?: { data?: { message?: string } } };
+      const message = apiError.response?.data?.message || 'Đã xảy ra lỗi. Vui lòng thử lại';
       
       setServerError(message);
+      toast.error(message);
     }
   });
 

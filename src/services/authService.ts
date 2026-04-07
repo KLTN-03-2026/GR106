@@ -4,8 +4,8 @@ import {
   AuthTokens,
   LoginRequest,
   RegisterRequest,
-  VerifyRequest } from
-'../types/auth';
+  VerifyRequest
+} from '../types/auth';
 
 export const authService = {
   async register(data: RegisterRequest): Promise<ApiResponse<string>> {

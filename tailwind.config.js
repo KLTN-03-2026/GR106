@@ -68,11 +68,21 @@ export default {
         slideInLeft: {
           '0%': { opacity: '0', transform: 'translateX(-20px)' },
           '100%': { opacity: '1', transform: 'translateX(0)' }
+        },
+        grow: {
+          '0%, 100%': { transform: 'scaleY(0)' },
+          '50%': { transform: 'scaleY(1)' }
+        },
+        wave: {
+          '0%, 100%': { transform: 'scaleY(1)' },
+          '50%': { transform: 'scaleY(1.3)' }
         }
       },
       animation: {
         'slide-in-down': 'slideIn 0.7s ease-out forwards',
-        'slide-in-down-fast': 'slideIn 0.4s ease-out forwards'
+        'slide-in-down-fast': 'slideIn 0.4s ease-out forwards',
+        'grow': 'grow 2s ease-in-out infinite',
+        'wave': 'wave 2s ease-in-out infinite'
       }
     }
   }
