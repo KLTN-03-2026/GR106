@@ -3,7 +3,8 @@ import {
   ApiResponse,
   AuthTokens,
   LoginRequest,
-  RegisterRequest
+  RegisterRequest,
+  VerifyRequest
 } from '../types/auth';
 
 export const authService = {
@@ -23,10 +24,10 @@ export const authService = {
     return response.data;
   },
 
-  async verify(token: string): Promise<ApiResponse<string>> {
+  async verify(data: VerifyRequest): Promise<ApiResponse<string>> {
     const response = await axiosInstance.post<ApiResponse<string>>(
       '/api/v1/auth/verify',
-      { token }
+      data
     );
     return response.data;
   },
