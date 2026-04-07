@@ -42,17 +42,9 @@ const authSlice = createSlice({
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
-    },
-
-    // Developer tool to switch roles instantly for UI testing
-    setRole: (state, action: PayloadAction<string>) => {
-      if (state.user) {
-        state.user.role = action.payload;
-        localStorage.setItem('user', JSON.stringify(state.user));
-      }
     }
   }
 });
 
-export const { setCredentials, logout, setRole } = authSlice.actions;
+export const { setCredentials, logout } = authSlice.actions;
 export default authSlice.reducer;

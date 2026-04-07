@@ -39,7 +39,6 @@ export function useLogin() {
         
         if (!user) {
           setServerError('Token không hợp lệ');
-          toast.error('Token không hợp lệ');
           return;
         }
         
@@ -55,18 +54,16 @@ export function useLogin() {
         // Redirect đến Dashboard trung tâm
         navigate('/dashboard');
       } else {
-        // Hiển thị message từ server
+        // Hiển thị message từ server trong Form
         const message = response.message || 'Đăng nhập thất bại';
         setServerError(message);
-        toast.error(message);
       }
     } catch (error) {
-      // Lấy message từ Backend
+      // Lấy message từ Backend và hiển thị trong Form
       const apiError = error as { response?: { data?: { message?: string } } };
       const message = apiError.response?.data?.message || 'Đã xảy ra lỗi. Vui lòng thử lại';
       
       setServerError(message);
-      toast.error(message);
     }
   });
 

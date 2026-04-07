@@ -1,5 +1,4 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
 import { 
   LayoutDashboard, 
   Users, 
@@ -9,13 +8,11 @@ import {
   KeyRound 
 } from 'lucide-react'
 import { useAuth } from '../../../hooks/useAuth'
-import { setRole } from '../../../store/authSlice'
 import LogoBrowser from '../../../assets/Logo-browser.png'
 
 export function Sidebar() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const dispatch = useDispatch()
 
   const navItems = [
     {
@@ -51,11 +48,6 @@ export function Sidebar() {
 
   const handleChangePassword = () => {
     navigate('/change-password')
-  }
-
-  const handleRoleSwitch = (newRole: string) => {
-    dispatch(setRole(newRole))
-    window.location.reload()
   }
 
   // Filter items based on user role
@@ -103,41 +95,8 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {/* Developer Role Switcher (Test only) */}
-      <div className="px-3 py-4 border-t border-gray-200 bg-gray-100/50">
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-3">
-          Chế độ Test: Đổi quyền
-        </p>
-        <div className="flex flex-wrap gap-1 px-1">
-          <button
-            onClick={() => handleRoleSwitch('owner')}
-            className={`px-2 py-1 text-[10px] rounded border transition-all ${
-              user?.role === 'owner' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-gray-600 border-gray-200 hover:border-emerald-500'
-            }`}
-          >
-            Owner
-          </button>
-          <button
-            onClick={() => handleRoleSwitch('manager')}
-            className={`px-2 py-1 text-[10px] rounded border transition-all ${
-              user?.role === 'manager' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-500'
-            }`}
-          >
-            Manager
-          </button>
-          <button
-            onClick={() => handleRoleSwitch('employee')}
-            className={`px-2 py-1 text-[10px] rounded border transition-all ${
-              user?.role === 'employee' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-200 hover:border-purple-500'
-            }`}
-          >
-            Worker
-          </button>
-        </div>
-      </div>
-
       {/* Footer Actions */}
-      <div className="px-3 py-4 border-t border-gray-200 space-y-1">
+      <div className="px-3 py-4 border-t border-gray-200 mt-auto space-y-1">
         <button
           onClick={handleChangePassword}
           className="w-full flex items-center gap-3 px-3 py-2.5 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
