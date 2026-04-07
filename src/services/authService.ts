@@ -25,7 +25,8 @@ export const authService = {
 
   async verify(token: string): Promise<ApiResponse<string>> {
     const response = await axiosInstance.post<ApiResponse<string>>(
-      `/api/v1/auth/verify?token=${token}`
+      '/api/v1/auth/verify',
+      { token }
     );
     return response.data;
   },
