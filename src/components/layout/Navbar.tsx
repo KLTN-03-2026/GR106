@@ -158,43 +158,45 @@ export function Navbar({
       >
         {/* Nav content */}
         <div
-          className={`relative flex items-center justify-between px-[78px] transition-all duration-500 ${
+          className={`relative w-full flex flex-row items-center justify-around px-2 lg:px-4 transition-all duration-500 ${
             scrolled ? "h-[60px]" : "h-[80px]"
           }`}
         >
           {/* Logo */}
-          <a
-            href="/"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/");
-            }}
-            className={`flex items-center gap-1 shrink-0 transition-all duration-[700ms] ease-out
-              ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}
-          >
-            <img
-              src={LogoBrowser}
-              alt="FarmerAI corn logo"
-              className={`object-contain transition-all duration-500 ease-out w-auto shrink-0
-                ${scrolled ? "h-[32px]" : "h-[50px]"}
-                ${mounted ? "animate-logo-spin" : ""}`}
-              style={{
-                animation: mounted
-                  ? "logoSpin 1s ease-in-out 0.1s 1 forwards"
-                  : "none",
+          <div className="flex-1 flex items-center justify-start">
+            <a
+              href="/"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/");
               }}
-            />
-            <span
-              className={`font-prompt font-extrabold leading-none transition-all duration-500 ${
-                scrolled ? "text-[28px]" : "text-[38px]"
-              } ${scrolled ? "text-dark-olive" : "text-light-yellow-2"}`}
+              className={`flex items-center gap-1 shrink-0 transition-all duration-[700ms] ease-out
+                ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}
             >
-              FarmerAI
-            </span>
-          </a>
+              <img
+                src={LogoBrowser}
+                alt="FarmerAI corn logo"
+                className={`object-contain transition-all duration-500 ease-out w-auto shrink-0
+                  ${scrolled ? "h-[32px]" : "h-[50px]"}
+                  ${mounted ? "animate-logo-spin" : ""}`}
+                style={{
+                  animation: mounted
+                    ? "logoSpin 1s ease-in-out 0.1s 1 forwards"
+                    : "none",
+                }}
+              />
+              <span
+                className={`font-prompt font-extrabold leading-none transition-all duration-500 ${
+                  scrolled ? "text-[28px]" : "text-[38px]"
+                } ${scrolled ? "text-dark-olive" : "text-light-yellow-2"}`}
+              >
+                FarmerAI
+              </span>
+            </a>
+          </div>
 
           {/* Nav Links */}
-          <div className="flex items-center gap-[40px] xl:gap-[60px]">
+          <div className="flex-none flex items-center gap-[40px] xl:gap-[60px]">
             {navItems.map((item, i) => (
               <a
                 key={item}
@@ -206,7 +208,7 @@ export function Navbar({
                 }}
               >
                 <span
-                  className={`font-roboto text-[16px] font-medium leading-none transition-colors duration-500 ${
+                  className={`font-roboto text-[16px] whitespace-nowrap font-medium leading-none transition-colors duration-500 ${
                     scrolled
                       ? "text-dark-olive group-hover:text-cta-yellow"
                       : "text-light-yellow-1 group-hover:text-cta-yellow"
@@ -227,7 +229,7 @@ export function Navbar({
 
           {/* Buttons */}
           <div
-            className={`flex items-center gap-2.5 shrink-0 transition-all duration-[700ms] ease-out delay-[600ms]
+            className={`flex-1 flex items-center justify-end gap-2.5 shrink-0 transition-all duration-[700ms] ease-out delay-[600ms]
               ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}
           >
             {variant === "dashboard" && isAuthenticated ? (
@@ -269,8 +271,7 @@ export function Navbar({
                   <Button
                     onClick={() => navigate("/login")}
                     variant={scrolled ? "outline-dark" : "outline-yellow"}
-                    size="md"
-                    className="rounded-xl"
+                    className="flex items-center justify-center gap-1.5 h-[42px] px-6 rounded-xl font-roboto font-bold text-[14px] transition-all duration-300"
                   >
                     {variant === "register" ? "Đăng Nhập Ngay" : "Đăng nhập"}
                     <ArrowUpRightIcon className="w-4 h-4 flex-shrink-0" />
@@ -280,8 +281,7 @@ export function Navbar({
                   <Button
                     onClick={() => navigate("/register")}
                     variant="cta-yellow"
-                    size="md"
-                    className="rounded-xl"
+                    className="flex items-center justify-center gap-1.5 h-[42px] px-6 rounded-xl font-roboto font-bold text-[14px] transition-all duration-300 transform hover:scale-105 active:scale-95"
                   >
                     Tạo Tài Khoản
                     <ArrowUpRightIcon className="w-4 h-4 flex-shrink-0" />

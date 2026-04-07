@@ -22,20 +22,18 @@ export function LoginPage() {
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="absolute top-0 left-0 p-4 md:p-8 flex items-center gap-2.5 bg-none border-none cursor-pointer hover:scale-105 transition-transform duration-300"
+          className="absolute top-4 left-4 md:top-8 md:left-8 flex items-center gap-3 bg-none border-none cursor-pointer hover:scale-105 transition-transform duration-300 z-10"
         >
-          <div className="relative drop-shadow-[0_4px_8px_rgba(5,150,105,0.25)]">
-            <img
-              src={LogoBrowser}
-              alt="FarmerAI logo"
-              className="h-8 md:h-10 object-contain transition-transform duration-300 brightness-110 saturate-[1.3]"
-            />
-          </div>
-          <span className="font-prompt font-extrabold text-[38px] leading-none bg-gradient-to-br from-emerald-700 to-emerald-500 bg-clip-text text-transparent">
+          <img
+            src={LogoBrowser}
+            alt="FarmerAI logo"
+            className="h-8 md:h-10 object-contain"
+          />
+          <span className="font-prompt font-extrabold text-[38px] leading-none bg-gradient-to-r from-emerald-800 to-emerald-500 bg-clip-text text-transparent drop-shadow-sm">
             farmarAI
           </span>
         </button>
-        <div className="w-full max-w-md flex flex-col shadow-[0_10px_40px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.04)] p-6 rounded-xl bg-white animate-[slideIn_0.5s_ease-out]">
+        <div className="w-full max-w-[400px] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.04)] p-6 animate-[slideInLeft_0.5s_ease-out] z-10 max-h-full overflow-y-auto no-scrollbar">
           {/* Header */}
           <div className="mb-5">
             <h1 className="text-2xl font-extrabold text-gray-800 mb-1">Chào mừng trở lại!</h1>
@@ -158,12 +156,9 @@ export function LoginPage() {
       </div>
 
       {/* Right Section - Image */}
-      <div
-        className="hidden lg:block w-1/2 bg-cover bg-center relative rounded-l-2xl"
-        style={{
-          backgroundImage: `url(${LoginBg})`,
-        }}
-      />
+      <div className="relative hidden w-1/2 lg:block">
+        <img src={LoginBg} alt="Background" className="h-full w-full object-cover rounded-l-2xl" />
+      </div>
     </div>
   );
 }

@@ -28,7 +28,7 @@ interface HeroSectionState {
 }
 
 class HeroSection extends React.Component<HeroSectionProps, HeroSectionState> {
-  private timeoutId: NodeJS.Timeout | null = null;
+  private timeoutId: ReturnType<typeof setTimeout> | null = null;
 
   constructor(props: HeroSectionProps) {
     super(props);
@@ -165,6 +165,5 @@ class HeroSection extends React.Component<HeroSectionProps, HeroSectionState> {
   }
 }
 
-const NavigatedHeroSection = withNavigation(HeroSection);
-export default NavigatedHeroSection;
-export { HeroSection };
+// eslint-disable-next-line react-refresh/only-export-components
+export default withNavigation(HeroSection);
