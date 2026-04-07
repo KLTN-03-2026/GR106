@@ -9,6 +9,7 @@ export const useAuth = () => {
   return {
     isAuthenticated: auth.isAuthenticated,
     accessToken: auth.accessToken,
+    user: auth.user,
     logout: () => dispatch(logout())
   };
 };

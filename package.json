@@ -10,17 +10,21 @@
     "preview": "npx vite preview"
   },
   "dependencies": {
+    "@emotion/react": "^11.13.3",
+    "@hookform/resolvers": "^3.9.0",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@reduxjs/toolkit": "^2.5.1",
+    "axios": "^1.7.7",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "0.522.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "@emotion/react": "^11.13.3",
-    "react-router-dom": "^6.26.2",
-    "react-redux": "latest",
-    "sonner": "^2.0.1",
-    "axios": "^1.7.7",
-    "@reduxjs/toolkit": "^2.5.1",
-    "lucide-react": "0.522.0",
     "react-hook-form": "^7.53.0",
-    "@hookform/resolvers": "^3.9.0",
+    "react-redux": "latest",
+    "react-router-dom": "^6.26.2",
+    "sonner": "^2.0.1",
+    "tailwind-merge": "^3.5.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -30,13 +34,13 @@
     "@typescript-eslint/eslint-plugin": "^5.54.0",
     "@typescript-eslint/parser": "^5.54.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "latest",
     "eslint": "^8.50.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.1",
-    "typescript": "^5.5.4",
-    "vite": "^5.2.0",
+    "postcss": "latest",
     "tailwindcss": "3.4.17",
-    "autoprefixer": "latest",
-    "postcss": "latest"
+    "typescript": "^5.5.4",
+    "vite": "^5.2.0"
   }
 }
