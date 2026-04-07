@@ -124,10 +124,10 @@ export function Navbar({
   const handleLogout = () => {
     // Clear auth state
     logout();
-    
+
     // Show success message
     toast.success("Đã đăng xuất thành công");
-    
+
     // Redirect to login page
     navigate("/login", { replace: true });
   };
@@ -145,9 +145,8 @@ export function Navbar({
     <>
       <style>{spinStyle}</style>
       <nav
-        className={`fixed top-0 left-0 w-full transition-all duration-500 bg-cover bg-top ${
-          scrolled ? "z-50 bg-white shadow-lg" : "z-50"
-        }`}
+        className={`fixed top-0 left-0 w-full transition-all duration-500 bg-cover bg-top ${scrolled ? "z-50 bg-white shadow-lg" : "z-50"
+          }`}
         style={{
           backgroundImage:
             scrolled || !showNavBackground ? "none" : `url(${backgroundImage})`,
@@ -158,9 +157,8 @@ export function Navbar({
       >
         {/* Nav content */}
         <div
-          className={`relative w-full flex flex-row items-center justify-around px-2 lg:px-4 transition-all duration-500 ${
-            scrolled ? "h-[60px]" : "h-[80px]"
-          }`}
+          className={`relative w-full flex flex-row items-center justify-around px-2 lg:px-4 transition-all duration-500 ${scrolled ? "h-[60px]" : "h-[80px]"
+            }`}
         >
           {/* Logo */}
           <div className="flex-1 flex items-center justify-start">
@@ -186,9 +184,8 @@ export function Navbar({
                 }}
               />
               <span
-                className={`font-prompt font-extrabold leading-none transition-all duration-500 ${
-                  scrolled ? "text-[28px]" : "text-[38px]"
-                } ${scrolled ? "text-dark-olive" : "text-light-yellow-2"}`}
+                className={`font-prompt font-extrabold leading-none transition-all duration-500 ${scrolled ? "text-[28px]" : "text-[38px]"
+                  } ${scrolled ? "text-dark-olive" : "text-light-yellow-2"}`}
               >
                 FarmerAI
               </span>
@@ -208,20 +205,18 @@ export function Navbar({
                 }}
               >
                 <span
-                  className={`font-roboto text-[16px] whitespace-nowrap font-medium leading-none transition-colors duration-500 ${
-                    scrolled
+                  className={`font-roboto text-[16px] whitespace-nowrap font-medium leading-none transition-colors duration-500 ${scrolled
                       ? "text-dark-olive group-hover:text-cta-yellow"
                       : "text-light-yellow-1 group-hover:text-cta-yellow"
-                  }`}
+                    }`}
                 >
                   {item}
                 </span>
                 <ChevronDownIcon
-                  className={`w-5 h-5 transition-colors duration-500 ${
-                    scrolled
+                  className={`w-5 h-5 transition-colors duration-500 ${scrolled
                       ? "text-dark-olive group-hover:text-cta-yellow"
                       : "text-light-yellow-1 group-hover:text-cta-yellow"
-                  }`}
+                    }`}
                 />
               </a>
             ))}
@@ -235,23 +230,20 @@ export function Navbar({
             {variant === "dashboard" && isAuthenticated ? (
               <>
                 <div
-                  className={`flex flex-col gap-0.5 h-12 px-4 py-1.5 rounded-xl border ${
-                    scrolled
+                  className={`flex flex-col gap-0.5 h-12 px-4 py-1.5 rounded-xl border ${scrolled
                       ? "border-gray-300 bg-gray-50"
                       : "border-light-yellow-1 bg-white/5"
-                  }`}
+                    }`}
                 >
                   <span
-                    className={`font-roboto text-[13px] font-semibold leading-tight ${
-                      scrolled ? "text-gray-800" : "text-light-yellow-1"
-                    }`}
+                    className={`font-roboto text-[13px] font-semibold leading-tight ${scrolled ? "text-gray-800" : "text-light-yellow-1"
+                      }`}
                   >
                     {user?.fullName || user?.email || "User"}
                   </span>
                   <span
-                    className={`font-roboto text-[11px] font-normal leading-tight ${
-                      scrolled ? "text-gray-600" : "text-light-yellow-1/80"
-                    }`}
+                    className={`font-roboto text-[11px] font-normal leading-tight ${scrolled ? "text-gray-600" : "text-light-yellow-1/80"
+                      }`}
                   >
                     {roleDisplay}
                   </span>
@@ -269,7 +261,7 @@ export function Navbar({
               <>
                 {showLoginButton && (
                   <Button
-                    onClick={() => navigate("/login")}
+                    onClick={() => navigate("/login?force=true")}
                     variant={scrolled ? "outline-dark" : "outline-yellow"}
                     className="flex items-center justify-center gap-1.5 h-[42px] px-6 rounded-xl font-roboto font-bold text-[14px] transition-all duration-300"
                   >
@@ -279,7 +271,7 @@ export function Navbar({
                 )}
                 {showCreateButton && (
                   <Button
-                    onClick={() => navigate("/register")}
+                    onClick={() => navigate("/register?force=true")}
                     variant="cta-yellow"
                     className="flex items-center justify-center gap-1.5 h-[42px] px-6 rounded-xl font-roboto font-bold text-[14px] transition-all duration-300 transform hover:scale-105 active:scale-95"
                   >

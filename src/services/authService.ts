@@ -3,8 +3,7 @@ import {
   ApiResponse,
   AuthTokens,
   LoginRequest,
-  RegisterRequest,
-  VerifyRequest
+  RegisterRequest
 } from '../types/auth';
 
 export const authService = {
@@ -24,16 +23,23 @@ export const authService = {
     return response.data;
   },
 
-  async verify(data: VerifyRequest): Promise<ApiResponse<string>> {
+  async verify(token: string): Promise<ApiResponse<string>> {
     const response = await axiosInstance.post<ApiResponse<string>>(
-      '/api/v1/auth/verify',
-      data
+      `/api/v1/auth/verify?token=${token}`
+    );
+    return response.data;
+  },
+
+  async refresh(refreshToken: string): Promise<ApiResponse<AuthTokens>> {
+    const response = await axiosInstance.post<ApiResponse<AuthTokens>>(
+      '/api/v1/auth/refresh',
+      { refreshToken }
     );
     return response.data;
   },
 
   // Placeholder APIs for future implementation
-  async forgotPassword(email: string): Promise<ApiResponse<string>> {
+  async forgotPassword(_email: string): Promise<ApiResponse<string>> {
     // Mock API call
     return new Promise((resolve) =>
     setTimeout(
@@ -50,7 +56,7 @@ export const authService = {
     );
   },
 
-  async resetPassword(data: any): Promise<ApiResponse<string>> {
+  async resetPassword(_data: any): Promise<ApiResponse<string>> {
     // Mock API call
     return new Promise((resolve) =>
     setTimeout(
@@ -67,7 +73,7 @@ export const authService = {
     );
   },
 
-  async changePassword(data: any): Promise<ApiResponse<string>> {
+  async changePassword(_data: any): Promise<ApiResponse<string>> {
     // Mock API call
     return new Promise((resolve) =>
     setTimeout(

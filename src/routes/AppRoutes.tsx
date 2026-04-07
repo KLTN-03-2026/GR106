@@ -5,7 +5,7 @@ import { PrivateRoutes } from './PrivateRoutes';
 import { RoleRoute } from './RoleRoute';
 import { LoadingPage } from '../components/ui/LoadingPage';
 
-// Lazy load pages để thấy loading effect
+// Pages
 const HomePage = lazy(() => import('../pages/landing/HomePage'));
 const LoginPage = lazy(() => import('../pages/Login/LoginPage').then(module => ({ default: module.LoginPage })));
 const RegisterPage = lazy(() => import('../pages/Register/RegisterPage').then(module => ({ default: module.RegisterPage })));
@@ -15,45 +15,42 @@ const ResetPasswordPage = lazy(() => import('../pages/ResetPassword/ResetPasswor
 const ChangePasswordPage = lazy(() => import('../pages/ChangePassword/ChangePasswordPage').then(module => ({ default: module.ChangePasswordPage })));
 const DashboardPage = lazy(() => import('../pages/Dashboard/DashboardPage').then(module => ({ default: module.DashboardPage })));
 const UnauthorizedPage = lazy(() => import('../pages/landing/UnauthorizedPage').then(module => ({ default: module.UnauthorizedPage })));
+const MembersPage = lazy(() => import('../pages/members/MembersPage').then(module => ({ default: module.MembersPage })));
+const InviteExpiredPage = lazy(() => import('../pages/invite-expired/InviteExpiredPage').then(module => ({ default: module.InviteExpiredPage })));
 
-// Role-based Dashboard Pages
-const OwnerDashboardPage = lazy(() => import('../pages/Dashboard/OwnerDashboardPage').then(module => ({ default: module.OwnerDashboardPage })));
-const ManagerDashboardPage = lazy(() => import('../pages/Dashboard/ManagerDashboardPage').then(module => ({ default: module.ManagerDashboardPage })));
-const EmployeeDashboardPage = lazy(() => import('../pages/Dashboard/EmployeeDashboardPage').then(module => ({ default: module.EmployeeDashboardPage })));
+// Layouts
+const AppLayout = lazy(() => import('@/components/layout/AppLayout'));
 
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
-      {/* Public Routes */}
+      {/* Landing Page - Luôn là trang đầu tiên khi truy cập root */}
+      <Route path="/" element={<Suspense fallback={<LoadingPage />}><HomePage /></Suspense>} />
+
+      {/* Public Routes - Chỉ dành cho các trang Auth */}
       <Route element={<PublicRoutes />}>
-        <Route path="/" element={<Suspense fallback={<LoadingPage />}><HomePage /></Suspense>} />
         <Route path="/login" element={<Suspense fallback={<LoadingPage />}><LoginPage /></Suspense>} />
         <Route path="/register" element={<Suspense fallback={<LoadingPage />}><RegisterPage /></Suspense>} />
         <Route path="/forgot-password" element={<Suspense fallback={<LoadingPage />}><ForgotPasswordPage /></Suspense>} />
         <Route path="/reset-password" element={<Suspense fallback={<LoadingPage />}><ResetPasswordPage /></Suspense>} />
         <Route path="/verify-email" element={<Suspense fallback={<LoadingPage />}><VerifyEmailPage /></Suspense>} />
+        <Route path="/invite/expired" element={<Suspense fallback={<LoadingPage />}><InviteExpiredPage /></Suspense>} />
       </Route>
 
-      {/* Private Routes - Cần authentication */}
+      {/* Private Routes - Cần đăng nhập và sử dụng AppLayout */}
       <Route element={<PrivateRoutes />}>
-        {/* Common routes for all authenticated users */}
-        <Route path="/change-password" element={<Suspense fallback={<LoadingPage />}><ChangePasswordPage /></Suspense>} />
-        <Route path="/dashboard" element={<Suspense fallback={<LoadingPage />}><DashboardPage /></Suspense>} />
-        
-        {/* Role-based Routes */}
-        {/* Owner Dashboard - Chỉ owner */}
-        <Route element={<RoleRoute allowedRoles={['owner']} />}>
-          <Route path="/dashboard/owner" element={<Suspense fallback={<LoadingPage />}><OwnerDashboardPage /></Suspense>} />
-        </Route>
+        <Route element={<Suspense fallback={<LoadingPage />}><AppLayout /></Suspense>}>
+          <Route path="/dashboard" element={<Suspense fallback={<LoadingPage />}><DashboardPage /></Suspense>} />
+          <Route path="/change-password" element={<Suspense fallback={<LoadingPage />}><ChangePasswordPage /></Suspense>} />
+          
+          {/* Role-based Routes */}
+          <Route element={<RoleRoute allowedRoles={['owner']} />}>
+            <Route path="/members" element={<Suspense fallback={<LoadingPage />}><MembersPage /></Suspense>} />
+          </Route>
 
-        {/* Manager Dashboard - Owner và Manager */}
-        <Route element={<RoleRoute allowedRoles={['owner', 'manager']} />}>
-          <Route path="/dashboard/manager" element={<Suspense fallback={<LoadingPage />}><ManagerDashboardPage /></Suspense>} />
-        </Route>
-
-        {/* Employee Dashboard - Tất cả roles */}
-        <Route element={<RoleRoute allowedRoles={['owner', 'manager', 'employee']} />}>
-          <Route path="/dashboard/employee" element={<Suspense fallback={<LoadingPage />}><EmployeeDashboardPage /></Suspense>} />
+          {/* Placeholder for future features */}
+          <Route path="/tasks" element={<div className="p-8 font-bold">Quản lý Công việc (Sắp có)</div>} />
+          <Route path="/crops" element={<div className="p-8 font-bold">Quản lý Cây trồng (Sắp có)</div>} />
         </Route>
       </Route>
 
@@ -61,7 +58,7 @@ export const AppRoutes: React.FC = () => {
       <Route path="/unauthorized" element={<Suspense fallback={<LoadingPage />}><UnauthorizedPage /></Suspense>} />
 
       {/* Fallback Route */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

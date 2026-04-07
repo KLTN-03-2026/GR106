@@ -1,6 +1,7 @@
 import React from "react";
 import { ArrowUpRightIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../hooks/useAuth";
 import { Button } from "../../../components/ui/button";
 import { PlantDivider } from "./PlantDivider";
 import { NavbarDivider } from "../../../components/layout/NavbarDivider";
@@ -9,18 +10,20 @@ import Water from "../../../assets/Water.png";
 import paddyintro from "../../../assets/paddy-intro.png";
 import LogoIntro from "../../../assets/Logo-intro.png";
 
-// HOC to inject useNavigate hook
+// HOC to inject navigation and auth state
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const withNavigation = (Component: any) => {
+const withNavigationAndAuth = (Component: any) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (props: any) => {
     const navigate = useNavigate();
-    return <Component {...props} navigate={navigate} />;
+    const { isAuthenticated } = useAuth();
+    return <Component {...props} navigate={navigate} isAuthenticated={isAuthenticated} />;
   };
 };
 
 interface HeroSectionProps {
   navigate: (path: string) => void;
+  isAuthenticated: boolean;
 }
 
 interface HeroSectionState {
@@ -52,7 +55,15 @@ class HeroSection extends React.Component<HeroSectionProps, HeroSectionState> {
 
   render() {
     const { heroMounted } = this.state;
-    const { navigate } = this.props;
+    const { navigate, isAuthenticated } = this.props;
+
+    const handleCTAClick = () => {
+      if (isAuthenticated) {
+        navigate("/dashboard");
+      } else {
+        navigate("/register");
+      }
+    };
 
     return (
       <section className="relative w-full min-h-[calc(120vh-80px)] pb-0">
@@ -103,10 +114,9 @@ class HeroSection extends React.Component<HeroSectionProps, HeroSectionState> {
             </div>
           </div>
 
-          {/* Seedling Icon */}
           {/* CTA Button */}
           <Button
-            onClick={() => navigate("/register")}
+            onClick={handleCTAClick}
             variant="cta-yellow"
             size="lg"
             className={`absolute left-[93px] top-[540px] w-[268px] h-[64px] rounded-2xl group
@@ -166,4 +176,4 @@ class HeroSection extends React.Component<HeroSectionProps, HeroSectionState> {
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
-export default withNavigation(HeroSection);
+export default withNavigationAndAuth(HeroSection);

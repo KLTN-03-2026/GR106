@@ -52,20 +52,8 @@ export function useLogin() {
         
         toast.success('Đăng nhập thành công');
         
-        // Redirect dựa vào role
-        switch (user.role) {
-          case 'owner':
-            navigate('/dashboard/owner');
-            break;
-          case 'manager':
-            navigate('/dashboard/manager');
-            break;
-          case 'employee':
-            navigate('/dashboard/employee');
-            break;
-          default:
-            navigate('/dashboard');
-        }
+        // Redirect đến Dashboard trung tâm
+        navigate('/dashboard');
       } else {
         // Hiển thị message từ server
         const message = response.message || 'Đăng nhập thất bại';

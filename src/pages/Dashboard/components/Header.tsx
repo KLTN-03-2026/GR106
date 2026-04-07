@@ -42,9 +42,9 @@ export function Header() {
           />
           <div className="hidden md:block text-right">
             <p className="text-sm font-bold text-gray-900 leading-tight">
-              {user?.role === 'owner' ? 'Chủ Trang Trại' : 
-               user?.role === 'manager' ? 'Quản Lý' : 
-               'Nhân Viên'}
+              {user?.role === 'owner' ? 'Chủ trang trại' : 
+               user?.role === 'manager' ? 'Quản lý trang trại' : 
+               'Nhân công'}
             </p>
           </div>
         </div>
