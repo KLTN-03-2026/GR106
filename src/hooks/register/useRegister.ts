@@ -30,7 +30,7 @@ export function useRegister() {
   });
 
   const onSubmit = form.handleSubmit(async (data: RegisterFormValues) => {
-    setServerError(null);
+    // setServerError(null); // Removed to prevent UI flickering
     setIsSuccess(false);
 
     try {
@@ -51,7 +51,6 @@ export function useRegister() {
     } catch (error: any) {
       const message = error.response?.data?.message || 'Có lỗi xảy ra khi đăng ký. Email có thể đã tồn tại.';
       setServerError(message);
-      toast.error(message);
     }
   });
 

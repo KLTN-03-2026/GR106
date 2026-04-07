@@ -88,7 +88,7 @@ export function RegisterPage() {
 
               <form onSubmit={onSubmit}>
                 {serverError && (
-                  <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+                  <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 animate-slide-in-down">
                     <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
                     <div className="text-sm font-medium text-red-800">{serverError}</div>
                   </div>
@@ -108,7 +108,7 @@ export function RegisterPage() {
                     className="h-10 rounded-lg border-gray-200 text-sm placeholder:text-gray-400 focus:border-emerald-500 focus:ring-emerald-500"
                   />
                   {errors.fullName && (
-                    <span className="mt-1 block text-[12px] font-medium text-red-500">
+                    <span className="mt-1 block text-[12px] font-medium text-red-500 animate-slide-in-down-fast">
                       {errors.fullName.message}
                     </span>
                   )}
@@ -128,7 +128,7 @@ export function RegisterPage() {
                     className="h-10 rounded-lg border-gray-200 text-sm placeholder:text-gray-400 focus:border-emerald-500 focus:ring-emerald-500"
                   />
                   {errors.email && (
-                    <span className="mt-1 block text-[12px] font-medium text-red-500">
+                    <span className="mt-1 block text-[12px] font-medium text-red-500 animate-slide-in-down-fast">
                       {errors.email.message}
                     </span>
                   )}
@@ -158,7 +158,7 @@ export function RegisterPage() {
                     </button>
                   </div>
                   {errors.password ? (
-                    <span className="mt-1 block text-[12px] font-medium text-red-500">
+                    <span className="mt-1 block text-[12px] font-medium text-red-500 animate-slide-in-down-fast">
                       {errors.password.message}
                     </span>
                   ) : (
@@ -195,7 +195,7 @@ export function RegisterPage() {
                     </button>
                   </div>
                   {errors.confirmPassword && (
-                    <span className="mt-1 block text-[12px] font-medium text-red-500">
+                    <span className="mt-1 block text-[12px] font-medium text-red-500 animate-slide-in-down-fast">
                       {errors.confirmPassword.message}
                     </span>
                   )}

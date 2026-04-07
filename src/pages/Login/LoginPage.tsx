@@ -46,7 +46,7 @@ export function LoginPage() {
           <form onSubmit={onSubmit}>
             {/* Error Alert */}
             {serverError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 flex gap-2.5 items-start">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 flex gap-2.5 items-start animate-slide-in-down">
                 <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
                 <div className="text-red-900 text-sm font-medium">{serverError}</div>
               </div>
@@ -67,7 +67,7 @@ export function LoginPage() {
                 />
               </div>
               {errors.email && (
-                <span className="text-red-500 text-[13px] font-medium mt-1.5 block">{errors.email.message}</span>
+                <span className="text-red-500 text-[13px] font-medium mt-1.5 block animate-slide-in-down-fast">{errors.email.message}</span>
               )}
             </div>
 
@@ -108,7 +108,7 @@ export function LoginPage() {
                 </button>
               </div>
               {errors.password && (
-                <span className="text-red-500 text-[13px] font-medium mt-1.5 block">{errors.password.message}</span>
+                <span className="text-red-500 text-[13px] font-medium mt-1.5 block animate-slide-in-down-fast">{errors.password.message}</span>
               )}
             </div>
 

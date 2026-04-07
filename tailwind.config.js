@@ -61,16 +61,18 @@ export default {
         prompt: ['"Prompt"', 'sans-serif']
       },
       keyframes: {
+        slideIn: {
+          '0%': { opacity: '0', transform: 'translateY(-10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' }
+        },
         slideInLeft: {
-          'from': {
-            opacity: '0',
-            transform: 'translateX(-30px)'
-          },
-          'to': {
-            opacity: '1',
-            transform: 'translateX(0)'
-          }
+          '0%': { opacity: '0', transform: 'translateX(-20px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' }
         }
+      },
+      animation: {
+        'slide-in-down': 'slideIn 0.7s ease-out forwards',
+        'slide-in-down-fast': 'slideIn 0.4s ease-out forwards'
       }
     }
   }

@@ -34,7 +34,6 @@ export function useLogin() {
       setIsLocked(true);
       const lockMessage = 'Tài khoản bị khóa tạm thời do đăng nhập sai nhiều lần. Vui lòng thử lại sau 15 phút.';
       setServerError(lockMessage);
-      toast.error(lockMessage);
       
       setTimeout(() => {
         setIsLocked(false);
@@ -50,7 +49,7 @@ export function useLogin() {
       return;
     }
 
-    setServerError(null);
+    // setServerError(null); (Removed to prevent UI flickering)
     try {
       const response = await authService.login(data);
       if (response.success) {
@@ -63,9 +62,14 @@ export function useLogin() {
       }
     } catch (error: any) {
       handleFailedAttempt();
-      const message = error.response?.data?.message || 'Email hoặc mật khẩu không đúng';
+      
+      let message = error.response?.data?.message;
+      // Ghi đè các thông báo lỗi chung chung của server bằng thông báo thân thiện
+      if (!message || message.toLowerCase().includes('unauthorized') || message.toLowerCase().includes('chưa đăng nhập')) {
+        message = 'Email hoặc mật khẩu không đúng';
+      }
+      
       setServerError(message);
-      toast.error(message);
     }
   });
 
