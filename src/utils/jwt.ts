@@ -44,6 +44,7 @@ export const getRolesFromToken = (token: string): string[] => {
 // ROLE_MANAGER → manager
 // ROLE_USER → employee
 export const parseRole = (roles: string[]): string => {
+  if (roles.includes('ROLE_ADMIN')) return 'owner';
   if (roles.includes('ROLE_OWNER')) return 'owner';
   if (roles.includes('ROLE_MANAGER')) return 'manager';
   if (roles.includes('ROLE_USER')) return 'employee';

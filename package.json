@@ -17,6 +17,7 @@
     "axios": "^1.7.7",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.38.0",
     "jwt-decode": "^4.0.0",
     "lucide-react": "0.522.0",
     "react": "^18.3.1",
@@ -24,6 +25,7 @@
     "react-hook-form": "^7.53.0",
     "react-redux": "latest",
     "react-router-dom": "^6.26.2",
+    "recharts": "^3.8.1",
     "sonner": "^2.0.1",
     "tailwind-merge": "^3.5.0",
     "zod": "^3.23.8"
