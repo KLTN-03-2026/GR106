@@ -1,3 +1,3 @@
 export const ENV = {
-  API_BASE_URL: 'https://farm-management-system-rn97.onrender.com'
+  API_BASE_URL: import.meta.env.VITE_API_BASE_URL
 };
