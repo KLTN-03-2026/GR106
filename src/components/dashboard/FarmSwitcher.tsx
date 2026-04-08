@@ -1,23 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Trees, 
   ChevronDown, 
   Check,
   Settings,
+  Loader2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useDispatch, useSelector } from 'react-redux';
 import { Button } from '../ui/button';
 import { cn } from '../../utils/cn';
 import { useAuth } from '../../hooks/useAuth';
-
-interface Farm {
-  id: string;
-  name: string;
-  status: 'ACTIVE' | 'INACTIVE';
-}
-
-const mockFarms: Farm[] = [];
+import { fetchFarmsSummary } from '../../store/farmSlice';
+import { RootState, AppDispatch } from '../../store';
+import { FarmSummary } from '../../schemas/farmSchemas';
 
 interface FarmSwitcherProps {
   onAddClick?: () => void;
@@ -25,13 +22,28 @@ interface FarmSwitcherProps {
 
 export default function FarmSwitcher({ onAddClick }: FarmSwitcherProps) {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
   const { user } = useAuth();
+  
+  const { farmSummary, loading } = useSelector((state: RootState) => state.farm);
+  
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null);
+  const [selectedFarm, setSelectedFarm] = useState<FarmSummary | null>(null);
+
+  useEffect(() => {
+    dispatch(fetchFarmsSummary());
+  }, [dispatch]);
+
+  // Set default selected farm once data is loaded
+  useEffect(() => {
+    if (farmSummary.length > 0 && !selectedFarm) {
+      setSelectedFarm(farmSummary[0]);
+    }
+  }, [farmSummary, selectedFarm]);
 
   const toggleDropdown = () => setIsOpen(!isOpen);
 
-  const handleSelectFarm = (farm: Farm) => {
+  const handleSelectFarm = (farm: FarmSummary) => {
     setSelectedFarm(farm);
     setIsOpen(false);
   };
@@ -53,20 +65,21 @@ export default function FarmSwitcher({ onAddClick }: FarmSwitcherProps) {
         <div className="relative">
           <button
             onClick={toggleDropdown}
+            disabled={loading}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-2xl transition-all hover:bg-white hover:shadow-md active:scale-95",
+              "flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-100 rounded-2xl transition-all hover:bg-white hover:shadow-md active:scale-95 disabled:opacity-50",
               isOpen && "bg-white shadow-md ring-2 ring-emerald-500/20"
             )}
           >
             <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
-              <Trees size={18} />
+              {loading ? <Loader2 size={18} className="animate-spin" /> : <Trees size={18} />}
             </div>
             <div className="text-left hidden sm:block mr-2">
               <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">
                 Trang trại hiện tại
               </span>
               <span className="block text-[14px] font-black text-gray-900 leading-none">
-                {selectedFarm?.name || "Chọn trang trại"}
+                {selectedFarm?.farmName || (loading ? "Đang tải..." : "Chọn trang trại")}
               </span>
             </div>
             <ChevronDown size={16} className={cn("text-gray-400 transition-transform duration-300", isOpen && "rotate-180")} />
@@ -86,30 +99,34 @@ export default function FarmSwitcher({ onAddClick }: FarmSwitcherProps) {
                   </span>
                 </div>
                 <div className="max-h-[300px] overflow-y-auto p-2 space-y-1">
-                  {mockFarms.map((farm) => (
+                  {farmSummary.map((farm) => (
                     <button
-                      key={farm.id}
+                      key={farm.farmId}
                       onClick={() => handleSelectFarm(farm)}
                       className={cn(
                         "w-full flex items-center justify-between p-3 rounded-xl transition-all hover:bg-gray-50",
-                        selectedFarm?.id === farm.id && "bg-emerald-50/50 text-emerald-700"
+                        selectedFarm?.farmId === farm.farmId && "bg-emerald-50/50 text-emerald-700"
                       )}
                     >
                       <div className="flex items-center gap-3 text-left">
                         <div className={cn(
-                          "w-2 h-2 rounded-full",
-                          farm.status === 'ACTIVE' ? "bg-emerald-500" : "bg-gray-300"
+                          "w-2 h-2 rounded-full bg-emerald-500"
                         )} />
                         <span className="font-bold text-sm truncate max-w-[180px]">
-                          {farm.name}
+                          {farm.farmName}
                         </span>
                       </div>
-                      {selectedFarm?.id === farm.id && <Check size={16} />}
+                      {selectedFarm?.farmId === farm.farmId && <Check size={16} />}
                     </button>
                   ))}
-                  {mockFarms.length === 0 && (
+                  {farmSummary.length === 0 && !loading && (
                     <div className="p-4 text-center text-sm font-medium text-gray-400">
                       Chưa có trang trại nào
+                    </div>
+                  )}
+                  {loading && (
+                    <div className="p-4 flex justify-center">
+                      <Loader2 size={16} className="animate-spin text-gray-400" />
                     </div>
                   )}
                 </div>
@@ -142,6 +159,7 @@ export default function FarmSwitcher({ onAddClick }: FarmSwitcherProps) {
           <span className="font-bold text-[14px]">Thêm trang trại</span>
         </Button>
       </div>
+
     </div>
   );
 }

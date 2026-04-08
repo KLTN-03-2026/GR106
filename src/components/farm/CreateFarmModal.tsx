@@ -3,8 +3,6 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trees, 
-  MapPin, 
-  Maximize2, 
   FileText, 
   Loader2, 
   X,
@@ -13,22 +11,12 @@ import {
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-
-import { farmService, CreateFarmRequest } from '../../services/farmService';
+import { useDispatch, useSelector } from 'react-redux';
+import { createFarm } from '../../store/farmSlice';
+import { createFarmSchema, CreateFarmInput } from '../../schemas/farmSchemas';
+import { RootState, AppDispatch } from '../../store';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
-
-const farmSchema = z.object({
-  name: z.string().min(1, 'Tên trang trại là bắt buộc').max(100, 'Tên không quá 100 ký tự'),
-  address: z.string().optional(),
-  totalArea: z.string().refine((val) => !val || (!isNaN(Number(val)) && Number(val) > 0), {
-    message: 'Diện tích phải là số dương',
-  }).optional(),
-  description: z.string().optional(),
-});
-
-type FarmFormValues = z.infer<typeof farmSchema>;
 
 interface CreateFarmModalProps {
   isOpen: boolean;
@@ -37,41 +25,35 @@ interface CreateFarmModalProps {
 }
 
 export function CreateFarmModal({ isOpen, onClose, onSuccess }: CreateFarmModalProps) {
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading } = useSelector((state: RootState) => state.farm);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
-  } = useForm<FarmFormValues>({
-    resolver: zodResolver(farmSchema),
+    formState: { errors },
+  } = useForm<CreateFarmInput>({
+    resolver: zodResolver(createFarmSchema),
   });
 
-  const onSubmit = async (data: FarmFormValues) => {
-    try {
-      const payload: CreateFarmRequest = {
-        name: data.name,
-        address: data.address,
-        totalArea: data.totalArea ? Number(data.totalArea) : undefined,
-        description: data.description,
-      };
-
-      const response = await farmService.createFarm(payload);
-      if (response.success) {
-        setIsSuccess(true);
-        toast.success('Khởi tạo trang trại thành công!');
-        setTimeout(() => {
-          setIsSuccess(false);
-          reset();
-          onClose();
-          if (onSuccess) onSuccess();
-        }, 2000);
-      } else {
-        toast.error(response.message || 'Có lỗi xảy ra');
-      }
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Đã xảy ra lỗi hệ thống');
+  const onSubmit = async (data: CreateFarmInput) => {
+    const resultAction = await dispatch(createFarm(data));
+    
+    if (createFarm.fulfilled.match(resultAction)) {
+      setIsSuccess(true);
+      toast.success('Khởi tạo trang trại thành công!');
+      setTimeout(() => {
+        setIsSuccess(false);
+        reset();
+        onClose();
+        if (onSuccess) onSuccess();
+      }, 2000);
+    } else {
+      toast.error(typeof resultAction.payload === 'string' 
+        ? resultAction.payload 
+        : 'Có lỗi xảy ra khi tạo trang trại');
     }
   };
 
@@ -85,7 +67,7 @@ export function CreateFarmModal({ isOpen, onClose, onSuccess }: CreateFarmModalP
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => !isSubmitting && onClose()}
+              onClick={() => !loading && onClose()}
               className="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-auto"
             />
 
@@ -129,7 +111,7 @@ export function CreateFarmModal({ isOpen, onClose, onSuccess }: CreateFarmModalP
                       variant="ghost"
                       size="icon"
                       onClick={onClose}
-                      disabled={isSubmitting}
+                      disabled={loading}
                       className="rounded-full hover:bg-gray-100"
                     >
                       <X size={20} />
@@ -143,59 +125,13 @@ export function CreateFarmModal({ isOpen, onClose, onSuccess }: CreateFarmModalP
                         Tên trang trại <span className="text-red-500">*</span>
                       </label>
                       <Input
-                        {...register('name')}
+                        {...register('farmName')}
                         placeholder="Ví dụ: Trang Trại Xanh"
                         className="h-11 bg-gray-50 border-gray-100 focus:bg-white transition-all text-base font-medium rounded-xl"
                       />
-                      {errors.name && (
-                        <span className="text-red-500 text-[10px] font-bold pl-1 uppercase tracking-wider">{errors.name.message}</span>
+                      {errors.farmName && (
+                        <span className="text-red-500 text-[10px] font-bold pl-1 uppercase tracking-wider">{errors.farmName.message}</span>
                       )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Total Area */}
-                      <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
-                          Diện tích (ha)
-                        </label>
-                        <div className="relative">
-                          <Maximize2 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                          <Input
-                            {...register('totalArea')}
-                            placeholder="Ví dụ: 2.5"
-                            className="h-11 pl-10 bg-gray-50 border-gray-100 focus:bg-white transition-all text-base font-medium rounded-xl"
-                          />
-                        </div>
-                        {errors.totalArea && (
-                          <span className="text-red-500 text-[10px] font-bold pl-1 uppercase tracking-wider">{errors.totalArea.message}</span>
-                        )}
-                      </div>
-
-                      {/* Default Status */}
-                      <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
-                          Trạng thái mặc định
-                        </label>
-                        <div className="h-11 flex items-center px-4 bg-emerald-50 rounded-xl border border-emerald-100 text-emerald-700 font-bold text-xs gap-2">
-                          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                          Hoạt động
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Address */}
-                    <div className="space-y-1.5">
-                      <label className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
-                        Địa chỉ
-                      </label>
-                      <div className="relative">
-                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                        <Input
-                          {...register('address')}
-                          placeholder="Nhập địa chỉ trang trại"
-                          className="h-11 pl-10 bg-gray-50 border-gray-100 focus:bg-white transition-all text-base font-medium rounded-xl"
-                        />
-                      </div>
                     </div>
 
                     {/* Description */}
@@ -207,11 +143,14 @@ export function CreateFarmModal({ isOpen, onClose, onSuccess }: CreateFarmModalP
                         <FileText className="absolute left-3 top-3 text-gray-400" size={16} />
                         <textarea
                           {...register('description')}
-                          rows={2}
+                          rows={4}
                           placeholder="Kể về trang trại của bạn..."
                           className="w-full pl-10 p-3 rounded-xl bg-gray-50 border border-gray-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-base resize-none"
                         />
                       </div>
+                      {errors.description && (
+                        <span className="text-red-500 text-[10px] font-bold pl-1 uppercase tracking-wider">{errors.description.message}</span>
+                      )}
                     </div>
 
                     <div className="pt-2 flex gap-3">
@@ -219,17 +158,17 @@ export function CreateFarmModal({ isOpen, onClose, onSuccess }: CreateFarmModalP
                         type="button"
                         variant="ghost"
                         onClick={onClose}
-                        disabled={isSubmitting}
+                        disabled={loading}
                         className="flex-1 h-11 rounded-xl font-bold text-gray-500 hover:bg-gray-50"
                       >
                         Hủy bỏ
                       </Button>
                       <Button
                         type="submit"
-                        disabled={isSubmitting}
+                        disabled={loading}
                         className="flex-[2] h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-base shadow-lg shadow-emerald-200 transition-all active:scale-95 disabled:opacity-70"
                       >
-                        {isSubmitting ? (
+                        {loading ? (
                           <div className="flex items-center gap-2">
                             <Loader2 size={20} className="animate-spin" />
                             <span>Đang xử lý</span>

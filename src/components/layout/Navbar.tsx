@@ -139,7 +139,7 @@ export function Navbar({
     <>
       <style>{spinStyle}</style>
       <nav
-        className={`fixed top-0 left-0 w-full transition-all duration-500 bg-cover bg-top ${scrolled ? "z-50 bg-white shadow-lg" : "z-50"
+        className={`fixed top-0 left-0 w-full transition-all duration-500 bg-cover bg-top ${scrolled ? "z-[9999] bg-white shadow-lg" : "z-50"
           }`}
         style={{
           backgroundImage:
@@ -200,16 +200,16 @@ export function Navbar({
               >
                 <span
                   className={`font-roboto text-[16px] whitespace-nowrap font-medium leading-none transition-colors duration-500 ${scrolled
-                      ? "text-dark-olive group-hover:text-cta-yellow"
-                      : "text-light-yellow-1 group-hover:text-cta-yellow"
+                    ? "text-dark-olive group-hover:text-cta-yellow"
+                    : "text-light-yellow-1 group-hover:text-cta-yellow"
                     }`}
                 >
                   {item}
                 </span>
                 <ChevronDownIcon
                   className={`w-5 h-5 transition-colors duration-500 ${scrolled
-                      ? "text-dark-olive group-hover:text-cta-yellow"
-                      : "text-light-yellow-1 group-hover:text-cta-yellow"
+                    ? "text-dark-olive group-hover:text-cta-yellow"
+                    : "text-light-yellow-1 group-hover:text-cta-yellow"
                     }`}
                 />
               </a>
@@ -225,8 +225,8 @@ export function Navbar({
               <>
                 <div
                   className={`flex flex-col gap-0.5 h-12 px-4 py-1.5 rounded-xl border ${scrolled
-                      ? "border-gray-300 bg-gray-50"
-                      : "border-light-yellow-1 bg-white/5"
+                    ? "border-gray-300 bg-gray-50"
+                    : "border-light-yellow-1 bg-white/5"
                     }`}
                 >
                   <span
@@ -255,7 +255,7 @@ export function Navbar({
               <>
                 {showLoginButton && (
                   <Button
-                    onClick={() => navigate("/login?force=true")}
+                    onClick={() => navigate("/login")}
                     variant={scrolled ? "outline-dark" : "outline-yellow"}
                     className="flex items-center justify-center gap-1.5 h-[42px] px-6 rounded-xl font-roboto font-bold text-[14px] transition-all duration-300"
                   >
@@ -265,7 +265,7 @@ export function Navbar({
                 )}
                 {showCreateButton && (
                   <Button
-                    onClick={() => navigate("/register?force=true")}
+                    onClick={() => navigate("/register")}
                     variant="cta-yellow"
                     className="flex items-center justify-center gap-1.5 h-[42px] px-6 rounded-xl font-roboto font-bold text-[14px] transition-all duration-300 transform hover:scale-105 active:scale-95"
                   >
