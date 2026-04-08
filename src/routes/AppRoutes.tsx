@@ -19,7 +19,7 @@ const MembersPage = lazy(() => import('../pages/members/MembersPage').then(modul
 const InviteExpiredPage = lazy(() => import('../pages/invite-expired/InviteExpiredPage').then(module => ({ default: module.InviteExpiredPage })));
 const LandPlotsPage = lazy(() => import('../pages/LandPlots/LandPlotsPage').then(module => ({ default: module.LandPlotsPage })));
 const MapPage = lazy(() => import('../pages/Map/MapPage').then(module => ({ default: module.MapPage })));
-const CreateFarmPage = lazy(() => import('../pages/FarmManagement/CreateFarmPage').then(module => ({ default: module.CreateFarmPage })));
+const ManagementDashboardPage = lazy(() => import('../pages/FarmManagement/ManagementDashboard').then(module => ({ default: module.ManagementDashboardPage })));
 
 // Layouts
 const DashboardLayout = lazy(() => import('../layouts/DashboardLayout'));
@@ -42,14 +42,10 @@ export const AppRoutes: React.FC = () => {
 
       {/* Private Routes - Cần đăng nhập và sử dụng AppLayout */}
       <Route element={<PrivateRoutes />}>
-        {/* Create Farm - Không dùng AppLayout */}
-        <Route element={<RoleRoute allowedRoles={['user']} />}>
-          <Route path="/create-farm" element={<Suspense fallback={<LoadingPage />}><CreateFarmPage /></Suspense>} />
-        </Route>
-
         <Route element={<Suspense fallback={<LoadingPage />}><DashboardLayout /></Suspense>}>
           <Route path="/dashboard" element={<Suspense fallback={<LoadingPage />}><MainPage /></Suspense>} />
           <Route path="/change-password" element={<Suspense fallback={<LoadingPage />}><ChangePasswordPage /></Suspense>} />
+          <Route path="/farms" element={<Suspense fallback={<LoadingPage />}><ManagementDashboardPage /></Suspense>} />
           
           {/* Role-based Routes */}
           <Route element={<RoleRoute allowedRoles={['owner']} />}>

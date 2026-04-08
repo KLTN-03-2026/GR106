@@ -18,6 +18,8 @@ export default function DashboardLayout() {
     setActive(key);
     if (key === "dashboard") {
       navigate("/dashboard");
+    } else if (key === "tree") {
+      navigate("/farms");
     } else {
       navigate(`/dashboard/${key}`);
     }

@@ -5,3 +5,4 @@ export { default as DonutChart } from "./DonutChart";
 export { default as CropStatusCards } from "./CropStatusCards";
 export { default as MapPanel } from "./MapPanel";
 export { default as TaskBar } from "./TaskBar";
+export { default as FarmSwitcher } from "./FarmSwitcher";

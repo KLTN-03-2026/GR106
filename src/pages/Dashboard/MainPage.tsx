@@ -6,6 +6,7 @@ import {
   CropStatusCards,
   MapPanel,
   TaskBar,
+  FarmSwitcher,
 } from "../../components/dashboard";
 
 import {
@@ -23,6 +24,7 @@ export default function MainPage() {
     <div className="flex h-full w-full overflow-hidden p-3 gap-3">
       {/* Main Content */}
       <div className="flex flex-col flex-1 gap-3 overflow-hidden">
+        <FarmSwitcher />
         <TaskBar
           completed={taskData?.completed || 0}
           pending={taskData?.pending || 0}
