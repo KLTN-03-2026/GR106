@@ -10,7 +10,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../ui/button';
 import { cn } from '../../utils/cn';
 import { useAuth } from '../../hooks/useAuth';
-import { CreateFarmModal } from '../farm';
 
 interface Farm {
   id: string;
@@ -18,14 +17,16 @@ interface Farm {
   status: 'ACTIVE' | 'INACTIVE';
 }
 
-// Mock data for now, will call api later as per user's instruction
 const mockFarms: Farm[] = [];
 
-export default function FarmSwitcher() {
+interface FarmSwitcherProps {
+  onAddClick?: () => void;
+}
+
+export default function FarmSwitcher({ onAddClick }: FarmSwitcherProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null);
 
   const toggleDropdown = () => setIsOpen(!isOpen);
@@ -33,15 +34,14 @@ export default function FarmSwitcher() {
   const handleSelectFarm = (farm: Farm) => {
     setSelectedFarm(farm);
     setIsOpen(false);
-    // Logic to switch farm session can be added here later
   };
 
   return (
-    <div className="flex items-center gap-4 w-full bg-white/50 backdrop-blur-sm p-4 rounded-3xl border border-gray-100 shadow-sm mb-4">
+    <div className="relative z-[60] flex items-center gap-4 w-full bg-white/50 backdrop-blur-sm p-4 rounded-3xl border border-gray-100 shadow-sm mb-4">
       {/* Welcome Message */}
       <div className="flex-1">
         <h1 className="text-[22px] font-black text-gray-900 tracking-tight leading-none mb-1">
-          Chào mừng trở lại, {user?.fullName.split(' ').pop()}!
+          Chào mừng trở lại, {user?.fullName?.split(' ').pop() || 'bạn'}!
         </h1>
         <p className="text-[13px] font-medium text-gray-400">
           Hôm nay trang trại của bạn đang hoạt động rất tốt.
@@ -107,6 +107,11 @@ export default function FarmSwitcher() {
                       {selectedFarm?.id === farm.id && <Check size={16} />}
                     </button>
                   ))}
+                  {mockFarms.length === 0 && (
+                    <div className="p-4 text-center text-sm font-medium text-gray-400">
+                      Chưa có trang trại nào
+                    </div>
+                  )}
                 </div>
                 
                 <div className="p-2 border-t border-gray-50 space-y-1">
@@ -125,7 +130,9 @@ export default function FarmSwitcher() {
 
         {/* Create New Farm Button */}
         <Button
-          onClick={() => setIsCreateModalOpen(true)}
+          onClick={() => {
+            if (onAddClick) onAddClick();
+          }}
           variant="default"
           className="h-[48px] px-6 rounded-2xl bg-[#111827] hover:bg-[#1f2937] text-white flex items-center gap-3 shadow-lg transition-all active:scale-95 hover:shadow-xl hover:-translate-y-0.5"
         >
@@ -135,15 +142,6 @@ export default function FarmSwitcher() {
           <span className="font-bold text-[14px]">Thêm trang trại</span>
         </Button>
       </div>
-
-      <CreateFarmModal 
-        isOpen={isCreateModalOpen} 
-        onClose={() => setIsCreateModalOpen(false)} 
-        onSuccess={() => {
-          // You could add logic here to refresh farm list if needed
-          console.log("Farm created successfully!");
-        }}
-      />
     </div>
   );
 }

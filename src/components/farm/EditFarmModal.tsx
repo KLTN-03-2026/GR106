@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trees, 
@@ -76,24 +77,25 @@ export function EditFarmModal({ isOpen, onClose, farm, onSuccess }: EditFarmModa
 
   if (!farm) return null;
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => !isSubmitting && onClose()}
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-          />
+        <div className="fixed inset-0 z-[100] overflow-y-auto">
+          <div className="flex min-h-full items-start justify-center p-4 py-12 sm:py-20">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !isSubmitting && onClose()}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-auto"
+            />
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-[520px] bg-white rounded-[32px] overflow-hidden shadow-2xl"
-          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-[520px] bg-white rounded-[32px] overflow-hidden shadow-2xl my-8 pointer-events-auto"
+            >
             {isSuccess ? (
               <div className="p-10 text-center space-y-6">
                 <motion.div 
@@ -208,7 +210,10 @@ export function EditFarmModal({ isOpen, onClose, farm, onSuccess }: EditFarmModa
             )}
           </motion.div>
         </div>
+      </div>
       )}
     </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 }

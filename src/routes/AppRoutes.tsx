@@ -20,6 +20,10 @@ const InviteExpiredPage = lazy(() => import('../pages/invite-expired/InviteExpir
 const LandPlotsPage = lazy(() => import('../pages/LandPlots/LandPlotsPage').then(module => ({ default: module.LandPlotsPage })));
 const MapPage = lazy(() => import('../pages/Map/MapPage').then(module => ({ default: module.MapPage })));
 const ManagementDashboardPage = lazy(() => import('../pages/FarmManagement/ManagementDashboard').then(module => ({ default: module.ManagementDashboardPage })));
+const WalletPage = lazy(() => import('../pages/Wallet/WalletPage'));
+const ActivityPage = lazy(() => import('../pages/Activity/ActivityPage'));
+const TasksPage = lazy(() => import('../pages/Tasks/TasksPage'));
+const GeminiPage = lazy(() => import('../pages/Gemini/GeminiPage'));
 
 // Layouts
 const DashboardLayout = lazy(() => import('../layouts/DashboardLayout'));
@@ -47,16 +51,18 @@ export const AppRoutes: React.FC = () => {
           <Route path="/change-password" element={<Suspense fallback={<LoadingPage />}><ChangePasswordPage /></Suspense>} />
           <Route path="/farms" element={<Suspense fallback={<LoadingPage />}><ManagementDashboardPage /></Suspense>} />
           
+          {/* Dashboard pages */}
+          <Route path="/wallet" element={<Suspense fallback={<LoadingPage />}><WalletPage /></Suspense>} />
+          <Route path="/activity" element={<Suspense fallback={<LoadingPage />}><ActivityPage /></Suspense>} />
+          <Route path="/tasks" element={<Suspense fallback={<LoadingPage />}><TasksPage /></Suspense>} />
+          <Route path="/gemini" element={<Suspense fallback={<LoadingPage />}><GeminiPage /></Suspense>} />
+          
           {/* Role-based Routes */}
           <Route element={<RoleRoute allowedRoles={['owner']} />}>
             <Route path="/members" element={<Suspense fallback={<LoadingPage />}><MembersPage /></Suspense>} />
             <Route path="/land-plots" element={<Suspense fallback={<LoadingPage />}><LandPlotsPage /></Suspense>} />
             <Route path="/map" element={<Suspense fallback={<LoadingPage />}><MapPage /></Suspense>} />
           </Route>
-
-          {/* Placeholder for future features */}
-          <Route path="/tasks" element={<div className="p-8 font-bold">Quản lý Công việc (Sắp có)</div>} />
-          <Route path="/crops" element={<div className="p-8 font-bold">Quản lý Cây trồng (Sắp có)</div>} />
         </Route>
       </Route>
 

@@ -20,13 +20,21 @@ export default function DashboardLayout() {
       navigate("/dashboard");
     } else if (key === "tree") {
       navigate("/farms");
+    } else if (key === "wallet") {
+      navigate("/wallet");
+    } else if (key === "activity") {
+      navigate("/activity");
+    } else if (key === "task") {
+      navigate("/tasks");
+    } else if (key === "gemini") {
+      navigate("/gemini");
     } else {
-      navigate(`/dashboard/${key}`);
+      navigate("/dashboard");
     }
   };
 
   return (
-    <div className="w-screen h-screen bg-white flex flex-col overflow-hidden">
+    <div className="w-full h-screen bg-white flex flex-col overflow-hidden">
       {/* Header */}
       <header className="flex items-center px-6 py-3 h-[57px] bg-white shrink-0 border-b border-gray-100">
         <div

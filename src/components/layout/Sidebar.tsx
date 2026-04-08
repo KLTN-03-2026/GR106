@@ -2,6 +2,7 @@ import { LayoutGrid, LogOut } from "lucide-react";
 import { Button } from "../ui/button";
 import { NAV_ICONS } from "../../layouts/NavIcon";
 import { cn } from "../../utils/cn";
+import { useAuth } from "../../hooks/useAuth";
 
 interface SidebarProps {
   active: string;
@@ -20,6 +21,8 @@ export default function Sidebar({
   setActive,
   variant = "dashboard",
 }: SidebarProps) {
+  const { logout } = useAuth();
+
   return (
     <aside
       className={cn(
@@ -70,6 +73,7 @@ export default function Sidebar({
       <Button
         variant="ghost"
         size="icon"
+        onClick={logout}
         className="w-9 h-9 rounded-xl p-0 hover:bg-red-50 hover:text-red-500 transition-colors"
       >
         <LogOut size={22} color="#374151" strokeWidth={2} />
