@@ -6,6 +6,7 @@ import com.farmapp.farmsmartmanagement.domain.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
@@ -23,20 +24,26 @@ import java.util.UUID;
 public class PaymentTransactionEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue
+    @UuidGenerator
+
     private UUID id;
 
-    @Column(name = "farm_id", nullable = false)
-    private UUID farmId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "farm_id", nullable = false)
+    private FarmEntity farm;
 
-    @Column(name = "user_id", nullable = false)
-    private UUID userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
 
-    @Column(name = "subscription_plan_id", nullable = false)
-    private UUID subscriptionPlanId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subscription_plan_id", nullable = false)
+    private SubscriptionPlanEntity subscriptionPlan;
 
-    @Column(name = "farm_subscription_id")
-    private UUID farmSubscriptionId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "farm_subscription_id", nullable = false)
+    private FarmSubscriptionEntity farmSubscription;
 
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;

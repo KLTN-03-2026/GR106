@@ -3,13 +3,13 @@ package com.farmapp.farmsmartmanagement.modules.payment.dto.response;
 import com.farmapp.farmsmartmanagement.domain.enums.PaymentGateway;
 import com.farmapp.farmsmartmanagement.domain.enums.PaymentStatus;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Data
+@Getter
 @Builder
 public class PaymentTransactionResponse {
 
@@ -20,13 +20,8 @@ public class PaymentTransactionResponse {
     private String currency;
     private PaymentGateway gateway;
     private PaymentStatus status;
-    private String gatewayTxnId;
-    private String gatewayResponseCode;
-    private String gatewayResponseMessage;
     private String bankCode;
     private LocalDateTime paidAt;
-    private LocalDateTime expiredAt;
     private LocalDateTime createdAt;
-    private UUID subscriptionPlanId;
-    private UUID farmSubscriptionId;
+    private LocalDateTime expiredAt;
 }

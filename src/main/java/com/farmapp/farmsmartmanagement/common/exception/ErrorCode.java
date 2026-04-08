@@ -30,9 +30,11 @@ public enum ErrorCode {
     PAYMENT_EXPIRED(410,                "Payment link has expired", HttpStatus.CONFLICT),
     PAYMENT_AMOUNT_MISMATCH(422,        "Payment amount does not match", HttpStatus.CONFLICT),
     PAYMENT_GATEWAY_ERROR(502,          "Payment gateway error", HttpStatus.INTERNAL_SERVER_ERROR),
+    FARM_SUBSCRIPTION_NOT_FOUND(404, "Không tìm thấy farm đang đăng ký gói nào", HttpStatus.NOT_FOUND ),
+    INVALID_PAYMENT_AMOUNT( 400, "Số tiền thanh toán không hợp lệ" ,  HttpStatus.BAD_REQUEST )
 
 
-    FARM_SUBSCRIPTION_NOT_FOUND(404, "Không tìm thấy farm đang đăng ký gói nào", HttpStatus.NOT_FOUND ),;
+    ;
 
     private final int code;
     private final String message;

@@ -1,27 +1,38 @@
 package com.farmapp.farmsmartmanagement.modules.payment.dto.response;
 
-import com.farmapp.farmsmartmanagement.domain.enums.PaymentGateway;
-import com.farmapp.farmsmartmanagement.domain.enums.PaymentStatus;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
-// ─── CreatePaymentResponse ────────────────────────────────────────
 @Data
 @Builder
 public class CreatePaymentResponse {
-
     private UUID transactionId;
-
-    /** URL redirect sang VNPay — FE redirect người dùng tới đây */
-    private String paymentUrl;
-
     private String orderCode;
+    private String amount;
+    private String currency;
+    private String status;
+    private String expiredAt;
 
-    private BigDecimal amount;
+    // Thay paymentUrl bằng formData để FE tự build form POST
+    private SepayFormData formData;
 
-    private LocalDateTime expiredAt;
+    @Data
+    @Builder
+    public static class SepayFormData {
+        private String actionUrl;      // endpoint POST
+        private String orderAmount;
+        private String merchant;
+        private String currency;
+        private String operation;
+        private String orderDescription;
+        private String orderInvoiceNumber;
+        private String successUrl;
+        private String errorUrl;
+        private String cancelUrl;
+        private String signature;
+    }
 }

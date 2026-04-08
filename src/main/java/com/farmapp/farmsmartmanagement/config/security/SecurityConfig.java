@@ -35,7 +35,10 @@ public class SecurityConfig {
                     "/api/v1/subscriptions",
 
                     "/api/v1/payments/vnpay/ipn",
-                    "/api/v1/payments/vnpay/return"
+                    "/api/v1/payments/vnpay/return",
+
+                    // SePay IPN — server-to-server, không có JWT
+                    "/api/v1/payment/ipn",
             };
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
