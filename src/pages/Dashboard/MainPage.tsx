@@ -55,7 +55,7 @@ export default function MainPage() {
 
         {/* Row 3 */}
         <div className="flex-none h-[85px] overflow-hidden">
-           <CropStatusCards />
+          <CropStatusCards />
         </div>
       </div>
 

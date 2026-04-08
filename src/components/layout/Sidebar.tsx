@@ -10,9 +10,9 @@ interface SidebarProps {
 }
 
 const sidebarVariants = {
-  dashboard: "py-10 px-3 w-[72px] bg-white",
-  compact: "py-5 px-2 w-16 bg-gray-50",
-  wide: "py-10 px-4 w-20 bg-white",
+  dashboard: "py-6 px-2 w-[64px] bg-white",
+  compact: "py-4 px-2 w-14 bg-gray-50",
+  wide: "py-8 px-3 w-[72px] bg-white",
 };
 
 export default function Sidebar({
@@ -28,17 +28,21 @@ export default function Sidebar({
       )}
     >
       {/* Top nav */}
-      <div className="flex flex-col items-center gap-7">
-        {/* Dashboard (active) */}
+      <div className="flex flex-col items-center gap-6">
+        {/* Dashboard */}
         <Button
           onClick={() => setActive("dashboard")}
-          variant={active === "dashboard" ? "dark-olive" : "light"}
+          variant={active === "dashboard" ? "dark-nav" : "ghost"}
           size="icon"
-          className="w-11 h-11 rounded-[14px] p-0"
+          className={cn(
+            "w-9 h-9 rounded-xl p-0 transition-all duration-200",
+            active === "dashboard" ? "shadow-md" : "hover:bg-gray-100"
+          )}
         >
           <LayoutGrid
-            size={20}
-            color={active === "dashboard" ? "#fff" : "#292D32"}
+            size={22}
+            color={active === "dashboard" ? "#fff" : "#111827"}
+            strokeWidth={2}
           />
         </Button>
 
@@ -46,18 +50,29 @@ export default function Sidebar({
           <Button
             key={key}
             onClick={() => setActive(key)}
-            variant={active === key ? "dark-olive" : "light"}
+            variant={active === key ? "dark-nav" : "ghost"}
             size="icon"
-            className="w-11 h-10 rounded-full p-0"
+            className={cn(
+              "w-9 h-9 rounded-xl p-0 transition-all duration-200",
+              active === key ? "shadow-md" : "hover:bg-gray-100 hover:text-gray-900"
+            )}
           >
-            <Icon size={22} color={active === key ? "#fff" : "#292D32"} />
+            <Icon
+              size={22}
+              color={active === key ? "#fff" : "#374151"}
+              strokeWidth={2}
+            />
           </Button>
         ))}
       </div>
 
       {/* Logout */}
-      <Button variant="ghost" size="icon" className="rounded-xl p-2 hover:bg-red-50 hover:text-red-500 transition-colors">
-        <LogOut size={22} />
+      <Button
+        variant="ghost"
+        size="icon"
+        className="w-9 h-9 rounded-xl p-0 hover:bg-red-50 hover:text-red-500 transition-colors"
+      >
+        <LogOut size={22} color="#374151" strokeWidth={2} />
       </Button>
     </aside>
   );

@@ -20,7 +20,7 @@ export default function DonutChart({
     <div
       className="bg-[#f5f5f0] rounded-2xl flex flex-col items-center justify-between p-4 w-full h-full min-h-0"
     >
-      <p className="text-[13px] font-bold text-[#3A3A8C] uppercase tracking-wider">
+      <p className="text-[13px] font-medium text-[#3A3A8C] uppercase tracking-wider">
         Hiệu suất nông trại
       </p>
 
@@ -73,10 +73,10 @@ export default function DonutChart({
 
             {/* 5. Căn chỉnh lại text bên trong, sử dụng leading-none để số % nằm đúng giữa */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-[11px] text-[#8D8D8D] font-bold uppercase tracking-tighter mb-0.5">
+              <span className="text-[11px] text-[#8D8D8D] font-medium uppercase tracking-tighter mb-0.5">
                 Điểm
               </span>
-              <span className="text-[28px] font-black text-[#1a1a1a] leading-none">
+              <span className="text-[35px] font-semibold text-[#1a1a1a] leading-none">
                 {safePct}%
               </span>
             </div>

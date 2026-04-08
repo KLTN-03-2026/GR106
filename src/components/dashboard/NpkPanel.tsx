@@ -14,7 +14,7 @@ interface NpkBarProps {
 
 function NpkBar({ label, value, pct }: NpkBarProps) {
   const shortLabel = label.split(' ')[0].replace('Nitrogen', 'Mức N').replace('Phosphorus', 'Mức P').replace('Potassium', 'Mức K');
-  
+
   return (
     <div className="w-full">
       <div className="relative h-4 bg-white/10 rounded-full overflow-hidden mb-1">

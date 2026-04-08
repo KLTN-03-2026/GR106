@@ -18,7 +18,7 @@ export default function TaskBar({
       {/* Overlapping Sections Container */}
       <div className="flex items-center flex-1 h-[42px] relative">
         {/* Completed Section (Green) - On Top */}
-        <div 
+        <div
           className="relative z-20 flex-1 h-full flex items-center justify-between px-5 rounded-full border border-white/20 shadow-md"
           style={{ background: "#79C257" }}
         >
@@ -27,9 +27,9 @@ export default function TaskBar({
         </div>
 
         {/* Pending Section (Striped Blue) - Underneath */}
-        <div 
+        <div
           className="relative z-10 flex-1 h-[36px] -ml-6 pl-8 pr-4 flex items-center justify-between rounded-r-full border border-gray-200 overflow-hidden"
-          style={{ 
+          style={{
             backgroundColor: "#e3f2fd",
             backgroundImage: `repeating-linear-gradient(
               45deg,
@@ -46,8 +46,8 @@ export default function TaskBar({
       </div>
 
       {/* Add new task button (Dark Blue) */}
-      <Button 
-        variant="dark-nav" 
+      <Button
+        variant="dark-nav"
         className="h-[42px] px-5 rounded-full bg-[#1a1a2e] hover:bg-[#252545] border-none flex items-center gap-2 shadow-sm transition-all active:scale-95 shrink-0"
       >
         <div className="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center">
