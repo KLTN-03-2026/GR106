@@ -19,17 +19,14 @@ interface Farm {
 }
 
 // Mock data for now, will call api later as per user's instruction
-const mockFarms: Farm[] = [
-  { id: '1', name: 'Trang trại Xanh Đà Lạt', status: 'ACTIVE' },
-  { id: '2', name: 'Vườn Ươm Công Nghệ Cao', status: 'ACTIVE' },
-];
+const mockFarms: Farm[] = [];
 
 export default function FarmSwitcher() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [selectedFarm, setSelectedFarm] = useState<Farm | null>(mockFarms[0]);
+  const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null);
 
   const toggleDropdown = () => setIsOpen(!isOpen);
 

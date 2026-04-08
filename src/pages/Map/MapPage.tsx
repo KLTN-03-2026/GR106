@@ -6,35 +6,7 @@ import { BoundaryConfirmDialog } from './components/BoundaryConfirmDialog'
 import { LandPlot, GeoPoint } from '../../types/landPlot'
 
 // Dữ liệu Mock ban đầu theo tài liệu PB06
-const INITIAL_PLOTS: LandPlot[] = [
-  {
-    id: '1',
-    name: 'Lô A1 - Trồng lúa',
-    area: 2.5,
-    status: 'active',
-    description: 'Khu vực đất trũng, thích hợp trồng lúa nước',
-    boundaries: [
-      { lat: 10.3606, lng: 106.3653 },
-      { lat: 10.3606, lng: 106.3663 },
-      { lat: 10.3616, lng: 106.3663 },
-      { lat: 10.3616, lng: 106.3653 },
-    ]
-  },
-  {
-    id: '2',
-    name: 'Lô B2 - Vườn cây ăn trái',
-    area: 1.2,
-    status: 'active',
-    description: 'Đang trồng xoài và bưởi',
-  },
-  {
-    id: '3',
-    name: 'Lô C1 - Đất dự phòng',
-    area: 3.0,
-    status: 'resting',
-    description: 'Đang cải tạo đất, dự kiến trồng hoa màu vào tháng sau',
-  },
-]
+const INITIAL_PLOTS: LandPlot[] = []
 
 export function MapPage() {
   const location = useLocation()

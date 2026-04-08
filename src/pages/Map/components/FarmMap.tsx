@@ -13,7 +13,7 @@ import { PlotInfoPopup } from './PlotInfoPopup'
 const LIBRARIES: ("drawing" | "geometry" | "places" | "visualization")[] = ['geometry', 'drawing']
 
 const MAP_OPTIONS: google.maps.MapOptions = {
-  mapTypeId: 'satellite',
+  mapTypeId: 'roadmap',
   disableDefaultUI: false,
   zoomControl: true,
   mapTypeControl: false,

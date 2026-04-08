@@ -42,54 +42,27 @@ export const authService = {
 
   // Placeholder APIs for future implementation
 
-  async forgotPassword(_email: string): Promise<ApiResponse<string>> {
-    // Mock API call
-    return new Promise((resolve) =>
-    setTimeout(
-      () =>
-      resolve({
-        success: true,
-        code: 0,
-        message: 'Email sent',
-        data: 'Success',
-        timestamp: new Date().toISOString()
-      }),
-      1000
-    )
+  async forgotPassword(email: string): Promise<ApiResponse<string>> {
+    const response = await axiosInstance.post<ApiResponse<string>>(
+      '/api/v1/auth/forgot-password',
+      { email }
     );
+    return response.data;
   },
 
-  async resetPassword(_data: any): Promise<ApiResponse<string>> {
-    // Mock API call
-    return new Promise((resolve) =>
-    setTimeout(
-      () =>
-      resolve({
-        success: true,
-        code: 0,
-        message: 'Password reset successful',
-        data: 'Success',
-        timestamp: new Date().toISOString()
-      }),
-      1000
-    )
+  async resetPassword(data: any): Promise<ApiResponse<string>> {
+    const response = await axiosInstance.post<ApiResponse<string>>(
+      '/api/v1/auth/reset-password',
+      data
     );
+    return response.data;
   },
 
-  async changePassword(_data: any): Promise<ApiResponse<string>> {
-    // Mock API call
-    return new Promise((resolve) =>
-    setTimeout(
-      () =>
-      resolve({
-        success: true,
-        code: 0,
-        message: 'Password changed successfully',
-        data: 'Success',
-        timestamp: new Date().toISOString()
-      }),
-      1000
-    )
+  async changePassword(data: any): Promise<ApiResponse<string>> {
+    const response = await axiosInstance.post<ApiResponse<string>>(
+      '/api/v1/auth/change-password',
+      data
     );
+    return response.data;
   }
 };

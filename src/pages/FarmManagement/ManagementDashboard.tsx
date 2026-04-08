@@ -12,13 +12,18 @@ import {
   PlayCircle,
   Plus,
   ArrowLeft,
-  Search
+  Search,
+  Briefcase,
+  CheckSquare,
+  Calendar,
+  DollarSign
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { cn } from '../../utils/cn';
 import { CreateFarmModal } from '../../components/farm';
+import { EditFarmModal } from '../../components/farm/EditFarmModal';
 
 interface FarmStats {
   plots: number;
@@ -32,40 +37,18 @@ interface Farm {
   address: string;
   description: string;
   status: 'ACTIVE' | 'INACTIVE';
+  ownerName?: string;
+  servicePlan?: string;
   stats: FarmStats;
 }
 
-const mockFarms: Farm[] = [
-  {
-    id: '1',
-    name: 'Trang trại Xanh Đà Lạt',
-    address: 'Lạc Dương, Lâm Đồng',
-    description: 'Khu vực chuyên canh dâu tây và rau ôn đới chất lượng cao.',
-    status: 'ACTIVE',
-    stats: { plots: 12, members: 5, area: 2.5 }
-  },
-  {
-    id: '2',
-    name: 'Vườn Ươm Công Nghệ Cao',
-    address: 'Đơn Dương, Lâm Đồng',
-    description: 'Hệ thống nhà màng hiện đại cho cà chua cherry.',
-    status: 'ACTIVE',
-    stats: { plots: 8, members: 3, area: 1.2 }
-  },
-  {
-    id: '3',
-    name: 'Trại Nấm Sạch',
-    address: 'TP. Đà Lạt',
-    description: 'Mô hình trồng nấm khép kín kiểm soát môi trường.',
-    status: 'INACTIVE',
-    stats: { plots: 4, members: 2, area: 0.5 }
-  }
-];
+const mockFarms: Farm[] = [];
 
 export function ManagementDashboardPage() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingFarm, setEditingFarm] = useState<Farm | null>(null);
   const [farms] = useState<Farm[]>(mockFarms);
 
   const filteredFarms = farms.filter(f => 
@@ -109,6 +92,46 @@ export function ManagementDashboardPage() {
             <Plus size={18} className="mr-2" />
             Thêm mới
           </Button>
+        </div>
+      </div>
+
+      {/* Overview Stats (PB26 - Acceptance Criteria 8) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+            <Briefcase size={20} />
+          </div>
+          <div>
+            <div className="text-2xl font-black text-gray-900">0</div>
+            <div className="text-xs font-bold text-gray-400 uppercase">Kế hoạch</div>
+          </div>
+        </div>
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+            <CheckSquare size={20} />
+          </div>
+          <div>
+            <div className="text-2xl font-black text-gray-900">0</div>
+            <div className="text-xs font-bold text-gray-400 uppercase">Công việc</div>
+          </div>
+        </div>
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
+            <Calendar size={20} />
+          </div>
+          <div>
+            <div className="text-2xl font-black text-gray-900">0</div>
+            <div className="text-xs font-bold text-gray-400 uppercase">Ngày công</div>
+          </div>
+        </div>
+        <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+            <DollarSign size={20} />
+          </div>
+          <div>
+            <div className="text-2xl font-black text-gray-900">0</div>
+            <div className="text-xs font-bold text-gray-400 uppercase">Danh thu / Chi phí</div>
+          </div>
         </div>
       </div>
 
@@ -173,34 +196,70 @@ export function ManagementDashboardPage() {
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-2 mt-auto">
+              {/* Owner and Service Plan */}
+              <div className="flex gap-2 text-xs font-medium text-gray-500 mb-4 px-2">
+                <div className="bg-gray-100 px-2 py-1 rounded-md flex-1 text-center truncate">
+                  Chủ: <span className="text-gray-900 font-bold">{farm.ownerName || 'Chưa cập nhật'}</span>
+                </div>
+                <div className="bg-gray-100 px-2 py-1 rounded-md flex-1 text-center truncate">
+                  Gói: <span className="text-emerald-700 font-bold">{farm.servicePlan || 'Cơ bản'}</span>
+                </div>
+              </div>
+
+              {/* Quick Actions (PB04-07) */}
+              <div className="grid grid-cols-2 gap-2 mt-auto pt-2">
                 <Button 
-                  className="flex-1 h-10 bg-gray-900 text-white rounded-xl font-bold text-xs hover:bg-gray-800 transition-all active:scale-95"
+                  onClick={() => navigate('/map')}
+                  className="h-10 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-bold text-xs transition-all active:scale-95 border border-emerald-100 shadow-sm"
                 >
-                  Chi tiết
+                  <MapPin size={14} className="mr-1.5" />
+                  Bản đồ
                 </Button>
                 <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-10 w-10 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl"
+                  onClick={() => navigate('/land-plots')}
+                  className="h-10 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-xl font-bold text-xs transition-all active:scale-95 border border-amber-100 shadow-sm"
                 >
-                  <Edit2 size={16} />
+                  <Layers size={14} className="mr-1.5" />
+                  Lô đất
                 </Button>
                 <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-10 w-10 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl"
+                  onClick={() => navigate('/members')}
+                  className="h-10 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl font-bold text-xs transition-all active:scale-95 border border-blue-100 shadow-sm col-span-2"
                 >
-                  {farm.status === 'ACTIVE' ? <PauseCircle size={16} /> : <PlayCircle size={16} />}
+                  <Users size={14} className="mr-1.5" />
+                  Quản lý thành viên & Phân quyền
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-10 w-10 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl"
-                >
-                  <Trash2 size={16} />
-                </Button>
+              </div>
+
+              {/* Settings / Config PB26 */}
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
+                  Cấu hình chung
+                </span>
+                <div className="flex items-center gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => setEditingFarm(farm)}
+                    className="h-8 w-8 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                  >
+                    <Edit2 size={14} />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                  >
+                    {farm.status === 'ACTIVE' ? <PauseCircle size={14} /> : <PlayCircle size={14} />}
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -225,6 +284,15 @@ export function ManagementDashboardPage() {
         onSuccess={() => {
           // You could add logic here to refresh farm list if needed
           console.log("Farm created successfully!");
+        }}
+      />
+
+      <EditFarmModal
+        isOpen={!!editingFarm}
+        onClose={() => setEditingFarm(null)}
+        farm={editingFarm}
+        onSuccess={() => {
+          console.log("Farm updated successfully!");
         }}
       />
     </div>

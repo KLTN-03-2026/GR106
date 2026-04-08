@@ -21,18 +21,6 @@ export const decodeToken = (token: string): JwtPayload | null => {
   }
 };
 
-export const isTokenExpired = (token: string): boolean => {
-  try {
-    const decoded = jwtDecode<JwtPayload>(token);
-    if (!decoded.exp) return false;
-    
-    const currentTime = Date.now() / 1000;
-    return decoded.exp < currentTime;
-  } catch (error) {
-    return true;
-  }
-};
-
 export const getUserIdFromToken = (token: string): string | null => {
   const payload = decodeToken(token);
   return payload?.sub || null;

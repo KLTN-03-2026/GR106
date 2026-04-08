@@ -26,14 +26,14 @@ export function useFarmStats() {
   const [isPending, setIsPending] = useState(true);
 
   useEffect(() => {
-    // Simulate API fetch
+    // Will be replaced by real API call
     const timer = setTimeout(() => {
       setData({
-        totalPlots: 12,
-        totalCrops: 4,
-        totalArea: 2.5,
-        totalPlants: '1,240',
-        performancePct: 78,
+        totalPlots: 0,
+        totalCrops: 0,
+        totalArea: 0,
+        totalPlants: 0,
+        performancePct: 0,
       });
       setIsPending(false);
     }, 800);
@@ -48,13 +48,9 @@ export function useNpkData() {
   const [isPending, setIsPending] = useState(true);
 
   useEffect(() => {
-    // Simulate API fetch
+    // Will be replaced by real API call
     const timer = setTimeout(() => {
-      setData([
-        { label: 'Nitrogen (N)', value: '142 ppm', maxPpm: 200, pct: 71 },
-        { label: 'Phosphorus (P)', value: '28 ppm', maxPpm: 50, pct: 56 },
-        { label: 'Potassium (K)', value: '115 ppm', maxPpm: 150, pct: 76 },
-      ]);
+      setData([]);
       setIsPending(false);
     }, 1000);
     return () => clearTimeout(timer);
@@ -68,11 +64,11 @@ export function useTasksSummary() {
   const [isPending, setIsPending] = useState(true);
 
   useEffect(() => {
-    // Simulate API fetch
+    // Will be replaced by real API call
     const timer = setTimeout(() => {
       setData({
-        completed: 42,
-        pending: 8,
+        completed: 0,
+        pending: 0,
       });
       setIsPending(false);
     }, 600);

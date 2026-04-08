@@ -10,29 +10,7 @@ import { EditPlotModal } from './components/EditPlotModal'
 import { DeletePlotDialog } from './components/DeletePlotDialog'
 
 // Dữ liệu Mock ban đầu theo tài liệu PB06
-const INITIAL_PLOTS: LandPlot[] = [
-  {
-    id: '1',
-    name: 'Lô A1 - Trồng lúa',
-    area: 2.5,
-    status: 'active',
-    description: 'Khu vực đất trũng, thích hợp trồng lúa nước',
-  },
-  {
-    id: '2',
-    name: 'Lô B2 - Vườn cây ăn trái',
-    area: 1.2,
-    status: 'active',
-    description: 'Đang trồng xoài và bưởi',
-  },
-  {
-    id: '3',
-    name: 'Lô C1 - Đất dự phòng',
-    area: 3.0,
-    status: 'resting',
-    description: 'Đang cải tạo đất, dự kiến trồng hoa màu vào tháng sau',
-  },
-]
+const INITIAL_PLOTS: LandPlot[] = [];
 
 export function LandPlotsPage() {
   const navigate = useNavigate()
@@ -178,7 +156,7 @@ export function LandPlotsPage() {
         onClose={() => setDeletingPlot(null)}
         onConfirm={handleDeletePlot}
         plot={deletingPlot}
-        hasActiveTasks={deletingPlot?.id === '1'} // Mock condition cho PB06
+        hasActiveTasks={false}
       />
     </div>
   )
