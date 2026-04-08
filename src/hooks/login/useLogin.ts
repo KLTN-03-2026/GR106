@@ -31,18 +31,21 @@ export function useLogin() {
     
     try {
       const response = await authService.login(data);
+
       if (response.success) {
         const { accessToken, refreshToken } = response.data;
-        
-        // Decode JWT token để lấy user info
         const user = getUserFromToken(accessToken);
         
         if (!user) {
           setServerError('Token không hợp lệ');
           return;
         }
-        
-        // Lưu vào Redux với user info từ token
+
+        // Lưu thông tin tạm thời để lấy farm
+        localStorage.setItem('accessToken', accessToken);
+
+        const targetPath = '/dashboard';
+
         dispatch(setCredentials({
           accessToken,
           refreshToken,
@@ -50,11 +53,8 @@ export function useLogin() {
         }));
         
         toast.success('Đăng nhập thành công');
-        
-        // Redirect đến Dashboard trung tâm
-        navigate('/dashboard');
+        navigate(targetPath);
       } else {
-        // Hiển thị message từ server trong Form
         const message = response.message || 'Đăng nhập thất bại';
         setServerError(message);
       }

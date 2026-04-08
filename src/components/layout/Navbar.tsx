@@ -7,6 +7,7 @@ import { Button } from "../ui/button";
 import { NavbarDivider } from "./NavbarDivider";
 import LogoBrowser from "../../assets/Logo-browser.png";
 import CornBackground from "../../assets/Corn-Background.png";
+import { getRoleDisplayName } from "../../utils/roleUtils";
 
 const navItems = ["Trang Chủ", "Dịch vụ", "Tin tức", "Triển khai", "Kế Hoạch"];
 
@@ -132,14 +133,7 @@ export function Navbar({
     navigate("/login", { replace: true });
   };
 
-  // Map role to Vietnamese
-  const roleDisplayMap: Record<string, string> = {
-    owner: "Chủ Trang Trại",
-    manager: "Quản Lý",
-    employee: "Nhân Viên",
-  };
-
-  const roleDisplay = user?.role ? roleDisplayMap[user.role] || user.role : "";
+  const roleDisplay = getRoleDisplayName(user?.role);
 
   return (
     <>

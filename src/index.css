@@ -98,3 +98,24 @@
     scrollbar-width: none;
   }
 }
+
+
+/* ==================== FULLSCREEN FIX ==================== */
+html, body, #root, .app {
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Fix cho trường hợp F11 */
+@media (display-mode: fullscreen) {
+  html, body, #root {
+    height: 100vh !important;
+  }
+}
+/* ======================================================= */

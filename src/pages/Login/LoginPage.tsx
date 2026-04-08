@@ -46,23 +46,22 @@ export function LoginPage() {
 
           {/* Form */}
           <form onSubmit={onSubmit} className="space-y-4">
-            {/* Error Alert */}
-            <AnimatePresence mode="wait">
-              {serverError && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0, marginBottom: 0 }}
-                  animate={{ height: 'auto', opacity: 1, marginBottom: 16 }}
-                  exit={{ height: 0, opacity: 0, marginBottom: 0 }}
-                  transition={{ duration: 0.3, ease: 'easeInOut' }}
-                  className="overflow-hidden"
-                >
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex gap-2.5 items-start">
-                    <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-                    <div className="text-red-900 text-sm font-medium">{serverError}</div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Error Alert Container - Absolutely positioned to avoid layout shifts */}
+            <div className="relative h-12 mb-2">
+              <AnimatePresence mode="wait">
+                {serverError && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="absolute inset-0 bg-red-50 border border-red-200 rounded-lg p-2.5 flex gap-2.5 items-center z-10 shadow-sm"
+                  >
+                    <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
+                    <div className="text-red-900 text-[13px] font-semibold leading-tight">{serverError}</div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* Email Field */}
             <div className="space-y-1.5">

@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Lock, ArrowLeft } from 'lucide-react';
+import { Loader2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { authService } from '../../../services/authService';
 import { useAuth } from '../../../hooks/useAuth';
@@ -62,7 +62,7 @@ export const ChangePasswordForm: React.FC = () => {
           
           Mật khẩu hiện tại
         </label>
-        <div className="mt-1 relative rounded-md shadow-sm">
+        <div className="mt-1 relative rounded-2xl shadow-sm">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Lock className="h-5 w-5 text-gray-400" />
           </div>
@@ -70,7 +70,7 @@ export const ChangePasswordForm: React.FC = () => {
             id="currentPassword"
             type="password"
             disabled={isLoading}
-            className={`block w-full pl-10 pr-3 py-2 border ${errors.currentPassword ? 'border-red-300 text-red-900 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'} rounded-md shadow-sm sm:text-sm transition-colors`}
+            className={`block w-full h-12 pl-10 pr-3 py-2 border ${errors.currentPassword ? 'border-red-300 text-red-900 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'} rounded-2xl shadow-sm sm:text-sm transition-all bg-gray-50/50 hover:bg-white focus:bg-white`}
             placeholder="••••••••"
             {...register('currentPassword')} />
           
@@ -89,7 +89,7 @@ export const ChangePasswordForm: React.FC = () => {
           
           Mật khẩu mới
         </label>
-        <div className="mt-1 relative rounded-md shadow-sm">
+        <div className="mt-1 relative rounded-2xl shadow-sm">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Lock className="h-5 w-5 text-gray-400" />
           </div>
@@ -97,7 +97,7 @@ export const ChangePasswordForm: React.FC = () => {
             id="newPassword"
             type="password"
             disabled={isLoading}
-            className={`block w-full pl-10 pr-3 py-2 border ${errors.newPassword ? 'border-red-300 text-red-900 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'} rounded-md shadow-sm sm:text-sm transition-colors`}
+            className={`block w-full h-12 pl-10 pr-3 py-2 border ${errors.newPassword ? 'border-red-300 text-red-900 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'} rounded-2xl shadow-sm sm:text-sm transition-all bg-gray-50/50 hover:bg-white focus:bg-white`}
             placeholder="••••••••"
             {...register('newPassword')} />
           
@@ -136,28 +136,17 @@ export const ChangePasswordForm: React.FC = () => {
         }
       </div>
 
-      <div>
+      <div className="pt-2">
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          className="w-full flex justify-center py-4 px-4 border border-transparent rounded-2xl shadow-lg shadow-emerald-200 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98]">
           
           {isLoading ?
-          <Loader2 className="w-5 h-5 animate-spin" /> :
+          <Loader2 className="w-6 h-6 animate-spin" /> :
 
-          'Đổi mật khẩu'
+          'Cập nhật mật khẩu'
           }
-        </button>
-      </div>
-
-      <div className="mt-6 text-center">
-        <button
-          type="button"
-          onClick={() => navigate('/dashboard')}
-          className="inline-flex items-center text-sm font-medium text-gray-600 hover:text-gray-900">
-          
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Quay lại bảng điều khiển
         </button>
       </div>
     </form>);

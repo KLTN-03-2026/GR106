@@ -1,4 +1,5 @@
 import { jwtDecode } from 'jwt-decode';
+import { RoleId } from './roleUtils';
 
 export interface JwtPayload {
   sub: string; // user ID
@@ -43,13 +44,14 @@ export const getRolesFromToken = (token: string): string[] => {
 };
 
 // Parse role từ roles array
-export const parseRole = (roles: string[]): string => {
+export const parseRole = (roles: string[]): RoleId => {
   if (roles.includes('ROLE_ADMIN')) return 'owner';
   if (roles.includes('ROLE_OWNER')) return 'owner';
   if (roles.includes('ROLE_MANAGER')) return 'manager';
-  if (roles.includes('ROLE_USER')) return 'employee';
   if (roles.includes('ROLE_EMPLOYEE')) return 'employee';
-  return 'employee'; // default
+  if (roles.includes('ROLE_WORKER')) return 'employee';
+  if (roles.includes('ROLE_USER')) return 'user';
+  return 'user'; // default to user for safety
 };
 
 // Tạo user object từ JWT token bằng cách giải mã các trường thực tế
@@ -74,8 +76,8 @@ export const getUserFromToken = (token: string) => {
 // Helper: Tạo display name dựa vào role (dự phòng)
 const getRoleDisplayName = (role: string): string => {
   switch (role) {
-    case 'owner': return 'Chủ Trang Trại';
-    case 'manager': return 'Quản Lý';
+    case 'owner': return 'Chủ trang trại';
+    case 'manager': return 'Người quản lý trang trại';
     case 'employee': return 'Nhân công';
     default: return 'Người dùng';
   }

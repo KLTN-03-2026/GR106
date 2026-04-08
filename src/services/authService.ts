@@ -41,6 +41,7 @@ export const authService = {
   },
 
   // Placeholder APIs for future implementation
+
   async forgotPassword(_email: string): Promise<ApiResponse<string>> {
     // Mock API call
     return new Promise((resolve) =>

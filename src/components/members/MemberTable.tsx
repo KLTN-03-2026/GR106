@@ -3,6 +3,7 @@ import { MoreVertical, Users } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
 import { ChangeRoleModal } from './ChangeRoleModal'
 import { RemoveMemberModal } from './RemoveMemberModal'
+import { getRoleDisplayName } from '../../utils/roleUtils'
 
 type MemberStatus = 'active' | 'pending' | 'rejected'
 type MemberRole = 'owner' | 'manager' | 'worker'
@@ -34,12 +35,7 @@ export function MemberTable() {
   }
 
   const getRoleLabel = (role: MemberRole) => {
-    const labels = {
-      owner: 'Chủ trang trại',
-      manager: 'Quản lý trang trại',
-      worker: 'Nhân công',
-    }
-    return labels[role]
+    return getRoleDisplayName(role)
   }
 
   const filteredMembers = members.filter(

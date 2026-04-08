@@ -17,6 +17,9 @@ const buttonVariants = cva(
         "cta-yellow": "bg-[#E8C840] text-[#1A2E10] hover:bg-[#D4B539] font-semibold text-lg transition-transform hover:scale-[1.02] shadow-[0_4px_14px_rgba(232,200,64,0.4)]",
         "outline-dark": "border border-dark-olive text-dark-olive hover:bg-dark-olive hover:text-white",
         "outline-yellow": "border border-light-yellow-1 text-light-yellow-1 hover:bg-light-yellow-1 hover:text-dark-olive",
+        "dark-olive": "bg-[#3D6B31] text-white hover:bg-[#2D4F24] shadow-md transition-all active:scale-95",
+        "dark-nav": "bg-[#1E251C] text-white hover:bg-[#2A3428] transition-all active:scale-95",
+        "light": "bg-[#F5F5EC] text-[#292D32] hover:bg-[#EAEAE0] transition-all active:scale-95",
       },
 
       size: {

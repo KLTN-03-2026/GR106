@@ -13,13 +13,16 @@ const VerifyEmailPage = lazy(() => import('../pages/VerifyEmail/VerifyEmailPage'
 const ForgotPasswordPage = lazy(() => import('../pages/ForgotPassword/ForgotPasswordPage').then(module => ({ default: module.ForgotPasswordPage })));
 const ResetPasswordPage = lazy(() => import('../pages/ResetPassword/ResetPasswordPage').then(module => ({ default: module.ResetPasswordPage })));
 const ChangePasswordPage = lazy(() => import('../pages/ChangePassword/ChangePasswordPage').then(module => ({ default: module.ChangePasswordPage })));
-const DashboardPage = lazy(() => import('../pages/Dashboard/DashboardPage').then(module => ({ default: module.DashboardPage })));
+const MainPage = lazy(() => import('../pages/Dashboard/MainPage'));
 const UnauthorizedPage = lazy(() => import('../pages/landing/UnauthorizedPage').then(module => ({ default: module.UnauthorizedPage })));
 const MembersPage = lazy(() => import('../pages/members/MembersPage').then(module => ({ default: module.MembersPage })));
 const InviteExpiredPage = lazy(() => import('../pages/invite-expired/InviteExpiredPage').then(module => ({ default: module.InviteExpiredPage })));
+const LandPlotsPage = lazy(() => import('../pages/LandPlots/LandPlotsPage').then(module => ({ default: module.LandPlotsPage })));
+const MapPage = lazy(() => import('../pages/Map/MapPage').then(module => ({ default: module.MapPage })));
+const CreateFarmPage = lazy(() => import('../pages/FarmManagement/CreateFarmPage').then(module => ({ default: module.CreateFarmPage })));
 
 // Layouts
-const AppLayout = lazy(() => import('@/components/layout/AppLayout'));
+const DashboardLayout = lazy(() => import('../layouts/DashboardLayout'));
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -39,13 +42,20 @@ export const AppRoutes: React.FC = () => {
 
       {/* Private Routes - Cần đăng nhập và sử dụng AppLayout */}
       <Route element={<PrivateRoutes />}>
-        <Route element={<Suspense fallback={<LoadingPage />}><AppLayout /></Suspense>}>
-          <Route path="/dashboard" element={<Suspense fallback={<LoadingPage />}><DashboardPage /></Suspense>} />
+        {/* Create Farm - Không dùng AppLayout */}
+        <Route element={<RoleRoute allowedRoles={['user']} />}>
+          <Route path="/create-farm" element={<Suspense fallback={<LoadingPage />}><CreateFarmPage /></Suspense>} />
+        </Route>
+
+        <Route element={<Suspense fallback={<LoadingPage />}><DashboardLayout /></Suspense>}>
+          <Route path="/dashboard" element={<Suspense fallback={<LoadingPage />}><MainPage /></Suspense>} />
           <Route path="/change-password" element={<Suspense fallback={<LoadingPage />}><ChangePasswordPage /></Suspense>} />
           
           {/* Role-based Routes */}
           <Route element={<RoleRoute allowedRoles={['owner']} />}>
             <Route path="/members" element={<Suspense fallback={<LoadingPage />}><MembersPage /></Suspense>} />
+            <Route path="/land-plots" element={<Suspense fallback={<LoadingPage />}><LandPlotsPage /></Suspense>} />
+            <Route path="/map" element={<Suspense fallback={<LoadingPage />}><MapPage /></Suspense>} />
           </Route>
 
           {/* Placeholder for future features */}

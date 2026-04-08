@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { ENV } from './env';
-import { getUserFromToken } from '../utils/jwt';
+
 
 export const axiosInstance = axios.create({
   baseURL: ENV.API_BASE_URL,
@@ -12,8 +12,16 @@ export const axiosInstance = axios.create({
 // Request interceptor to add the access token
 axiosInstance.interceptors.request.use(
   (config) => {
+    // Không gửi token cho các API Auth (login, register, forgot-password, v.v.)
+    // Ngoại trừ API refresh nếu cần (ở đây refresh dùng custom axios hoặc payload)
+    const isPublicRoute = 
+      config.url?.includes('/auth/login') || 
+      config.url?.includes('/auth/register') ||
+      config.url?.includes('/auth/refresh') ||
+      config.url?.includes('/auth/verify');
+    
     const token = localStorage.getItem('accessToken');
-    if (token && config.headers) {
+    if (token && config.headers && !isPublicRoute) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -21,54 +29,54 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle 401 and token refresh
+// Response interceptor to handle token expiration (401 error)
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Bỏ qua interceptor đối với các API đăng nhập, đăng ký
-    if (originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/register')) {
-      return Promise.reject(error);
-    }
-
+    // Nếu lỗi 401 (Unauthorized) và không phải là lỗi từ API Auth (để tránh loop vô tận)
     if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+      const isAuthRoute = 
+        originalRequest.url?.includes('/auth/login') || 
+        originalRequest.url?.includes('/auth/refresh');
 
-      try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) {
-          throw new Error('No refresh token available');
-        }
+      if (!isAuthRoute) {
+        originalRequest._retry = true;
 
-        const response = await axios.post(
-          `${ENV.API_BASE_URL}/api/v1/auth/refresh`,
-          {
-            refreshToken
+        try {
+          const refreshToken = localStorage.getItem('refreshToken');
+          if (!refreshToken) {
+            throw new Error('No refresh token available');
           }
-        );
 
-        const { accessToken, refreshToken: newRefreshToken } =
-        response.data.data;
+          // Gọi API refresh token
+          // Lưu ý: Sử dụng axios trực tiếp thay vì axiosInstance để tránh interceptor lặp
+          const response = await axios.post(`${ENV.API_BASE_URL}/api/v1/auth/refresh`, {
+            refreshToken
+          });
 
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', newRefreshToken);
-        
-        // Decode và cập nhật user info từ token mới
-        const user = getUserFromToken(accessToken);
-        if (user) {
-          localStorage.setItem('user', JSON.stringify(user));
+          if (response.data.success) {
+            const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+
+            // 1. Cập nhật LocalStorage
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('refreshToken', newRefreshToken);
+
+            // 2. Cập nhật Header cho request cũ
+            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+
+            // 3. Thực hiện lại request ban đầu
+            return axiosInstance(originalRequest);
+          }
+        } catch (refreshError) {
+          // Nếu refresh thất bại, logout người dùng
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+          return Promise.reject(refreshError);
         }
-
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-        return axiosInstance(originalRequest);
-      } catch (refreshError) {
-        // Refresh failed, log out user
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
       }
     }
 
