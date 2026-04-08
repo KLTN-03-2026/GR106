@@ -139,7 +139,7 @@ export function Navbar({
     <>
       <style>{spinStyle}</style>
       <nav
-        className={`fixed top-0 left-0 w-full transition-all duration-500 bg-cover bg-top ${scrolled ? "z-[9999] bg-white shadow-lg" : "z-50"
+        className={`fixed top-0 left-0 w-full transition-all duration-500 bg-cover bg-top ${scrolled ? "z-50 bg-white shadow-lg" : "z-50"
           }`}
         style={{
           backgroundImage:
@@ -255,7 +255,7 @@ export function Navbar({
               <>
                 {showLoginButton && (
                   <Button
-                    onClick={() => navigate("/login")}
+                    onClick={() => navigate("/login?force=true")}
                     variant={scrolled ? "outline-dark" : "outline-yellow"}
                     className="flex items-center justify-center gap-1.5 h-[42px] px-6 rounded-xl font-roboto font-bold text-[14px] transition-all duration-300"
                   >
@@ -265,7 +265,7 @@ export function Navbar({
                 )}
                 {showCreateButton && (
                   <Button
-                    onClick={() => navigate("/register")}
+                    onClick={() => navigate("/register?force=true")}
                     variant="cta-yellow"
                     className="flex items-center justify-center gap-1.5 h-[42px] px-6 rounded-xl font-roboto font-bold text-[14px] transition-all duration-300 transform hover:scale-105 active:scale-95"
                   >

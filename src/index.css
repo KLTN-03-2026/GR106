@@ -24,7 +24,8 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.546 0.165 153.28); /* Emerald 600 */
+  --primary: oklch(0.546 0.165 153.28);
+  /* Emerald 600 */
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -61,7 +62,8 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.145 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.646 0.165 153.28); /* Emerald 500 */
+  --primary: oklch(0.646 0.165 153.28);
+  /* Emerald 500 */
   --primary-foreground: oklch(0.145 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
@@ -93,6 +95,7 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -101,10 +104,14 @@
 
 
 /* ==================== FULLSCREEN FIX ==================== */
-html, body, #root, .app {
+html,
+body,
+#root,
+.app {
   height: 100%;
   min-height: 100%;
   width: 100%;
+  overflow: hidden;
   margin: 0;
   padding: 0;
 }
@@ -118,8 +125,12 @@ html, body, #root, .app {
 
 /* Fix cho trường hợp F11 */
 @media (display-mode: fullscreen) {
-  html, body, #root {
+
+  html,
+  body,
+  #root {
     height: 100vh !important;
   }
 }
+
 /* ======================================================= */

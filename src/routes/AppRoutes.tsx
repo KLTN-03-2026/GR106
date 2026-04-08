@@ -57,8 +57,8 @@ export const AppRoutes: React.FC = () => {
           <Route path="/tasks" element={<Suspense fallback={<LoadingPage />}><TasksPage /></Suspense>} />
           <Route path="/gemini" element={<Suspense fallback={<LoadingPage />}><GeminiPage /></Suspense>} />
           
-          {/* Role-based Routes */}
-          <Route element={<RoleRoute allowedRoles={['owner']} />}>
+          {/* Role-based Routes - Allow both owner and user roles for farm management features */}
+          <Route element={<RoleRoute allowedRoles={['owner', 'user']} />}>
             <Route path="/members" element={<Suspense fallback={<LoadingPage />}><MembersPage /></Suspense>} />
             <Route path="/land-plots" element={<Suspense fallback={<LoadingPage />}><LandPlotsPage /></Suspense>} />
             <Route path="/map" element={<Suspense fallback={<LoadingPage />}><MapPage /></Suspense>} />

@@ -5,9 +5,9 @@ export const farmResponseSchema = z.object({
   id: z.string().uuid(),
   ownerId: z.string().uuid(),
   name: z.string(),
-  description: z.string(),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
+  description: z.string().nullable().optional(),
+  createdAt: z.string().nullable().optional(),
+  updatedAt: z.string().nullable().optional(),
 });
 
 // Schema cho dữ liệu trả về của API GET /api/v1/farms
@@ -16,14 +16,14 @@ export const getFarmsResponseSchema = z.object({
   code: z.number(),
   message: z.string(),
   data: z.array(farmResponseSchema),
-  timestamp: z.string().datetime(),
+  timestamp: z.string().optional(),
 });
 
 // Schema cho dữ liệu trả về của API GET /api/v1/farms/summary
 export const farmSummarySchema = z.object({
   farmId: z.string().uuid(),
   farmName: z.string(),
-  description: z.string(),
+  description: z.string().nullable().optional(),
   ownerId: z.string().uuid(),
   ownerFullName: z.string(),
   ownerAvatarUrl: z.string().nullable().optional(),
@@ -35,8 +35,8 @@ export const getFarmsSummaryResponseSchema = z.object({
   success: z.boolean(),
   code: z.number(),
   message: z.string(),
-  data: z.array(farmSummarySchema),
-  timestamp: z.string().datetime(),
+  data: z.array(farmSummarySchema).optional(),
+  timestamp: z.string().optional(),
 });
 
 // Schema cho dữ liệu gửi đi khi tạo Farm mới (POST /api/v1/farm)

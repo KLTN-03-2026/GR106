@@ -3,68 +3,57 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Building2, 
-  MapPin, 
-  Maximize2, 
   FileText, 
   Loader2, 
   ArrowRight,
   Sprout,
-  CheckCircle2
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { useDispatch, useSelector } from 'react-redux';
 
-import { farmService, CreateFarmRequest } from '../../services/farmService';
+import { createFarmSchema, CreateFarmInput } from '../../schemas/farmSchemas';
+import { createFarm } from '../../store/farmSlice';
+import { RootState, AppDispatch } from '../../store';
 import { Input } from '../../components/ui/input';
 import LogoBrowser from '@/assets/Logo-browser.png';
 import LoginBg from '@/assets/Login-Background.png';
 
-const farmSchema = z.object({
-  name: z.string().min(1, 'Tên trang trại là bắt buộc').max(100, 'Tên không quá 100 ký tự'),
-  address: z.string().optional(),
-  totalArea: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
-    message: 'Diện tích phải là số dương',
-  }).optional(),
-  description: z.string().optional(),
-});
-
-type FarmFormValues = z.infer<typeof farmSchema>;
-
 export function CreateFarmPage() {
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
   const [isSuccess, setIsSuccess] = useState(false);
+  const { loading, error } = useSelector((state: RootState) => state.farm);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<FarmFormValues>({
-    resolver: zodResolver(farmSchema),
+    formState: { errors },
+  } = useForm<CreateFarmInput>({
+    resolver: zodResolver(createFarmSchema),
+    defaultValues: {
+      farmName: '',
+      description: '',
+    }
   });
 
-  const onSubmit = async (data: FarmFormValues) => {
+  const onSubmit = async (data: CreateFarmInput) => {
     try {
-      const payload: CreateFarmRequest = {
-        name: data.name,
-        address: data.address,
-        totalArea: data.totalArea ? Number(data.totalArea) : undefined,
-        description: data.description,
-      };
-
-      const response = await farmService.createFarm(payload);
-      if (response.success) {
+      const resultAction = await dispatch(createFarm(data));
+      if (createFarm.fulfilled.match(resultAction)) {
         setIsSuccess(true);
         toast.success('Khởi tạo trang trại thành công!');
         setTimeout(() => {
           navigate('/dashboard');
         }, 2000);
       } else {
-        toast.error(response.message || 'Có lỗi xảy ra');
+        toast.error(typeof resultAction.payload === 'string' ? resultAction.payload : 'Có lỗi xảy ra khi tạo trang trại');
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Đã xảy ra lỗi hệ thống');
+      toast.error('Đã xảy ra lỗi hệ thống');
     }
   };
 
@@ -117,6 +106,13 @@ export function CreateFarmPage() {
               <p className="text-gray-500 font-medium">Chào mừng bạn đến với FarmerAI. Hãy bắt đầu bằng việc đặt tên cho không gian canh tác của bạn.</p>
             </div>
 
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3 text-red-700 text-sm font-bold">
+                <AlertCircle size={18} />
+                <span>{typeof error === 'string' ? error : 'Lỗi hệ thống'}</span>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               {/* Farm Name */}
               <div className="space-y-1.5">
@@ -125,55 +121,13 @@ export function CreateFarmPage() {
                   Tên trang trại <span className="text-red-500">*</span>
                 </label>
                 <Input
-                  {...register('name')}
+                  {...register('farmName')}
                   placeholder="Ví dụ: Trang Trại Xanh"
                   className="h-12 bg-gray-50/50 border-gray-100 focus:bg-white transition-all text-base font-medium"
                 />
-                {errors.name && (
-                  <span className="text-red-500 text-xs font-bold pl-1">{errors.name.message}</span>
+                {errors.farmName && (
+                  <span className="text-red-500 text-xs font-bold pl-1">{errors.farmName.message}</span>
                 )}
-              </div>
-
-              {/* Address */}
-              <div className="space-y-1.5">
-                <label className="flex items-center gap-2 text-xs font-bold text-gray-900 uppercase tracking-widest pl-1">
-                  <MapPin size={14} className="text-blue-500" />
-                  Địa chỉ
-                </label>
-                <Input
-                  {...register('address')}
-                  placeholder="Nhập địa chỉ trang trại"
-                  className="h-12 bg-gray-50/50 border-gray-100 focus:bg-white transition-all text-base font-medium"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* Total Area */}
-                <div className="space-y-1.5">
-                  <label className="flex items-center gap-2 text-xs font-bold text-gray-900 uppercase tracking-widest pl-1">
-                    <Maximize2 size={14} className="text-amber-500" />
-                    Diện tích (ha)
-                  </label>
-                  <Input
-                    {...register('totalArea')}
-                    placeholder="Ví dụ: 2.5"
-                    className="h-12 bg-gray-50/50 border-gray-100 focus:bg-white transition-all text-base font-medium"
-                  />
-                  {errors.totalArea && (
-                    <span className="text-red-500 text-xs font-bold pl-1">{errors.totalArea.message}</span>
-                  )}
-                </div>
-
-                {/* Status Indicator (Purely Visual for now as per PB26 default ACTIVE) */}
-                <div className="space-y-1.5">
-                   <label className="flex items-center gap-2 text-xs font-bold text-gray-900 uppercase tracking-widest pl-1 invisible">
-                    Trạng thái
-                  </label>
-                  <div className="h-12 flex items-center px-4 bg-emerald-50 rounded-lg border border-emerald-100 text-emerald-700 font-bold text-sm gap-2">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                    Trạng thái: Hoạt động
-                  </div>
-                </div>
               </div>
 
               {/* Description */}
@@ -188,15 +142,18 @@ export function CreateFarmPage() {
                   placeholder="Mô tả ngắn gọn về trang trại của bạn..."
                   className="w-full p-4 rounded-lg bg-gray-50/50 border border-gray-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-base resize-none"
                 />
+                {errors.description && (
+                  <span className="text-red-500 text-xs font-bold pl-1">{errors.description.message}</span>
+                )}
               </div>
 
               <div className="pt-4">
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={loading}
                   className="w-full h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl font-black text-lg shadow-lg shadow-emerald-200 hover:shadow-xl hover:shadow-emerald-300 hover:-translate-y-1 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:hover:translate-y-0"
                 >
-                  {isSubmitting ? (
+                  {loading ? (
                     <>
                       <Loader2 size={24} className="animate-spin" />
                       Đang xử lý...

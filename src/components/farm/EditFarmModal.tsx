@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -7,7 +7,6 @@ import {
   FileText, 
   Loader2, 
   X,
-  CheckCircle2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
@@ -31,8 +30,7 @@ interface EditFarmModalProps {
   onSuccess?: () => void;
 }
 
-export function EditFarmModal({ isOpen, onClose, farm, onSuccess }: EditFarmModalProps) {
-  const [isSuccess, setIsSuccess] = useState(false);
+export function EditFarmModal({ isOpen, onClose, farm }: EditFarmModalProps) {
 
   const {
     register,
@@ -60,16 +58,10 @@ export function EditFarmModal({ isOpen, onClose, farm, onSuccess }: EditFarmModa
 
   const onSubmit = async (_data: FarmEditFormValues) => {
     try {
-      // Mock API call to update farm (the actual backend API will be added later)
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      setIsSuccess(true);
-      toast.success('Cập nhật trang trại thành công!');
-      setTimeout(() => {
-        setIsSuccess(false);
-        onClose();
-        if (onSuccess) onSuccess();
-      }, 2000);
+      // NOTE: The provided API specification does not yet include an endpoint for updating farms.
+      // This will be implemented once the backend supports POST/PUT /api/v1/farm/{id} or similar.
+      toast.info('Tính năng cập nhật trang trại đang được phát triển theo tài liệu API mới nhất.');
+      onClose();
     } catch (error: any) {
       toast.error('Đã xảy ra lỗi hệ thống');
     }
@@ -96,24 +88,6 @@ export function EditFarmModal({ isOpen, onClose, farm, onSuccess }: EditFarmModa
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative w-full max-w-[520px] bg-white rounded-[32px] overflow-hidden shadow-2xl my-8 pointer-events-auto"
             >
-            {isSuccess ? (
-              <div className="p-10 text-center space-y-6">
-                <motion.div 
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600"
-                >
-                  <CheckCircle2 size={48} />
-                </motion.div>
-                <h2 className="text-3xl font-black text-gray-900 tracking-tight">Thành công!</h2>
-                <p className="text-gray-500 font-medium">
-                  Trang trại của bạn đã được cập nhật. Đang tải lại dữ liệu...
-                </p>
-                <div className="flex justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
-                </div>
-              </div>
-            ) : (
               <>
                 <div className="p-8 pb-0 flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -207,10 +181,9 @@ export function EditFarmModal({ isOpen, onClose, farm, onSuccess }: EditFarmModa
                   </div>
                 </form>
               </>
-            )}
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
-      </div>
       )}
     </AnimatePresence>
   );
