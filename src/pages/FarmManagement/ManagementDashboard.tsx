@@ -25,7 +25,7 @@ import { Input } from '../../components/ui/input';
 import { cn } from '../../utils/cn';
 import { CreateFarmModal } from '../../components/farm';
 import { EditFarmModal } from '../../components/farm/EditFarmModal';
-import { fetchFarms } from '../../store/farmSlice';
+import { fetchFarmsSummary } from '../../store/farmSlice';
 import { RootState, AppDispatch } from '../../store';
 
 export function ManagementDashboardPage() {
@@ -35,14 +35,14 @@ export function ManagementDashboardPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingFarm, setEditingFarm] = useState<any | null>(null);
   
-  const { farms, loading, error } = useSelector((state: RootState) => state.farm);
+  const { farmSummary, loading, error } = useSelector((state: RootState) => state.farm);
 
   useEffect(() => {
-    dispatch(fetchFarms());
+    dispatch(fetchFarmsSummary());
   }, [dispatch]);
 
-  const filteredFarms = farms.filter(f => 
-    f.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredFarms = farmSummary.filter(f => 
+    f.farmName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -113,7 +113,7 @@ export function ManagementDashboardPage() {
       )}
 
       {/* List / Grid */}
-      {loading && farms.length === 0 ? (
+      {loading && farmSummary.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Loader2 className="w-10 h-10 animate-spin text-emerald-500" />
           <p className="text-gray-500 font-bold">Đang tải danh sách trang trại...</p>
@@ -125,12 +125,12 @@ export function ManagementDashboardPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              key={farm.id}
+              key={farm.farmId}
               className="group relative bg-white border border-gray-100 rounded-[32px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 overflow-hidden"
             >
-              {/* Status Badge (Default ACTIVE as per spec) */}
+              {/* Status Badge */}
               <div className="absolute top-6 right-6 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100">
-                Hoạt động
+                {farm.myRole === 'owner' ? 'Chủ sở hữu' : 'Thành viên'}
               </div>
 
               <div className="flex flex-col h-full">
@@ -138,10 +138,10 @@ export function ManagementDashboardPage() {
                   <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 mb-4 group-hover:scale-110 transition-transform duration-300">
                     <Trees size={24} />
                   </div>
-                  <h3 className="text-xl font-black text-gray-900 mb-1 truncate">{farm.name}</h3>
+                  <h3 className="text-xl font-black text-gray-900 mb-1 truncate">{farm.farmName}</h3>
                   <div className="flex items-center gap-1.5 text-gray-400 text-sm font-medium">
                     <MapPin size={14} />
-                    <span className="truncate">Chưa cập nhật địa chỉ</span>
+                    <span className="truncate">Chủ: {farm.ownerFullName}</span>
                   </div>
                 </div>
 
@@ -149,7 +149,7 @@ export function ManagementDashboardPage() {
                   {farm.description || "Không có mô tả"}
                 </p>
 
-                {/* Stats (Placeholders) */}
+                {/* Stats */}
                 <div className="grid grid-cols-3 gap-2 p-4 bg-gray-50/50 rounded-2xl mb-6">
                   <div className="text-center">
                     <div className="flex justify-center text-emerald-600 mb-1">
@@ -190,13 +190,15 @@ export function ManagementDashboardPage() {
                     <Layers size={14} className="mr-1.5" />
                     Lô đất
                   </Button>
-                  <Button 
-                    onClick={() => navigate('/members')}
-                    className="h-10 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl font-bold text-xs transition-all active:scale-95 border border-blue-100 shadow-sm col-span-2"
-                  >
-                    <Users size={14} className="mr-1.5" />
-                    Quản lý thành viên & Phân quyền
-                  </Button>
+                  {(farm.owner || farm.myRole === 'owner' || farm.myRole === 'manager') && (
+                    <Button 
+                      onClick={() => navigate('/members')}
+                      className="h-10 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl font-bold text-xs transition-all active:scale-95 border border-blue-100 shadow-sm col-span-2"
+                    >
+                      <Users size={14} className="mr-1.5" />
+                      Quản lý thành viên & Phân quyền
+                    </Button>
+                  )}
                 </div>
 
                 {/* Settings / Actions */}
@@ -205,21 +207,25 @@ export function ManagementDashboardPage() {
                     Cấu hình chung
                   </span>
                   <div className="flex items-center gap-1">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => setEditingFarm(farm)}
-                      className="h-8 w-8 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                    >
-                      <Edit2 size={14} />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 size={14} />
-                    </Button>
+                    {(farm.owner || farm.myRole === 'owner') && (
+                      <>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => setEditingFarm(farm)}
+                          className="h-8 w-8 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                        >
+                          <Edit2 size={14} />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -244,7 +250,7 @@ export function ManagementDashboardPage() {
         isOpen={isCreateModalOpen} 
         onClose={() => setIsCreateModalOpen(false)} 
         onSuccess={() => {
-          dispatch(fetchFarms());
+          dispatch(fetchFarmsSummary());
         }}
       />
 
@@ -253,7 +259,7 @@ export function ManagementDashboardPage() {
         onClose={() => setEditingFarm(null)}
         farm={editingFarm}
         onSuccess={() => {
-          dispatch(fetchFarms());
+          dispatch(fetchFarmsSummary());
         }}
       />
     </div>

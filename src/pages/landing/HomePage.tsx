@@ -12,7 +12,7 @@ class HomePage extends React.Component {
       <div className="w-full min-h-screen overflow-x-hidden">
         {/* Background wrapper for Navbar + HeroSection */}
         <div
-          className="relative w-full min-h-[calc(120vh)]"
+          className="relative w-full min-h-screen"
           style={{
             backgroundImage: `url(${CornBackground})`,
             backgroundSize: "cover",

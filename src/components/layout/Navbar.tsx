@@ -31,7 +31,7 @@ const variantConfig: Record<NavbarVariant, NavbarVariantConfig> = {
     showLoginButton: true,
     showCreateButton: true,
     showDivider: true,
-    showNavBackground: true,
+    showNavBackground: false,
     backgroundImage: CornBackground,
   },
   auth: {
@@ -139,9 +139,11 @@ export function Navbar({
     <>
       <style>{spinStyle}</style>
       <nav
-        className={`fixed top-0 left-0 w-full transition-all duration-500 bg-cover bg-top ${scrolled ? "z-50 bg-white shadow-lg" : "z-50"
-          }`}
+        className={`fixed top-0 left-0 w-full transition-all duration-500 ${
+          scrolled ? "z-[100] backdrop-blur-lg shadow-[0_4px_20px_rgba(0,0,0,0.05)]" : "z-[100]"
+        }`}
         style={{
+          backgroundColor: scrolled ? "rgba(255, 255, 255, 0.9)" : "transparent",
           backgroundImage:
             scrolled || !showNavBackground ? "none" : `url(${backgroundImage})`,
           backgroundPosition:
@@ -179,7 +181,7 @@ export function Navbar({
               />
               <span
                 className={`font-prompt font-extrabold leading-none transition-all duration-500 ${scrolled ? "text-[28px]" : "text-[38px]"
-                  } ${scrolled ? "text-dark-olive" : "text-light-yellow-2"}`}
+                  } ${scrolled ? "text-[#1F4418]" : "text-light-yellow-2"}`}
               >
                 FarmerAI
               </span>
@@ -199,17 +201,17 @@ export function Navbar({
                 }}
               >
                 <span
-                  className={`font-roboto text-[16px] whitespace-nowrap font-medium leading-none transition-colors duration-500 ${scrolled
-                    ? "text-dark-olive group-hover:text-cta-yellow"
-                    : "text-light-yellow-1 group-hover:text-cta-yellow"
+                  className={`font-roboto text-[16px] whitespace-nowrap font-medium transition-all duration-500 ${scrolled
+                    ? "text-[#1F4418] group-hover:text-green-800"
+                    : "text-light-yellow-1 group-hover:text-white"
                     }`}
                 >
                   {item}
                 </span>
                 <ChevronDownIcon
-                  className={`w-5 h-5 transition-colors duration-500 ${scrolled
-                    ? "text-dark-olive group-hover:text-cta-yellow"
-                    : "text-light-yellow-1 group-hover:text-cta-yellow"
+                  className={`w-4 h-4 transition-all duration-500 ${scrolled
+                    ? "text-[#1F4418] group-hover:text-green-800"
+                    : "text-light-yellow-1 group-hover:text-white"
                     }`}
                 />
               </a>
