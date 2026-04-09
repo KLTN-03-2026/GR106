@@ -9,14 +9,13 @@ import { CreatePlotModal } from './components/CreatePlotModal'
 import { EditPlotModal } from './components/EditPlotModal'
 import { DeletePlotDialog } from './components/DeletePlotDialog'
 
-// Dữ liệu Mock ban đầu theo tài liệu PB06
-const INITIAL_PLOTS: LandPlot[] = [];
+
 
 export function LandPlotsPage() {
   const navigate = useNavigate()
   
   // State quản lý danh sách và bộ lọc
-  const [plots, setPlots] = useState<LandPlot[]>(INITIAL_PLOTS)
+  const [plots] = useState<LandPlot[]>([])
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table')
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<PlotStatus | 'all'>('all')
@@ -38,27 +37,25 @@ export function LandPlotsPage() {
     })
   }, [plots, searchTerm, statusFilter])
 
-  // Handlers cho CRUD
-  const handleCreatePlot = (newPlotData: Omit<LandPlot, 'id'>) => {
-    const newPlot: LandPlot = {
-      ...newPlotData,
-      id: Math.random().toString(36).substr(2, 9),
-    }
-    setPlots((prev) => [...prev, newPlot])
+  // Handlers cho CRUD (Sẽ kết nối API sau)
+  const handleCreatePlot = (plotData: Omit<LandPlot, 'id'>) => {
+    console.log('Sẽ gọi API tạo lô đất:', plotData)
+    // Placeholder: Sau này gọi API thành công sẽ fetch lại danh sách
     setIsCreateModalOpen(false)
   }
 
-  const handleEditPlot = (updatedPlot: LandPlot) => {
-    setPlots((prev) =>
-      prev.map((p) => (p.id === updatedPlot.id ? updatedPlot : p)),
-    )
+  const handleEditPlot = (plotData: LandPlot) => {
+    console.log('Sẽ gọi API cập nhật lô đất:', plotData)
+    // Placeholder: Sau này gọi API thành công sẽ fetch lại danh sách
     setEditingPlot(null)
   }
 
-  const handleDeletePlot = (plotId: string) => {
-    // Soft delete implementation: Xóa khỏi danh sách hiển thị
-    setPlots((prev) => prev.filter((p) => p.id !== plotId))
-    setDeletingPlot(null)
+  const handleDeletePlot = () => {
+    if (deletingPlot) {
+      console.log('Sẽ gọi API xóa lô đất:', deletingPlot.id)
+      // Placeholder: Sau này gọi API thành công sẽ fetch lại danh sách
+      setDeletingPlot(null)
+    }
   }
 
   const handleViewMap = (plot: LandPlot) => {

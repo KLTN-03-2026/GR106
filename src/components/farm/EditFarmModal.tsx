@@ -26,7 +26,7 @@ type FarmEditFormValues = z.infer<typeof farmEditSchema>;
 interface EditFarmModalProps {
   isOpen: boolean;
   onClose: () => void;
-  farm: any | null; // will replace with Farm type later
+  farm: any | null;
   onSuccess?: () => void;
 }
 
@@ -58,8 +58,6 @@ export function EditFarmModal({ isOpen, onClose, farm }: EditFarmModalProps) {
 
   const onSubmit = async (_data: FarmEditFormValues) => {
     try {
-      // NOTE: The provided API specification does not yet include an endpoint for updating farms.
-      // This will be implemented once the backend supports POST/PUT /api/v1/farm/{id} or similar.
       toast.info('Tính năng cập nhật trang trại đang được phát triển theo tài liệu API mới nhất.');
       onClose();
     } catch (error: any) {
@@ -72,23 +70,26 @@ export function EditFarmModal({ isOpen, onClose, farm }: EditFarmModalProps) {
   const modalContent = (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] overflow-y-auto">
-          <div className="flex min-h-full items-start justify-center p-4 py-12 sm:py-20">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => !isSubmitting && onClose()}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-auto"
-            />
+        <>
+          {/* Backdrop — fixed để luôn cover full viewport */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => !isSubmitting && onClose()}
+            className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm"
+          />
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-[520px] bg-white rounded-[32px] overflow-hidden shadow-2xl my-8 pointer-events-auto"
-            >
-              <>
+          {/* Scroll container */}
+          <div className="fixed inset-0 z-[101] overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 sm:p-8">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative w-full max-w-[520px] bg-white rounded-[32px] shadow-2xl pointer-events-auto"
+              >
+                {/* Header */}
                 <div className="p-8 pb-0 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm">
@@ -110,6 +111,7 @@ export function EditFarmModal({ isOpen, onClose, farm }: EditFarmModalProps) {
                   </Button>
                 </div>
 
+                {/* Form */}
                 <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-5">
                   <div className="space-y-1.5">
                     <label className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
@@ -121,7 +123,9 @@ export function EditFarmModal({ isOpen, onClose, farm }: EditFarmModalProps) {
                       className="h-12 bg-gray-50 border-gray-100 focus:bg-white transition-all text-base font-medium rounded-xl"
                     />
                     {errors.name && (
-                      <span className="text-red-500 text-[10px] font-bold pl-1 uppercase tracking-wider">{errors.name.message}</span>
+                      <span className="text-red-500 text-[10px] font-bold pl-1 uppercase tracking-wider">
+                        {errors.name.message}
+                      </span>
                     )}
                   </div>
 
@@ -175,15 +179,15 @@ export function EditFarmModal({ isOpen, onClose, farm }: EditFarmModalProps) {
                           <span>Đang xử lý</span>
                         </div>
                       ) : (
-                        "Lưu thay đổi"
+                        'Lưu thay đổi'
                       )}
                     </Button>
                   </div>
                 </form>
-              </>
-            </motion.div>
+              </motion.div>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </AnimatePresence>
   );

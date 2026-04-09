@@ -5,12 +5,10 @@ import { DrawingToolbar, DrawingMode } from './components/DrawingToolbar'
 import { BoundaryConfirmDialog } from './components/BoundaryConfirmDialog'
 import { LandPlot, GeoPoint } from '../../types/landPlot'
 
-// Dữ liệu Mock ban đầu theo tài liệu PB06
-const INITIAL_PLOTS: LandPlot[] = []
 
 export function MapPage() {
   const location = useLocation()
-  const [plots, setPlots] = useState<LandPlot[]>(INITIAL_PLOTS)
+  const [plots] = useState<LandPlot[]>([])
   const [selectedPlot, setSelectedPlot] = useState<LandPlot | null>(null)
   
   // Drawing State
@@ -52,20 +50,17 @@ export function MapPage() {
   const handleConfirmSave = () => {
     if (!selectedPlot) return
 
-    const updatedPlots = plots.map(p => 
-      p.id === selectedPlot.id 
-        ? { ...p, boundaries: currentPath, area: calculatedArea } 
-        : p
-    )
-    
-    setPlots(updatedPlots)
+    console.log('Sẽ gọi API cập nhật ranh giới cho lô đất:', {
+      plotId: selectedPlot.id,
+      boundaries: currentPath,
+      area: calculatedArea
+    })
+
     setMode('none')
     setCurrentPath([])
     setIsConfirmOpen(false)
     
-    // Tự động chọn lại lô đất để xem InfoWindow sau khi lưu
-    const updated = updatedPlots.find(p => p.id === selectedPlot.id)
-    if (updated) setSelectedPlot(updated)
+    // Sau khi gọi API thành công sẽ fetch lại data
   }
 
   const handleCancelDrawing = () => {
