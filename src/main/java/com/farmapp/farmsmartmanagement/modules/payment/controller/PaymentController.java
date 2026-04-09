@@ -9,57 +9,72 @@ import com.farmapp.farmsmartmanagement.modules.payment.dto.request.CreatePayment
 import com.farmapp.farmsmartmanagement.modules.payment.dto.request.SepayIpnRequest;
 import com.farmapp.farmsmartmanagement.modules.payment.dto.response.CreatePaymentResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.Map;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/payment")
 @RequiredArgsConstructor
-@Tag(name = "Payment", description = "Thanh toán subscription qua SePay")
+@Tag(name = "Payment API", description = "Thanh toán subscription qua SePay")
 public class PaymentController {
 
     private final SepayService sepayService;
     private final SepayProperties sepayProperties;
 
-    /**
-     * Tạo link thanh toán SePay.
-     * FE nhận paymentUrl rồi redirect user sang trang SePay.
-     */
+    // ========================= 1. CREATE PAYMENT =========================
+    @Operation(
+            summary = "Tạo link thanh toán SePay",
+            description = "FE nhận paymentUrl từ API và redirect người dùng sang SePay để thanh toán",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
     @PostMapping("/create")
     @RequiresFarmToken
-    @Operation(summary = "Tạo link thanh toán SePay")
     public ResponseEntity<ApiResponse<CreatePaymentResponse>> createPayment(
-            @Valid @RequestBody CreatePaymentRequest request,
+
+            @RequestBody(
+                    description = "Thông tin tạo thanh toán (planId, chu kỳ, ...)",
+                    required = true
+            )
+            @Valid @org.springframework.web.bind.annotation.RequestBody CreatePaymentRequest request,
+
+            @Parameter(hidden = true)
             @AuthenticationPrincipal UserPrincipal principal
-            ) {
+    ) {
 
         CreatePaymentResponse response = sepayService.createPayment(
                 principal.getUserId(),
                 principal.getFarmId(),
-                request);
-        return ResponseEntity.ok(ApiResponse.success(
-                response
-        ));
+                request
+        );
+
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    /**
-     * IPN endpoint — SePay POST đến đây khi giao dịch hoàn tất (server-to-server).
-     * KHÔNG cần JWT. Phải trả HTTP 200 để SePay không retry.
-     */
+    // ========================= 2. IPN =========================
+    @Operation(
+            summary = "IPN callback từ SePay",
+            description = "SePay sẽ gọi API này khi thanh toán hoàn tất (server-to-server). KHÔNG yêu cầu JWT"
+    )
     @PostMapping("/ipn")
     public ResponseEntity<Map<String, String>> handleIpn(
-            @RequestBody SepayIpnRequest ipnRequest) {
+
+            @RequestBody(
+                    description = "Payload IPN từ SePay",
+                    required = true
+            )
+            @org.springframework.web.bind.annotation.RequestBody SepayIpnRequest ipnRequest
+    ) {
 
         log.info("[IPN] notification_type={}", ipnRequest.getNotificationType());
 
@@ -68,7 +83,12 @@ public class PaymentController {
             return ResponseEntity.ok(Map.of("status", "success"));
         } catch (Exception e) {
             log.error("[IPN] Processing error: {}", e.getMessage());
-            return ResponseEntity.ok(Map.of("status", "error", "message", e.getMessage()));
+            return ResponseEntity.ok(
+                    Map.of(
+                            "status", "error",
+                            "message", e.getMessage()
+                    )
+            );
         }
     }
 }
