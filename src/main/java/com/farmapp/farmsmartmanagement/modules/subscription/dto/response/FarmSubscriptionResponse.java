@@ -12,13 +12,13 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SubscriptionResponse {
+public class FarmSubscriptionResponse {
 
     private UUID id;
     private UUID farmId;
 
-    private UUID planId;
-    private String planName;
+    private UUID subscriptionPlanId;
+    private String subscriptionPlanName;
 
     private SubscriptionStatus status;
     private BillingCycle billingCycle;
