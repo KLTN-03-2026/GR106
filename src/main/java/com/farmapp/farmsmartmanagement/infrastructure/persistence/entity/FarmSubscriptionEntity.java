@@ -31,7 +31,12 @@ public class FarmSubscriptionEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subscription_plan_id", nullable = false)
-    private SubscriptionPlanEntity plan;
+    private SubscriptionPlanEntity subscriptionPlan;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "next_plan_id", nullable = false)
+    private SubscriptionPlanEntity nextPlan;
+
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)

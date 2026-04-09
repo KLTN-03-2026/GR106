@@ -18,8 +18,12 @@ import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.Use
 import com.farmapp.farmsmartmanagement.modules.payment.dto.request.CreatePaymentRequest;
 import com.farmapp.farmsmartmanagement.modules.payment.dto.request.SepayIpnRequest;
 import com.farmapp.farmsmartmanagement.modules.payment.dto.response.CreatePaymentResponse;
+import com.farmapp.farmsmartmanagement.modules.subscription.service.FarmSubscriptionService;
+import com.farmapp.farmsmartmanagement.modules.subscription.service.SubscriptionPlanService;
 import jakarta.persistence.EntityManager;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,17 +41,20 @@ import java.util.regex.Pattern;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class SepayService {
 
-    private final SepayProperties sepayProperties;
-    private final SubscriptionPlanRepository subscriptionPlanRepository;
-    private final FarmSubscriptionRepository farmSubscriptionRepository;
-    private final PaymentTransactionRepository paymentTransactionRepository;
-    private final FarmRepository farmRepository;
-    private final UserRepository userRepository;
-    private final SecurityUtils securityUtils;
+    SepayProperties sepayProperties;
+    SubscriptionPlanRepository subscriptionPlanRepository;
+    FarmSubscriptionRepository farmSubscriptionRepository;
+    PaymentTransactionRepository paymentTransactionRepository;
+    FarmRepository farmRepository;
+    UserRepository userRepository;
+    SecurityUtils securityUtils;
 
-    private final EntityManager entityManager;
+    FarmSubscriptionService farmSubscriptionService;
+
+    EntityManager entityManager;
 
     private static final String ORDER_CODE_PREFIX = "FSM";
     private static final Pattern ORDER_CODE_PATTERN = Pattern.compile("(FSM\\d+)");
@@ -56,101 +63,73 @@ public class SepayService {
     //  Tạo link thanh toán SePay
     // ─────────────────────────────────────────────────────────────────
 
+
+    // Get FaSub hiện tại ()
     @Transactional
-    public CreatePaymentResponse createPayment(CreatePaymentRequest request) {
+    public CreatePaymentResponse createPayment(UUID userId, UUID farmId, CreatePaymentRequest request) {
 
         log.info("========== CREATE PAYMENT START ==========");
-
-        // 🔥 Log request raw
-        log.info("[REQUEST] full = {}", request);
-        log.info("[REQUEST] subscriptionPlanId = {}", request.getSubscriptionPlanId());
-        log.info("[REQUEST] billingCycle = {}", request.getBillingCycle());
-
-        UUID userId = securityUtils.getCurrentUserId();
-        UUID farmId = securityUtils.getCurrentFarmId();
-
-        log.info("[SECURITY] userId = {}", userId);
-        log.info("[SECURITY] farmId = {}", farmId);
+        log.info("[REQUEST] subscriptionPlanId={} billingCycle={}",
+                request.getSubscriptionPlanId(), request.getBillingCycle());
+        log.info("[SECURITY] userId={} farmId={}", userId, farmId);
 
         var user = userRepository.findById(userId)
-                .orElseThrow(() -> {
-                    log.error("[ERROR] User not found: {}", userId);
-                    return new AppException(ErrorCode.USER_NOT_EXISTED);
-                });
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         var farm = farmRepository.findById(farmId)
-                .orElseThrow(() -> {
-                    log.error("[ERROR] Farm not found: {}", farmId);
-                    return new AppException(ErrorCode.FARM_NOT_FOUND);
-                });
+                .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
 
-        // 🔥 Check null trước khi query DB
         if (request.getSubscriptionPlanId() == null) {
-            log.error("[ERROR] subscriptionPlanId is NULL → request mapping failed");
             throw new AppException(ErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND);
         }
 
-        log.info("[DB] Finding plan with id = {}", request.getSubscriptionPlanId());
-
         SubscriptionPlanEntity plan = subscriptionPlanRepository
                 .findById(request.getSubscriptionPlanId())
-                .orElseThrow(() -> {
-                    log.error("[ERROR] Subscription plan NOT FOUND with id = {}", request.getSubscriptionPlanId());
-                    return new AppException(ErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND);
-                });
+                .orElseThrow(() -> new AppException(ErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND));
 
-        log.info("[PLAN] Found plan = {} | monthly={} | annual={}",
+        log.info("[PLAN] name={} monthly={} annual={}",
                 plan.getName(), plan.getPriceMonthly(), plan.getPriceAnnual());
 
         BigDecimal amount = request.getBillingCycle() == BillingCycle.ANNUAL
                 ? plan.getPriceAnnual()
                 : plan.getPriceMonthly();
 
-        log.info("[PAYMENT] Calculated amount = {}", amount);
-
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            log.error("[ERROR] Invalid amount = {}", amount);
             throw new AppException(ErrorCode.INVALID_PAYMENT_AMOUNT);
         }
 
-        FarmSubscriptionEntity farmSubscription = farmSubscriptionRepository
+        // Lấy gói hiện tại — farm nào cũng phải có ít nhất FREE
+        FarmSubscriptionEntity currentSubscription = farmSubscriptionRepository
                 .findByFarmAndIsCurrent(farm, true)
-                .orElseGet(() -> {
-                    log.warn("[SUBSCRIPTION] No current subscription → creating new stub");
+                .orElseThrow(() -> new AppException(ErrorCode.FARM_SUBSCRIPTION_NOT_FOUND));
 
-                    return farmSubscriptionRepository.save(
-                            FarmSubscriptionEntity.builder()
-                                    .farm(farm)
-                                    .plan(plan)
-                                    .billingCycle(request.getBillingCycle())
-                                    .isCurrent(false)
-                                    .build()
-                    );
-                });
-
-        log.info("[SUBSCRIPTION] Using subscription id = {}", farmSubscription.getId());
+        log.info("[SUBSCRIPTION] currentSubscription id={} plan={}",
+                currentSubscription.getId(),
+                currentSubscription.getSubscriptionPlan().getName());
 
         String orderCode = ORDER_CODE_PREFIX + System.currentTimeMillis();
 
-        // Lưu transaction
         PaymentTransactionEntity txn = paymentTransactionRepository.save(
                 PaymentTransactionEntity.builder()
                         .farm(farm)
                         .user(user)
                         .subscriptionPlan(plan)
-                        .farmSubscription(farmSubscription)
-                        .amount(amount).currency("VND")
+                        .farmSubscription(currentSubscription) // gói HIỆN TẠI, không phải stub
+                        .billingCycle(request.getBillingCycle()) // lưu billingCycle vào txn
+                        .amount(amount)
+                        .currency("VND")
                         .gateway(PaymentGateway.SEPAY)
                         .status(PaymentStatus.PENDING)
                         .orderCode(orderCode)
                         .build()
         );
 
-        // Build form data
-        String baseUrl   = sepayProperties.getReturnUrl();
+        log.info("[PAYMENT] txn id={} orderCode={} amount={}", txn.getId(), orderCode, amount);
+
+        String baseUrl    = sepayProperties.getReturnUrl();
         String successUrl = baseUrl + "/success?order=" + orderCode;
-        String errorUrl   = baseUrl + "/error?order=" + orderCode;
-        String cancelUrl  = baseUrl + "/cancel?order=" + orderCode;
+        String errorUrl   = baseUrl + "/error?order="   + orderCode;
+        String cancelUrl  = baseUrl + "/cancel?order="  + orderCode;
         String amountStr  = amount.toBigInteger().toString();
         String description = "Thanh toan don hang " + orderCode;
 
@@ -198,7 +177,6 @@ public class SepayService {
                 ipn.getNotificationType(),
                 ipn.getOrder() != null ? ipn.getOrder().getOrderInvoiceNumber() : "null");
 
-        // Chỉ xử lý ORDER_PAID
         if (!"ORDER_PAID".equals(ipn.getNotificationType())) {
             log.info("[SePay IPN] Skipping notification_type={}", ipn.getNotificationType());
             return;
@@ -211,52 +189,66 @@ public class SepayService {
 
         String orderCode = ipn.getOrder().getOrderInvoiceNumber();
         BigDecimal paidAmount = ipn.getOrder().getOrderAmount();
-        log.info("[IPN] Searching orderCode='{}' length={}", orderCode, orderCode.length());
-        log.info("[IPN] orderCode={} paidAmount={}", orderCode, paidAmount);
 
         if (orderCode == null) {
             log.warn("[SePay IPN] Missing order_invoice_number");
             return;
         }
 
+        log.info("[IPN] orderCode={} paidAmount={}", orderCode, paidAmount);
+
         PaymentTransactionEntity txn = paymentTransactionRepository
                 .findByOrderCode(orderCode)
                 .orElse(null);
-        log.info("[IPN] txn={}", txn != null ? txn.getId() + " status=" + txn.getStatus() : "NOT FOUND");
 
         if (txn == null) {
-            log.warn("[SePay IPN] Transaction not found for orderCode={}", orderCode);
-            log.warn("[IPN] Transaction not found. All recent orders:");
-            paymentTransactionRepository.findAll().stream()
-                    .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
-                    .limit(5)
-                    .forEach(t -> log.warn("  → id={} orderCode='{}' status={}",
-                            t.getId(), t.getOrderCode(), t.getStatus()));
+            // Tiền về nhưng không tìm thấy order → cần xử lý thủ công
+            log.error("[SePay IPN] UNMATCHED PAYMENT: orderCode={} amount={} — cần xử lý thủ công!",
+                    orderCode, paidAmount);
             return;
         }
 
-        log.info("[IPN] expiredAt={} now={}", txn.getExpiredAt(), LocalDateTime.now());
+        log.info("[IPN] txn={} status={} expiredAt={}", txn.getId(), txn.getStatus(), txn.getExpiredAt());
+
+        // Idempotent — IPN có thể gọi nhiều lần
         if (txn.getStatus() == PaymentStatus.SUCCESS) {
             log.info("[SePay IPN] Already SUCCESS, skip. orderCode={}", orderCode);
             return;
         }
 
+        // Thanh toán muộn — tiền đã về, không kích hoạt, cần hoàn thủ công
         if (txn.getExpiredAt() != null && LocalDateTime.now().isAfter(txn.getExpiredAt())) {
-            log.warn("[SePay IPN] Transaction expired. orderCode={}", orderCode);
-            txn.setStatus(PaymentStatus.FAILED);
-            txn.setGatewayResponseMessage("Transaction expired");
+            log.error("[SePay IPN] LATE PAYMENT: orderCode={} amount={} expiredAt={} — cần hoàn tiền thủ công!",
+                    orderCode, paidAmount, txn.getExpiredAt());
+            txn.setStatus(PaymentStatus.LATE_PAYMENT);
+            txn.setPaidAmount(paidAmount);
+            txn.setPaidAt(LocalDateTime.now());
+            txn.setGatewayResponseMessage("Late payment — manual refund required");
             paymentTransactionRepository.save(txn);
             return;
         }
 
+        // Thanh toán thiếu — tiền đã về, không kích hoạt, cần hoàn thủ công
         if (paidAmount != null && paidAmount.compareTo(txn.getAmount()) < 0) {
-            log.warn("[SePay IPN] Amount mismatch: expected={} received={}", txn.getAmount(), paidAmount);
-            txn.setStatus(PaymentStatus.FAILED);
-            txn.setGatewayResponseMessage("Amount mismatch");
+            log.error("[SePay IPN] PARTIAL PAYMENT: orderCode={} expected={} received={} — cần hoàn tiền thủ công!",
+                    orderCode, txn.getAmount(), paidAmount);
+            txn.setStatus(PaymentStatus.PARTIAL_PAYMENT);
+            txn.setPaidAmount(paidAmount);
+            txn.setPaidAt(LocalDateTime.now());
+            txn.setGatewayResponseMessage("Partial payment — manual refund required");
             paymentTransactionRepository.save(txn);
             return;
         }
 
+        // Thanh toán thừa — vẫn kích hoạt, log để hoàn tiền thừa
+        if (paidAmount != null && paidAmount.compareTo(txn.getAmount()) > 0) {
+            log.warn("[SePay IPN] OVERPAYMENT: orderCode={} expected={} received={} surplus={}",
+                    orderCode, txn.getAmount(), paidAmount,
+                    paidAmount.subtract(txn.getAmount()));
+            // TODO: alert admin hoàn tiền thừa
+        }
+
+        // Happy path
         txn.setStatus(PaymentStatus.SUCCESS);
         txn.setPaidAt(LocalDateTime.now());
         txn.setPaidAmount(paidAmount);
@@ -269,7 +261,7 @@ public class SepayService {
 
         log.info("[SePay IPN] Payment SUCCESS txn={} orderCode={}", txn.getId(), orderCode);
 
-//        activateSubscription(txn);
+        farmSubscriptionService.activateSubscription(txn);
     }
 
     // ─────────────────────────────────────────────────────────────────

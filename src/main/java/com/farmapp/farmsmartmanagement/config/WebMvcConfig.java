@@ -1,4 +1,20 @@
 package com.farmapp.farmsmartmanagement.config;
 
-public class WebMvcConfig {
+import com.farmapp.farmsmartmanagement.config.security.FarmTokenInterceptor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+@RequiredArgsConstructor
+public class WebMvcConfig implements WebMvcConfigurer {
+
+    private final FarmTokenInterceptor farmTokenInterceptor;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(farmTokenInterceptor)
+                .addPathPatterns("/api/**");
+    }
 }

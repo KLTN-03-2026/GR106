@@ -3,7 +3,6 @@ package com.farmapp.farmsmartmanagement.modules.farm.service;
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
-import com.farmapp.farmsmartmanagement.config.database.RlsContext;
 import com.farmapp.farmsmartmanagement.domain.enums.BillingCycle;
 import com.farmapp.farmsmartmanagement.domain.enums.SubscriptionStatus;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
@@ -63,10 +62,10 @@ public class FarmService {
         farm.setCreatedAt(now);
         farmRepository.save(farm);
 
+        // Set RLS cho farm vừa tạo — vì RlsContext chưa có farmId tại thời điểm này
         em.createNativeQuery(
-                        "SELECT set_config('app.current_farm_id', :fid, true)"
-                ).setParameter("fid", farm.getId().toString())
-                .getSingleResult();
+                "SET LOCAL app.current_farm_id = '" + farm.getId() + "'"
+        ).executeUpdate();
 
         // 2. Tạo farm_configs
         FarmConfigEntity config = new FarmConfigEntity();
@@ -85,14 +84,17 @@ public class FarmService {
                 .orElseThrow(() -> new AppException(ErrorCode.DEFAULT_SUBSCRIPTION_PLAN_NOT_FOUND));
 
         // 4. Tạo subscription TRIAL 14 ngày
+        Instant expiresAt = now.plus(14, ChronoUnit.DAYS);
         FarmSubscriptionEntity sub = new FarmSubscriptionEntity();
         sub.setFarm(farm);
-        sub.setPlan(plan);
-        sub.setStatus(SubscriptionStatus.TRIAL);
+        sub.setSubscriptionPlan(plan);
+        sub.setNextPlan(plan);
+        sub.setStatus(SubscriptionStatus.ACTIVE);
         sub.setBillingCycle(BillingCycle.MONTHLY);
         sub.setIsCurrent(true);
         sub.setStartedAt(now);
-        sub.setExpiresAt(now.plus(14, ChronoUnit.DAYS));
+        sub.setExpiresAt(expiresAt);
+        sub.setGraceUntil(expiresAt.plus(3, ChronoUnit.DAYS)); // hết hạn 3 ngày
         sub.setAutoRenew(false);
         sub.setCreatedAt(now);
         subscriptionRepository.save(sub);
@@ -109,7 +111,7 @@ public class FarmService {
 
         // 6. Gán OWNER role cho user
         FarmRoleEntity ownerRole = farmRoleRepository.findByName("OWNER")
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.FARM_ROLE_NOT_FOUND));
 
         FarmMemberEntity member = new FarmMemberEntity();
         member.setFarm(farm);

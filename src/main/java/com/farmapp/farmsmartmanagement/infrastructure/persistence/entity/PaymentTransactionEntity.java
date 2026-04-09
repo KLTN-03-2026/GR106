@@ -41,6 +41,11 @@ public class PaymentTransactionEntity {
     @JoinColumn(name = "subscription_plan_id", nullable = false)
     private SubscriptionPlanEntity subscriptionPlan;
 
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(columnDefinition = "billing_cycle")
+    private BillingCycle billingCycle;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "farm_subscription_id", nullable = false)
     private FarmSubscriptionEntity farmSubscription;

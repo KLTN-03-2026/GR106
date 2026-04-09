@@ -105,7 +105,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
         log.warn("DataIntegrityViolationException: {}", ex.getMessage());
 
-        String message = ErrorCode..getMessage();
+        String message = ErrorCode.INVALID_REQUEST.getMessage();
 
         // Phân biệt unique constraint vs foreign key
         Throwable cause = ex.getCause();

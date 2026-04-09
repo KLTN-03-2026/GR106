@@ -8,13 +8,16 @@ import com.farmapp.farmsmartmanagement.domain.enums.SubscriptionStatus;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.FarmRepository;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.FarmSubscriptionRepository;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.SubscriptionHistoryRepository;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.SubscriptionPlanRepository;
 import com.farmapp.farmsmartmanagement.modules.subscription.dto.response.SubscriptionPlanResponse;
 import com.farmapp.farmsmartmanagement.modules.subscription.dto.response.FarmSubscriptionResponse;
 import com.farmapp.farmsmartmanagement.modules.subscription.mapper.SubscriptionMapper;
+import jakarta.persistence.EntityManager;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -26,16 +29,21 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class FarmSubscriptionService {
     SubscriptionPlanRepository subscriptionPlanRepository;
     SubscriptionMapper subscriptionMapper;
+    SubscriptionHistoryRepository subscriptionHistoryRepository;
 
     FarmSubscriptionRepository farmSubscriptionRepository;
     FarmRepository farmRepository;
+
+    EntityManager entityManager;
 
     public List<FarmSubscriptionResponse> getFarmSubscriptionHistory(UUID farmId){
         return farmSubscriptionRepository.findByFarm_Id(farmId)
@@ -55,69 +63,96 @@ public class FarmSubscriptionService {
         return subscriptionMapper.toFarmSubscriptionResponse(farmSubscription);
     }
 
+    @Transactional
     public void activateSubscription(PaymentTransactionEntity txn) {
 
-        FarmSubscriptionEntity currentSubscriptionPlan = farmSubscriptionRepository
+        entityManager.createNativeQuery("SET LOCAL app.bypass_rls = 'true'").executeUpdate();
+
+        FarmSubscriptionEntity current = farmSubscriptionRepository
                 .findByFarmAndIsCurrent(txn.getFarm(), true)
                 .orElseThrow(() -> new AppException(ErrorCode.FARM_SUBSCRIPTION_NOT_FOUND));
 
-        SubscriptionPlanEntity defaultSubscription = subscriptionPlanRepository.findByName("FREE")
+        SubscriptionPlanEntity defaultPlan = subscriptionPlanRepository.findByName("FREE")
                 .orElseThrow(() -> new AppException(ErrorCode.DEFAULT_SUBSCRIPTION_PLAN_NOT_FOUND));
 
-        SubscriptionPlanEntity nextSubscriptionPlan = txn.getSubscriptionPlan();
+        SubscriptionPlanEntity newPlan = txn.getSubscriptionPlan();
 
-        SubscriptionHistoryEntity subscriptionHistory = new  SubscriptionHistoryEntity();
-        subscriptionHistory.setFarmSubscription(currentSubscriptionPlan);
-        subscriptionHistory.setFromPlan(currentSubscriptionPlan.getSubscriptionPlan());
-        subscriptionHistory.setToPlan(txn.getSubscriptionPlan());
-        subscriptionHistory.setTriggeredBy(txn.getUser());
-        subscriptionHistory.setFarm(txn.getFarm());
-        subscriptionHistory.setCreatedAt(Instant.now());
+        // Xác định event type
+        int priceCompare = newPlan.getPriceMonthly()
+                .compareTo(current.getSubscriptionPlan().getPriceMonthly());
+        String eventType = priceCompare > 0 ? "UPGRADE"
+                : priceCompare < 0 ? "DOWNGRADE"
+                : "RENEW";
 
-        FarmSubscriptionEntity nextFarmSubscription = txn.getFarmSubscription();
+        log.info("[Subscription] eventType={} farm={} fromPlan={} toPlan={}",
+                eventType, txn.getFarm().getId(),
+                current.getSubscriptionPlan().getName(), newPlan.getName());
 
+        // Tính thời gian — tiếp nối nếu gói hiện tại còn hạn
+        Instant now = Instant.now();
+        Instant newStart = (current.getExpiresAt() != null && current.getExpiresAt().isAfter(now))
+                ? current.getExpiresAt()
+                : now;
 
-        // Trường hợp gói hiện tại thấp hơn
-        if(txn.getSubscriptionPlan().getPriceMonthly().compareTo(currentSubscriptionPlan.getSubscriptionPlan().getPriceMonthly()) > 0){
-            subscriptionHistory.setEventType("UPGRADE");
+        boolean isYearly = txn.getBillingCycle() == BillingCycle.ANNUAL;
+        Instant newExpires = isYearly
+                ? newStart.plus(365, ChronoUnit.DAYS)
+                : newStart.plus(30,  ChronoUnit.DAYS);
+        Instant newGrace = isYearly
+                ? newExpires.plus(7, ChronoUnit.DAYS)
+                : newExpires.plus(3, ChronoUnit.DAYS);
 
-            //Tắt gói hiện tại -> nâng cấp lên gói mới
-            currentSubscriptionPlan.setIsCurrent(false);
-            currentSubscriptionPlan.setCancelledAt(Instant.now());
-            currentSubscriptionPlan.setCancellationReason("UPGRADE");
-            currentSubscriptionPlan.setUpdatedAt(Instant.now());
+        // Tạo FarmSubscription mới
+        FarmSubscriptionEntity next = FarmSubscriptionEntity.builder()
+                .farm(txn.getFarm())
+                .subscriptionPlan(newPlan)
+                .billingCycle(txn.getBillingCycle())
+                .nextPlan(defaultPlan)
+                .startedAt(newStart)
+                .expiresAt(newExpires)
+                .graceUntil(newGrace)
+                .autoRenew(false)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
 
-            nextFarmSubscription.setIsCurrent(true);
+        if ("UPGRADE".equals(eventType) || "RENEW".equals(eventType)) {
+            // Tắt gói hiện tại ngay
+            current.setIsCurrent(false);
+            current.setCancelledAt(now);
+            current.setCancellationReason(eventType);
+            current.setUpdatedAt(now);
 
-            nextFarmSubscription.setNextPlan(defaultSubscription);
+            // Kích hoạt gói mới ngay
+            next.setIsCurrent(true);
+            next.setStatus(SubscriptionStatus.ACTIVE);
+
+        } else { // DOWNGRADE
+            // Gói hiện tại chạy đến hết hạn
+            current.setNextPlan(newPlan);
+            current.setUpdatedAt(now);
+
+            // Gói mới chờ đến khi gói cũ hết hạn
+            next.setIsCurrent(false);
+            next.setStatus(SubscriptionStatus.PENDING);
         }
 
-        //Trường hợp gói hiện tại thấp hơn
-        else{
-            subscriptionHistory.setEventType("DOWNGRADE");
-            currentSubscriptionPlan.setNextPlan(nextSubscriptionPlan);
+        // Ghi lịch sử
+        SubscriptionHistoryEntity history = SubscriptionHistoryEntity.builder()
+                .farm(txn.getFarm())
+                .farmSubscription(current)
+                .fromPlan(current.getSubscriptionPlan())
+                .toPlan(newPlan)
+                .triggeredBy(txn.getUser())
+                .eventType(eventType)
+                .createdAt(now)
+                .build();
 
-            nextFarmSubscription.setNextPlan(defaultSubscription);
-            nextFarmSubscription.setStatus(SubscriptionStatus.ACTIVE);
-            nextFarmSubscription.setIsCurrent(false);
-            nextFarmSubscription.setCreatedAt(Instant.now());
-            nextFarmSubscription.setStartedAt(currentSubscriptionPlan.getGraceUntil());
-            nextFarmSubscription.setExpiresAt(nextFarmSubscription.getBillingCycle().compareTo(BillingCycle.MONTHLY) > 1 ?
-                    currentSubscriptionPlan.getGraceUntil().plus(30, ChronoUnit.DAYS)
-                    : nextFarmSubscription.getGraceUntil().plus(1, ChronoUnit.YEARS));
-            nextFarmSubscription.setGraceUntil(nextFarmSubscription.getBillingCycle().compareTo(BillingCycle.MONTHLY) > 1 ?
-                    currentSubscriptionPlan.getGraceUntil().plus(31, ChronoUnit.DAYS)
-                    :currentSubscriptionPlan.getGraceUntil().plus(366, ChronoUnit.DAYS));
-        }
+        farmSubscriptionRepository.save(current);
+        farmSubscriptionRepository.save(next);
+        subscriptionHistoryRepository.save(history);
 
-
-
-
-
-        SubscriptionHistoryEntity newHistory = new SubscriptionHistoryEntity();
-        newHistory.setEventType("UP");
-
-
-
+        log.info("[Subscription] DONE eventType={} farm={} plan={} start={} expires={}",
+                eventType, txn.getFarm().getId(), newPlan.getName(), newStart, newExpires);
     }
 }

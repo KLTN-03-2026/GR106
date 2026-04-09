@@ -2,7 +2,9 @@ package com.farmapp.farmsmartmanagement.modules.payment.controller;
 
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
 import com.farmapp.farmsmartmanagement.config.app.SepayProperties;
+import com.farmapp.farmsmartmanagement.config.security.RequiresFarmToken;
 import com.farmapp.farmsmartmanagement.infrastructure.payment.SepayService;
+import com.farmapp.farmsmartmanagement.infrastructure.security.UserPrincipal;
 import com.farmapp.farmsmartmanagement.modules.payment.dto.request.CreatePaymentRequest;
 import com.farmapp.farmsmartmanagement.modules.payment.dto.request.SepayIpnRequest;
 import com.farmapp.farmsmartmanagement.modules.payment.dto.response.CreatePaymentResponse;
@@ -13,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
@@ -34,13 +37,20 @@ public class PaymentController {
      * FE nhận paymentUrl rồi redirect user sang trang SePay.
      */
     @PostMapping("/create")
-    @PreAuthorize("isAuthenticated()")
+    @RequiresFarmToken
     @Operation(summary = "Tạo link thanh toán SePay")
     public ResponseEntity<ApiResponse<CreatePaymentResponse>> createPayment(
-            @Valid @RequestBody CreatePaymentRequest request) {
+            @Valid @RequestBody CreatePaymentRequest request,
+            @AuthenticationPrincipal UserPrincipal principal
+            ) {
 
-        CreatePaymentResponse response = sepayService.createPayment(request);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        CreatePaymentResponse response = sepayService.createPayment(
+                principal.getUserId(),
+                principal.getFarmId(),
+                request);
+        return ResponseEntity.ok(ApiResponse.success(
+                response
+        ));
     }
 
     /**

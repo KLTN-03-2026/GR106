@@ -66,7 +66,7 @@ public class AuthService {
         userRepository.save(user);
 
         RoleEntity userRole = roleRepository.findByName("USER")
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
         userRoleRepository.save(new UserRoleEntity(user, userRole));
 
         String rawToken = UUID.randomUUID().toString();
@@ -137,7 +137,7 @@ public class AuthService {
         }
 
         UserEntity user = userRepository.findById(token.getUserId())
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         user.setStatus(UserStatus.ACTIVE);
         token.setUsedAt(Instant.now());
