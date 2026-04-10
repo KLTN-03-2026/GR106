@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Trees, 
-  MapPin, 
-  Maximize2, 
-  Users, 
-  Layers, 
+import {
+  Trees,
+  MapPin,
   Edit2,
   Trash2,
   Plus,
@@ -16,17 +13,16 @@ import {
   Calendar,
   DollarSign,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  CreditCard
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { cn } from '../../utils/cn';
 import { CreateFarmModal } from '../../components/farm';
 import { EditFarmModal } from '../../components/farm/EditFarmModal';
 import { fetchFarmsSummary } from '../../store/farmSlice';
 import { RootState, AppDispatch } from '../../store';
+import { farmService } from '../../services/farmService';
 
 export function ManagementDashboardPage() {
   const navigate = useNavigate();
@@ -34,233 +30,231 @@ export function ManagementDashboardPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingFarm, setEditingFarm] = useState<any | null>(null);
-  
+  const [selectingFarmId, setSelectingFarmId] = useState<string | null>(null);
+
   const { farmSummary, loading, error } = useSelector((state: RootState) => state.farm);
 
   useEffect(() => {
     dispatch(fetchFarmsSummary());
   }, [dispatch]);
 
-  const filteredFarms = farmSummary.filter(f => 
+  const handleUpgrade = async (farmId: string) => {
+    try {
+      setSelectingFarmId(farmId);
+      const res = await farmService.selectFarm(farmId);
+      if (res.success && res.data.farmToken) {
+        localStorage.setItem('farmToken', res.data.farmToken);
+        navigate('/subscription');
+      }
+    } catch (err) {
+      console.error('Lỗi khi chọn farm:', err);
+      alert('Không thể khởi tạo phiên làm việc cho trang trại này.');
+    } finally {
+      setSelectingFarmId(null);
+    }
+  };
+
+  const filteredFarms = farmSummary.filter(f =>
     f.farmName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="flex flex-col h-full bg-white p-6 space-y-6 overflow-y-auto no-scrollbar">
+    <div
+      className="min-h-full p-6 overflow-y-auto no-scrollbar bg-gray-50"
+    >
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="icon" 
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <button
             onClick={() => navigate('/dashboard')}
-            className="rounded-full hover:bg-gray-100"
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors bg-white border border-gray-200 text-gray-600 hover:bg-gray-100"
           >
-            <ArrowLeft size={20} />
-          </Button>
+            <ArrowLeft size={16} />
+          </button>
           <div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Quản lý trang trại</h1>
-            <p className="text-gray-500 font-medium">Xem và điều chỉnh cấu hình các không gian canh tác của bạn.</p>
+            <h1 className="text-xl font-semibold text-gray-800">
+              Quản lý trang trại
+            </h1>
+            <p className="text-xs mt-0.5 text-gray-500">
+              Xem và điều chỉnh cấu hình các không gian canh tác của bạn
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-            <Input 
-              placeholder="Tìm kiếm trang trại..." 
-              className="pl-10 h-11 bg-gray-50 border-gray-100 rounded-xl focus:bg-white transition-all"
+        <div className="flex items-center gap-2.5">
+          <div className="relative">
+            <Search
+              size={14}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400"
+            />
+            <input
+              placeholder="Tìm kiếm trang trại..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8 pr-3 py-2 text-sm rounded-xl outline-none w-52 bg-white border border-gray-200 text-gray-700 focus:ring-2 focus:ring-green-400"
             />
           </div>
-          <Button 
+          <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="h-11 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-200 transition-all active:scale-95"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-green-500 text-white hover:bg-green-600 active:scale-95"
           >
-            <Plus size={18} className="mr-2" />
+            <Plus size={15} />
             Thêm mới
-          </Button>
+          </button>
         </div>
       </div>
 
-      {/* Overview Stats (Placeholder until API available) */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[
-          { label: 'Kế hoạch', icon: Briefcase, color: 'text-blue-600', bg: 'bg-blue-50', val: 0 },
-          { label: 'Công việc', icon: CheckSquare, color: 'text-indigo-600', bg: 'bg-indigo-50', val: 0 },
-          { label: 'Ngày công', icon: Calendar, color: 'text-amber-600', bg: 'bg-amber-50', val: 0 },
-          { label: 'Doanh thu', icon: DollarSign, color: 'text-emerald-600', bg: 'bg-emerald-50', val: 0 },
+          { label: 'Kế hoạch', icon: Briefcase },
+          { label: 'Công việc', icon: CheckSquare },
+          { label: 'Ngày công', icon: Calendar },
+          { label: 'Doanh thu', icon: DollarSign },
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", stat.bg, stat.color)}>
-              <stat.icon size={20} />
+          <div
+            key={i}
+            className="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm"
+          >
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-gray-100">
+              <stat.icon size={16} className="text-gray-600" />
             </div>
-            <div>
-              <div className="text-2xl font-black text-gray-900">{stat.val}</div>
-              <div className="text-xs font-bold text-gray-400 uppercase">{stat.label}</div>
+            <div className="text-2xl font-semibold text-gray-800">
+              0
+            </div>
+            <div className="text-xs mt-1 tracking-wider text-gray-500">
+              {stat.label.toUpperCase()}
             </div>
           </div>
         ))}
       </div>
 
-      {/* Error State */}
+      {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-center gap-3 text-red-700">
-          <AlertCircle size={20} />
-          <p className="text-sm font-medium">Lỗi tải dữ liệu: {typeof error === 'string' ? error : 'Vui lòng thử lại sau'}</p>
+        <div className="flex items-center gap-3 p-4 rounded-2xl mb-5 text-sm bg-red-50 border border-red-200 text-red-600">
+          <AlertCircle size={16} />
+          <span>
+            Lỗi tải dữ liệu:{' '}
+            {typeof error === 'string' ? error : 'Vui lòng thử lại sau'}
+          </span>
         </div>
       )}
 
-      {/* List / Grid */}
+      {/* Loading */}
       {loading && farmSummary.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <Loader2 className="w-10 h-10 animate-spin text-emerald-500" />
-          <p className="text-gray-500 font-bold">Đang tải danh sách trang trại...</p>
+        <div className="flex flex-col items-center justify-center py-24 gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-green-500" />
+          <p className="text-sm text-gray-500">
+            Đang tải danh sách trang trại...
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredFarms.map((farm, index) => (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
               key={farm.farmId}
-              className="group relative bg-white border border-gray-100 rounded-[32px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 overflow-hidden"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.08, duration: 0.3 }}
+              className="p-5 rounded-2xl flex flex-col bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all"
             >
-              {/* Status Badge */}
-              <div className="absolute top-6 right-6 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100">
-                {farm.myRole === 'owner' ? 'Chủ sở hữu' : 'Thành viên'}
+              {/* Top */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-10 h-10 rounded-[14px] flex items-center justify-center bg-green-100">
+                  <Trees size={18} className="text-green-600" />
+                </div>
+
+                <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
+                  {farm.myRole?.toUpperCase() === 'OWNER' ? 'Chủ sở hữu' : 'Thành viên'}
+                </span>
               </div>
 
-              <div className="flex flex-col h-full">
-                <div className="mb-4">
-                  <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <Trees size={24} />
-                  </div>
-                  <h3 className="text-xl font-black text-gray-900 mb-1 truncate">{farm.farmName}</h3>
-                  <div className="flex items-center gap-1.5 text-gray-400 text-sm font-medium">
-                    <MapPin size={14} />
-                    <span className="truncate">Chủ: {farm.ownerFullName}</span>
-                  </div>
-                </div>
+              <h3 className="text-[15px] font-semibold truncate text-gray-800">
+                {farm.farmName}
+              </h3>
 
-                <p className="text-gray-500 text-sm font-medium line-clamp-2 mb-6">
-                  {farm.description || "Không có mô tả"}
-                </p>
+              <div className="flex items-center gap-1 text-xs mt-1 mb-2 text-gray-500">
+                <MapPin size={11} />
+                <span className="truncate">Chủ: {farm.ownerFullName}</span>
+              </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-2 p-4 bg-gray-50/50 rounded-2xl mb-6">
-                  <div className="text-center">
-                    <div className="flex justify-center text-emerald-600 mb-1">
-                      <Layers size={16} />
-                    </div>
-                    <div className="text-sm font-black text-gray-900">0</div>
-                    <div className="text-[10px] font-bold text-gray-400 uppercase">Lô đất</div>
-                  </div>
-                  <div className="text-center border-x border-gray-100">
-                    <div className="flex justify-center text-blue-600 mb-1">
-                      <Users size={16} />
-                    </div>
-                    <div className="text-sm font-black text-gray-900">0</div>
-                    <div className="text-[10px] font-bold text-gray-400 uppercase">TV viên</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="flex justify-center text-amber-600 mb-1">
-                      <Maximize2 size={16} />
-                    </div>
-                    <div className="text-sm font-black text-gray-900">0</div>
-                    <div className="text-[10px] font-bold text-gray-400 uppercase">ha</div>
-                  </div>
-                </div>
+              <p className="text-xs leading-relaxed line-clamp-2 mb-4 min-h-[32px] text-gray-500">
+                {farm.description || 'Không có mô tả'}
+              </p>
 
-                {/* Quick Actions */}
-                <div className="grid grid-cols-2 gap-2 mt-auto pt-2">
-                  <Button 
-                    onClick={() => navigate('/map')}
-                    className="h-10 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-bold text-xs transition-all active:scale-95 border border-emerald-100 shadow-sm"
-                  >
-                    <MapPin size={14} className="mr-1.5" />
-                    Bản đồ
-                  </Button>
-                  <Button 
-                    onClick={() => navigate('/land-plots')}
-                    className="h-10 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-xl font-bold text-xs transition-all active:scale-95 border border-amber-100 shadow-sm"
-                  >
-                    <Layers size={14} className="mr-1.5" />
-                    Lô đất
-                  </Button>
-                  {(farm.owner || farm.myRole === 'owner' || farm.myRole === 'manager') && (
-                    <Button 
-                      onClick={() => navigate('/members')}
-                      className="h-10 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl font-bold text-xs transition-all active:scale-95 border border-blue-100 shadow-sm col-span-2"
-                    >
-                      <Users size={14} className="mr-1.5" />
-                      Quản lý thành viên & Phân quyền
-                    </Button>
+              {/* Mini stats */}
+              <div className="grid grid-cols-3 rounded-xl p-2.5 mb-4 bg-gray-50 border border-gray-200">
+                {['Lô đất', 'TV viên', 'ha'].map((label, i) => (
+                  <div key={i} className="text-center text-[10px]">
+                    <div className="text-[15px] font-semibold text-gray-800">
+                      0
+                    </div>
+                    <div className="text-gray-500">{label}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 mb-3 mt-auto">
+                <button
+                  onClick={() => navigate('/map')}
+                  className="py-1.5 rounded-[10px] text-[10px] font-medium bg-green-50 text-green-600 border border-green-200 hover:bg-green-100 transition-colors"
+                >
+                  Bản đồ
+                </button>
+                <button
+                  onClick={() => navigate('/land-plots')}
+                  className="py-1.5 rounded-[10px] text-[10px] font-medium bg-yellow-50 text-yellow-600 border border-yellow-200 hover:bg-yellow-100 transition-colors"
+                >
+                  Lô đất
+                </button>
+                <button
+                  disabled={!!selectingFarmId}
+                  onClick={() => handleUpgrade(farm.farmId)}
+                  className="py-1.5 rounded-[10px] text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
+                >
+                  {selectingFarmId === farm.farmId ? (
+                    <Loader2 size={10} className="animate-spin" />
+                  ) : (
+                    <CreditCard size={10} />
                   )}
-                </div>
+                  {selectingFarmId === farm.farmId ? 'Đang chọn...' : 'Nâng cấp'}
+                </button>
+              </div>
 
-                {/* Settings / Actions */}
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
-                    Cấu hình chung
-                  </span>
-                  <div className="flex items-center gap-1">
-                    {(farm.owner || farm.myRole === 'owner') && (
-                      <>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => setEditingFarm(farm)}
-                          className="h-8 w-8 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                        >
-                          <Edit2 size={14} />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 size={14} />
-                        </Button>
-                      </>
-                    )}
-                  </div>
+              {/* Footer */}
+              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                <span className="text-[10px] tracking-widest text-gray-400">
+                  TÙY CHỌN CHUNG
+                </span>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setEditingFarm(farm)}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  >
+                    <Edit2 size={12} />
+                  </button>
+                  <button className="w-7 h-7 rounded-lg flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200">
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               </div>
             </motion.div>
           ))}
-
-          {/* Add Card Dummy */}
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="group h-full min-h-[320px] border-2 border-dashed border-gray-200 rounded-[32px] flex flex-col items-center justify-center p-6 text-gray-400 hover:border-emerald-500 hover:bg-emerald-50/10 hover:text-emerald-600 transition-all duration-300 active:scale-95"
-          >
-            <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-4 group-hover:bg-emerald-100 transition-colors">
-              <Plus size={32} />
-            </div>
-            <span className="font-black text-lg">Tạo trang trại mới</span>
-            <p className="text-sm font-medium mt-1">Bắt đầu mở rộng quy mô canh tác</p>
-          </button>
         </div>
       )}
 
-      <CreateFarmModal 
-        isOpen={isCreateModalOpen} 
-        onClose={() => setIsCreateModalOpen(false)} 
-        onSuccess={() => {
-          dispatch(fetchFarmsSummary());
-        }}
+      <CreateFarmModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => dispatch(fetchFarmsSummary())}
       />
 
       <EditFarmModal
         isOpen={!!editingFarm}
         onClose={() => setEditingFarm(null)}
         farm={editingFarm}
-        onSuccess={() => {
-          dispatch(fetchFarmsSummary());
-        }}
+        onSuccess={() => dispatch(fetchFarmsSummary())}
       />
     </div>
   );

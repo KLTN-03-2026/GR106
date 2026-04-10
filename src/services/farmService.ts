@@ -41,5 +41,12 @@ export const farmService = {
       `/api/v1/farms/${id}`
     );
     return response.data;
+  },
+
+  async selectFarm(farmId: string): Promise<ApiResponse<{ farmToken: string }>> {
+    const response = await axiosInstance.post<ApiResponse<{ farmToken: string }>>(
+      `/api/v1/farms/${farmId}/select`
+    );
+    return response.data;
   }
 };

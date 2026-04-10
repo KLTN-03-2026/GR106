@@ -24,6 +24,10 @@ const WalletPage = lazy(() => import('../pages/Wallet/WalletPage'));
 const ActivityPage = lazy(() => import('../pages/Activity/ActivityPage'));
 const TasksPage = lazy(() => import('../pages/Tasks/TasksPage'));
 const GeminiPage = lazy(() => import('../pages/Gemini/GeminiPage'));
+const SubscriptionPage = lazy(() => import('../pages/Pricing/SubscriptionPage'));
+const PaymentResultPage = lazy(() => import('../pages/Pricing/PaymentResultPage'));
+const SelectFarmForUpgradePage = lazy(() => import('../pages/Pricing/SelectFarmForUpgrade'));
+
 
 // Layouts
 const DashboardLayout = lazy(() => import('../layouts/DashboardLayout'));
@@ -56,6 +60,9 @@ export const AppRoutes: React.FC = () => {
           <Route path="/activity" element={<Suspense fallback={<LoadingPage />}><ActivityPage /></Suspense>} />
           <Route path="/tasks" element={<Suspense fallback={<LoadingPage />}><TasksPage /></Suspense>} />
           <Route path="/gemini" element={<Suspense fallback={<LoadingPage />}><GeminiPage /></Suspense>} />
+          <Route path="/subscription" element={<Suspense fallback={<LoadingPage />}><SubscriptionPage /></Suspense>} />
+          <Route path="/subscription/select-farm" element={<Suspense fallback={<LoadingPage />}><SelectFarmForUpgradePage /></Suspense>} />
+          <Route path="/payment/result" element={<Suspense fallback={<LoadingPage />}><PaymentResultPage /></Suspense>} />
           
           {/* Role-based Routes - Allow both owner and user roles for farm management features */}
           <Route element={<RoleRoute allowedRoles={['owner', 'user']} />}>

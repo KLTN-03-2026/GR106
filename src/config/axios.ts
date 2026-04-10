@@ -20,7 +20,10 @@ axiosInstance.interceptors.request.use(
       config.url?.includes('/auth/refresh') ||
       config.url?.includes('/auth/verify');
     
-    const token = localStorage.getItem('accessToken');
+    const farmToken = localStorage.getItem('farmToken');
+    const accessToken = localStorage.getItem('accessToken');
+    const token = farmToken || accessToken;
+
     if (token && config.headers && !isPublicRoute) {
       config.headers.Authorization = `Bearer ${token}`;
     }

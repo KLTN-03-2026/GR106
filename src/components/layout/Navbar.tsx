@@ -257,7 +257,7 @@ export function Navbar({
               <>
                 {showLoginButton && (
                   <Button
-                    onClick={() => navigate("/login?force=true")}
+                    onClick={() => navigate("/login")}
                     variant={scrolled ? "outline-dark" : "outline-yellow"}
                     className="flex items-center justify-center gap-1.5 h-[42px] px-6 rounded-xl font-roboto font-bold text-[14px] transition-all duration-300"
                   >
@@ -267,7 +267,7 @@ export function Navbar({
                 )}
                 {showCreateButton && (
                   <Button
-                    onClick={() => navigate("/register?force=true")}
+                    onClick={() => navigate("/register")}
                     variant="cta-yellow"
                     className="flex items-center justify-center gap-1.5 h-[42px] px-6 rounded-xl font-roboto font-bold text-[14px] transition-all duration-300 transform hover:scale-105 active:scale-95"
                   >

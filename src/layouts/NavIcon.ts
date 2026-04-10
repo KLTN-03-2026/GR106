@@ -5,6 +5,7 @@ import {
   GitFork,
   Sparkles,
   LucideIcon,
+  CreditCard,
 } from "lucide-react";
 
 export interface NavIconItem {
@@ -18,4 +19,5 @@ export const NAV_ICONS: NavIconItem[] = [
   { icon: Trees, key: "tree" },
   { icon: GitFork, key: "task" },
   { icon: Sparkles, key: "gemini" },
+  { icon: CreditCard, key: "subscription" },
 ];
