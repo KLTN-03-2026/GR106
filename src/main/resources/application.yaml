@@ -75,7 +75,7 @@ management:
 # ── SePay Payment ────────────────────────────────────────────────────
 payment:
   sepay:
-    merchant-code: ${SEPAY_MERCHART_CODE}          # ← sửa 672789 → 762965
+    merchant-code: ${SEPAY_MERCHANT_CODE}          # ← sửa 672789 → 762965
     secret-key:    ${SEPAY_SECRET_KEY}# ← lấy từ dashboard
     payment-url: ${SEPAY_PAYMENT_URL}
     return-url: ${SEPAY_RETURN_URL}
