@@ -1,12 +1,19 @@
-import { Check, X, ShieldCheck } from 'lucide-react';
+import { Check, X, ShieldCheck, ArrowRight, Loader2, Trees } from 'lucide-react';
 import { createPaymentService } from '@/services/payment';
 import { getSubscriptionPlansService } from '@/services/subscription';
+import { farmService, Farm } from '@/services/farmService';
 import { BillingCycle } from '@/types/payment/payment';
 import { SubscriptionPlan } from '@/types/subscription/subscription';
+import { setAccessToken } from '@/store/authSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@/store';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { useEffect, useState } from 'react';
 
 const SubscriptionPage = () => {
+    const dispatch = useDispatch();
+    const { currentFarmId } = useSelector((state: RootState) => state.auth);
     const [billing, setBilling] = useState<BillingCycle>('MONTHLY');
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
@@ -16,25 +23,88 @@ const SubscriptionPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    // Logic Context Guard
+    const [isCheckingContext, setIsCheckingContext] = useState(true);
+    const [farms, setFarms] = useState<Farm[]>([]);
+    const [showSelectionModal, setShowSelectionModal] = useState(false);
+
+    // Tìm farm hiện tại dựa trên ID trong Redux
+    const currentFarm = farms.find(f => f.id === currentFarmId);
+
     const selected = plans.find((p) => p.id === selectedPlan);
 
     const getPrice = (plan: SubscriptionPlan) =>
         billing === 'ANNUAL' ? plan.priceAnnual : plan.priceMonthly;
 
     useEffect(() => {
-        const fetchData = async () => {
+        const initContext = async () => {
+            try {
+                // Luôn lấy danh sách farm để có dữ liệu hiển thị tên trong Header
+                const farmsRes = await farmService.getMyFarms();
+                const userFarms = farmsRes.data;
+                setFarms(userFarms);
+
+                if (userFarms.length === 0) {
+                    setError('Bạn chưa có trang trại nào để nâng cấp.');
+                    setIsCheckingContext(false);
+                    return;
+                }
+
+                // Nếu đã có farm context từ trước, không cần auto-select hay hiện modal
+                if (currentFarmId) {
+                    setIsCheckingContext(false);
+                    return;
+                }
+
+                if (userFarms.length === 1) {
+                    // Nếu chỉ có 1 farm, auto select ngầm
+                    const selectRes = await farmService.selectFarm(userFarms[0].id);
+                    if (selectRes.success && selectRes.data.farmToken) {
+                        dispatch(setAccessToken({ token: selectRes.data.farmToken, farmId: userFarms[0].id }));
+                    }
+                    setIsCheckingContext(false);
+                } else {
+                    // Nếu nhiều farm, hiện modal chọn
+                    setShowSelectionModal(true);
+                    setIsCheckingContext(false);
+                }
+            } catch (err) {
+                console.error('Lỗi khi kiểm tra ngữ cảnh:', err);
+                setError('Không thể xác nhận thông tin trang trại.');
+                setIsCheckingContext(false);
+            }
+        };
+
+        const fetchPlans = async () => {
             try {
                 const plansRes = await getSubscriptionPlansService.getPlans();
                 setPlans(plansRes.data);
             } catch (err) {
                 console.error(err);
-                setError('Không tải được dữ liệu');
+                setError('Không tải được danh sách gói');
             } finally {
                 setLoadingPlans(false);
             }
         };
-        fetchData();
-    }, []);
+
+        initContext();
+        fetchPlans();
+    }, [dispatch]);
+
+    const handleSelectFarmContext = async (farmId: string) => {
+        setLoading(true);
+        try {
+            const res = await farmService.selectFarm(farmId);
+            if (res.success && res.data.farmToken) {
+                dispatch(setAccessToken({ token: res.data.farmToken, farmId }));
+                setShowSelectionModal(false);
+            }
+        } catch (err) {
+            alert('Không thể chọn trang trại này');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handlePayment = async () => {
         if (!selectedPlan) return;
@@ -89,16 +159,81 @@ const SubscriptionPage = () => {
     };
 
     return (
-        // ① overflow-y-auto + h-screen cho phép scroll toàn trang trong layout có sidebar cố định
-        <div className="h-screen overflow-y-auto bg-[#f5f5f0]">
+        <div className="h-screen overflow-y-auto bg-[#f5f5f0] relative">
+            <AnimatePresence>
+                {isCheckingContext && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 z-[100] bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4"
+                    >
+                        <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
+                        <p className="text-sm font-medium text-gray-600">Đang đồng bộ dữ liệu nông trại...</p>
+                    </motion.div>
+                )}
+
+                {showSelectionModal && (
+                    <div className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="bg-white rounded-[32px] shadow-2xl w-full max-w-md p-8 border border-gray-100"
+                        >
+                            <h2 className="text-xl font-bold text-gray-900 mb-2">Chọn trang trại cần nâng cấp</h2>
+                            <p className="text-sm text-gray-500 mb-6">Vui lòng chọn trang trại bạn muốn áp dụng gói dịch vụ này.</p>
+                            
+                            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
+                                {farms.map((farm) => (
+                                    <button
+                                        key={farm.id}
+                                        disabled={loading}
+                                        onClick={() => handleSelectFarmContext(farm.id)}
+                                        className="w-full flex items-center justify-between p-4 bg-gray-50 border border-transparent rounded-2xl hover:border-green-500 hover:bg-green-50 transition-all group disabled:opacity-50"
+                                    >
+                                        <div className="flex items-center gap-4 text-left">
+                                            <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-green-600 border border-gray-100">
+                                                <Trees size={20} />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-semibold text-gray-800 text-sm">{farm.name}</h3>
+                                                <p className="text-[10px] text-gray-500 uppercase tracking-tighter">
+                                                    ID: ...{farm.id.slice(-6)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {loading ? <Loader2 size={16} className="animate-spin text-gray-300" /> : <ArrowRight size={16} className="text-gray-300 group-hover:text-green-600" />}
+                                    </button>
+                                ))}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* HEADER */}
             <div className="bg-white border-b h-14 flex items-center justify-between px-6 sticky top-0 z-10">
                 <div className="flex items-center gap-2 font-medium">
                     <div className="w-2 h-2 bg-green-600 rounded-full" />
-                    FarmSmart
+                    <span>Nâng cấp cho:</span>
+                    {currentFarm ? (
+                        <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                            <span className="text-sm font-semibold text-green-700">{currentFarm.name}</span>
+                            <button 
+                                onClick={() => setShowSelectionModal(true)}
+                                className="text-[10px] text-green-600 hover:underline border-l border-green-200 pl-2 ml-1"
+                            >
+                                Đổi
+                            </button>
+                        </div>
+                    ) : (
+                        <span className="text-sm text-gray-400">Đang xác định...</span>
+                    )}
                 </div>
-                <span className="text-sm text-gray-400">Nâng cấp gói</span>
+                <div className="flex items-center gap-3">
+                    <ShieldCheck size={16} className="text-green-600" />
+                    <span className="text-xs text-gray-400">Thanh toán bảo mật</span>
+                </div>
             </div>
 
             <div className="max-w-5xl mx-auto px-6 py-8 pb-16">

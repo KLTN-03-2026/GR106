@@ -23,6 +23,7 @@ import { EditFarmModal } from '../../components/farm/EditFarmModal';
 import { fetchFarmsSummary } from '../../store/farmSlice';
 import { RootState, AppDispatch } from '../../store';
 import { farmService } from '../../services/farmService';
+import { setAccessToken } from '../../store/authSlice';
 
 export function ManagementDashboardPage() {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ export function ManagementDashboardPage() {
       setSelectingFarmId(farmId);
       const res = await farmService.selectFarm(farmId);
       if (res.success && res.data.farmToken) {
-        localStorage.setItem('farmToken', res.data.farmToken);
+        dispatch(setAccessToken({ token: res.data.farmToken, farmId }));
         navigate('/subscription');
       }
     } catch (err) {

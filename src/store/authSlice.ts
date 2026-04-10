@@ -12,13 +12,14 @@ interface AuthState {
   isAuthenticated: boolean;
   accessToken: string | null;
   user: UserInfo | null;
+  currentFarmId: string | null;
 }
-
 
 const initialState: AuthState = {
   isAuthenticated: !!localStorage.getItem('accessToken'),
   accessToken: localStorage.getItem('accessToken'),
-  user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null
+  user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null,
+  currentFarmId: localStorage.getItem('currentFarmId')
 };
 
 
@@ -40,9 +41,18 @@ const authSlice = createSlice({
       state.accessToken = null;
       state.user = null;
       localStorage.clear();
+    },
+
+    setAccessToken: (state, action: PayloadAction<{ token: string; farmId?: string }>) => {
+      state.accessToken = action.payload.token;
+      localStorage.setItem('accessToken', action.payload.token);
+      if (action.payload.farmId) {
+        state.currentFarmId = action.payload.farmId;
+        localStorage.setItem('currentFarmId', action.payload.farmId);
+      }
     }
   }
 });
 
-export const { setCredentials, logout } = authSlice.actions;
+export const { setCredentials, logout, setAccessToken } = authSlice.actions;
 export default authSlice.reducer;

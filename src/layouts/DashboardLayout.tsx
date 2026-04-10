@@ -29,7 +29,7 @@ export default function DashboardLayout() {
     } else if (key === "gemini") {
       navigate("/gemini");
     } else if (key === "subscription") {
-      navigate("/subscription/select-farm");
+      navigate("/subscription");
     } else {
       navigate("/dashboard");
     }
