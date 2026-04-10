@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { MoreVertical, Users } from 'lucide-react'
+import { MoreVertical, Users, Search, UserPlus } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
 import { ChangeRoleModal } from './ChangeRoleModal'
 import { RemoveMemberModal } from './RemoveMemberModal'
 import { getRoleDisplayName } from '../../utils/roleUtils'
+import { InviteModal } from './InviteModal'
 
 type MemberStatus = 'active' | 'pending' | 'rejected'
 type MemberRole = 'owner' | 'manager' | 'worker'
@@ -22,6 +23,7 @@ export function MemberTable() {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
   const [isChangeRoleModalOpen, setIsChangeRoleModalOpen] = useState(false)
   const [isRemoveMemberModalOpen, setIsRemoveMemberModalOpen] = useState(false)
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [activeFilter, setActiveFilter] = useState<MemberStatus | 'all'>('all')
 
   const handleChangeRole = (member: Member) => {
@@ -43,122 +45,132 @@ export function MemberTable() {
   )
 
   return (
-    <div>
-      <div className="flex gap-2 mb-4">
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/50 p-4 rounded-2xl border border-slate-200">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+          {[
+            { id: 'all', label: 'Tất cả' },
+            { id: 'active', label: 'Hoạt động' },
+            { id: 'pending', label: 'Đang chờ' },
+          ].map((filter) => (
+            <button
+              key={filter.id}
+              onClick={() => setActiveFilter(filter.id as any)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                activeFilter === filter.id 
+                  ? 'bg-emerald-500 text-white shadow-md shadow-emerald-200' 
+                  : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-100'
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+        
         <button
-          onClick={() => setActiveFilter('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeFilter === 'all' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          onClick={() => setIsInviteModalOpen(true)}
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all text-xs font-bold active:scale-95"
         >
-          Tất cả
-        </button>
-        <button
-          onClick={() => setActiveFilter('active')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeFilter === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-        >
-          Đang hoạt động
-        </button>
-        <button
-          onClick={() => setActiveFilter('pending')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeFilter === 'pending' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-        >
-          Chờ chấp nhận
-        </button>
-        <button
-          onClick={() => setActiveFilter('rejected')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeFilter === 'rejected' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-        >
-          Đã từ chối
+          <UserPlus size={14} />
+          Mời thành viên
         </button>
       </div>
 
-      {filteredMembers.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Users className="w-8 h-8 text-gray-400" />
+      <div className="bg-white rounded-[24px] border border-slate-200 overflow-hidden shadow-sm">
+        {filteredMembers.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
+              <Users className="w-8 h-8 text-slate-300" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-800 mb-1">
+              Chưa có thành viên nào
+            </h3>
+            <p className="text-xs text-slate-400 max-w-[200px] mx-auto">
+              Hãy bắt đầu bằng cách mời cộng sự tham gia trang trại của bạn.
+            </p>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">
-            Chưa có thành viên nào
-          </h3>
-          <p className="text-gray-600">
-            Nhấn nút "Mời thành viên" để bắt đầu mời người tham gia trang trại
-          </p>
-        </div>
-      ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Tên
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Vai trò
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Trạng thái
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Hành động
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredMembers.map((member) => (
-                <tr
-                  key={member.id}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                        <span className="text-emerald-700 font-semibold text-sm">
-                          {member.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <span className="font-medium text-gray-900">
-                        {member.name}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">{member.email}</td>
-                  <td className="px-6 py-4 text-gray-900">
-                    {getRoleLabel(member.role)}
-                  </td>
-                  <td className="px-6 py-4">
-                    <StatusBadge status={member.status} />
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    {!member.isOwner && (
-                      <div className="relative inline-block group">
-                        <button className="p-1 hover:bg-gray-100 rounded transition-colors">
-                          <MoreVertical className="w-5 h-5 text-gray-600" />
-                        </button>
-                        <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 hidden group-hover:block z-10 transition-opacity">
-                          <button
-                            onClick={() => handleChangeRole(member)}
-                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
-                          >
-                            Thay đổi vai trò
-                          </button>
-                          <button
-                            onClick={() => handleRemoveMember(member)}
-                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-                          >
-                            Xóa khỏi trang trại
-                          </button>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50/50 border-b border-slate-100">
+                <tr>
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Thành viên
+                  </th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Vai trò
+                  </th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Trạng thái
+                  </th>
+                  <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredMembers.map((member) => (
+                  <tr
+                    key={member.id}
+                    className="hover:bg-slate-50/50 transition-colors group"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center border border-emerald-50">
+                          <span className="text-emerald-700 font-bold text-sm">
+                            {member.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="text-sm font-bold text-slate-800">
+                            {member.name}
+                          </div>
+                          <div className="text-[10px] text-slate-400">{member.email}</div>
                         </div>
                       </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-xs font-medium text-slate-600">
+                        {getRoleLabel(member.role)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <StatusBadge status={member.status} />
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {!member.isOwner && (
+                        <div className="relative inline-block group/menu">
+                          <button className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+                            <MoreVertical className="w-4 h-4 text-slate-400" />
+                          </button>
+                          <div className="absolute right-0 mt-1 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 hidden group-hover/menu:block z-10">
+                            <button
+                              onClick={() => handleChangeRole(member)}
+                              className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                            >
+                              Thay đổi vai trò
+                            </button>
+                            <button
+                              onClick={() => handleRemoveMember(member)}
+                              className="w-full px-4 py-2 text-left text-xs font-bold text-rose-500 hover:bg-rose-50 transition-colors"
+                            >
+                              Xóa khỏi trang trại
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <InviteModal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
+      />
 
       {selectedMember && (
         <>

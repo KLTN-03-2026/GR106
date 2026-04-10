@@ -18,8 +18,6 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 export const LoginForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [failedAttempts, setFailedAttempts] = useState(0);
-  const [isLocked, setIsLocked] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const {
@@ -30,10 +28,6 @@ export const LoginForm: React.FC = () => {
     resolver: zodResolver(loginSchema)
   });
   const onSubmit = async (data: LoginFormValues) => {
-    if (isLocked) {
-      toast.error('Tài khoản bị khóa tạm thời do đăng nhập sai nhiều lần');
-      return;
-    }
     try {
       setIsLoading(true);
       const response = await authService.login(data);
@@ -41,34 +35,13 @@ export const LoginForm: React.FC = () => {
         dispatch(setCredentials(response.data));
         toast.success('Đăng nhập thành công');
         navigate('/dashboard');
-      } else {
-        handleFailedAttempt();
       }
     } catch (error: any) {
-      handleFailedAttempt();
       toast.error(
         error.response?.data?.message || 'Email hoặc mật khẩu không đúng'
       );
     } finally {
       setIsLoading(false);
-    }
-  };
-  const handleFailedAttempt = () => {
-    const newAttempts = failedAttempts + 1;
-    setFailedAttempts(newAttempts);
-    if (newAttempts >= 5) {
-      setIsLocked(true);
-      toast.error(
-        'Tài khoản bị khóa tạm thời do đăng nhập sai nhiều lần. Vui lòng thử lại sau 15 phút.'
-      );
-      // Reset lock after 15 minutes
-      setTimeout(
-        () => {
-          setIsLocked(false);
-          setFailedAttempts(0);
-        },
-        15 * 60 * 1000
-      );
     }
   };
   return (
@@ -88,7 +61,7 @@ export const LoginForm: React.FC = () => {
             id="email"
             type="email"
             autoComplete="email"
-            disabled={isLoading || isLocked}
+            disabled={isLoading}
             className={`block w-full pl-10 pr-3 py-2 border ${errors.email ? 'border-red-300 text-red-900 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'} rounded-md shadow-sm sm:text-sm transition-colors`}
             placeholder="nhanvien@trangtrai.com"
             {...register('email')} />
@@ -114,7 +87,7 @@ export const LoginForm: React.FC = () => {
             id="password"
             type="password"
             autoComplete="current-password"
-            disabled={isLoading || isLocked}
+            disabled={isLoading}
             className={`block w-full pl-10 pr-3 py-2 border ${errors.password ? 'border-red-300 text-red-900 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'} rounded-md shadow-sm sm:text-sm transition-colors`}
             placeholder="••••••••"
             {...register('password')} />
@@ -154,7 +127,7 @@ export const LoginForm: React.FC = () => {
       <div>
         <button
           type="submit"
-          disabled={isLoading || isLocked}
+          disabled={isLoading}
           className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
           
           {isLoading ?

@@ -1,12 +1,13 @@
 import { Check, X, ShieldCheck, ArrowRight, Loader2, Trees } from 'lucide-react';
 import { createPaymentService } from '@/services/payment';
 import { getSubscriptionPlansService } from '@/services/subscription';
-import { farmService, Farm } from '@/services/farmService';
+import { farmService } from '@/services/farmService';
 import { BillingCycle } from '@/types/payment/payment';
 import { SubscriptionPlan } from '@/types/subscription/subscription';
 import { setAccessToken } from '@/store/authSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
+import { fetchFarmsSummary } from '@/store/farmSlice';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { useEffect, useState } from 'react';
@@ -25,11 +26,13 @@ const SubscriptionPage = () => {
 
     // Logic Context Guard
     const [isCheckingContext, setIsCheckingContext] = useState(true);
-    const [farms, setFarms] = useState<Farm[]>([]);
+    const [isPaymentPending, setIsPaymentPending] = useState(false);
     const [showSelectionModal, setShowSelectionModal] = useState(false);
 
+    const { farmSummary: farms } = useSelector((state: RootState) => state.farm);
+
     // Tìm farm hiện tại dựa trên ID trong Redux
-    const currentFarm = farms.find(f => f.id === currentFarmId);
+    const currentFarm = farms.find(f => f.farmId === currentFarmId);
 
     const selected = plans.find((p) => p.id === selectedPlan);
 
@@ -39,10 +42,9 @@ const SubscriptionPage = () => {
     useEffect(() => {
         const initContext = async () => {
             try {
-                // Luôn lấy danh sách farm để có dữ liệu hiển thị tên trong Header
-                const farmsRes = await farmService.getMyFarms();
-                const userFarms = farmsRes.data;
-                setFarms(userFarms);
+                // Sử dụng thunk để lấy danh sách farm đồng bộ với dashboard
+                const res = await dispatch(fetchFarmsSummary() as any).unwrap();
+                const userFarms = res || [];
 
                 if (userFarms.length === 0) {
                     setError('Bạn chưa có trang trại nào để nâng cấp.');
@@ -58,19 +60,16 @@ const SubscriptionPage = () => {
 
                 if (userFarms.length === 1) {
                     // Nếu chỉ có 1 farm, auto select ngầm
-                    const selectRes = await farmService.selectFarm(userFarms[0].id);
+                    const selectRes = await farmService.selectFarm(userFarms[0].farmId);
                     if (selectRes.success && selectRes.data.farmToken) {
-                        dispatch(setAccessToken({ token: selectRes.data.farmToken, farmId: userFarms[0].id }));
+                        dispatch(setAccessToken({ token: selectRes.data.farmToken, farmId: userFarms[0].farmId }));
                     }
-                    setIsCheckingContext(false);
-                } else {
-                    // Nếu nhiều farm, hiện modal chọn
-                    setShowSelectionModal(true);
-                    setIsCheckingContext(false);
                 }
+                
+                setIsCheckingContext(false);
             } catch (err) {
                 console.error('Lỗi khi kiểm tra ngữ cảnh:', err);
-                setError('Không thể xác nhận thông tin trang trại.');
+                // Nếu lỗi do chưa có farm nào, không báo lỗi đỏ mà chỉ hướng dẫn
                 setIsCheckingContext(false);
             }
         };
@@ -98,6 +97,14 @@ const SubscriptionPage = () => {
             if (res.success && res.data.farmToken) {
                 dispatch(setAccessToken({ token: res.data.farmToken, farmId }));
                 setShowSelectionModal(false);
+                
+                // Nếu đang trong luồng thanh toán, tiếp tục thanh toán ngay
+                if (isPaymentPending) {
+                    setIsPaymentPending(false);
+                    // Phải đợi Redux update hoặc dùng local farmToken vừa lấy
+                    // Tuy nhiên handlePayment dùng currentFarmId từ store nên ta gọi nó sau 1 tick hoặc truyền farmId
+                    setTimeout(() => handlePayment(), 100);
+                }
             }
         } catch (err) {
             alert('Không thể chọn trang trại này');
@@ -108,6 +115,13 @@ const SubscriptionPage = () => {
 
     const handlePayment = async () => {
         if (!selectedPlan) return;
+
+        // Nếu chưa có farm context, hiện modal chọn farm trước
+        if (!currentFarmId) {
+            setIsPaymentPending(true);
+            setShowSelectionModal(true);
+            return;
+        }
 
         setLoading(true);
         setError('');
@@ -178,17 +192,23 @@ const SubscriptionPage = () => {
                         <motion.div 
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            className="bg-white rounded-[32px] shadow-2xl w-full max-w-md p-8 border border-gray-100"
+                            className="bg-white rounded-[32px] shadow-2xl w-full max-w-md p-8 border border-gray-100 relative"
                         >
+                            <button 
+                                onClick={() => setShowSelectionModal(false)}
+                                className="absolute right-6 top-6 p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+                            >
+                                <X size={20} />
+                            </button>
                             <h2 className="text-xl font-bold text-gray-900 mb-2">Chọn trang trại cần nâng cấp</h2>
                             <p className="text-sm text-gray-500 mb-6">Vui lòng chọn trang trại bạn muốn áp dụng gói dịch vụ này.</p>
                             
                             <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
                                 {farms.map((farm) => (
                                     <button
-                                        key={farm.id}
+                                        key={farm.farmId}
                                         disabled={loading}
-                                        onClick={() => handleSelectFarmContext(farm.id)}
+                                        onClick={() => handleSelectFarmContext(farm.farmId)}
                                         className="w-full flex items-center justify-between p-4 bg-gray-50 border border-transparent rounded-2xl hover:border-green-500 hover:bg-green-50 transition-all group disabled:opacity-50"
                                     >
                                         <div className="flex items-center gap-4 text-left">
@@ -196,9 +216,9 @@ const SubscriptionPage = () => {
                                                 <Trees size={20} />
                                             </div>
                                             <div>
-                                                <h3 className="font-semibold text-gray-800 text-sm">{farm.name}</h3>
+                                                <h3 className="font-semibold text-gray-800 text-sm">{farm.farmName}</h3>
                                                 <p className="text-[10px] text-gray-500 uppercase tracking-tighter">
-                                                    ID: ...{farm.id.slice(-6)}
+                                                    ID: ...{farm.farmId.slice(-6)}
                                                 </p>
                                             </div>
                                         </div>
@@ -218,7 +238,7 @@ const SubscriptionPage = () => {
                     <span>Nâng cấp cho:</span>
                     {currentFarm ? (
                         <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full border border-green-100">
-                            <span className="text-sm font-semibold text-green-700">{currentFarm.name}</span>
+                            <span className="text-sm font-semibold text-green-700">{currentFarm.farmName}</span>
                             <button 
                                 onClick={() => setShowSelectionModal(true)}
                                 className="text-[10px] text-green-600 hover:underline border-l border-green-200 pl-2 ml-1"

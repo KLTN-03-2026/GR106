@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   Trees,
   MapPin,
-  Edit2,
-  Trash2,
   Plus,
   ArrowLeft,
   Search,
@@ -14,16 +12,13 @@ import {
   DollarSign,
   Loader2,
   AlertCircle,
-  CreditCard
+  ArrowRight
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { CreateFarmModal } from '../../components/farm';
 import { EditFarmModal } from '../../components/farm/EditFarmModal';
 import { fetchFarmsSummary } from '../../store/farmSlice';
 import { RootState, AppDispatch } from '../../store';
-import { farmService } from '../../services/farmService';
-import { setAccessToken } from '../../store/authSlice';
 
 export function ManagementDashboardPage() {
   const navigate = useNavigate();
@@ -31,7 +26,6 @@ export function ManagementDashboardPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingFarm, setEditingFarm] = useState<any | null>(null);
-  const [selectingFarmId, setSelectingFarmId] = useState<string | null>(null);
 
   const { farmSummary, loading, error } = useSelector((state: RootState) => state.farm);
 
@@ -39,20 +33,8 @@ export function ManagementDashboardPage() {
     dispatch(fetchFarmsSummary());
   }, [dispatch]);
 
-  const handleUpgrade = async (farmId: string) => {
-    try {
-      setSelectingFarmId(farmId);
-      const res = await farmService.selectFarm(farmId);
-      if (res.success && res.data.farmToken) {
-        dispatch(setAccessToken({ token: res.data.farmToken, farmId }));
-        navigate('/subscription');
-      }
-    } catch (err) {
-      console.error('Lỗi khi chọn farm:', err);
-      alert('Không thể khởi tạo phiên làm việc cho trang trại này.');
-    } finally {
-      setSelectingFarmId(null);
-    }
+  const handleSelectFarm = (farm: any) => {
+    navigate(`/farms/${farm.farmId}/actions`);
   };
 
   const filteredFarms = farmSummary.filter(f =>
@@ -151,14 +133,14 @@ export function ManagementDashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredFarms.map((farm, index) => (
-            <motion.div
+          {filteredFarms.map((farm) => (
+            <div
               key={farm.farmId}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.08, duration: 0.3 }}
-              className="p-5 rounded-2xl flex flex-col bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all"
+              onClick={() => handleSelectFarm(farm)}
+              className="p-6 rounded-[32px] flex flex-col bg-white border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-green-500/5 transition-all cursor-pointer group/card relative overflow-hidden"
             >
+              {/* Decorative background element */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-green-50/50 rounded-full translate-x-16 -translate-y-16 group-hover:scale-150 transition-transform duration-500" />
               {/* Top */}
               <div className="flex items-start justify-between mb-3">
                 <div className="w-10 h-10 rounded-[14px] flex items-center justify-center bg-green-100">
@@ -170,7 +152,7 @@ export function ManagementDashboardPage() {
                 </span>
               </div>
 
-              <h3 className="text-[15px] font-semibold truncate text-gray-800">
+              <h3 className="text-[15px] font-semibold truncate text-gray-800 group-hover/card:text-green-600 transition-colors">
                 {farm.farmName}
               </h3>
 
@@ -195,52 +177,13 @@ export function ManagementDashboardPage() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-3 gap-2 mb-3 mt-auto">
-                <button
-                  onClick={() => navigate('/map')}
-                  className="py-1.5 rounded-[10px] text-[10px] font-medium bg-green-50 text-green-600 border border-green-200 hover:bg-green-100 transition-colors"
-                >
-                  Bản đồ
-                </button>
-                <button
-                  onClick={() => navigate('/land-plots')}
-                  className="py-1.5 rounded-[10px] text-[10px] font-medium bg-yellow-50 text-yellow-600 border border-yellow-200 hover:bg-yellow-100 transition-colors"
-                >
-                  Lô đất
-                </button>
-                <button
-                  disabled={!!selectingFarmId}
-                  onClick={() => handleUpgrade(farm.farmId)}
-                  className="py-1.5 rounded-[10px] text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
-                >
-                  {selectingFarmId === farm.farmId ? (
-                    <Loader2 size={10} className="animate-spin" />
-                  ) : (
-                    <CreditCard size={10} />
-                  )}
-                  {selectingFarmId === farm.farmId ? 'Đang chọn...' : 'Nâng cấp'}
-                </button>
-              </div>
-
-              {/* Footer */}
-              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                <span className="text-[10px] tracking-widest text-gray-400">
-                  TÙY CHỌN CHUNG
-                </span>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setEditingFarm(farm)}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200"
-                  >
-                    <Edit2 size={12} />
-                  </button>
-                  <button className="w-7 h-7 rounded-lg flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200">
-                    <Trash2 size={12} />
-                  </button>
+              <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-600 border border-emerald-100 bg-emerald-50 w-fit px-3 py-1.5 rounded-full uppercase tracking-widest mt-auto group-hover/card:bg-emerald-500 group-hover/card:text-white group-hover/card:border-transparent transition-all duration-300 shadow-sm shadow-emerald-100 group-hover/card:shadow-emerald-200">
+                Nhấp để xem chức năng
+                <div>
+                  <ArrowRight size={10} />
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       )}

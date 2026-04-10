@@ -26,7 +26,7 @@ export default function Sidebar({
   return (
     <aside
       className={cn(
-        "flex flex-col items-center justify-between h-full shrink-0 border-r border-gray-100",
+        "flex flex-col items-center justify-between h-full shrink-0 rounded-[24px] shadow-sm border border-slate-100",
         sidebarVariants[variant],
       )}
     >
