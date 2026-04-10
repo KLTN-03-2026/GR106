@@ -55,6 +55,7 @@ public class FarmController {
             description = "Tạo một farm mới cho user hiện tại",
             security = @SecurityRequirement(name = "bearerAuth")
     )
+    @PreAuthorize("hasRole('USER') or hasAuthority('farm:create')")
     @PostMapping
     public ApiResponse<FarmResponse> createFarm(
 

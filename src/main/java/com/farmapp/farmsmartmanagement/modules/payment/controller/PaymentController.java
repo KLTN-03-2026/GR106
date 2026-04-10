@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,12 +40,7 @@ public class PaymentController {
     @PostMapping("/create")
     @RequiresFarmToken
     public ResponseEntity<ApiResponse<CreatePaymentResponse>> createPayment(
-
-            @RequestBody(
-                    description = "Thông tin tạo thanh toán (planId, chu kỳ, ...)",
-                    required = true
-            )
-            @Valid @org.springframework.web.bind.annotation.RequestBody CreatePaymentRequest request,
+            @Valid @RequestBody CreatePaymentRequest request,
 
             @Parameter(hidden = true)
             @AuthenticationPrincipal UserPrincipal principal
@@ -68,12 +62,7 @@ public class PaymentController {
     )
     @PostMapping("/ipn")
     public ResponseEntity<Map<String, String>> handleIpn(
-
-            @RequestBody(
-                    description = "Payload IPN từ SePay",
-                    required = true
-            )
-            @org.springframework.web.bind.annotation.RequestBody SepayIpnRequest ipnRequest
+            @RequestBody SepayIpnRequest ipnRequest
     ) {
 
         log.info("[IPN] notification_type={}", ipnRequest.getNotificationType());
