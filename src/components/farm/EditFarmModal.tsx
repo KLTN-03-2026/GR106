@@ -11,17 +11,10 @@ import {
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 
-const farmEditSchema = z.object({
-  name: z.string().min(1, 'Tên trang trại là bắt buộc').max(100, 'Tên không quá 100 ký tự'),
-  address: z.string().optional(),
-  description: z.string().optional(),
-});
-
-type FarmEditFormValues = z.infer<typeof farmEditSchema>;
+import { farmEditSchema, FarmEditInput } from '../../schemas/farmSchemas';
 
 interface EditFarmModalProps {
   isOpen: boolean;
@@ -30,14 +23,14 @@ interface EditFarmModalProps {
   onSuccess?: () => void;
 }
 
-export function EditFarmModal({ isOpen, onClose, farm }: EditFarmModalProps) {
+export function EditFarmModal({ isOpen, onClose, farm, onSuccess }: EditFarmModalProps) {
 
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<FarmEditFormValues>({
+  } = useForm<FarmEditInput>({
     resolver: zodResolver(farmEditSchema),
     defaultValues: {
       name: '',
@@ -56,7 +49,7 @@ export function EditFarmModal({ isOpen, onClose, farm }: EditFarmModalProps) {
     }
   }, [farm, isOpen, reset]);
 
-  const onSubmit = async (_data: FarmEditFormValues) => {
+  const onSubmit = async (_data: FarmEditInput) => {
     try {
       toast.info('Tính năng cập nhật trang trại đang được phát triển theo tài liệu API mới nhất.');
       onClose();

@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { 
   LayoutGrid, 
   LogOut, 
@@ -8,8 +9,10 @@ import {
   Users, 
   CreditCard, 
   Settings,
-  Trees
+  Trees,
+  Key
 } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { Button } from "../ui/button";
 import { cn } from "../../utils/cn";
 import { useAuth } from "../../hooks/useAuth";
@@ -53,7 +56,15 @@ export default function Sidebar({
   variant = "compact",
 }: SidebarProps) {
   const { logout, user } = useAuth();
+  const location = useLocation();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
+  useEffect(() => {
+    if (active === "settings") {
+      setIsSettingsOpen(true);
+    }
+  }, [active]);
+
   if (variant === "compact") {
     return (
       <aside className="flex flex-col items-center justify-between h-full w-[64px] bg-white shrink-0 rounded-[24px] shadow-sm border border-slate-100 py-6 px-2 transition-all duration-300">
@@ -108,7 +119,7 @@ export default function Sidebar({
           <Trees size={20} />
         </div>
         <div>
-          <h2 className="text-sm font-black text-slate-800 tracking-tight leading-tight">FarmOS</h2>
+          <h2 className="text-sm font-black text-slate-800 tracking-tight leading-tight">FarmarAI</h2>
           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Quản lý nông trại</p>
         </div>
       </div>
@@ -122,25 +133,47 @@ export default function Sidebar({
             </h3>
             <div className="flex flex-col gap-0.5">
               {group.items.map((item) => (
-                <button
-                  key={item.key}
-                  onClick={() => setActive(item.key)}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-200 group font-bold text-sm",
-                    active === item.key 
-                      ? "bg-emerald-50 text-emerald-600 shadow-sm" 
-                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                  )}
-                >
-                  <item.icon 
-                    size={18} 
+                <div key={item.key} className="flex flex-col gap-1">
+                  <button
+                    onClick={() => {
+                      if (item.key === "settings") {
+                        setIsSettingsOpen(!isSettingsOpen);
+                      } else {
+                        setActive(item.key);
+                      }
+                    }}
                     className={cn(
-                      "transition-colors",
-                      active === item.key ? "text-emerald-600" : "text-slate-400 group-hover:text-slate-900"
-                    )} 
-                  />
-                  <span>{item.label}</span>
-                </button>
+                      "flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-200 group font-bold text-sm",
+                      active === item.key 
+                        ? "bg-emerald-50 text-emerald-600 shadow-sm" 
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                    )}
+                  >
+                    <item.icon 
+                      size={18} 
+                      className={cn(
+                        "transition-colors",
+                        active === item.key ? "text-emerald-600" : "text-slate-400 group-hover:text-slate-900"
+                      )} 
+                    />
+                    <span>{item.label}</span>
+                  </button>
+                  
+                  {item.key === "settings" && isSettingsOpen && (
+                    <button
+                      onClick={() => setActive("change-password")}
+                      className={cn(
+                        "flex items-center gap-3 ml-7 px-4 py-2 rounded-xl text-xs font-bold transition-all",
+                        location.pathname.includes("change-password")
+                          ? "text-emerald-600 bg-emerald-50/50"
+                          : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+                      )}
+                    >
+                      <Key size={14} className={location.pathname.includes("change-password") ? "text-emerald-600" : "text-slate-400"} />
+                      <span>Đổi mật khẩu</span>
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -149,7 +182,7 @@ export default function Sidebar({
 
       {/* User Profile & Logout */}
       <div className="mt-auto pt-4 border-t border-slate-100 flex flex-col gap-2">
-        <div className="flex items-center gap-3 px-2">
+        <div className="flex items-center gap-3 px-2 mb-2">
           <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs border-2 border-white shadow-sm">
             {user?.fullName?.split(" ").pop()?.charAt(0) || "U"}
           </div>
@@ -157,15 +190,6 @@ export default function Sidebar({
             <p className="text-[9px] font-bold text-slate-400 uppercase truncate">Chủ trang trại</p>
           </div>
         </div>
-        
-        <Button
-          variant="ghost"
-          onClick={logout}
-          className="w-full justify-start gap-3 rounded-2xl h-10 px-4 text-slate-500 hover:text-red-500 hover:bg-red-50 font-bold text-xs group"
-        >
-          <LogOut size={18} className="text-slate-400 group-hover:text-red-500 transition-colors" />
-          <span>Đăng xuất</span>
-        </Button>
       </div>
     </aside>
   );

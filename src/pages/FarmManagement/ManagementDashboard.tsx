@@ -12,9 +12,13 @@ import {
   DollarSign,
   Loader2,
   AlertCircle,
-  ArrowRight
+  ArrowRight,
+  Trash2
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'sonner';
+import { farmService } from '../../services/farmService';
+import { setAccessToken } from '../../store/authSlice';
 import { CreateFarmModal } from '../../components/farm';
 import { EditFarmModal } from '../../components/farm/EditFarmModal';
 import { fetchFarmsSummary } from '../../store/farmSlice';
@@ -33,8 +37,17 @@ export function ManagementDashboardPage() {
     dispatch(fetchFarmsSummary());
   }, [dispatch]);
 
-  const handleSelectFarm = (farm: any) => {
-    navigate(`/farms/${farm.farmId}/actions`);
+  const handleSelectFarm = async (farm: any) => {
+    try {
+      const res = await farmService.selectFarm(farm.farmId);
+      if (res.success && res.data.farmToken) {
+        dispatch(setAccessToken({ token: res.data.farmToken, farmId: farm.farmId }));
+        navigate(`/farms/${farm.farmId}/actions`);
+      }
+    } catch (err: any) {
+      console.error('Lỗi khi chọn farm:', err);
+      toast.error(err?.response?.data?.message || 'Không thể truy cập trang trại này.');
+    }
   };
 
   const filteredFarms = farmSummary.filter(f =>
@@ -177,11 +190,24 @@ export function ManagementDashboardPage() {
                 ))}
               </div>
 
-              <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-600 border border-emerald-100 bg-emerald-50 w-fit px-3 py-1.5 rounded-full uppercase tracking-widest mt-auto group-hover/card:bg-emerald-500 group-hover/card:text-white group-hover/card:border-transparent transition-all duration-300 shadow-sm shadow-emerald-100 group-hover/card:shadow-emerald-200">
-                Nhấp để xem chức năng
-                <div>
-                  <ArrowRight size={10} />
+              <div className="flex items-center gap-2 mt-auto">
+                <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-600 border border-emerald-100 bg-emerald-50 flex-1 px-3 py-1.5 rounded-full uppercase tracking-widest group-hover/card:bg-emerald-500 group-hover/card:text-white group-hover/card:border-transparent transition-all duration-300 shadow-sm shadow-emerald-100 group-hover/card:shadow-emerald-200">
+                  Nhấp để xem chi tiết
+                  <div>
+                    <ArrowRight size={10} />
+                  </div>
                 </div>
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toast.info("Chức năng xóa sẽ được cập nhật sau khi có API từ bạn.");
+                  }}
+                  className="w-8 h-8 rounded-[12px] flex items-center justify-center bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all shadow-sm border border-red-100 shrink-0"
+                  title="Xóa trang trại"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             </div>
           ))}

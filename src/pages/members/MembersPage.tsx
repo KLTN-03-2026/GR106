@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { UserPlus } from 'lucide-react'
+
 import { MemberTable } from '../../components/members/MemberTable'
 import { InvitationTable } from '../../components/members/InvitationTable'
 import { InviteModal } from '../../components/members/InviteModal'

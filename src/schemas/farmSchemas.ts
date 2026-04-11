@@ -53,6 +53,13 @@ export const createFarmResponseSchema = z.object({
   timestamp: z.string().datetime(),
 });
 
+export const farmEditSchema = z.object({
+  name: z.string().min(1, 'Tên trang trại là bắt buộc').max(100, 'Tên không quá 100 ký tự'),
+  address: z.string().optional(),
+  description: z.string().optional(),
+});
+
 export type FarmResponse = z.infer<typeof farmResponseSchema>;
 export type FarmSummary = z.infer<typeof farmSummarySchema>;
 export type CreateFarmInput = z.infer<typeof createFarmSchema>;
+export type FarmEditInput = z.infer<typeof farmEditSchema>;

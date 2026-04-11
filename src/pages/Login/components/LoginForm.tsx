@@ -1,21 +1,13 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { Loader2, Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { authService } from '../../../services/authService';
 import { setCredentials } from '../../../store/authSlice';
-const loginSchema = z.object({
-  email: z.
-  string().
-  min(1, 'Email là bắt buộc').
-  email('Định dạng email không hợp lệ'),
-  password: z.string().min(1, 'Mật khẩu là bắt buộc')
-});
-type LoginFormValues = z.infer<typeof loginSchema>;
+import { loginSchema, LoginInput } from '../../../schemas/authSchemas';
 export const LoginForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const dispatch = useDispatch();
@@ -24,10 +16,10 @@ export const LoginForm: React.FC = () => {
     register,
     handleSubmit,
     formState: { errors }
-  } = useForm<LoginFormValues>({
+  } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema)
   });
-  const onSubmit = async (data: LoginFormValues) => {
+  const onSubmit = async (data: LoginInput) => {
     try {
       setIsLoading(true);
       const response = await authService.login(data);

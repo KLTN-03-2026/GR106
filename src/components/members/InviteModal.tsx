@@ -97,10 +97,10 @@ export function InviteModal({ isOpen, onClose }: InviteModalProps) {
                 type="button"
                 onClick={() => setRole('worker')}
                 className={cn(
-                  "p-3 rounded-lg border text-left transition-all",
+                  "p-3 rounded-lg border text-left transition-all duration-300",
                   role === 'worker'
-                    ? "border-gray-900 bg-gray-50"
-                    : "border-gray-200 bg-white hover:border-gray-300"
+                    ? "border-gray-900 bg-gray-50 opacity-100 shadow-sm"
+                    : "border-gray-200 bg-white hover:border-gray-300 opacity-40 hover:opacity-100"
                 )}
               >
                 <div className="flex items-center gap-1.5 mb-1">
@@ -116,10 +116,10 @@ export function InviteModal({ isOpen, onClose }: InviteModalProps) {
                 type="button"
                 onClick={() => setRole('manager')}
                 className={cn(
-                  "p-3 rounded-lg border text-left transition-all",
+                  "p-3 rounded-lg border text-left transition-all duration-300",
                   role === 'manager'
-                    ? "border-gray-900 bg-gray-50"
-                    : "border-gray-200 bg-white hover:border-gray-300"
+                    ? "border-gray-900 bg-gray-50 opacity-100 shadow-sm"
+                    : "border-gray-200 bg-white hover:border-gray-300 opacity-40 hover:opacity-100"
                 )}
               >
                 <div className="flex items-center gap-1.5 mb-1">

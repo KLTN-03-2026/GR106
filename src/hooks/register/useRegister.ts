@@ -1,34 +1,20 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { toast } from 'sonner';
 import { authService } from '../../services/authService';
 
-const registerSchema = z.object({
-  fullName: z.string().min(1, 'Họ tên là bắt buộc'),
-  email: z.string().min(1, 'Email là bắt buộc').email('Định dạng email không hợp lệ'),
-  password: z.string()
-    .min(8, 'Mật khẩu phải có ít nhất 8 ký tự')
-    .regex(/[A-Z]/, 'Mật khẩu phải chứa ít nhất 1 chữ hoa')
-    .regex(/[0-9]/, 'Mật khẩu phải chứa ít nhất 1 số'),
-  confirmPassword: z.string().min(1, 'Vui lòng xác nhận mật khẩu'),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Mật khẩu xác nhận không khớp',
-  path: ['confirmPassword'],
-});
-
-type RegisterFormValues = z.infer<typeof registerSchema>;
+import { registerSchema, RegisterInput } from '../../schemas/authSchemas';
 
 export function useRegister() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const form = useForm<RegisterFormValues>({
+  const form = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
   });
 
-  const onSubmit = form.handleSubmit(async (data: RegisterFormValues) => {
+  const onSubmit = form.handleSubmit(async (data: RegisterInput) => {
     // setServerError(null); // Removed to prevent UI flickering
     setIsSuccess(false);
 

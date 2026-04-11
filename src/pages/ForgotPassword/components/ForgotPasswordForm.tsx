@@ -1,17 +1,12 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { Link } from 'react-router-dom';
 import { Loader2, Mail, ArrowLeft, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { authService } from '../../../services/authService';
 
-const forgotPasswordSchema = z.object({
-  email: z.string().min(1, 'Email là bắt buộc').email('Định dạng email không hợp lệ')
-});
-
-type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
+import { forgotPasswordSchema, ForgotPasswordInput } from '../../../schemas/authSchemas';
 
 export const ForgotPasswordForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -22,11 +17,11 @@ export const ForgotPasswordForm: React.FC = () => {
     register,
     handleSubmit,
     formState: { errors }
-  } = useForm<ForgotPasswordValues>({
+  } = useForm<ForgotPasswordInput>({
     resolver: zodResolver(forgotPasswordSchema)
   });
 
-  const onSubmit = async (data: ForgotPasswordValues) => {
+  const onSubmit = async (data: ForgotPasswordInput) => {
     try {
       setIsLoading(true);
       setServerError(null);

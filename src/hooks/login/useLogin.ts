@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
@@ -9,12 +8,7 @@ import { authService } from '../../services/authService';
 import { setCredentials } from '../../store/authSlice';
 import { getUserFromToken } from '../../utils/jwt';
 
-const loginSchema = z.object({
-  email: z.string().min(1, 'Email là bắt buộc').email('Định dạng email không hợp lệ'),
-  password: z.string().min(1, 'Mật khẩu là bắt buộc'),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
+import { loginSchema, LoginInput } from '../../schemas/authSchemas';
 
 export function useLogin() {
   const [serverError, setServerError] = useState<string | null>(null);
@@ -22,11 +16,11 @@ export function useLogin() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const form = useForm<LoginFormValues>({
+  const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = form.handleSubmit(async (data: LoginFormValues) => {
+  const onSubmit = form.handleSubmit(async (data: LoginInput) => {
     setServerError(null);
     
     try {

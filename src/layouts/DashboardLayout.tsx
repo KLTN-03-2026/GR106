@@ -6,7 +6,22 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const getActive = () => location.pathname.split("/").pop() || "dashboard";
+  const getActive = () => {
+    const p = location.pathname;
+    if (p === "/dashboard") return "dashboard";
+    if (p.startsWith("/farms")) return "tree";
+    if (p.startsWith("/members")) return "members";
+    if (p.startsWith("/land-plots")) return "land-plots";
+    if (p.startsWith("/map")) return "map";
+    if (p.startsWith("/wallet")) return "wallet";
+    if (p.startsWith("/tasks")) return "task";
+    if (p.startsWith("/activity")) return "activity";
+    if (p.startsWith("/gemini")) return "gemini";
+    if (p.startsWith("/subscription")) return "subscription";
+    if (p.startsWith("/change-password")) return "settings";
+    return p.split("/").pop() || "dashboard";
+  };
+
   const [active, setActive] = useState(getActive());
 
   useEffect(() => {
@@ -35,15 +50,19 @@ export default function DashboardLayout() {
       navigate("/gemini");
     } else if (key === "subscription") {
       navigate("/subscription");
+    } else if (key === "change-password") {
+      navigate("/change-password");
     } else if (key === "settings") {
-      navigate("/dashboard"); // Default to dashboard if no settings page yet
+      // Handled by Sidebar internally for sub-menu or default to dashboard
     } else {
       navigate("/dashboard");
     }
   };
 
-  const wideSidebarPaths = ["/farms", "/members", "/land-plots", "/map", "/subscription"];
-  const isWideSidebarPage = wideSidebarPaths.some(path => location.pathname.includes(path));
+  const wideSidebarPaths = ["/members", "/land-plots", "/map", "/subscription"];
+  const isWideSidebarPage = 
+    wideSidebarPaths.some(path => location.pathname.includes(path)) || 
+    (location.pathname.startsWith("/farms") && location.pathname !== "/farms");
 
   return (
     <div className="w-full h-screen bg-[#F8FAFC] flex overflow-hidden p-3 gap-3">

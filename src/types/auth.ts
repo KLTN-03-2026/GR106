@@ -6,9 +6,17 @@ export interface ApiResponse<T> {
   timestamp: string;
 }
 
+export interface UserInfo {
+  id: string;
+  email: string;
+  fullName: string;
+  role: string;
+}
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
+  user?: UserInfo;
 }
 
 export interface LoginRequest {
