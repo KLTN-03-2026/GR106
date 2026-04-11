@@ -18,7 +18,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { farmService } from '../../services/farmService';
-import { setAccessToken } from '../../store/authSlice';
+import { selectFarm } from '../../store/authSlice';
 import { CreateFarmModal } from '../../components/farm';
 import { EditFarmModal } from '../../components/farm/EditFarmModal';
 import { fetchFarmsSummary } from '../../store/farmSlice';
@@ -41,7 +41,7 @@ export function ManagementDashboardPage() {
     try {
       const res = await farmService.selectFarm(farm.farmId);
       if (res.success && res.data.farmToken) {
-        dispatch(setAccessToken({ token: res.data.farmToken, farmId: farm.farmId }));
+        dispatch(selectFarm({ token: res.data.farmToken, farmId: farm.farmId }));
         navigate(`/farms/${farm.farmId}/actions`);
       }
     } catch (err: any) {

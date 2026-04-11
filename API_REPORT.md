@@ -60,4 +60,21 @@ Quản lý các khu vực canh tác bên trong một trang trại.
         - **Status**: ✅ Integrated (Sử dụng tại CreatePlotModal).
 
 ---
+## 6. Luồng xử lý Hệ thống (System Flow)
+
+### Luồng Thanh toán & Nâng cấp (Subscription Flow)
+Để đảm bảo tính nhất quán của dữ liệu khi nâng cấp gói cước cho đúng trang trại, hệ thống tuân thủ luồng sau:
+1. **Truy cập Gói cước**: Người dùng từ 'Quản lý Gói dịch vụ' (`/subscription`) nhấn 'Nâng cấp'.
+2. **Chọn Gói**: Tại trang Pricing (`/subscription/pricing`), người dùng chọn gói cước mong muốn.
+3. **Xác nhận Trang trại (Farm Context)**: 
+   - Khi nhấn 'Thanh toán', nếu chưa có trang trại nào được chọn (`currentFarmId` null) hoặc chưa xác nhận lại trong phiên làm việc, hệ thống sẽ hiển thị **Modal chọn trang trại**.
+   - Sau khi chọn, hệ thống gọi `selectFarm(farmId)` để lấy `farmToken` và thiết lập `currentFarmId`.
+4. **Thanh toán SePay**: Hệ thống gửi yêu cầu tạo giao dịch và chuyển hướng người dùng sang cổng **SePay**.
+
+### Cơ chế Quản lý Ngữ cảnh (Context Cleaning)
+Để tránh việc người dùng bị "kẹt" trong một ngữ cảnh trang trại sau khi kết thúc hoặc hủy luồng thanh toán:
+- **Thoát luồng**: Khi người dùng nhấn vào menu 'Trang trại' (`/farms`) trên Sidebar để thoát khỏi trang thanh toán/nâng cấp, hệ thống sẽ tự động kích hoạt action `clearFarmContext()`.
+- **Kết quả**: `currentFarmId` bị xóa khỏi Redux và LocalStorage, `accessToken` được khôi phục về `userToken` gốc. Điều này cho phép người dùng quay lại trạng thái "Hub" để quản lý toàn bộ danh sách trang trại một cách sạch sẽ.
+
+---
 **Ghi chú**: Tất cả các API nội bộ (Backend) đều sử dụng `axiosInstance` được cấu hình tại `src/config/axios.ts` để tự động đính kèm `Authorization` token vào Header của request.

@@ -4,7 +4,7 @@ import { getSubscriptionPlansService } from '@/services/subscription';
 import { farmService } from '@/services/farmService';
 import { BillingCycle } from '@/types/payment/payment';
 import { SubscriptionPlan } from '@/types/subscription/subscription';
-import { setAccessToken } from '@/store/authSlice';
+import { selectFarm } from '@/store/authSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { fetchFarmsSummary } from '@/store/farmSlice';
@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { cn } from '@/utils/cn';
 
 const SubscriptionPage = () => {
     const dispatch = useDispatch();
@@ -34,7 +35,6 @@ const SubscriptionPage = () => {
     const { farmSummary: farms } = useSelector((state: RootState) => state.farm);
 
     // Tìm farm hiện tại dựa trên ID trong Redux
-    const currentFarm = farms.find(f => f.farmId === currentFarmId);
 
     const selected = plans.find((p) => p.id === selectedPlan);
 
@@ -72,16 +72,17 @@ const SubscriptionPage = () => {
         try {
             const res = await farmService.selectFarm(farmId);
             if (res.success && res.data.farmToken) {
-                dispatch(setAccessToken({ token: res.data.farmToken, farmId }));
+                // 1. Cập nhật state local ngay lập tức để luồng thanh toán đi tiếp
                 setIsConfirmed(true);
                 setShowSelectionModal(false);
                 
-                // Nếu đang trong luồng thanh toán, tiếp tục thanh toán ngay
+                // 2. Cập nhật Redux (xảy ra async)
+                dispatch(selectFarm({ token: res.data.farmToken, farmId }));
+                
+                // 3. Thực hiện thanh toán ngay với farmId vừa chọn
                 if (isPaymentPending) {
                     setIsPaymentPending(false);
-                    // Phải đợi Redux update hoặc dùng local farmToken vừa lấy
-                    // Tuy nhiên handlePayment dùng currentFarmId từ store nên ta gọi nó sau 1 tick hoặc truyền farmId
-                    setTimeout(() => handlePayment(), 100);
+                    await executePayment(farmId);
                 }
             }
         } catch (err) {
@@ -91,10 +92,11 @@ const SubscriptionPage = () => {
         }
     };
 
-    const handlePayment = async () => {
+    const executePayment = async (farmIdToUse?: string) => {
+        const farmId = farmIdToUse || currentFarmId;
+        
         if (!selectedPlan) return;
-
-        if (!isConfirmed || !currentFarmId) {
+        if (!isConfirmed || !farmId) {
             setIsPaymentPending(true);
             setShowSelectionModal(true);
             return;
@@ -144,10 +146,12 @@ const SubscriptionPage = () => {
             form.submit();
 
         } catch (err: any) {
-            setError(err?.response?.data?.message || 'Lỗi hệ thống');
+            setError(err?.response?.data?.message || 'Lỗi hệ thống khi tạo thanh toán');
             setLoading(false);
         }
     };
+
+    const handlePayment = () => executePayment();
 
     return (
         <div className="h-screen overflow-y-auto bg-[#f5f5f0] relative">
@@ -169,28 +173,42 @@ const SubscriptionPage = () => {
                             <h2 className="text-xl font-bold text-gray-900 mb-2">Chọn trang trại cần nâng cấp</h2>
                             <p className="text-sm text-gray-500 mb-6">Vui lòng chọn trang trại bạn muốn áp dụng gói dịch vụ này.</p>
                             
-                            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
-                                {farms.map((farm) => (
-                                    <button
-                                        key={farm.farmId}
-                                        disabled={loading}
-                                        onClick={() => handleSelectFarmContext(farm.farmId)}
-                                        className="w-full flex items-center justify-between p-4 bg-gray-50 border border-transparent rounded-2xl hover:border-green-500 hover:bg-green-50 transition-all group disabled:opacity-50"
-                                    >
-                                        <div className="flex items-center gap-4 text-left">
-                                            <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-green-600 border border-gray-100">
-                                                <Trees size={20} />
+                            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                {farms.map((farm) => {
+                                    const isCurrent = currentFarmId === farm.farmId;
+                                    return (
+                                        <button
+                                            key={farm.farmId}
+                                            disabled={loading}
+                                            onClick={() => handleSelectFarmContext(farm.farmId)}
+                                            className={cn(
+                                                "w-full flex items-center justify-between p-4 rounded-2xl transition-all group disabled:opacity-50 border",
+                                                isCurrent 
+                                                    ? "bg-green-50 border-green-200" 
+                                                    : "bg-gray-50 border-transparent hover:border-green-500 hover:bg-green-50"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-4 text-left">
+                                                <div className={cn(
+                                                    "w-10 h-10 rounded-xl shadow-sm flex items-center justify-center border transition-colors",
+                                                    isCurrent ? "bg-green-600 text-white border-green-600" : "bg-white text-green-600 border-gray-100"
+                                                )}>
+                                                    <Trees size={20} />
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="font-semibold text-gray-800 text-sm">{farm.farmName}</h3>
+                                                        {isCurrent && <span className="text-[8px] bg-green-600 text-white px-1.5 py-0.5 rounded-full uppercase font-black">Hiện tại</span>}
+                                                    </div>
+                                                    <p className="text-[10px] text-gray-500 uppercase tracking-tighter">
+                                                        ID: ...{farm.farmId.slice(-6)}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 className="font-semibold text-gray-800 text-sm">{farm.farmName}</h3>
-                                                <p className="text-[10px] text-gray-500 uppercase tracking-tighter">
-                                                    ID: ...{farm.farmId.slice(-6)}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        {loading ? <Loader2 size={16} className="animate-spin text-gray-300" /> : <ArrowRight size={16} className="text-gray-300 group-hover:text-green-600" />}
-                                    </button>
-                                ))}
+                                            {loading ? <Loader2 size={16} className="animate-spin text-gray-300" /> : <ArrowRight size={16} className={cn("transition-transform group-hover:translate-x-1", isCurrent ? "text-green-600" : "text-gray-300 group-hover:text-green-600")} />}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </motion.div>
                     </div>
