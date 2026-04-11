@@ -14,6 +14,7 @@ const ResetPasswordPage = lazy(() => import('../pages/ResetPassword/ResetPasswor
 const ChangePasswordPage = lazy(() => import('../pages/ChangePassword/ChangePasswordPage').then(module => ({ default: module.ChangePasswordPage })));
 const MainPage = lazy(() => import('../pages/Dashboard/MainPage'));
 const UnauthorizedPage = lazy(() => import('../pages/landing/UnauthorizedPage').then(module => ({ default: module.UnauthorizedPage })));
+const SubscriptionHistoryPage = lazy(() => import('../pages/Subscription/SubscriptionHistoryPage'));
 const MembersPage = lazy(() => import('../pages/members/MembersPage').then(module => ({ default: module.MembersPage })));
 const InviteExpiredPage = lazy(() => import('../pages/invite-expired/InviteExpiredPage').then(module => ({ default: module.InviteExpiredPage })));
 const LandPlotsPage = lazy(() => import('../pages/LandPlots/LandPlotsPage').then(module => ({ default: module.LandPlotsPage })));
@@ -54,13 +55,14 @@ export const AppRoutes: React.FC = () => {
           <Route path="/change-password" element={<Suspense fallback={<LoadingPage />}><ChangePasswordPage /></Suspense>} />
           <Route path="/farms" element={<Suspense fallback={<LoadingPage />}><ManagementDashboardPage /></Suspense>} />
           <Route path="/farms/:farmId/actions" element={<Suspense fallback={<LoadingPage />}><FarmActionsPage /></Suspense>} />
+          <Route path="/subscription" element={<Suspense fallback={<LoadingPage />}><SubscriptionHistoryPage /></Suspense>} />
+          <Route path="/subscription/pricing" element={<Suspense fallback={<LoadingPage />}><SubscriptionPage /></Suspense>} />
           
           {/* Dashboard pages */}
           <Route path="/wallet" element={<Suspense fallback={<LoadingPage />}><WalletPage /></Suspense>} />
           <Route path="/activity" element={<Suspense fallback={<LoadingPage />}><ActivityPage /></Suspense>} />
           <Route path="/tasks" element={<Suspense fallback={<LoadingPage />}><TasksPage /></Suspense>} />
           <Route path="/gemini" element={<Suspense fallback={<LoadingPage />}><GeminiPage /></Suspense>} />
-          <Route path="/subscription" element={<Suspense fallback={<LoadingPage />}><SubscriptionPage /></Suspense>} />
           <Route path="/payment/result" element={<Suspense fallback={<LoadingPage />}><PaymentResultPage /></Suspense>} />
           
           <Route path="/members" element={<Suspense fallback={<LoadingPage />}><MembersPage /></Suspense>} />

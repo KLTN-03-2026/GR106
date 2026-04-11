@@ -17,6 +17,7 @@ import { Button } from "../ui/button";
 import { cn } from "../../utils/cn";
 import { useAuth } from "../../hooks/useAuth";
 import { NAV_ICONS } from "../../layouts/NavIcon";
+import { useCurrentSubscription } from "../../hooks/subscription/useSubscription";
 
 interface SidebarProps {
   active: string;
@@ -56,6 +57,7 @@ export default function Sidebar({
   variant = "compact",
 }: SidebarProps) {
   const { logout, user } = useAuth();
+  const { data: currentSubscription, isLoading: loadingSub } = useCurrentSubscription();
   const location = useLocation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
@@ -119,7 +121,14 @@ export default function Sidebar({
           <Trees size={20} />
         </div>
         <div>
-          <h2 className="text-sm font-black text-slate-800 tracking-tight leading-tight">FarmarAI</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-black text-slate-800 tracking-tight leading-tight">FarmarAI</h2>
+            {!loadingSub && currentSubscription && (
+              <span className="px-1.5 py-0.5 rounded-md bg-slate-900 text-[8px] font-black text-white uppercase tracking-wider">
+                {currentSubscription.subscriptionPlanName}
+              </span>
+            )}
+          </div>
           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Quản lý nông trại</p>
         </div>
       </div>
