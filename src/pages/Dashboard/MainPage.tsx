@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   StatCard,
   WeatherCard,
@@ -8,11 +9,57 @@ import {
   TaskBar,
 } from "../../components/dashboard";
 
-import {
-  useFarmStats,
-  useNpkData,
-  useTasksSummary,
-} from "../../hooks/useDashboardData";
+// Mock Hooks moved directly into this file to avoid external dependencies
+function useFarmStats() {
+  const [data] = useState({
+    totalPlots: 0,
+    totalCrops: 0,
+    totalArea: 0,
+    totalPlants: 0,
+    performancePct: 0,
+  });
+  const [isPending, setIsPending] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsPending(false);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return { data, isPending };
+}
+
+function useNpkData() {
+  const [data] = useState([]);
+  const [isPending, setIsPending] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsPending(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return { data, isPending };
+}
+
+function useTasksSummary() {
+  const [data] = useState({
+    completed: 0,
+    pending: 0,
+  });
+  const [isPending, setIsPending] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsPending(false);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return { data, isPending };
+}
 
 export default function MainPage() {
   const { data: statsData, isPending: statsLoading } = useFarmStats();
