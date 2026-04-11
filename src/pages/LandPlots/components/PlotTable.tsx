@@ -1,12 +1,12 @@
 import { Edit2Icon, Trash2Icon, MapIcon } from 'lucide-react'
-import { LandPlot } from '../../../types/landPlot'
+import { Plot } from '../../../schemas/plotSchemas'
 import { PlotStatusBadge } from './PlotStatusBadge'
 
 interface PlotTableProps {
-  plots: LandPlot[]
-  onEdit: (plot: LandPlot) => void
-  onDelete: (plot: LandPlot) => void
-  onViewMap: (plot: LandPlot) => void
+  plots: Plot[]
+  onEdit: (plot: Plot) => void
+  onDelete: (plot: Plot) => void
+  onViewMap: (plot: Plot) => void
 }
 
 export function PlotTable({
@@ -54,7 +54,7 @@ export function PlotTable({
                   {plot.name}
                 </td>
                 <td className="px-6 py-4 font-medium">
-                  {plot.area.toLocaleString('vi-VN')}
+                  {plot.areaHa.toLocaleString('vi-VN')}
                 </td>
                 <td className="px-6 py-4">
                   <PlotStatusBadge status={plot.status} />

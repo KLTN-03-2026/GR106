@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
 import { XIcon, AlertCircleIcon } from 'lucide-react'
-import { LandPlot, PlotStatus } from '../../../types/landPlot'
+import { Plot } from '../../../schemas/plotSchemas'
 
 interface CreatePlotModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (plot: Omit<LandPlot, 'id'>) => void
-  existingPlots: LandPlot[]
+  onSave: (plot: any) => void
+  existingPlots: Plot[]
 }
 
 export function CreatePlotModal({
@@ -16,9 +16,8 @@ export function CreatePlotModal({
   existingPlots,
 }: CreatePlotModalProps) {
   const [name, setName] = useState('')
-  const [area, setArea] = useState('')
   const [description, setDescription] = useState('')
-  const [status, setStatus] = useState<PlotStatus>('active')
+  const [geometryStr, setGeometryStr] = useState('[[[105.78, 21.02], [105.79, 21.02], [105.79, 21.03], [105.78, 21.03], [105.78, 21.02]]]')
   const [error, setError] = useState('')
   const [warning, setWarning] = useState('')
 
@@ -34,17 +33,20 @@ export function CreatePlotModal({
       setError('Vui lòng nhập tên lô đất')
       return
     }
-    if (name.length > 100) {
-      setError('Tên lô đất không được vượt quá 100 ký tự')
-      return
-    }
-    const numArea = parseFloat(area)
-    if (isNaN(numArea) || numArea <= 0) {
-      setError('Diện tích phải là số dương lớn hơn 0')
+
+    let geometry;
+    try {
+      const coords = JSON.parse(geometryStr);
+      geometry = {
+        type: 'Polygon',
+        coordinates: coords
+      };
+    } catch (e) {
+      setError('Định dạng tọa độ Geometry không hợp lệ (phải là JSON mảng 3 chiều)')
       return
     }
 
-    // Check for duplicate names (warning only, still allows creation)
+    // Check for duplicate names
     const isDuplicate = existingPlots.some(
       (p) => p.name.toLowerCase() === name.trim().toLowerCase(),
     )
@@ -56,17 +58,14 @@ export function CreatePlotModal({
     }
 
     onSave({
-      name: name.trim(),
-      area: numArea,
+      plotName: name.trim(),
       description: description.trim(),
-      status,
+      geometry: geometry,
     })
 
     // Reset form
     setName('')
-    setArea('')
     setDescription('')
-    setStatus('active')
     setWarning('')
   }
 
@@ -121,39 +120,22 @@ export function CreatePlotModal({
 
           <div>
             <label
-              htmlFor="area"
+              htmlFor="geometry"
               className="block text-sm font-bold text-gray-700 mb-1.5 uppercase tracking-tight"
             >
-              Diện tích (ha) <span className="text-red-500">*</span>
+              Tọa độ Geometry (GeoJSON Coordinates) <span className="text-red-500">*</span>
             </label>
-            <input
-              id="area"
-              type="number"
-              step="0.01"
-              min="0.01"
-              value={area}
-              onChange={(e) => setArea(e.target.value)}
-              placeholder="VD: 2.5"
-              className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+            <textarea
+              id="geometry"
+              value={geometryStr}
+              onChange={(e) => setGeometryStr(e.target.value)}
+              placeholder="VD: [[[105.7, 21.0], ...]]"
+              rows={4}
+              className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none"
             />
-          </div>
-
-          <div>
-            <label
-              htmlFor="status"
-              className="block text-sm font-bold text-gray-700 mb-1.5 uppercase tracking-tight"
-            >
-              Trạng thái
-            </label>
-            <select
-              id="status"
-              value={status}
-              onChange={(e) => setStatus(e.target.value as PlotStatus)}
-              className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-            >
-              <option value="active">Đang canh tác</option>
-              <option value="resting">Đang nghỉ</option>
-            </select>
+            <p className="text-[10px] text-gray-400 mt-1">
+              Định dạng mảng tọa độ GeoJSON cho Polygon.
+            </p>
           </div>
 
           <div>

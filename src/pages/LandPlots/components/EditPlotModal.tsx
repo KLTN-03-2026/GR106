@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { XIcon, AlertCircleIcon, InfoIcon } from 'lucide-react'
-import { LandPlot, PlotStatus } from '../../../types/landPlot'
+import { Plot } from '../../../schemas/plotSchemas'
 
 interface EditPlotModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (plot: LandPlot) => void
-  plot: LandPlot | null
+  onSave: (plot: Plot) => void
+  plot: Plot | null
 }
 
 export function EditPlotModal({
@@ -16,15 +16,15 @@ export function EditPlotModal({
   plot,
 }: EditPlotModalProps) {
   const [name, setName] = useState('')
-  const [area, setArea] = useState('')
+  const [areaHa, setAreaHa] = useState('')
   const [description, setDescription] = useState('')
-  const [status, setStatus] = useState<PlotStatus>('active')
+  const [status, setStatus] = useState<string>('ACTIVE')
   const [error, setError] = useState('')
 
   useEffect(() => {
     if (plot) {
       setName(plot.name)
-      setArea(plot.area.toString())
+      setAreaHa(plot.areaHa.toString())
       setDescription(plot.description || '')
       setStatus(plot.status)
       setError('')
@@ -42,11 +42,7 @@ export function EditPlotModal({
       setError('Vui lòng nhập tên lô đất')
       return
     }
-    if (name.length > 100) {
-      setError('Tên lô đất không được vượt quá 100 ký tự')
-      return
-    }
-    const numArea = parseFloat(area)
+    const numArea = parseFloat(areaHa)
     if (isNaN(numArea) || numArea <= 0) {
       setError('Diện tích phải là số dương lớn hơn 0')
       return
@@ -55,7 +51,7 @@ export function EditPlotModal({
     onSave({
       ...plot,
       name: name.trim(),
-      area: numArea,
+      areaHa: numArea,
       description: description.trim(),
       status,
     })
@@ -111,8 +107,8 @@ export function EditPlotModal({
               type="number"
               step="0.01"
               min="0.01"
-              value={area}
-              onChange={(e) => setArea(e.target.value)}
+              value={areaHa}
+              onChange={(e) => setAreaHa(e.target.value)}
               className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
             />
           </div>
@@ -127,11 +123,11 @@ export function EditPlotModal({
             <select
               id="edit-status"
               value={status}
-              onChange={(e) => setStatus(e.target.value as PlotStatus)}
+              onChange={(e) => setStatus(e.target.value as "ACTIVE" | "INACTIVE")}
               className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-gray-700"
             >
-              <option value="active">Đang canh tác</option>
-              <option value="resting">Đang nghỉ</option>
+              <option value="ACTIVE">Đang hoạt động</option>
+              <option value="INACTIVE">Ngưng hoạt động</option>
             </select>
           </div>
 

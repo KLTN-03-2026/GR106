@@ -50,5 +50,14 @@ Tích hợp dữ liệu thời tiết thực tế từ bên thứ ba.
 - **Endpoint**: 
     - `GET https://api.openweathermap.org/data/2.5/weather`: Lấy thông tin thời tiết dựa trên tọa độ (lat, lon).
 
+## 5. Quản lý Lô đất (Plots)
+Quản lý các khu vực canh tác bên trong một trang trại.
+- **Service file**: Tích hợp trực tiếp trong `src/store/plotSlice.ts`
+- **Các Endpoint**:
+    - `GET /api/v1/plots`: Lấy danh sách toàn bộ lô đất của farm hiện tại.
+        - **Status**: ✅ Integrated (Hiển thị tại màn hình LandPlotsPage).
+    - `POST /api/v1/plots`: Tạo một lô đất mới với thông tin tên, mô tả và tọa độ GeoJSON.
+        - **Status**: ✅ Integrated (Sử dụng tại CreatePlotModal).
+
 ---
 **Ghi chú**: Tất cả các API nội bộ (Backend) đều sử dụng `axiosInstance` được cấu hình tại `src/config/axios.ts` để tự động đính kèm `Authorization` token vào Header của request.

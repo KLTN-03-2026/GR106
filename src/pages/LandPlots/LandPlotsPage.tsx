@@ -1,29 +1,42 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PlusIcon, LayoutGridIcon } from 'lucide-react'
-import { LandPlot, PlotStatus } from '../../types/landPlot'
+import { Plot } from '../../schemas/plotSchemas'
 import { PlotFilters } from './components/PlotFilters'
 import { PlotTable } from './components/PlotTable'
 import { PlotCard } from './components/PlotCard'
 import { CreatePlotModal } from './components/CreatePlotModal'
 import { EditPlotModal } from './components/EditPlotModal'
 import { DeletePlotDialog } from './components/DeletePlotDialog'
+import { useDispatch, useSelector } from 'react-redux'
+import { AppDispatch, RootState } from '../../store'
+import { fetchPlots, createPlot } from '../../store/plotSlice'
+import { toast } from 'sonner'
+import { cn } from '../../utils/cn'
 
 
 
 export function LandPlotsPage() {
   const navigate = useNavigate()
+  const dispatch = useDispatch<AppDispatch>()
   
-  // State quản lý danh sách và bộ lọc
-  const [plots] = useState<LandPlot[]>([])
+  // Redux State
+  const { plots, loading, error } = useSelector((state: RootState) => state.plot)
+  
+  // Local UI State
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table')
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<PlotStatus | 'all'>('all')
+  const [statusFilter, setStatusFilter] = useState<string | 'all'>('all')
 
   // State quản lý các Modal
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [editingPlot, setEditingPlot] = useState<LandPlot | null>(null)
-  const [deletingPlot, setDeletingPlot] = useState<LandPlot | null>(null)
+  const [editingPlot, setEditingPlot] = useState<Plot | null>(null)
+  const [deletingPlot, setDeletingPlot] = useState<Plot | null>(null)
+
+  // Fetch dữ liệu khi mount
+  useEffect(() => {
+    dispatch(fetchPlots())
+  }, [dispatch])
 
   // Xử lý lọc dữ liệu
   const filteredPlots = useMemo(() => {
@@ -37,28 +50,31 @@ export function LandPlotsPage() {
     })
   }, [plots, searchTerm, statusFilter])
 
-  // Handlers cho CRUD (Sẽ kết nối API sau)
-  const handleCreatePlot = (plotData: Omit<LandPlot, 'id'>) => {
-    console.log('Sẽ gọi API tạo lô đất:', plotData)
-    // Placeholder: Sau này gọi API thành công sẽ fetch lại danh sách
-    setIsCreateModalOpen(false)
+  // Handlers cho CRUD
+  const handleCreatePlot = async (plotData: any) => {
+    try {
+      await dispatch(createPlot(plotData)).unwrap()
+      toast.success('Tạo lô đất mới thành công')
+      setIsCreateModalOpen(false)
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể tạo lô đất')
+    }
   }
 
-  const handleEditPlot = (plotData: LandPlot) => {
-    console.log('Sẽ gọi API cập nhật lô đất:', plotData)
-    // Placeholder: Sau này gọi API thành công sẽ fetch lại danh sách
+  const handleEditPlot = (plotData: Plot) => {
+    console.log('Chưa hỗ trợ API cập nhật:', plotData)
     setEditingPlot(null)
   }
 
   const handleDeletePlot = () => {
     if (deletingPlot) {
-      console.log('Sẽ gọi API xóa lô đất:', deletingPlot.id)
-      // Placeholder: Sau này gọi API thành công sẽ fetch lại danh sách
+      console.log('Chưa hỗ trợ API xóa:', deletingPlot.id)
       setDeletingPlot(null)
     }
   }
 
-  const handleViewMap = (plot: LandPlot) => {
+
+  const handleViewMap = (plot: Plot) => {
     navigate('/map', {
       state: {
         selectedPlotId: plot.id,
@@ -81,13 +97,14 @@ export function LandPlotsPage() {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-md active:scale-95 group"
-        >
-          <PlusIcon className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
-          Tạo lô đất mới
-        </button>
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-md active:scale-95 group"
+          >
+            <PlusIcon className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+            Tạo lô đất mới
+          </button>
+        </div>
       </div>
 
       {/* Filters Section */}

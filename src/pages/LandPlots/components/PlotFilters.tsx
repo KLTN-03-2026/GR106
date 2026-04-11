@@ -1,14 +1,12 @@
-import React from 'react'
 import { SearchIcon, FilterIcon, LayoutGridIcon, ListIcon } from 'lucide-react'
-import { PlotStatus } from '../../../types/landPlot'
 
 interface PlotFiltersProps {
   viewMode: 'table' | 'card'
   onViewModeChange: (mode: 'table' | 'card') => void
   searchTerm: string
   onSearchChange: (term: string) => void
-  statusFilter: PlotStatus | 'all'
-  onStatusFilterChange: (status: PlotStatus | 'all') => void
+  statusFilter: string | 'all'
+  onStatusFilterChange: (status: string | 'all') => void
 }
 
 export function PlotFilters({
@@ -37,13 +35,13 @@ export function PlotFilters({
           <select
             value={statusFilter}
             onChange={(e) =>
-              onStatusFilterChange(e.target.value as PlotStatus | 'all')
+              onStatusFilterChange(e.target.value)
             }
             className="appearance-none pl-10 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-gray-700 font-medium"
           >
             <option value="all">Tất cả trạng thái</option>
-            <option value="active">Đang canh tác</option>
-            <option value="resting">Đang nghỉ</option>
+            <option value="ACTIVE">Đang hoạt động</option>
+            <option value="INACTIVE">Ngưng hoạt động</option>
           </select>
           <FilterIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
         </div>

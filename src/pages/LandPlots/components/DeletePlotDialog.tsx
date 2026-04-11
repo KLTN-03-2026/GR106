@@ -1,12 +1,11 @@
-import React from 'react'
 import { AlertTriangleIcon, XIcon, ClipboardListIcon } from 'lucide-react'
-import { LandPlot } from '../../../types/landPlot'
+import { Plot } from '../../../schemas/plotSchemas'
 
 interface DeletePlotDialogProps {
   isOpen: boolean
   onClose: () => void
   onConfirm: (plotId: string) => void
-  plot: LandPlot | null
+  plot: Plot | null
   hasActiveTasks?: boolean // Điều kiện từ tài liệu PB06
 }
 

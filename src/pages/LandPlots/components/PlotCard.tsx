@@ -1,13 +1,13 @@
 import React from 'react'
 import { Edit2Icon, Trash2Icon, MapIcon, MaximizeIcon } from 'lucide-react'
-import { LandPlot } from '../../../types/landPlot'
+import { Plot } from '../../../schemas/plotSchemas'
 import { PlotStatusBadge } from './PlotStatusBadge'
 
 interface PlotCardProps {
-  plot: LandPlot
-  onEdit: (plot: LandPlot) => void
-  onDelete: (plot: LandPlot) => void
-  onViewMap: (plot: LandPlot) => void
+  plot: Plot
+  onEdit: (plot: Plot) => void
+  onDelete: (plot: Plot) => void
+  onViewMap: (plot: Plot) => void
 }
 
 export function PlotCard({ plot, onEdit, onDelete, onViewMap }: PlotCardProps) {
@@ -28,7 +28,7 @@ export function PlotCard({ plot, onEdit, onDelete, onViewMap }: PlotCardProps) {
           <div className="flex items-center text-gray-600 text-sm bg-gray-50 px-3 py-2 rounded-lg">
             <MaximizeIcon className="w-4 h-4 mr-2 text-emerald-600" />
             <span className="font-bold text-gray-900 mr-1 text-base">
-              {plot.area.toLocaleString('vi-VN')}
+              {plot.areaHa.toLocaleString('vi-VN')}
             </span>{' '}
             ha
           </div>

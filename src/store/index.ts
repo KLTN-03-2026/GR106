@@ -1,11 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './authSlice';
 import farmReducer from './farmSlice';
+import plotReducer from './plotSlice';
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
-    farm: farmReducer
+    farm: farmReducer,
+    plot: plotReducer
   }
 });
 
