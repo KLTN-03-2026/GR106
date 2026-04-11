@@ -19,25 +19,36 @@ export default function DashboardLayout() {
       navigate("/dashboard");
     } else if (key === "tree") {
       navigate("/farms");
-    } else if (key === "wallet") {
-      navigate("/wallet");
     } else if (key === "activity") {
       navigate("/activity");
+    } else if (key === "map") {
+      navigate("/map");
+    } else if (key === "land-plots") {
+      navigate("/land-plots");
+    } else if (key === "members") {
+      navigate("/members");
+    } else if (key === "wallet") {
+      navigate("/wallet");
     } else if (key === "task") {
       navigate("/tasks");
     } else if (key === "gemini") {
       navigate("/gemini");
     } else if (key === "subscription") {
       navigate("/subscription");
+    } else if (key === "settings") {
+      navigate("/dashboard"); // Default to dashboard if no settings page yet
     } else {
       navigate("/dashboard");
     }
   };
 
+  const wideSidebarPaths = ["/farms", "/members", "/land-plots", "/map", "/subscription"];
+  const isWideSidebarPage = wideSidebarPaths.some(path => location.pathname.includes(path));
+
   return (
     <div className="w-full h-screen bg-[#F8FAFC] flex overflow-hidden p-3 gap-3">
       <Sidebar
-        variant="dashboard"
+        variant={isWideSidebarPage ? "wide" : "compact"}
         active={active}
         setActive={handleNav}
       />

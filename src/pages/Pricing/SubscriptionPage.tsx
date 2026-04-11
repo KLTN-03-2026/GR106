@@ -11,10 +11,14 @@ import { fetchFarmsSummary } from '@/store/farmSlice';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 const SubscriptionPage = () => {
     const dispatch = useDispatch();
     const { currentFarmId } = useSelector((state: RootState) => state.auth);
+    const location = useLocation();
+    const [isConfirmed, setIsConfirmed] = useState((location.state as any)?.confirmed || false);
+
     const [billing, setBilling] = useState<BillingCycle>('MONTHLY');
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
@@ -24,8 +28,6 @@ const SubscriptionPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // Logic Context Guard
-    const [isCheckingContext, setIsCheckingContext] = useState(true);
     const [isPaymentPending, setIsPaymentPending] = useState(false);
     const [showSelectionModal, setShowSelectionModal] = useState(false);
 
@@ -40,37 +42,12 @@ const SubscriptionPage = () => {
         billing === 'ANNUAL' ? plan.priceAnnual : plan.priceMonthly;
 
     useEffect(() => {
-        const initContext = async () => {
+        const fetchContextData = async () => {
             try {
-                // Sử dụng thunk để lấy danh sách farm đồng bộ với dashboard
-                const res = await dispatch(fetchFarmsSummary() as any).unwrap();
-                const userFarms = res || [];
-
-                if (userFarms.length === 0) {
-                    setError('Bạn chưa có trang trại nào để nâng cấp.');
-                    setIsCheckingContext(false);
-                    return;
-                }
-
-                // Nếu đã có farm context từ trước, không cần auto-select hay hiện modal
-                if (currentFarmId) {
-                    setIsCheckingContext(false);
-                    return;
-                }
-
-                if (userFarms.length === 1) {
-                    // Nếu chỉ có 1 farm, auto select ngầm
-                    const selectRes = await farmService.selectFarm(userFarms[0].farmId);
-                    if (selectRes.success && selectRes.data.farmToken) {
-                        dispatch(setAccessToken({ token: selectRes.data.farmToken, farmId: userFarms[0].farmId }));
-                    }
-                }
-                
-                setIsCheckingContext(false);
+                // Chỉ cần lấy danh sách farm để phục vụ modal chọn (nếu cần)
+                await dispatch(fetchFarmsSummary() as any).unwrap();
             } catch (err) {
-                console.error('Lỗi khi kiểm tra ngữ cảnh:', err);
-                // Nếu lỗi do chưa có farm nào, không báo lỗi đỏ mà chỉ hướng dẫn
-                setIsCheckingContext(false);
+                console.error('Lỗi khi lấy dữ liệu trang trại:', err);
             }
         };
 
@@ -86,7 +63,7 @@ const SubscriptionPage = () => {
             }
         };
 
-        initContext();
+        fetchContextData();
         fetchPlans();
     }, [dispatch]);
 
@@ -96,6 +73,7 @@ const SubscriptionPage = () => {
             const res = await farmService.selectFarm(farmId);
             if (res.success && res.data.farmToken) {
                 dispatch(setAccessToken({ token: res.data.farmToken, farmId }));
+                setIsConfirmed(true);
                 setShowSelectionModal(false);
                 
                 // Nếu đang trong luồng thanh toán, tiếp tục thanh toán ngay
@@ -116,8 +94,7 @@ const SubscriptionPage = () => {
     const handlePayment = async () => {
         if (!selectedPlan) return;
 
-        // Nếu chưa có farm context, hiện modal chọn farm trước
-        if (!currentFarmId) {
+        if (!isConfirmed || !currentFarmId) {
             setIsPaymentPending(true);
             setShowSelectionModal(true);
             return;
@@ -175,17 +152,6 @@ const SubscriptionPage = () => {
     return (
         <div className="h-screen overflow-y-auto bg-[#f5f5f0] relative">
             <AnimatePresence>
-                {isCheckingContext && (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 z-[100] bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4"
-                    >
-                        <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
-                        <p className="text-sm font-medium text-gray-600">Đang đồng bộ dữ liệu nông trại...</p>
-                    </motion.div>
-                )}
 
                 {showSelectionModal && (
                     <div className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
@@ -231,30 +197,6 @@ const SubscriptionPage = () => {
                 )}
             </AnimatePresence>
 
-            {/* HEADER */}
-            <div className="bg-white border-b h-14 flex items-center justify-between px-6 sticky top-0 z-10">
-                <div className="flex items-center gap-2 font-medium">
-                    <div className="w-2 h-2 bg-green-600 rounded-full" />
-                    <span>Nâng cấp cho:</span>
-                    {currentFarm ? (
-                        <div className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full border border-green-100">
-                            <span className="text-sm font-semibold text-green-700">{currentFarm.farmName}</span>
-                            <button 
-                                onClick={() => setShowSelectionModal(true)}
-                                className="text-[10px] text-green-600 hover:underline border-l border-green-200 pl-2 ml-1"
-                            >
-                                Đổi
-                            </button>
-                        </div>
-                    ) : (
-                        <span className="text-sm text-gray-400">Đang xác định...</span>
-                    )}
-                </div>
-                <div className="flex items-center gap-3">
-                    <ShieldCheck size={16} className="text-green-600" />
-                    <span className="text-xs text-gray-400">Thanh toán bảo mật</span>
-                </div>
-            </div>
 
             <div className="max-w-5xl mx-auto px-6 py-8 pb-16">
                 <h1 className="text-xl font-semibold mb-1">Chọn gói đăng ký</h1>

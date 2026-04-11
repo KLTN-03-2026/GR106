@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import { X } from 'lucide-react'
+import { X, UserPlus, Mail, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { Modal } from '../ui/Modal'
+import { cn } from '../../utils/cn'
 
 interface InviteModalProps {
   isOpen: boolean
@@ -23,29 +24,17 @@ export function InviteModal({ isOpen, onClose }: InviteModalProps) {
     setEmailError('')
 
     if (!email.trim()) {
-      setEmailError('Vui lòng nhập email')
+      setEmailError('Vui lòng nhập địa chỉ email')
       return
     }
 
     if (!validateEmail(email)) {
-      setEmailError('Email không hợp lệ')
+      setEmailError('Định dạng email không hợp lệ')
       return
     }
 
-    if (email === 'owner@farm.com') {
-      toast.error('Không thể mời chính mình')
-      return
-    }
-
-    if (email === 'existing@farm.com') {
-      toast.error('Email đã là thành viên của trang trại')
-      return
-    }
-
-    toast.success('Đã gửi lời mời thành công')
-    setEmail('')
-    setRole('worker')
-    onClose()
+    toast.success('Đã gửi lời mời thành công đến ' + email)
+    handleClose()
   }
 
   const handleClose = () => {
@@ -57,24 +46,29 @@ export function InviteModal({ isOpen, onClose }: InviteModalProps) {
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose}>
-      <div className="bg-white rounded-xl p-6 w-full max-w-md">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-900">Mời thành viên</h2>
+      <div className="bg-white rounded-xl w-full max-w-sm overflow-hidden border border-gray-200 shadow-sm">
+        {/* Header */}
+        <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-200">
+          <UserPlus className="w-4 h-4 text-gray-800" />
+          <span className="text-sm font-medium text-gray-900">Mời thành viên mới</span>
           <button
             onClick={handleClose}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            className="ml-auto p-1 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-3 h-3 text-gray-500" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-4 flex flex-col gap-3">
+          {/* Email */}
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-1.5"
+              className="flex items-center gap-1.5 text-[11px] text-gray-500 mb-1.5"
             >
-              Email
+              <Mail className="w-3 h-3" />
+              Địa chỉ email
             </label>
             <input
               type="email"
@@ -84,43 +78,73 @@ export function InviteModal({ isOpen, onClose }: InviteModalProps) {
                 setEmail(e.target.value)
                 setEmailError('')
               }}
-              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 ${emailError ? 'border-red-500' : 'border-gray-300'}`}
-              placeholder="example@email.com"
+              className={cn(
+                "w-full px-3 py-2 text-sm border rounded-lg bg-gray-50 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-all",
+                emailError ? 'border-red-400 bg-red-50/30' : 'border-gray-200'
+              )}
+              placeholder="email@gmail.com"
             />
             {emailError && (
-              <p className="mt-1.5 text-sm text-red-600">{emailError}</p>
+              <p className="mt-1.5 text-[11px] text-red-500">{emailError}</p>
             )}
           </div>
 
+          {/* Role */}
           <div>
-            <label
-              htmlFor="role"
-              className="block text-sm font-medium text-gray-700 mb-1.5"
-            >
-              Vai trò
-            </label>
-            <select
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value as 'manager' | 'worker')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              <option value="worker">Nhân công</option>
-              <option value="manager">Quản lý trang trại</option>
-            </select>
+            <label className="text-[11px] text-gray-500 mb-1.5 block">Vai trò</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setRole('worker')}
+                className={cn(
+                  "p-3 rounded-lg border text-left transition-all",
+                  role === 'worker'
+                    ? "border-gray-900 bg-gray-50"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                )}
+              >
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Users className="w-3.5 h-3.5 text-gray-800" />
+                  <span className="text-xs font-medium text-gray-900">Nhân công</span>
+                </div>
+                <p className="text-[10px] text-gray-400 leading-snug">
+                  Chỉ xem thông tin được giao
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setRole('manager')}
+                className={cn(
+                  "p-3 rounded-lg border text-left transition-all",
+                  role === 'manager'
+                    ? "border-gray-900 bg-gray-50"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                )}
+              >
+                <div className="flex items-center gap-1.5 mb-1">
+                  <UserPlus className="w-3.5 h-3.5 text-gray-800" />
+                  <span className="text-xs font-medium text-gray-900">Quản lý</span>
+                </div>
+                <p className="text-[10px] text-gray-400 leading-snug">
+                  Toàn quyền quản lý lô đất và nhân sự
+                </p>
+              </button>
+            </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          {/* Actions */}
+          <div className="flex gap-2 pt-1">
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              className="flex-1 py-2 text-xs border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 transition-colors"
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+              className="flex-[2] py-2 text-xs border border-gray-900 rounded-lg bg-gray-900 text-white hover:bg-gray-800 transition-colors font-medium"
             >
               Gửi lời mời
             </button>

@@ -11,41 +11,42 @@ export function MembersPage() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
 
   return (
-    <div className="w-full">
+    <div className="w-full px-6 pt-6">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Quản lý thành viên</h1>
-        <button
-          onClick={() => setIsInviteModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
-        >
-          <UserPlus className="w-5 h-5" />
-          Mời thành viên
-        </button>
+        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Quản lý thành viên</h1>
+       
       </div>
 
-      <div className="border-b border-gray-200 mb-6">
+      {/* Tabs */}
+      <div className="border-b border-gray-200 mb-6 pl-1">
         <div className="flex gap-6">
           <button
             onClick={() => setActiveTab('members')}
-            className={`pb-3 px-1 font-medium transition-colors relative ${activeTab === 'members' ? 'text-emerald-600' : 'text-gray-600 hover:text-gray-900'}`}
+            className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
+              activeTab === 'members' ? 'text-emerald-600' : 'text-gray-500 hover:text-gray-800'
+            }`}
           >
             Thành viên
             {activeTab === 'members' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
             )}
           </button>
           <button
             onClick={() => setActiveTab('invitations')}
-            className={`pb-3 px-1 font-medium transition-colors relative ${activeTab === 'invitations' ? 'text-emerald-600' : 'text-gray-600 hover:text-gray-900'}`}
+            className={`pb-3 px-1 text-sm font-medium transition-colors relative ${
+              activeTab === 'invitations' ? 'text-emerald-600' : 'text-gray-500 hover:text-gray-800'
+            }`}
           >
             Lời mời
             {activeTab === 'invitations' && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />
             )}
           </button>
         </div>
       </div>
 
+      {/* Content */}
       {activeTab === 'members' ? <MemberTable /> : <InvitationTable />}
 
       <InviteModal

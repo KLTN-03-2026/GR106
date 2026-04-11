@@ -43,7 +43,7 @@ export function FarmQuickActionsModal({ isOpen, onClose, farm, onEdit, onDelete 
       if (res.success && res.data.farmToken) {
         dispatch(setAccessToken({ token: res.data.farmToken, farmId: farm.farmId }));
         onClose();
-        navigate(path);
+        navigate(path, { state: { confirmed: true } });
       }
     } catch (err) {
       console.error('Action error:', err);
