@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { axiosInstance } from '../config/axios';
-import { 
-  createFarmResponseSchema, 
-  getFarmsResponseSchema, 
+import {
+  createFarmResponseSchema,
+  getFarmsResponseSchema,
   getFarmsSummaryResponseSchema,
   createFarmSchema,
   FarmResponse,
@@ -33,7 +33,7 @@ export const createFarm = createAsyncThunk(
     try {
       // Validate input data with Zod before sending
       createFarmSchema.parse(farmData);
-      const response = await axiosInstance.post('/api/v1/farm', farmData);
+      const response = await axiosInstance.post('/api/v1/farms', farmData);
       // Validate response data with Zod
       return createFarmResponseSchema.parse(response.data).data;
     } catch (error: any) {
