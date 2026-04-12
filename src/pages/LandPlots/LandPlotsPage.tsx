@@ -19,10 +19,10 @@ import { cn } from '../../utils/cn'
 export function LandPlotsPage() {
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
-  
+
   // Redux State
   const { plots, loading, error } = useSelector((state: RootState) => state.plot)
-  
+
   // Local UI State
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table')
   const [searchTerm, setSearchTerm] = useState('')
@@ -85,6 +85,7 @@ export function LandPlotsPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-6 font-sans py-4 animate-in fade-in duration-500">
       {/* Header Section */}
+      {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm transition-all duration-300">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-emerald-100/50 rounded-2xl text-emerald-600 shadow-sm border border-emerald-200">
@@ -97,15 +98,14 @@ export function LandPlotsPage() {
             </p>
           </div>
         </div>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-md active:scale-95 group"
-          >
-            <PlusIcon className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
-            Tạo lô đất mới
-          </button>
-        </div>
-      </div>
+        <button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-md active:scale-95 group"
+        >
+          <PlusIcon className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+          Tạo lô đất mới
+        </button>
+      </div>  {/* ← chỉ cần 1 div đóng cho wrapper ngoài cùng */}
 
       {/* Filters Section */}
       <PlotFilters
