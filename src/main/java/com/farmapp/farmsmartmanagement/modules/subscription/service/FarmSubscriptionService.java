@@ -80,9 +80,9 @@ public class FarmSubscriptionService {
         // Xác định event type
         int priceCompare = newPlan.getPriceMonthly()
                 .compareTo(current.getSubscriptionPlan().getPriceMonthly());
-        String eventType = priceCompare > 0 ? "UPGRADE"
-                : priceCompare < 0 ? "DOWNGRADE"
-                : "RENEW";
+        String eventType = priceCompare > 0 ? "UPGRADED"
+                : priceCompare < 0 ? "DOWNGRADED"
+                : "RENEWED";
 
         log.info("[Subscription] eventType={} farm={} fromPlan={} toPlan={}",
                 eventType, txn.getFarm().getId(),
@@ -116,7 +116,7 @@ public class FarmSubscriptionService {
                 .updatedAt(now)
                 .build();
 
-        if ("UPGRADE".equals(eventType) || "RENEW".equals(eventType)) {
+        if ("UPGRADED".equals(eventType) || "RENEWED".equals(eventType)) {
             // Tắt gói hiện tại ngay
             current.setIsCurrent(false);
             current.setCancelledAt(now);
@@ -149,6 +149,7 @@ public class FarmSubscriptionService {
                 .build();
 
         farmSubscriptionRepository.save(current);
+        farmSubscriptionRepository.flush();
         farmSubscriptionRepository.save(next);
         subscriptionHistoryRepository.save(history);
 
