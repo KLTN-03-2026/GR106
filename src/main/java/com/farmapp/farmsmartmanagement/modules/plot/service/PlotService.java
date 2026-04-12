@@ -46,13 +46,13 @@ public class PlotService {
         FarmEntity farm = farmRepository.findById(farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
 
-        if(plotRepository.existsByFarmAndName(farm, request.plotName()))
+        if(plotRepository.existsByFarmAndName(farm, request.getPlotName()))
             throw new AppException(ErrorCode.PLOT_ALREADY_EXISTS);
 
         PlotEntity newPlot = new PlotEntity();
 
-        if (request.geometry() != null) {
-            GeometryFormat geo = request.geometry();
+        if (request.getGeometry() != null) {
+            GeometryFormat geo = request.getGeometry();
 
             // Chỉ xử lý Polygon
             if ("Polygon".equalsIgnoreCase(geo.type())) {
@@ -74,10 +74,10 @@ public class PlotService {
         newPlot.setAreaHa(areaHa);
 
 
-        newPlot.setName(request.plotName());
+        newPlot.setName(request.getPlotName());
         newPlot.setFarm(farm);
         newPlot.setStatus(PlotStatus.ACTIVE);
-        newPlot.setDescription(request.description());
+        newPlot.setDescription(request.getDescription());
 
         plotRepository.save(newPlot);
 

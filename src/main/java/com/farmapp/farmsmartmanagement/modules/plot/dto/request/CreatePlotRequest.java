@@ -1,13 +1,22 @@
 package com.farmapp.farmsmartmanagement.modules.plot.dto.request;
 
 
+import com.farmapp.farmsmartmanagement.common.annotation.Sanitize;
 import jakarta.validation.constraints.NotBlank;
+import lombok.Getter;
+import lombok.Setter;
 
-public record CreatePlotRequest (
-   @NotBlank(message = "Tên lô đất không được để trống")
-   String plotName,
+@Getter
+@Setter
+public class CreatePlotRequest {
 
-   GeometryFormat geometry,
+    @Sanitize
+    @NotBlank(message = "Tên lô đất không được để trống")
+    String plotName;
 
-   String description
-){ }
+    GeometryFormat geometry;
+
+    @Sanitize
+    String description;
+}
+
