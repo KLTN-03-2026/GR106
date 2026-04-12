@@ -34,10 +34,15 @@ public class RlsDataSourceWrapper implements DataSource {
         String farmId = RlsContext.hasFarm()
                 ? RlsContext.getFarmId().toString() : "";
 
-        try (Statement stmt = conn.createStatement()) {
-            // SET (session) — không có true, nhưng LUÔN ghi đè kể cả empty
-            stmt.execute("SET app.current_user_id = '" + userId + "'");
-            stmt.execute("SET app.current_farm_id = '" + farmId + "'");
+        // Dùng set_config thay vì SET — tránh SQL injection
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT set_config('app.current_user_id', ?, false)," +
+                        "       set_config('app.current_farm_id', ?, false)," +
+                        "       set_config('app.bypass_rls', 'false', false)"
+        )) {
+            ps.setString(1, userId);
+            ps.setString(2, farmId);
+            ps.execute();
         }
     }
 

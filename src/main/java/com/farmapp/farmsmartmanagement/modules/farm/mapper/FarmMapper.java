@@ -17,11 +17,11 @@ public interface FarmMapper {
 
     List<FarmResponse> toResponseList(List<FarmEntity> entities);
 
-    default FarmEntity toEntity(CreateFarmRequest request) {
-
-    }
-
-    default FarmEntity toEntity(UpdateFarmRequest request){
-
-    }
+//    default FarmEntity toEntity(CreateFarmRequest request) {
+//
+//    }
+//
+//    default FarmEntity toEntity(UpdateFarmRequest request){
+//
+//    }
 }

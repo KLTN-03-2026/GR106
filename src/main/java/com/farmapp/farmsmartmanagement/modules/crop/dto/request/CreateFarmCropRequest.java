@@ -11,7 +11,7 @@ import java.util.UUID;
 
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CreateCropRequest {
+public class CreateFarmCropRequest {
 
     @Sanitize
     @NotBlank(message = "Tên cây trồng không được để trống")
@@ -20,7 +20,9 @@ public class CreateCropRequest {
     @NotNull(message = "Loại cây trồng không được để trống")
     UUID cropTypeId;
 
+    @Sanitize
     String description;
+
     String imageUrl;
 
     // Chỉ dùng khi scope = FARM — clone từ SYSTEM crop

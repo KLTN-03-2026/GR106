@@ -1,0 +1,8 @@
+ALTER TABLE crops
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP;
+
+ALTER TABLE crops
+ADD CONSTRAINT fk_crop_crop_type
+FOREIGN KEY (crop_type_id)
+REFERENCES crop_types(id)
+ON DELETE RESTRICT;

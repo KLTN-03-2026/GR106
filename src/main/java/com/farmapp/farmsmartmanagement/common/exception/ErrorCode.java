@@ -39,6 +39,9 @@ public enum ErrorCode {
     SUBSCRIPTION_PLAN_NOT_FOUND(404, "Không tìm thấy gói đăng ký", HttpStatus.NOT_FOUND),
     DEFAULT_SUBSCRIPTION_PLAN_NOT_FOUND(404, "Không tìm thấy gói đăng ký mặc định", HttpStatus.NOT_FOUND),
     FARM_ROLE_NOT_FOUND(404, "Không tìm thấy vai trò trong trang trại", HttpStatus.NOT_FOUND),
+    CROP_TYPE_NOT_FOUND(404,"Không tìm thấy loại cây trồng" , HttpStatus.NOT_FOUND),
+    CROP_NOT_FOUND(404, "Không tìm cây trồng" , HttpStatus.NOT_FOUND ),
+
 
     // --- Payment conflict ---
     PAYMENT_ALREADY_PROCESSED(409, "Payment already processed", HttpStatus.CONFLICT),
@@ -47,7 +50,11 @@ public enum ErrorCode {
 
     // --- Existed ---
     PLOT_ALREADY_EXISTS(409, "Tên lô đất đã tồn tại", HttpStatus.CONFLICT),
-    ;
+    CROP_ALREADY_EXISTS(409, "Tên cây trồng đã tồn tại", HttpStatus.CONFLICT),
+    CROP_TYPE_ALREADY_EXISTS(409, "Tên loại cây trồng đã tồn tại", HttpStatus.CONFLICT),
+
+
+    CROP_TYPE_IN_USE(409, "Loại cây trồng đang được sử dụng" ,HttpStatus.CONFLICT ),;
 
     private final int code;
     private final String message;
