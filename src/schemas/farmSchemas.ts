@@ -39,7 +39,7 @@ export const getFarmsSummaryResponseSchema = z.object({
   timestamp: z.string().optional(),
 });
 
-// Schema cho dữ liệu gửi đi khi tạo Farm mới (POST /api/v1/farm)
+// Schema cho dữ liệu gửi đi khi tạo Farm mới (POST /api/v1/farms)
 export const createFarmSchema = z.object({
   farmName: z.string().min(1, 'Tên farm không được để trống'),
   description: z.string().optional(),

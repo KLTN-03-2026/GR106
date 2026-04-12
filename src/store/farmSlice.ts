@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { axiosInstance } from '../config/axios';
-import { 
-  createFarmResponseSchema, 
-  getFarmsResponseSchema, 
+import {
+  createFarmResponseSchema,
+  getFarmsResponseSchema,
   getFarmsSummaryResponseSchema,
   createFarmSchema
 } from '../schemas/farmSchemas';
