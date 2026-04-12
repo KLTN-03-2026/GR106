@@ -7,6 +7,7 @@ interface AuthState {
   accessToken: string | null; // Token đang hoạt động (có thể là farm token)
   user: UserInfo | null;
   currentFarmId: string | null;
+  subscriptionVersion: number; // Tăng lên để buộc các hook subscription tải lại
 }
 
 const initialState: AuthState = {
@@ -14,7 +15,8 @@ const initialState: AuthState = {
   userToken: localStorage.getItem('userToken'),
   accessToken: localStorage.getItem('accessToken') || localStorage.getItem('userToken'),
   user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null,
-  currentFarmId: localStorage.getItem('currentFarmId')
+  currentFarmId: localStorage.getItem('currentFarmId'),
+  subscriptionVersion: 0
 };
 
 
@@ -93,9 +95,13 @@ const authSlice = createSlice({
         state.currentFarmId = action.payload.farmId;
         localStorage.setItem('currentFarmId', action.payload.farmId);
       }
+    },
+
+    refreshSubscription: (state) => {
+      state.subscriptionVersion += 1;
     }
   }
 });
 
-export const { loginSuccess, setCredentials, logout, setAccessToken, selectFarm, clearFarmContext } = authSlice.actions;
+export const { loginSuccess, setCredentials, logout, setAccessToken, selectFarm, clearFarmContext, refreshSubscription } = authSlice.actions;
 export default authSlice.reducer;

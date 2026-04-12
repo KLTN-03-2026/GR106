@@ -26,6 +26,7 @@ const TasksPage = lazy(() => import('../pages/Tasks/TasksPage'));
 const GeminiPage = lazy(() => import('../pages/Gemini/GeminiPage'));
 const SubscriptionPage = lazy(() => import('../pages/Pricing/SubscriptionPage'));
 const PaymentResultPage = lazy(() => import('../pages/Pricing/PaymentResultPage'));
+const PaymentSuccessPage = lazy(() => import('../pages/Pricing/PaymentSuccessPage'));
 const FarmActionsPage = lazy(() => import('../pages/FarmManagement/FarmActionsPage'));
 
 
@@ -63,12 +64,16 @@ export const AppRoutes: React.FC = () => {
           <Route path="/activity" element={<Suspense fallback={<LoadingPage />}><ActivityPage /></Suspense>} />
           <Route path="/tasks" element={<Suspense fallback={<LoadingPage />}><TasksPage /></Suspense>} />
           <Route path="/gemini" element={<Suspense fallback={<LoadingPage />}><GeminiPage /></Suspense>} />
-          <Route path="/payment/result" element={<Suspense fallback={<LoadingPage />}><PaymentResultPage /></Suspense>} />
+          <Route path="/payment-result" element={<Suspense fallback={<LoadingPage />}><PaymentResultPage /></Suspense>} />
           
           <Route path="/farms/:farmId/members" element={<Suspense fallback={<LoadingPage />}><MembersPage /></Suspense>} />
           <Route path="/farms/:farmId/land-plots" element={<Suspense fallback={<LoadingPage />}><LandPlotsPage /></Suspense>} />
           <Route path="/farms/:farmId/map" element={<Suspense fallback={<LoadingPage />}><MapPage /></Suspense>} />
         </Route>
+
+        {/* Standalone payment pages (No Sidebar) */}
+        <Route path="/payment/success" element={<Suspense fallback={<LoadingPage />}><PaymentSuccessPage /></Suspense>} />
+        <Route path="/payment/result" element={<Suspense fallback={<LoadingPage />}><PaymentResultPage /></Suspense>} />
       </Route>
 
       {/* Unauthorized Page */}

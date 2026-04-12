@@ -136,8 +136,8 @@ export default function SubscriptionHistoryPage() {
               Mọi giao dịch của bạn đều được mã hóa thực hiện qua cổng thanh toán bảo mật.
             </p>
             <div className="flex gap-2">
-                <div className="h-5 px-1.5 bg-white rounded border border-slate-200 flex items-center justify-center text-[8px] font-black text-slate-400 uppercase tracking-tighter">VNPAY</div>
-                <div className="h-5 px-1.5 bg-white rounded border border-slate-200 flex items-center justify-center text-[8px] font-black text-slate-400 uppercase tracking-tighter">MOMO</div>
+                <div className="h-5 px-1.5 bg-white rounded border border-slate-200 flex items-center justify-center text-[8px] font-black text-slate-400 uppercase tracking-tighter">SEPAY</div>
+        
             </div>
           </section>
         </div>
