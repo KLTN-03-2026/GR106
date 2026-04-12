@@ -55,8 +55,8 @@ export const AppRoutes: React.FC = () => {
           <Route path="/change-password" element={<Suspense fallback={<LoadingPage />}><ChangePasswordPage /></Suspense>} />
           <Route path="/farms" element={<Suspense fallback={<LoadingPage />}><ManagementDashboardPage /></Suspense>} />
           <Route path="/farms/:farmId/actions" element={<Suspense fallback={<LoadingPage />}><FarmActionsPage /></Suspense>} />
-          <Route path="/subscription" element={<Suspense fallback={<LoadingPage />}><SubscriptionHistoryPage /></Suspense>} />
-          <Route path="/subscription/pricing" element={<Suspense fallback={<LoadingPage />}><SubscriptionPage /></Suspense>} />
+          <Route path="/farms/:farmId/subscription" element={<Suspense fallback={<LoadingPage />}><SubscriptionHistoryPage /></Suspense>} />
+          <Route path="/farms/:farmId/subscription/pricing" element={<Suspense fallback={<LoadingPage />}><SubscriptionPage /></Suspense>} />
           
           {/* Dashboard pages */}
           <Route path="/wallet" element={<Suspense fallback={<LoadingPage />}><WalletPage /></Suspense>} />
@@ -65,9 +65,9 @@ export const AppRoutes: React.FC = () => {
           <Route path="/gemini" element={<Suspense fallback={<LoadingPage />}><GeminiPage /></Suspense>} />
           <Route path="/payment/result" element={<Suspense fallback={<LoadingPage />}><PaymentResultPage /></Suspense>} />
           
-          <Route path="/members" element={<Suspense fallback={<LoadingPage />}><MembersPage /></Suspense>} />
-          <Route path="/land-plots" element={<Suspense fallback={<LoadingPage />}><LandPlotsPage /></Suspense>} />
-          <Route path="/map" element={<Suspense fallback={<LoadingPage />}><MapPage /></Suspense>} />
+          <Route path="/farms/:farmId/members" element={<Suspense fallback={<LoadingPage />}><MembersPage /></Suspense>} />
+          <Route path="/farms/:farmId/land-plots" element={<Suspense fallback={<LoadingPage />}><LandPlotsPage /></Suspense>} />
+          <Route path="/farms/:farmId/map" element={<Suspense fallback={<LoadingPage />}><MapPage /></Suspense>} />
         </Route>
       </Route>
 

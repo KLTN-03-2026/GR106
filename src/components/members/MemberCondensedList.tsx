@@ -1,5 +1,7 @@
-import React from 'react';
 import { User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 
 interface Member {
   name: string;
@@ -14,6 +16,9 @@ const MOCK_MEMBERS: Member[] = [
 ];
 
 export const MemberCondensedList: React.FC = () => {
+  const navigate = useNavigate();
+  const { currentFarmId } = useSelector((state: RootState) => state.auth);
+
   return (
     <div className="flex flex-col gap-3">
       {MOCK_MEMBERS.map((member, i) => (
@@ -42,7 +47,10 @@ export const MemberCondensedList: React.FC = () => {
         </div>
       ))}
       
-      <button className="mt-2 w-full py-3 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:border-emerald-300 hover:text-emerald-600 transition-all">
+      <button 
+        onClick={() => navigate(currentFarmId ? `/farms/${currentFarmId}/members` : '/members')}
+        className="mt-2 w-full py-3 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:border-emerald-300 hover:text-emerald-600 transition-all"
+      >
         Xem tất cả cộng sự
       </button>
     </div>

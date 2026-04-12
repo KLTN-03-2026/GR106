@@ -14,16 +14,20 @@ export default function DashboardLayout() {
   const getActive = () => {
     const p = location.pathname;
     if (p === "/dashboard") return "dashboard";
-    if (p.startsWith("/farms")) return "tree";
-    if (p.startsWith("/members")) return "members";
-    if (p.startsWith("/land-plots")) return "land-plots";
-    if (p.startsWith("/map")) return "map";
-    if (p.startsWith("/wallet")) return "wallet";
-    if (p.startsWith("/tasks")) return "task";
-    if (p.startsWith("/activity")) return "activity";
-    if (p.startsWith("/gemini")) return "gemini";
-    if (p.startsWith("/subscription")) return "subscription";
-    if (p.startsWith("/change-password")) return "settings";
+    if (p === "/farms") return "tree";
+    if (p.includes("/members")) return "members";
+    if (p.includes("/land-plots")) return "land-plots";
+    if (p.includes("/map")) return "map";
+    if (p.includes("/subscription")) return "subscription";
+    if (p.includes("/activity")) return "activity";
+    if (p.includes("/wallet")) return "wallet";
+    if (p.includes("/tasks")) return "task";
+    if (p.includes("/gemini")) return "gemini";
+    if (p.includes("/change-password")) return "settings";
+    
+    // Default to 'tree' for any farm-specific action not matching above
+    if (p.startsWith("/farms/")) return "tree";
+    
     return p.split("/").pop() || "dashboard";
   };
 
@@ -50,21 +54,21 @@ export default function DashboardLayout() {
         navigate("/farms");
       }
     } else if (key === "activity") {
-      navigate("/activity");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/activity` : "/activity");
     } else if (key === "map") {
-      navigate("/map");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/map` : "/map");
     } else if (key === "land-plots") {
-      navigate("/land-plots");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/land-plots` : "/land-plots");
     } else if (key === "members") {
-      navigate("/members");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/members` : "/members");
     } else if (key === "wallet") {
-      navigate("/wallet");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/wallet` : "/wallet");
     } else if (key === "task") {
-      navigate("/tasks");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/tasks` : "/tasks");
     } else if (key === "gemini") {
-      navigate("/gemini");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/gemini` : "/gemini");
     } else if (key === "subscription") {
-      navigate("/subscription");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/subscription` : "/subscription");
     } else if (key === "change-password") {
       navigate("/change-password");
     } else if (key === "settings") {

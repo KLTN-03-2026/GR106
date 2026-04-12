@@ -5,10 +5,13 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ShieldCheck, Clock, XCircle, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 
 const PaymentResultPage = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const { currentFarmId } = useSelector((state: RootState) => state.auth);
     const [data, setData] = useState<PaymentResult | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -89,7 +92,7 @@ const PaymentResultPage = () => {
                         </div>
 
                         <Button 
-                            onClick={() => navigate('/dashboard')}
+                            onClick={() => navigate(currentFarmId ? `/farms/${currentFarmId}/actions` : '/dashboard')}
                             className="w-full bg-green-600 hover:bg-green-700 text-white h-14 rounded-2xl font-bold shadow-lg shadow-green-200"
                         >
                             Vào trang quản lý
@@ -148,7 +151,7 @@ const PaymentResultPage = () => {
 
                         <div className="flex flex-col gap-3">
                             <Button 
-                                onClick={() => navigate('/subscription')}
+                                onClick={() => navigate(currentFarmId ? `/farms/${currentFarmId}/subscription` : '/subscription')}
                                 className="w-full bg-gray-900 hover:bg-black text-white h-14 rounded-2xl font-bold"
                             >
                                 Thử lại ngay

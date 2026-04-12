@@ -9,6 +9,8 @@ import { useCurrentSubscription, useSubscriptionHistory } from '@/hooks/subscrip
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/utils/cn';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 
 const StatusBadge = ({ status }: { status: string }) => {
   const configs: Record<string, { label: string, color: string }> = {
@@ -30,6 +32,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 export default function SubscriptionHistoryPage() {
   const navigate = useNavigate();
+  const { currentFarmId } = useSelector((state: RootState) => state.auth);
   const { data: current, isLoading: loadingCurrent } = useCurrentSubscription();
   const { data: history, isLoading: loadingHistory } = useSubscriptionHistory();
 
@@ -100,7 +103,7 @@ export default function SubscriptionHistoryPage() {
                   </div>
 
                   <button 
-                    onClick={() => navigate('/subscription/pricing')}
+                    onClick={() => navigate(currentFarmId ? `/farms/${currentFarmId}/subscription/pricing` : '/subscription/pricing')}
                     className="w-full py-3 bg-transparent border-2 border-slate-900 text-slate-900 rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
                   >
                     Nâng cấp gói cước
@@ -118,7 +121,7 @@ export default function SubscriptionHistoryPage() {
                   <p className="text-xs text-slate-400 px-4">Hãy đăng ký gói dịch vụ để tận hưởng đầy đủ tính năng của FarmerAI</p>
                 </div>
                 <button 
-                  onClick={() => navigate('/subscription/pricing')}
+                  onClick={() => navigate(currentFarmId ? `/farms/${currentFarmId}/subscription/pricing` : '/subscription/pricing')}
                   className="bg-transparent text-slate-900 border-2 border-slate-900 px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all"
                 >
                   Đăng ký ngay

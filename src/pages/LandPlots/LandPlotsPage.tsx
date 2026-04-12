@@ -20,6 +20,7 @@ export function LandPlotsPage() {
   const dispatch = useDispatch<AppDispatch>()
 
   // Redux State
+  const { currentFarmId } = useSelector((state: RootState) => state.auth)
   const { plots } = useSelector((state: RootState) => state.plot)
 
   // Local UI State
@@ -74,7 +75,7 @@ export function LandPlotsPage() {
 
 
   const handleViewMap = (plot: Plot) => {
-    navigate('/map', {
+    navigate(currentFarmId ? `/farms/${currentFarmId}/map` : '/map', {
       state: {
         selectedPlotId: plot.id,
       },
