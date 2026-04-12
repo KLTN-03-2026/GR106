@@ -24,11 +24,7 @@ public class AuditAspect {
 
         Object result;
 
-        try {
-            result = pjp.proceed();
-        } catch (Throwable ex) {
-            throw ex;
-        }
+        result = pjp.proceed();
 
         auditService.log(
                 securityUtils.getCurrentUserId(),

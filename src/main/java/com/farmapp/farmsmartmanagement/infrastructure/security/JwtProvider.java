@@ -93,7 +93,7 @@ public class JwtProvider {
             parseClaims(token);
             return true;
         } catch (Exception e) {
-            return false;
+            throw e;
         }
     }
 

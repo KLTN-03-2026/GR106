@@ -1,7 +1,7 @@
 package com.farmapp.farmsmartmanagement.modules.subscription.controller;
 
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
-import com.farmapp.farmsmartmanagement.config.security.RequiresFarmToken;
+import com.farmapp.farmsmartmanagement.common.annotation.RequiresFarmToken;
 import com.farmapp.farmsmartmanagement.infrastructure.security.UserPrincipal;
 import com.farmapp.farmsmartmanagement.modules.subscription.dto.response.SubscriptionPlanResponse;
 import com.farmapp.farmsmartmanagement.modules.subscription.dto.response.FarmSubscriptionResponse;

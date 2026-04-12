@@ -1,4 +1,4 @@
-package com.farmapp.farmsmartmanagement.config.security;
+package com.farmapp.farmsmartmanagement.common.annotation;
 
 import java.lang.annotation.*;
 

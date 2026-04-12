@@ -2,7 +2,7 @@ package com.farmapp.farmsmartmanagement.modules.payment.controller;
 
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
 import com.farmapp.farmsmartmanagement.config.app.SepayProperties;
-import com.farmapp.farmsmartmanagement.config.security.RequiresFarmToken;
+import com.farmapp.farmsmartmanagement.common.annotation.RequiresFarmToken;
 import com.farmapp.farmsmartmanagement.infrastructure.payment.SepayService;
 import com.farmapp.farmsmartmanagement.infrastructure.security.UserPrincipal;
 import com.farmapp.farmsmartmanagement.modules.payment.dto.request.CreatePaymentRequest;

@@ -1,6 +1,7 @@
 package com.farmapp.farmsmartmanagement.modules.farm.mapper;
 
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.FarmEntity;
+import com.farmapp.farmsmartmanagement.modules.farm.dto.request.CreateFarmRequest;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -15,4 +16,12 @@ public interface FarmMapper {
     FarmResponse toResponse(FarmEntity entity);
 
     List<FarmResponse> toResponseList(List<FarmEntity> entities);
+
+    default FarmEntity toEntity(CreateFarmRequest request) {
+
+    }
+
+    default FarmEntity toEntity(UpdateFarmRequest request){
+
+    }
 }

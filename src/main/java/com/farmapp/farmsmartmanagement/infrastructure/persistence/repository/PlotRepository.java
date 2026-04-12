@@ -1,5 +1,6 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.FarmEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlotEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -10,5 +11,5 @@ public interface PlotRepository extends JpaRepository<PlotEntity, UUID> {
 
     List<PlotEntity> findByFarm_Id(UUID farmId);
 
-    boolean existsByFarm_IdAndName(UUID farmId, String name);
+    boolean existsByFarmAndName(FarmEntity farm, String name);
 }

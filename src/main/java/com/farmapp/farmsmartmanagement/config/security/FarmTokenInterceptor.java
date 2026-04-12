@@ -1,5 +1,6 @@
 package com.farmapp.farmsmartmanagement.config.security;
 
+import com.farmapp.farmsmartmanagement.common.annotation.RequiresFarmToken;
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.infrastructure.security.UserPrincipal;

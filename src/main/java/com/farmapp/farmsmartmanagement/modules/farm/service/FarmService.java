@@ -86,17 +86,17 @@ public class FarmService {
         // 4. Tạo subscription TRIAL 14 ngày
         Instant expiresAt = now.plus(14, ChronoUnit.DAYS);
         FarmSubscriptionEntity sub = new FarmSubscriptionEntity();
-        sub.setFarm(farm);
-        sub.setSubscriptionPlan(plan);
-        sub.setNextPlan(plan);
-        sub.setStatus(SubscriptionStatus.ACTIVE);
-        sub.setBillingCycle(BillingCycle.MONTHLY);
-        sub.setIsCurrent(true);
-        sub.setStartedAt(now);
-        sub.setExpiresAt(expiresAt);
-        sub.setGraceUntil(expiresAt.plus(3, ChronoUnit.DAYS)); // hết hạn 3 ngày
-        sub.setAutoRenew(false);
-        sub.setCreatedAt(now);
+            sub.setFarm(farm);
+            sub.setSubscriptionPlan(plan);
+            sub.setNextPlan(plan);
+            sub.setStatus(SubscriptionStatus.ACTIVE);
+            sub.setBillingCycle(BillingCycle.MONTHLY);
+            sub.setIsCurrent(true);
+            sub.setStartedAt(now);
+            sub.setExpiresAt(expiresAt);
+            sub.setGraceUntil(expiresAt.plus(3, ChronoUnit.DAYS)); // hết hạn 3 ngày
+            sub.setAutoRenew(false);
+            sub.setCreatedAt(now);
         subscriptionRepository.save(sub);
 
         // 5. Tạo subscription history

@@ -45,6 +45,8 @@ public enum ErrorCode {
     PAYMENT_EXPIRED(410, "Payment link has expired", HttpStatus.GONE),               // 410 → GONE
     PAYMENT_AMOUNT_MISMATCH(422, "Payment amount does not match", HttpStatus.UNPROCESSABLE_ENTITY), // 422 → UNPROCESSABLE_ENTITY
 
+    // --- Existed ---
+    PLOT_ALREADY_EXISTS(409, "Tên lô đất đã tồn tại", HttpStatus.CONFLICT),
     ;
 
     private final int code;

@@ -7,7 +7,6 @@ import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.FarmEnt
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlotEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.FarmRepository;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.PlotRepository;
-import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmResponse;
 import com.farmapp.farmsmartmanagement.modules.plot.dto.request.CreatePlotRequest;
 import com.farmapp.farmsmartmanagement.modules.plot.dto.request.GeometryFormat;
 import com.farmapp.farmsmartmanagement.modules.plot.dto.response.PlotResponse;
@@ -21,7 +20,6 @@ import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.List;
 import java.util.UUID;
@@ -44,8 +42,12 @@ public class PlotService {
 
     @Transactional
     public PlotResponse createPlot(UUID farmId, CreatePlotRequest request) {
+
         FarmEntity farm = farmRepository.findById(farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
+
+        if(plotRepository.existsByFarmAndName(farm, request.plotName()))
+            throw new AppException(ErrorCode.PLOT_ALREADY_EXISTS);
 
         PlotEntity newPlot = new PlotEntity();
 
@@ -66,6 +68,7 @@ public class PlotService {
                 newPlot.setGeometry(polygon);
             }
         }
+
         double areaSquareMeters = newPlot.getGeometry().getArea();
         double areaHa = areaSquareMeters / 10_000; // 1 ha = 10,000 m²
         newPlot.setAreaHa(areaHa);
