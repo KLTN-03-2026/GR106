@@ -3,13 +3,13 @@ import { useLocation } from 'react-router-dom'
 import { FarmMap } from './components/FarmMap'
 import { DrawingToolbar, DrawingMode } from './components/DrawingToolbar'
 import { BoundaryConfirmDialog } from './components/BoundaryConfirmDialog'
-import { LandPlot, GeoPoint } from '../../types/landPlot'
+import { Plot, GeoPoint } from '../../types/plot'
 
 
 export function MapPage() {
   const location = useLocation()
-  const [plots] = useState<LandPlot[]>([])
-  const [selectedPlot, setSelectedPlot] = useState<LandPlot | null>(null)
+  const [plots] = useState<Plot[]>([])
+  const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null)
   
   // Drawing State
   const [mode, setMode] = useState<DrawingMode>('none')
@@ -68,7 +68,7 @@ export function MapPage() {
     setCurrentPath([])
   }
 
-  const startDrawing = (plot: LandPlot) => {
+  const startDrawing = (plot: Plot) => {
     setSelectedPlot(plot)
     setMode('drawing')
     setCurrentPath([])

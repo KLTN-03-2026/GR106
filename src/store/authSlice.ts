@@ -1,12 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { AuthTokens } from '../types/auth';
-
-interface UserInfo {
-  id: string;
-  email: string;
-  fullName: string;
-  role: string;
-}
+import { AuthTokens, UserInfo } from '../types/auth';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -29,6 +22,22 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    loginSuccess: (state, action: PayloadAction<AuthTokens>) => {
+      state.isAuthenticated = true;
+      state.userToken = action.payload.accessToken;
+      state.accessToken = action.payload.accessToken;
+      
+      localStorage.setItem('userToken', action.payload.accessToken);
+      localStorage.setItem('accessToken', action.payload.accessToken);
+      localStorage.setItem('refreshToken', action.payload.refreshToken);
+      if (action.payload.user) {
+        state.user = action.payload.user;
+        localStorage.setItem('user', JSON.stringify(action.payload.user));
+      } else {
+        state.user = null;
+      }
+    },
+
     setCredentials: (state, action: PayloadAction<AuthTokens>) => {
       state.isAuthenticated = true;
       state.userToken = action.payload.accessToken;
@@ -88,5 +97,5 @@ const authSlice = createSlice({
   }
 });
 
-export const { setCredentials, logout, setAccessToken, selectFarm, clearFarmContext } = authSlice.actions;
+export const { loginSuccess, setCredentials, logout, setAccessToken, selectFarm, clearFarmContext } = authSlice.actions;
 export default authSlice.reducer;

@@ -36,9 +36,3 @@ export const apiResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
 // Specific Response Schemas
 export const getPlotsResponseSchema = apiResponseSchema(z.array(plotSchema));
 export const createPlotResponseSchema = apiResponseSchema(plotSchema);
-
-// Export types derived from schemas
-export type Geometry = z.infer<typeof geometrySchema>;
-export type Plot = z.infer<typeof plotSchema>;
-export type CreatePlotInput = z.infer<typeof createPlotSchema>;
-export type PlotResponse = z.infer<typeof plotSchema>;

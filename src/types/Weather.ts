@@ -1,17 +1,2 @@
-export interface WeatherData {
-  temp: number;
-  tempMin: number;
-  tempMax: number;
-  humidity: number;
-  windSpeed: number;
-  description: string;
-  isRainy: boolean;
-  isHighHumidity: boolean;
-}
-
-export interface UseWeatherState {
-  data: WeatherData | null;
-  loading: boolean;
-  error: string | null;
-  refetch: () => void;
-}
+// This file is deprecated. Please use src/types/weather.ts instead.
+export {};

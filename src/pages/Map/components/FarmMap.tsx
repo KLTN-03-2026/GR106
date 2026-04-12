@@ -7,7 +7,7 @@ import {
   InfoWindow,
 } from '@react-google-maps/api'
 import { ENV } from '../../../config/env'
-import { LandPlot, GeoPoint } from '../../../types/landPlot'
+import { Plot, GeoPoint } from '../../../types/plot'
 import { PlotInfoPopup } from './PlotInfoPopup'
 
 const LIBRARIES: ("drawing" | "geometry" | "places" | "visualization")[] = ['geometry', 'drawing']
@@ -31,15 +31,15 @@ const MAP_OPTIONS: google.maps.MapOptions = {
 }
 
 interface FarmMapProps {
-  plots: LandPlot[]
+  plots: Plot[]
   selectedPlotId?: string
   isDrawing: boolean
   isEditing: boolean
   currentPath: GeoPoint[]
   onPathChange: (path: GeoPoint[]) => void
-  onPlotSelect: (plot: LandPlot | null) => void
-  selectedPlot: LandPlot | null
-  onEditBoundaries: (plot: LandPlot) => void
+  onPlotSelect: (plot: Plot| null) => void
+  selectedPlot: Plot | null
+  onEditBoundaries: (plot: Plot) => void
 }
 
 export function FarmMap({

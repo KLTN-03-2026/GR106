@@ -3,8 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { authService } from '../../services/authService';
-
-import { registerSchema, RegisterInput } from '../../schemas/authSchemas';
+import { registerSchema } from '../../schemas/authSchemas';
+import { RegisterInput } from '../../types/auth';
 
 export function useRegister() {
   const [serverError, setServerError] = useState<string | null>(null);

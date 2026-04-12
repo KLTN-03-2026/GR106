@@ -58,8 +58,3 @@ export const farmEditSchema = z.object({
   address: z.string().optional(),
   description: z.string().optional(),
 });
-
-export type FarmResponse = z.infer<typeof farmResponseSchema>;
-export type FarmSummary = z.infer<typeof farmSummarySchema>;
-export type CreateFarmInput = z.infer<typeof createFarmSchema>;
-export type FarmEditInput = z.infer<typeof farmEditSchema>;

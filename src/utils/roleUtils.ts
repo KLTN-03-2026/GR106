@@ -2,8 +2,7 @@
  * Tiện ích quản lý vai trò trong hệ thống FarmerAI
  * Giúp đồng bộ hóa tên hiển thị tiếng Việt theo tài liệu nghiệp vụ
  */
-
-export type RoleId = 'owner' | 'manager' | 'employee' | 'user';
+import { RoleId } from '../types/auth';
 
 export const ROLE_DISPLAY_NAMES: Record<RoleId, string> = {
   owner: 'Chủ trang trại',

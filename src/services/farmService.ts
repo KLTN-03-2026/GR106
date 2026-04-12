@@ -1,24 +1,6 @@
 import { axiosInstance } from '../config/axios';
 import { ApiResponse } from '../types/auth';
-
-export interface Farm {
-  id: string;
-  name: string;
-  address?: string;
-  totalArea?: number;
-  description?: string;
-  ownerId: string;
-  status: 'ACTIVE' | 'INACTIVE';
-  memberCount: number;
-  plotCount: number;
-}
-
-export interface CreateFarmRequest {
-  name: string;
-  address?: string;
-  totalArea?: number;
-  description?: string;
-}
+import { Farm, CreateFarmRequest } from '../types/farm';
 
 export const farmService = {
   async createFarm(data: CreateFarmRequest): Promise<ApiResponse<Farm>> {
@@ -31,7 +13,7 @@ export const farmService = {
 
   async getMyFarms(): Promise<ApiResponse<Farm[]>> {
     const response = await axiosInstance.get<ApiResponse<Farm[]>>(
-      '/api/v1/farms/my-farms'
+      '/api/v1/farms'
     );
     return response.data;
   },

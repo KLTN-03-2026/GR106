@@ -3,10 +3,9 @@ import { axiosInstance } from '../config/axios';
 import { 
   getPlotsResponseSchema, 
   createPlotResponseSchema,
-  createPlotSchema,
-  Plot,
-  CreatePlotInput
+  createPlotSchema
 } from '../schemas/plotSchemas';
+import { Plot, CreatePlotInput } from '../types/plot';
 
 interface PlotState {
   plots: Plot[];

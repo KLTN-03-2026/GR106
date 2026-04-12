@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PlusIcon, LayoutGridIcon } from 'lucide-react'
-import { Plot } from '../../schemas/plotSchemas'
+import { Plot } from '../../types/plot'
 import { PlotFilters } from './components/PlotFilters'
 import { PlotTable } from './components/PlotTable'
 import { PlotCard } from './components/PlotCard'
@@ -97,6 +97,7 @@ export function LandPlotsPage() {
             </p>
           </div>
         </div>
+        <div>
           <button
             onClick={() => setIsCreateModalOpen(true)}
             className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-md active:scale-95 group"

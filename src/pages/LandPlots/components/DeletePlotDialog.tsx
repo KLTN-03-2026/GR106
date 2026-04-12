@@ -1,5 +1,5 @@
 import { AlertTriangleIcon, XIcon, ClipboardListIcon } from 'lucide-react'
-import { Plot } from '../../../schemas/plotSchemas'
+import { Plot } from '../../../types/plot'
 
 interface DeletePlotDialogProps {
   isOpen: boolean

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { XIcon, AlertCircleIcon } from 'lucide-react'
-import { Plot } from '../../../schemas/plotSchemas'
+import { Plot } from '../../../types/plot'
 
 interface CreatePlotModalProps {
   isOpen: boolean

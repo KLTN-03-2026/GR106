@@ -6,8 +6,10 @@ import { useDispatch } from 'react-redux';
 import { Loader2, Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { authService } from '../../../services/authService';
-import { setCredentials } from '../../../store/authSlice';
-import { loginSchema, LoginInput } from '../../../schemas/authSchemas';
+import { loginSuccess } from '../../../store/authSlice';
+import { loginSchema } from '../../../schemas/authSchemas';
+import { LoginInput } from '../../../types/auth';
+
 export const LoginForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const dispatch = useDispatch();
@@ -24,7 +26,7 @@ export const LoginForm: React.FC = () => {
       setIsLoading(true);
       const response = await authService.login(data);
       if (response.success) {
-        dispatch(setCredentials(response.data));
+        dispatch(loginSuccess(response.data));
         toast.success('Đăng nhập thành công');
         navigate('/dashboard');
       }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { XIcon, AlertCircleIcon, InfoIcon } from 'lucide-react'
-import { Plot } from '../../../schemas/plotSchemas'
+import { Plot } from '../../../types/plot'
 
 interface EditPlotModalProps {
   isOpen: boolean
@@ -53,7 +53,7 @@ export function EditPlotModal({
       name: name.trim(),
       areaHa: numArea,
       description: description.trim(),
-      status,
+      status: status as 'ACTIVE' | 'INACTIVE',
     })
   }
 

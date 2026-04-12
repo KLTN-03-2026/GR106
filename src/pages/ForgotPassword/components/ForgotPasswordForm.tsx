@@ -5,8 +5,8 @@ import { Link } from 'react-router-dom';
 import { Loader2, Mail, ArrowLeft, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { authService } from '../../../services/authService';
-
-import { forgotPasswordSchema, ForgotPasswordInput } from '../../../schemas/authSchemas';
+import { forgotPasswordSchema } from '../../../schemas/authSchemas';
+import { ForgotPasswordInput } from '../../../types/auth';
 
 export const ForgotPasswordForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);

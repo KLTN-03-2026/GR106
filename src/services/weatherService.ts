@@ -1,18 +1,9 @@
 import axios from 'axios';
 import { ENV } from '../config/env';
+import { WeatherData } from '../types/weather';
 
 const API_KEY = ENV.WEATHER_KEY;
 const BASE_URL = 'https://api.openweathermap.org/data/2.5/weather';
-
-export interface WeatherData {
-  temp: number;
-  description: string;
-  icon: string;
-  name: string;
-  humidity: number;
-  windSpeed: number;
-  condition: 'rain' | 'clear' | 'clouds' | 'other';
-}
 
 export const fetchWeather = async (lat: number, lon: number): Promise<WeatherData> => {
   try {

@@ -1,5 +1,7 @@
+import { PlotStatus } from '../../../types/plot'
+
 interface PlotStatusBadgeProps {
-  status: string
+  status: PlotStatus | string
 }
 
 export function PlotStatusBadge({ status }: PlotStatusBadgeProps) {

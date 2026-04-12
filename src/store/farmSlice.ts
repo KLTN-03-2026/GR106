@@ -4,11 +4,9 @@ import {
   createFarmResponseSchema, 
   getFarmsResponseSchema, 
   getFarmsSummaryResponseSchema,
-  createFarmSchema,
-  FarmResponse,
-  FarmSummary,
-  CreateFarmInput
+  createFarmSchema
 } from '../schemas/farmSchemas';
+import { FarmResponse, FarmSummary, CreateFarmInput } from '../types/farm';
 
 interface FarmState {
   farms: FarmResponse[];
@@ -33,7 +31,7 @@ export const createFarm = createAsyncThunk(
     try {
       // Validate input data with Zod before sending
       createFarmSchema.parse(farmData);
-      const response = await axiosInstance.post('/api/v1/farm', farmData);
+      const response = await axiosInstance.post('/api/v1/farms', farmData);
       // Validate response data with Zod
       return createFarmResponseSchema.parse(response.data).data;
     } catch (error: any) {
@@ -112,7 +110,7 @@ const farmSlice = createSlice({
       })
       .addCase(fetchFarmsSummary.fulfilled, (state, action) => {
         state.loading = false;
-        state.farmSummary = action.payload;
+        state.farmSummary = action.payload ?? [];
       })
       .addCase(fetchFarmsSummary.rejected, (state, action) => {
         state.loading = false;

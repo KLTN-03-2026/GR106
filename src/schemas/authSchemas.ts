@@ -24,8 +24,3 @@ export const registerSchema = z.object({
   message: 'Mật khẩu xác nhận không khớp',
   path: ['confirmPassword'],
 });
-
-// Types
-export type LoginInput = z.infer<typeof loginSchema>;
-export type RegisterInput = z.infer<typeof registerSchema>;
-export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;

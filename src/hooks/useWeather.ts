@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import axios from "axios";
-import { WeatherData, UseWeatherState } from "../types/Weather";
+import { WeatherData, UseWeatherState } from "../types/weather";
 import { ENV } from "../config/env";
 import { translateWeather } from "../utils/weatherUtils";
 
@@ -19,6 +19,9 @@ const DEFAULT_WEATHER_DATA: WeatherData = {
   description: "Có mây (Partly Cloudy)",
   isRainy: false,
   isHighHumidity: false,
+  icon: "01d",
+  name: "Đà Nẵng",
+  condition: "clouds"
 };
 
 export const useWeather = (): UseWeatherState => {
@@ -51,6 +54,7 @@ export const useWeather = (): UseWeatherState => {
 
       const { data } = response;
       const weatherCondition = data.weather[0].main;
+      const mainCondition = weatherCondition.toLowerCase();
       const currentHumidity = data.main.humidity;
 
       const isRain =
@@ -59,7 +63,16 @@ export const useWeather = (): UseWeatherState => {
 
       const isHighHumidity = currentHumidity >= 80;
 
-      const weatherData = {
+      let condition: WeatherData['condition'] = 'other';
+      if (mainCondition.includes('rain') || mainCondition.includes('drizzle') || mainCondition.includes('thunderstorm')) {
+        condition = 'rain';
+      } else if (mainCondition.includes('clear')) {
+        condition = 'clear';
+      } else if (mainCondition.includes('cloud')) {
+        condition = 'clouds';
+      }
+
+      const weatherData: WeatherData = {
         temp: Math.round(data.main.temp),
         tempMin: Math.round(data.main.temp_min),
         tempMax: Math.round(data.main.temp_max),
@@ -68,7 +81,10 @@ export const useWeather = (): UseWeatherState => {
         description: translateWeather(weatherCondition),
         isRainy: isRain,
         isHighHumidity,
-      } as WeatherData;
+        icon: data.weather[0].icon,
+        name: data.name,
+        condition
+      };
 
       console.log("🌦️ Weather Data Fetched:", weatherData);
 
@@ -83,7 +99,7 @@ export const useWeather = (): UseWeatherState => {
     } catch (err: unknown) {
       if (axios.isCancel(err)) return;
 
-      console.error("❌ Failed to fetch weather:", err);
+      console.error(" Failed to fetch weather:", err);
       const errorMessage =
         err instanceof Error ? err.message : "Không thể tải dữ liệu thời tiết";
 

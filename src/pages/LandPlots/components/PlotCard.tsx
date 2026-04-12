@@ -1,6 +1,6 @@
 import React from 'react'
 import { Edit2Icon, Trash2Icon, MapIcon, MaximizeIcon } from 'lucide-react'
-import { Plot } from '../../../schemas/plotSchemas'
+import { Plot } from '../../../types/plot'
 import { PlotStatusBadge } from './PlotStatusBadge'
 
 interface PlotCardProps {

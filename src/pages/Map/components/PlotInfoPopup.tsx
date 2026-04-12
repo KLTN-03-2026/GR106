@@ -1,11 +1,11 @@
-import { LandPlot } from '../../../types/landPlot'
+import { Plot } from '../../../types/plot'
 import { PlotStatusBadge } from '../../LandPlots/components/PlotStatusBadge'
 import { MaximizeIcon, InfoIcon, ChevronRightIcon } from 'lucide-react'
 
 interface PlotInfoPopupProps {
-  plot: LandPlot
+  plot: Plot
   onClose: () => void
-  onEditBoundaries: (plot: LandPlot) => void
+  onEditBoundaries: (plot: Plot) => void
 }
 
 export function PlotInfoPopup({
@@ -44,7 +44,7 @@ export function PlotInfoPopup({
             </p>
             <div className="flex items-baseline gap-1">
               <span className="text-lg font-black text-emerald-700 leading-none">
-                {plot.area.toLocaleString('vi-VN')}
+                {plot.areaHa.toLocaleString('vi-VN')}
               </span>
               <span className="text-[10px] font-bold text-emerald-500">ha</span>
             </div>

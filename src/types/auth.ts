@@ -37,3 +37,23 @@ export interface VerifyRequest {
 export interface RefreshRequest {
   refreshToken: string;
 }
+
+export type RoleId = 'owner' | 'manager' | 'employee' | 'user';
+
+export interface JwtPayload {
+  sub: string; // user ID
+  roles: string[]; // Array of roles: ["ROLE_USER", "ROLE_OWNER", etc.]
+  fullName?: string; // Họ tên thực tế từ Backend
+  name?: string;     // Tên dự phòng từ Backend
+  email?: string;    // Email thực tế
+  iat?: number;
+  exp?: number;
+}
+
+export interface LoginInput extends LoginRequest {}
+export interface RegisterInput extends RegisterRequest {
+  confirmPassword?: string;
+}
+export interface ForgotPasswordInput {
+  email: string;
+}

@@ -1,5 +1,5 @@
 import { Edit2Icon, Trash2Icon, MapIcon } from 'lucide-react'
-import { Plot } from '../../../schemas/plotSchemas'
+import { Plot } from '../../../types/plot'
 import { PlotStatusBadge } from './PlotStatusBadge'
 
 interface PlotTableProps {

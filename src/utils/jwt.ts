@@ -1,15 +1,6 @@
 import { jwtDecode } from 'jwt-decode';
-import { RoleId } from './roleUtils';
-
-export interface JwtPayload {
-  sub: string; // user ID
-  roles: string[]; // Array of roles: ["ROLE_USER", "ROLE_OWNER", etc.]
-  fullName?: string; // Họ tên thực tế từ Backend
-  name?: string;     // Tên dự phòng từ Backend
-  email?: string;    // Email thực tế
-  iat?: number;
-  exp?: number;
-}
+import { RoleId, JwtPayload } from '../types/auth'; // Ensure these are exported from auth.ts
+import { getRoleDisplayName } from './roleUtils';
 
 export const decodeToken = (token: string): JwtPayload | null => {
   try {
@@ -59,14 +50,4 @@ export const getUserFromToken = (token: string) => {
     fullName: fullName,
     role: role,
   };
-};
-
-// Helper: Tạo display name dựa vào role (dự phòng)
-const getRoleDisplayName = (role: string): string => {
-  switch (role) {
-    case 'owner': return 'Chủ trang trại';
-    case 'manager': return 'Người quản lý trang trại';
-    case 'employee': return 'Nhân công';
-    default: return 'Người dùng';
-  }
 };

@@ -16,31 +16,34 @@ Dịch vụ quản lý người dùng và phiên làm việc.
 
 ## 2. Quản lý Trang trại (Farm Management)
 Quản lý danh sách và thông tin chi tiết các nông trại.
-- **Service file**: `src/services/farmService.ts`
+- **Service file**: `src/services/farmService.ts`, `src/store/farmSlice.ts`
 - **Các Endpoint**:
     - `POST /api/v1/farms`: Tạo trang trại mới.
-    - `GET /api/v1/farms/my-farms`: Lấy danh sách các trang trại sở hữu bởi người dùng hiện tại.
+    - `GET /api/v1/farms`: Lấy toàn bộ danh sách trang trại mà người dùng đang sở hữu.
+    - `GET /api/v1/farms/summary`: Lấy thông tin tổng quan các farm (farmId, farmName, myRole, owner...).
     - `GET /api/v1/farms/{id}`: Lấy thông tin chi tiết một trang trại cụ thể.
     - `POST /api/v1/farms/{id}/select`: Chọn trang trại để làm việc và nhận `farmToken`.
 
 ## 3. Quản lý Gói cước & Thanh toán
-Xử lý các dịch vụ đăng ký gói và thanh toán qua cổng VNPay/Momo.
+Xử lý các dịch vụ đăng ký gói và thanh toán qua cổng SePay.
 
-### Subscription Hub
+### Subscription API
 - **Service file**: `src/services/subscription/getSubscriptionPlanService.ts`
 - **Endpoints**:
-    - `GET /api/v1/subscriptions`: Lấy danh sách các gói cước dịch vụ hiện có.
+    - `GET /api/v1/subscriptions`: Lấy danh sách các gói dịch vụ (FREE, BASIC, PRO, ...).
         - **Status**: ✅ Integrated (Hiển thị tại màn hình Pricing/Upgrade).
-    - `GET /api/v1/subscriptions/current`: Lấy thông tin gói dịch vụ đang hoạt động của trang trại.
+    - `GET /api/v1/subscriptions/current`: Lấy thông tin gói subscription đang active của trang trại.
         - **Status**: ✅ Integrated (Hiển thị tại Dashboard Sidebar & Hub Subscription).
-    - `GET /api/v1/subscriptions/history`: Lấy toàn bộ lịch sử đăng ký gói của trang trại.
+    - `GET /api/v1/subscriptions/history`: Lấy toàn bộ lịch sử đăng ký gói của farm hiện tại.
         - **Status**: ✅ Integrated (Hiển thị tại bảng Lịch sử trong Hub Subscription).
 
-### Payment Services
+### Payment API (SePay)
 - **Service files**: `src/services/payment/createPaymentService.ts`, `src/services/payment/getPaymentResultService.ts`
 - **Endpoints**:
-    - `POST /api/v1/payment/create`: Khởi tạo giao dịch thanh toán (VNPay/Momo).
+    - `POST /api/v1/payment/create`: Tạo link thanh toán SePay. FE nhận paymentUrl từ API và redirect người dùng.
         - **Status**: ✅ Integrated (Kích hoạt khi người dùng nhấn thanh toán gói cước).
+    - `POST /api/v1/payment/ipn`: IPN callback từ SePay (Server-to-server). Không yêu cầu JWT.
+        - **Status**: ⚠️ Server Side Only (FE không gọi trực tiếp API này).
     - `GET /api/v1/payments/result/{orderCode}`: Kiểm tra và nhận kết quả thanh toán từ hệ thống.
         - **Status**: ✅ Integrated (Sử dụng tại màn hình kết quả thanh toán - `PaymentResultPage.tsx`).
 
@@ -52,11 +55,11 @@ Tích hợp dữ liệu thời tiết thực tế từ bên thứ ba.
 
 ## 5. Quản lý Lô đất (Plots)
 Quản lý các khu vực canh tác bên trong một trang trại.
-- **Service file**: Tích hợp trực tiếp trong `src/store/plotSlice.ts`
+- **Store file**: `src/store/plotSlice.ts`
 - **Các Endpoint**:
-    - `GET /api/v1/plots`: Lấy danh sách toàn bộ lô đất của farm hiện tại.
+    - `GET /api/v1/plots`: Lấy danh sách toàn bộ lô đất trong hệ thống.
         - **Status**: ✅ Integrated (Hiển thị tại màn hình LandPlotsPage).
-    - `POST /api/v1/plots`: Tạo một lô đất mới với thông tin tên, mô tả và tọa độ GeoJSON.
+    - `POST /api/v1/plots`: Tạo một lô đất mới thuộc farm hiện tại với thông tin tên, mô tả và tọa độ GeoJSON.
         - **Status**: ✅ Integrated (Sử dụng tại CreatePlotModal).
 
 ---
