@@ -59,13 +59,6 @@ export default function Sidebar({
   const { logout, user } = useAuth();
   const { data: currentSubscription, isLoading: loadingSub } = useCurrentSubscription();
   const location = useLocation();
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  
-  useEffect(() => {
-    if (active === "settings") {
-      setIsSettingsOpen(true);
-    }
-  }, [active]);
 
   if (variant === "compact") {
     return (
@@ -99,6 +92,17 @@ export default function Sidebar({
               <Icon size={22} color={active === key ? "#fff" : "#374151"} strokeWidth={2} />
             </Button>
           ))}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setActive("change-password")}
+            className={cn(
+              "w-10 h-10 rounded-xl p-0 transition-all duration-200",
+              active === "change-password" ? "bg-slate-900 text-white shadow-md" : "hover:bg-gray-100 text-slate-500"
+            )}
+          >
+            <Key size={22} color={active === "change-password" ? "#fff" : "#374151"} strokeWidth={2} />
+          </Button>
         </div>
 
         <Button
@@ -145,11 +149,7 @@ export default function Sidebar({
                 <div key={item.key} className="flex flex-col gap-1">
                   <button
                     onClick={() => {
-                      if (item.key === "settings") {
-                        setIsSettingsOpen(!isSettingsOpen);
-                      } else {
-                        setActive(item.key);
-                      }
+                      setActive(item.key);
                     }}
                     className={cn(
                       "flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-200 group font-bold text-sm",
@@ -168,20 +168,6 @@ export default function Sidebar({
                     <span>{item.label}</span>
                   </button>
                   
-                  {item.key === "settings" && isSettingsOpen && (
-                    <button
-                      onClick={() => setActive("change-password")}
-                      className={cn(
-                        "flex items-center gap-3 ml-7 px-4 py-2 rounded-xl text-xs font-bold transition-all",
-                        location.pathname.includes("change-password")
-                          ? "text-emerald-600 bg-emerald-50/50"
-                          : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
-                      )}
-                    >
-                      <Key size={14} className={location.pathname.includes("change-password") ? "text-emerald-600" : "text-slate-400"} />
-                      <span>Đổi mật khẩu</span>
-                    </button>
-                  )}
                 </div>
               ))}
             </div>
@@ -196,8 +182,31 @@ export default function Sidebar({
             {user?.fullName?.split(" ").pop()?.charAt(0) || "U"}
           </div>
           <div className="flex-1 overflow-hidden">
-            <p className="text-[9px] font-bold text-slate-400 uppercase truncate">Chủ trang trại</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase truncate">Chủ trang trại</p>
           </div>
+        </div>
+
+        <div className="flex flex-col gap-1 px-1">
+          <button
+            onClick={() => setActive("change-password")}
+            className={cn(
+              "flex items-center gap-3 px-4 py-2 rounded-xl text-xs font-bold transition-all",
+              active === "change-password"
+                ? "bg-slate-900 text-white shadow-sm"
+                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+            )}
+          >
+            <Key size={14} className={active === "change-password" ? "text-white" : "text-slate-400"} />
+            <span>Đổi mật khẩu</span>
+          </button>
+
+          <button
+            onClick={logout}
+            className="flex items-center gap-3 px-4 py-2 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50 transition-all"
+          >
+            <LogOut size={14} />
+            <span>Đăng xuất</span>
+          </button>
         </div>
       </div>
     </aside>

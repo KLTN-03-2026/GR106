@@ -153,14 +153,13 @@ export function ManagementDashboardPage() {
               className="p-6 rounded-[32px] flex flex-col bg-white border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-green-500/5 transition-all cursor-pointer group/card relative overflow-hidden"
             >
               {/* Decorative background element */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-green-50/50 rounded-full translate-x-16 -translate-y-16 group-hover:scale-150 transition-transform duration-500" />
               {/* Top */}
               <div className="flex items-start justify-between mb-3">
                 <div className="w-10 h-10 rounded-[14px] flex items-center justify-center bg-green-100">
                   <Trees size={18} className="text-green-600" />
                 </div>
 
-                <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-600">
+                <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-white border border-gray-100 text-gray-600 shadow-sm">
                   {farm.myRole?.toUpperCase() === 'OWNER' ? 'Chủ sở hữu' : 'Thành viên'}
                 </span>
               </div>

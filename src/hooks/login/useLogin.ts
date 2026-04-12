@@ -6,7 +6,6 @@ import { useDispatch } from 'react-redux';
 import { loginSchema } from '../../schemas/authSchemas';
 import { authService } from '../../services/authService';
 import { loginSuccess } from '../../store/authSlice';
-import { setToken } from '../../utils/jwt';
 import { LoginInput } from '../../types/auth';
 
 export function useLogin() {
@@ -28,7 +27,6 @@ export function useLogin() {
     try {
       const response = await authService.login(data);
       if (response.success && response.data.accessToken) {
-        setToken(response.data.accessToken);
         dispatch(loginSuccess(response.data));
         
         // Điều hướng sau login

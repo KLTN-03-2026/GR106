@@ -12,7 +12,6 @@ import { useDispatch, useSelector } from 'react-redux'
 import { AppDispatch, RootState } from '../../store'
 import { fetchPlots, createPlot } from '../../store/plotSlice'
 import { toast } from 'sonner'
-import { cn } from '../../utils/cn'
 
 
 
@@ -21,7 +20,7 @@ export function LandPlotsPage() {
   const dispatch = useDispatch<AppDispatch>()
 
   // Redux State
-  const { plots, loading, error } = useSelector((state: RootState) => state.plot)
+  const { plots } = useSelector((state: RootState) => state.plot)
 
   // Local UI State
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table')
@@ -98,7 +97,6 @@ export function LandPlotsPage() {
             </p>
           </div>
         </div>
-<<<<<<< HEAD
         <div>
           <button
             onClick={() => setIsCreateModalOpen(true)}
@@ -109,16 +107,6 @@ export function LandPlotsPage() {
           </button>
         </div>
       </div>
-=======
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-md active:scale-95 group"
-        >
-          <PlusIcon className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
-          Tạo lô đất mới
-        </button>
-      </div>  {/* ← chỉ cần 1 div đóng cho wrapper ngoài cùng */}
->>>>>>> 11a815707465227632791d99b54477be1e8a5d53
 
       {/* Filters Section */}
       <PlotFilters

@@ -1,6 +1,5 @@
 import React from 'react';
-import { User, ShieldCheck } from 'lucide-react';
-import { cn } from '../../utils/cn';
+import { User } from 'lucide-react';
 
 interface Member {
   name: string;
@@ -32,7 +31,7 @@ export const MemberCondensedList: React.FC = () => {
           </div>
 
           {member.isOwner ? (
-            <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-wider border border-emerald-100">
+            <span className="px-2.5 py-1 rounded-full bg-white text-slate-600 text-[10px] font-black uppercase tracking-wider border border-slate-100 shadow-sm">
               Chủ sở hữu
             </span>
           ) : (

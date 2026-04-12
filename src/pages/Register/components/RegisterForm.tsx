@@ -5,7 +5,10 @@ import * as z from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { Loader2, Mail, Lock, User, Tractor } from 'lucide-react';
 import { toast } from 'sonner';
+import { useDispatch } from 'react-redux';
 import { authService } from '../../../services/authService';
+import { farmService } from '../../../services/farmService';
+import { setCredentials } from '../../../store/authSlice';
 const registerSchema = z.
 object({
   fullName: z.string().min(1, 'Họ tên là bắt buộc'),
@@ -29,6 +32,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export const RegisterForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const {
     register,
     handleSubmit,
@@ -39,22 +43,50 @@ export const RegisterForm: React.FC = () => {
   const onSubmit = async (data: RegisterFormValues) => {
     try {
       setIsLoading(true);
-      // TODO: API doesn't accept farmName currently, so we omit it from the payload
-      const payload = {
+      
+      // 1. Register Account
+      const regPayload = {
         email: data.email,
         password: data.password,
         fullName: data.fullName
       };
-      const response = await authService.register(payload);
-      if (response.success) {
-        toast.success(
-          'Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.'
-        );
+      const regResponse = await authService.register(regPayload);
+      
+      if (!regResponse.success) {
+        throw new Error(regResponse.message || 'Đăng ký không thành công');
+      }
+
+      // 2. Automatic Login to get Token
+      const loginResponse = await authService.login({
+        email: data.email,
+        password: data.password
+      });
+
+      if (loginResponse.success && loginResponse.data.accessToken) {
+        // Cập nhật Redux ngay để có token gọi API tiếp theo
+        dispatch(setCredentials(loginResponse.data));
+
+        // 3. Create Initial Farm
+        try {
+          await farmService.createFarm({
+            name: data.farmName,
+            description: `Trang trại của ${data.fullName}`
+          });
+          
+          toast.success('Đăng ký và tạo trang trại thành công!');
+          navigate('/dashboard');
+        } catch (farmError: any) {
+          console.error('Lỗi tạo farm:', farmError);
+          toast.success('Đăng ký thành công! Tuy nhiên không thể tạo trang trại tự động. Vui lòng tạo thủ công sau khi đăng nhập.');
+          navigate('/login');
+        }
+      } else {
+        toast.success('Đăng ký thành công! Vui lòng đăng nhập.');
         navigate('/login');
       }
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message ||
+        error.response?.data?.message || error.message ||
         'Có lỗi xảy ra khi đăng ký. Email có thể đã tồn tại.'
       );
     } finally {
