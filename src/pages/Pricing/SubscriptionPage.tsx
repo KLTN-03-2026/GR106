@@ -71,10 +71,10 @@ const SubscriptionPage = () => {
             if (res.success && res.data.farmToken) {
                 // 1. Cập nhật state local ngay lập tức để luồng thanh toán đi tiếp
                 setShowSelectionModal(false);
-                
+
                 // 2. Cập nhật Redux (xảy ra async)
                 dispatch(selectFarm({ token: res.data.farmToken, farmId }));
-                
+
                 // 3. Thực hiện thanh toán ngay với farmId vừa chọn
                 if (isPaymentPending) {
                     setIsPaymentPending(false);
@@ -90,7 +90,7 @@ const SubscriptionPage = () => {
 
     const executePayment = async (farmIdToUse?: string) => {
         const farmId = farmIdToUse || currentFarmId;
-        
+
         if (!selectedPlan) return;
         if (!farmId) {
             setIsPaymentPending(true);
@@ -105,6 +105,7 @@ const SubscriptionPage = () => {
             const res = await createPaymentService.createPayment({
                 subscriptionPlanId: selectedPlan,
                 billingCycle: billing,
+                farmId: farmId || undefined
             });
 
             const formData = res.data.formData;
@@ -155,12 +156,12 @@ const SubscriptionPage = () => {
 
                 {showSelectionModal && (
                     <div className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-                        <motion.div 
+                        <motion.div
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             className="bg-white rounded-[32px] shadow-2xl w-full max-w-md p-8 border border-gray-100 relative"
                         >
-                            <button 
+                            <button
                                 onClick={() => setShowSelectionModal(false)}
                                 className="absolute right-6 top-6 p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
                             >
@@ -168,7 +169,7 @@ const SubscriptionPage = () => {
                             </button>
                             <h2 className="text-xl font-bold text-gray-900 mb-2">Chọn trang trại cần nâng cấp</h2>
                             <p className="text-sm text-gray-500 mb-6">Vui lòng chọn trang trại bạn muốn áp dụng gói dịch vụ này.</p>
-                            
+
                             <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                                 {farms.map((farm) => {
                                     const isCurrent = currentFarmId === farm.farmId;
@@ -179,8 +180,8 @@ const SubscriptionPage = () => {
                                             onClick={() => handleSelectFarmContext(farm.farmId)}
                                             className={cn(
                                                 "w-full flex items-center justify-between p-4 rounded-2xl transition-all group disabled:opacity-50 border",
-                                                isCurrent 
-                                                    ? "bg-green-50 border-green-200" 
+                                                isCurrent
+                                                    ? "bg-green-50 border-green-200"
                                                     : "bg-gray-50 border-transparent hover:border-green-500 hover:bg-green-50"
                                             )}
                                         >
@@ -262,11 +263,10 @@ const SubscriptionPage = () => {
                                     <div
                                         key={plan.id}
                                         onClick={() => setSelectedPlan(plan.id)}
-                                        className={`flex flex-col p-5 bg-white rounded-2xl border transition-all duration-300 cursor-pointer ${
-                                            isSelected
+                                        className={`flex flex-col p-5 bg-white rounded-2xl border transition-all duration-300 cursor-pointer ${isSelected
                                                 ? 'border-green-600 ring-2 ring-green-600/10 shadow-lg scale-[1.02]'
                                                 : 'border-gray-100 hover:border-green-300 hover:shadow-md'
-                                        }`}
+                                            }`}
                                     >
                                         {/* Plan header */}
                                         <div className="flex justify-between items-start mb-1">
@@ -382,11 +382,10 @@ const SubscriptionPage = () => {
                 <button
                     disabled={!selectedPlan || loading}
                     onClick={handlePayment}
-                    className={`w-full py-4 rounded-2xl font-bold text-white transition-all duration-300 shadow-lg ${
-                        !selectedPlan || loading
+                    className={`w-full py-4 rounded-2xl font-bold text-white transition-all duration-300 shadow-lg ${!selectedPlan || loading
                             ? 'bg-gray-300 cursor-not-allowed shadow-none'
                             : 'bg-green-600 hover:bg-green-700 hover:shadow-green-900/10 active:scale-[0.98]'
-                    }`}
+                        }`}
                 >
                     {loading ? (
                         <div className="flex items-center justify-center gap-2">
