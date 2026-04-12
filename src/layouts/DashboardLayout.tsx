@@ -1,13 +1,15 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Sidebar from "../components/layout/Sidebar";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { clearFarmContext } from "../store/authSlice";
+import { RootState } from "../store";
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
+  const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
 
   const getActive = () => {
     const p = location.pathname;
@@ -36,8 +38,12 @@ export default function DashboardLayout() {
     if (key === "dashboard") {
       navigate("/dashboard");
     } else if (key === "tree") {
-      dispatch(clearFarmContext());
-      navigate("/farms");
+      if (currentFarmId) {
+        navigate(`/farms/${currentFarmId}/actions`);
+      } else {
+        dispatch(clearFarmContext());
+        navigate("/farms");
+      }
     } else if (key === "activity") {
       navigate("/activity");
     } else if (key === "map") {

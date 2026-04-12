@@ -11,14 +11,11 @@ import { fetchFarmsSummary } from '@/store/farmSlice';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { cn } from '@/utils/cn';
 
 const SubscriptionPage = () => {
     const dispatch = useDispatch();
     const { currentFarmId } = useSelector((state: RootState) => state.auth);
-    const location = useLocation();
-    const [isConfirmed, setIsConfirmed] = useState((location.state as any)?.confirmed || false);
 
     const [billing, setBilling] = useState<BillingCycle>('MONTHLY');
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -73,7 +70,6 @@ const SubscriptionPage = () => {
             const res = await farmService.selectFarm(farmId);
             if (res.success && res.data.farmToken) {
                 // 1. Cập nhật state local ngay lập tức để luồng thanh toán đi tiếp
-                setIsConfirmed(true);
                 setShowSelectionModal(false);
                 
                 // 2. Cập nhật Redux (xảy ra async)
@@ -96,7 +92,7 @@ const SubscriptionPage = () => {
         const farmId = farmIdToUse || currentFarmId;
         
         if (!selectedPlan) return;
-        if (!isConfirmed || !farmId) {
+        if (!farmId) {
             setIsPaymentPending(true);
             setShowSelectionModal(true);
             return;

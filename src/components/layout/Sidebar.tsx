@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { 
   LayoutGrid, 
   LogOut, 
@@ -12,7 +11,6 @@ import {
   Trees,
   Key
 } from "lucide-react";
-import { useLocation } from "react-router-dom";
 import { Button } from "../ui/button";
 import { cn } from "../../utils/cn";
 import { useAuth } from "../../hooks/useAuth";
@@ -58,7 +56,6 @@ export default function Sidebar({
 }: SidebarProps) {
   const { logout, user } = useAuth();
   const { data: currentSubscription, isLoading: loadingSub } = useCurrentSubscription();
-  const location = useLocation();
 
   if (variant === "compact") {
     return (
@@ -92,6 +89,9 @@ export default function Sidebar({
               <Icon size={22} color={active === key ? "#fff" : "#374151"} strokeWidth={2} />
             </Button>
           ))}
+        </div>
+
+        <div className="flex flex-col items-center gap-4 w-full">
           <Button
             variant="ghost"
             size="icon"
@@ -103,16 +103,16 @@ export default function Sidebar({
           >
             <Key size={22} color={active === "change-password" ? "#fff" : "#374151"} strokeWidth={2} />
           </Button>
-        </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={logout}
-          className="w-10 h-10 rounded-xl p-0 hover:bg-red-50 hover:text-red-500 transition-colors"
-        >
-          <LogOut size={22} color="#374151" strokeWidth={2} />
-        </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={logout}
+            className="w-10 h-10 rounded-xl p-0 hover:bg-red-50 hover:text-red-500 transition-colors"
+          >
+            <LogOut size={22} color="#374151" strokeWidth={2} />
+          </Button>
+        </div>
       </aside>
     );
   }
@@ -186,28 +186,6 @@ export default function Sidebar({
           </div>
         </div>
 
-        <div className="flex flex-col gap-1 px-1">
-          <button
-            onClick={() => setActive("change-password")}
-            className={cn(
-              "flex items-center gap-3 px-4 py-2 rounded-xl text-xs font-bold transition-all",
-              active === "change-password"
-                ? "bg-slate-900 text-white shadow-sm"
-                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-            )}
-          >
-            <Key size={14} className={active === "change-password" ? "text-white" : "text-slate-400"} />
-            <span>Đổi mật khẩu</span>
-          </button>
-
-          <button
-            onClick={logout}
-            className="flex items-center gap-3 px-4 py-2 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50 transition-all"
-          >
-            <LogOut size={14} />
-            <span>Đăng xuất</span>
-          </button>
-        </div>
       </div>
     </aside>
   );

@@ -19,5 +19,4 @@ export const NAV_ICONS: NavIconItem[] = [
   { icon: Trees, key: "tree" },
   { icon: GitFork, key: "task" },
   { icon: Sparkles, key: "gemini" },
-  { icon: CreditCard, key: "subscription" },
 ];

@@ -3,8 +3,7 @@ import {
   History, 
   Calendar, 
   ArrowRight,
-  ShieldCheck,
-  RefreshCw
+  ShieldCheck
 } from 'lucide-react';
 import { useCurrentSubscription, useSubscriptionHistory } from '@/hooks/subscription/useSubscription';
 import { motion } from 'framer-motion';
@@ -31,13 +30,9 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 export default function SubscriptionHistoryPage() {
   const navigate = useNavigate();
-  const { data: current, isLoading: loadingCurrent, refresh: refreshCurrent } = useCurrentSubscription();
-  const { data: history, isLoading: loadingHistory, refresh: refreshHistory } = useSubscriptionHistory();
+  const { data: current, isLoading: loadingCurrent } = useCurrentSubscription();
+  const { data: history, isLoading: loadingHistory } = useSubscriptionHistory();
 
-  const handleRefresh = () => {
-    refreshCurrent();
-    refreshHistory();
-  };
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('vi-VN', {
@@ -55,13 +50,6 @@ export default function SubscriptionHistoryPage() {
           <h1 className="text-xl font-black text-slate-900 tracking-tight">Quản lý Gói dịch vụ</h1>
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Thông tin đăng ký & Giao dịch</p>
         </div>
-        <button 
-          onClick={handleRefresh}
-          className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-50 border border-transparent hover:border-slate-200 rounded-xl transition-all"
-          title="Tải lại dữ liệu"
-        >
-          <RefreshCw size={20} className={cn((loadingCurrent || loadingHistory) && "animate-spin")} />
-        </button>
       </div>
 
       <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-3 gap-8">
