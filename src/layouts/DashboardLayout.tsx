@@ -29,6 +29,11 @@ export default function DashboardLayout() {
 
   const [active, setActive] = useState(getActive());
 
+  const wideSidebarPaths = ["/members", "/land-plots", "/map", "/subscription"];
+  const isWideSidebarPage = 
+    wideSidebarPaths.some(path => location.pathname.includes(path)) || 
+    (location.pathname.startsWith("/farms") && location.pathname !== "/farms");
+
   useEffect(() => {
     setActive(getActive());
   }, [location.pathname]);
@@ -38,7 +43,7 @@ export default function DashboardLayout() {
     if (key === "dashboard") {
       navigate("/dashboard");
     } else if (key === "tree") {
-      if (currentFarmId) {
+      if (isWideSidebarPage && currentFarmId) {
         navigate(`/farms/${currentFarmId}/actions`);
       } else {
         dispatch(clearFarmContext());
@@ -69,10 +74,6 @@ export default function DashboardLayout() {
     }
   };
 
-  const wideSidebarPaths = ["/members", "/land-plots", "/map", "/subscription"];
-  const isWideSidebarPage = 
-    wideSidebarPaths.some(path => location.pathname.includes(path)) || 
-    (location.pathname.startsWith("/farms") && location.pathname !== "/farms");
 
   return (
     <div className="w-full h-screen bg-[#F8FAFC] flex overflow-hidden p-3 gap-3">
