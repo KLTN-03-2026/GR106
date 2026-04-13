@@ -1,20 +1,16 @@
-import { Check, X, ShieldCheck, ArrowRight, Loader2, Trees } from 'lucide-react';
+import { Check, X, ShieldCheck } from 'lucide-react';
 import { createPaymentService } from '@/services/payment';
 import { getSubscriptionPlansService } from '@/services/subscription';
-import { farmService } from '@/services/farmService';
 import { BillingCycle } from '@/types/payment/payment';
 import { SubscriptionPlan } from '@/types/subscription/subscription';
-import { selectFarm } from '@/store/authSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { fetchFarmsSummary } from '@/store/farmSlice';
-import { motion, AnimatePresence } from 'framer-motion';
 
 import { useEffect, useState } from 'react';
-import { cn } from '@/utils/cn';
+import { useParams } from 'react-router-dom';
 
 const SubscriptionPage = () => {
-    const dispatch = useDispatch();
+    const { farmId: urlFarmId } = useParams<{ farmId: string }>();
     const { currentFarmId } = useSelector((state: RootState) => state.auth);
 
     const [billing, setBilling] = useState<BillingCycle>('MONTHLY');
@@ -26,11 +22,6 @@ const SubscriptionPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const [isPaymentPending, setIsPaymentPending] = useState(false);
-    const [showSelectionModal, setShowSelectionModal] = useState(false);
-
-    const { farmSummary: farms } = useSelector((state: RootState) => state.farm);
-
     // Tìm farm hiện tại dựa trên ID trong Redux
 
     const selected = plans.find((p) => p.id === selectedPlan);
@@ -39,15 +30,6 @@ const SubscriptionPage = () => {
         billing === 'ANNUAL' ? plan.priceAnnual : plan.priceMonthly;
 
     useEffect(() => {
-        const fetchContextData = async () => {
-            try {
-                // Chỉ cần lấy danh sách farm để phục vụ modal chọn (nếu cần)
-                await dispatch(fetchFarmsSummary() as any).unwrap();
-            } catch (err) {
-                console.error('Lỗi khi lấy dữ liệu trang trại:', err);
-            }
-        };
-
         const fetchPlans = async () => {
             try {
                 const plansRes = await getSubscriptionPlansService.getPlans();
@@ -60,41 +42,15 @@ const SubscriptionPage = () => {
             }
         };
 
-        fetchContextData();
         fetchPlans();
-    }, [dispatch]);
+    }, []);
 
-    const handleSelectFarmContext = async (farmId: string) => {
-        setLoading(true);
-        try {
-            const res = await farmService.selectFarm(farmId);
-            if (res.success && res.data.farmToken) {
-                // 1. Cập nhật state local ngay lập tức để luồng thanh toán đi tiếp
-                setShowSelectionModal(false);
-
-                // 2. Cập nhật Redux (xảy ra async)
-                dispatch(selectFarm({ token: res.data.farmToken, farmId }));
-
-                // 3. Thực hiện thanh toán ngay với farmId vừa chọn
-                if (isPaymentPending) {
-                    setIsPaymentPending(false);
-                    await executePayment(farmId);
-                }
-            }
-        } catch (err) {
-            alert('Không thể chọn trang trại này');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const executePayment = async (farmIdToUse?: string) => {
-        const farmId = farmIdToUse || currentFarmId;
+    const executePayment = async () => {
+        const farmId = urlFarmId || currentFarmId;
 
         if (!selectedPlan) return;
         if (!farmId) {
-            setIsPaymentPending(true);
-            setShowSelectionModal(true);
+            setError('Không xác định được trang trại cần nâng cấp. Vui lòng quay lại trang quản lý.');
             return;
         }
 
@@ -148,69 +104,8 @@ const SubscriptionPage = () => {
         }
     };
 
-    const handlePayment = () => executePayment();
-
     return (
         <div className="h-screen overflow-y-auto bg-[#f5f5f0] relative">
-            <AnimatePresence>
-
-                {showSelectionModal && (
-                    <div className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="bg-white rounded-[32px] shadow-2xl w-full max-w-md p-8 border border-gray-100 relative"
-                        >
-                            <button
-                                onClick={() => setShowSelectionModal(false)}
-                                className="absolute right-6 top-6 p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
-                            >
-                                <X size={20} />
-                            </button>
-                            <h2 className="text-xl font-bold text-gray-900 mb-2">Chọn trang trại cần nâng cấp</h2>
-                            <p className="text-sm text-gray-500 mb-6">Vui lòng chọn trang trại bạn muốn áp dụng gói dịch vụ này.</p>
-
-                            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                {farms.map((farm) => {
-                                    const isCurrent = currentFarmId === farm.farmId;
-                                    return (
-                                        <button
-                                            key={farm.farmId}
-                                            disabled={loading}
-                                            onClick={() => handleSelectFarmContext(farm.farmId)}
-                                            className={cn(
-                                                "w-full flex items-center justify-between p-4 rounded-2xl transition-all group disabled:opacity-50 border",
-                                                isCurrent
-                                                    ? "bg-green-50 border-green-200"
-                                                    : "bg-gray-50 border-transparent hover:border-green-500 hover:bg-green-50"
-                                            )}
-                                        >
-                                            <div className="flex items-center gap-4 text-left">
-                                                <div className={cn(
-                                                    "w-10 h-10 rounded-xl shadow-sm flex items-center justify-center border transition-colors",
-                                                    isCurrent ? "bg-green-600 text-white border-green-600" : "bg-white text-green-600 border-gray-100"
-                                                )}>
-                                                    <Trees size={20} />
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <h3 className="font-semibold text-gray-800 text-sm">{farm.farmName}</h3>
-                                                        {isCurrent && <span className="text-[8px] bg-green-600 text-white px-1.5 py-0.5 rounded-full uppercase font-black">Hiện tại</span>}
-                                                    </div>
-                                                    <p className="text-[10px] text-gray-500 uppercase tracking-tighter">
-                                                        ID: ...{farm.farmId.slice(-6)}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            {loading ? <Loader2 size={16} className="animate-spin text-gray-300" /> : <ArrowRight size={16} className={cn("transition-transform group-hover:translate-x-1", isCurrent ? "text-green-600" : "text-gray-300 group-hover:text-green-600")} />}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
 
 
             <div className="max-w-5xl mx-auto px-6 py-8 pb-16">
@@ -378,10 +273,9 @@ const SubscriptionPage = () => {
                     </>
                 )}
 
-                {/* CTA BUTTON */}
                 <button
                     disabled={!selectedPlan || loading}
-                    onClick={handlePayment}
+                    onClick={executePayment}
                     className={`w-full py-4 rounded-2xl font-bold text-white transition-all duration-300 shadow-lg ${!selectedPlan || loading
                             ? 'bg-gray-300 cursor-not-allowed shadow-none'
                             : 'bg-green-600 hover:bg-green-700 hover:shadow-green-900/10 active:scale-[0.98]'
