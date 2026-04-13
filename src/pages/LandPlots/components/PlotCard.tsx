@@ -1,4 +1,3 @@
-import React from 'react'
 import { Edit2Icon, Trash2Icon, MapIcon, MaximizeIcon } from 'lucide-react'
 import { Plot } from '../../../types/plot'
 import { PlotStatusBadge } from './PlotStatusBadge'
@@ -12,7 +11,7 @@ interface PlotCardProps {
 
 export function PlotCard({ plot, onEdit, onDelete, onViewMap }: PlotCardProps) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-xl hover:border-emerald-100 transition-all overflow-hidden group font-sans">
+    <div className="bg-white transition-all overflow-hidden group font-sans text-left px-4 py-4">
       <div className="p-5">
         <div className="flex justify-between items-start mb-4">
           <h3
@@ -57,7 +56,7 @@ export function PlotCard({ plot, onEdit, onDelete, onViewMap }: PlotCardProps) {
           <button
             onClick={() => onEdit(plot)}
             className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-            title="Chỉnh sửa"
+            title="Chỉnh sửa ranh giới"
           >
             <Edit2Icon className="w-4 h-4" />
           </button>

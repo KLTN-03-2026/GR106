@@ -14,71 +14,54 @@ export function PlotInfoPopup({
   onEditBoundaries,
 }: PlotInfoPopupProps) {
   return (
-    <div className="bg-white rounded-3xl shadow-2xl p-6 min-w-[280px] max-w-sm border border-gray-100 font-sans transition-all duration-700 animate-in fade-in zoom-in-95">
-      <div className="flex justify-between items-start mb-4">
-        <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600 shadow-inner border border-emerald-100 shrink-0">
-          <InfoIcon className="w-6 h-6 animate-pulse" />
+    <div className="bg-white rounded-xl shadow-lg p-3 min-w-[200px] max-w-[220px] border border-gray-100 font-sans animate-in fade-in zoom-in-95 duration-200">
+      <div className="flex justify-between items-center mb-2">
+        <div className="flex items-center gap-1.5">
+          <InfoIcon className="w-3 h-3 text-emerald-600" />
+          <h3 className="text-xs font-black text-gray-900 tracking-tight leading-tight truncate">
+            {plot.name}
+          </h3>
         </div>
         <button
           onClick={onClose}
-          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all active:scale-90"
+          className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-all active:scale-90 shrink-0"
         >
-          <ChevronRightIcon className="w-5 h-5 rotate-90" />
+          <ChevronRightIcon className="w-3 h-3 rotate-90" />
         </button>
       </div>
 
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-xl font-black text-gray-900 tracking-tight leading-tight">
-            {plot.name}
-          </h3>
-          <div className="mt-2">
-            <PlotStatusBadge status={plot.status} />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
-              Diện tích
-            </p>
-            <div className="flex items-baseline gap-1">
-              <span className="text-lg font-black text-emerald-700 leading-none">
-                {plot.areaHa.toLocaleString('vi-VN')}
-              </span>
-              <span className="text-[10px] font-bold text-emerald-500">ha</span>
-            </div>
-          </div>
-          
-          <div className="bg-gray-50 p-3 rounded-2xl border border-gray-100 shadow-sm">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
-              Mốc ranh giới
-            </p>
-            <div className="flex items-baseline gap-1">
-              <span className="text-lg font-black text-emerald-700 leading-none">
-                {plot.boundaries?.length || 0}
-              </span>
-              <span className="text-[10px] font-bold text-emerald-500">điểm</span>
-            </div>
-          </div>
-        </div>
-
-        {plot.description && (
-          <div className="p-3 bg-blue-50/50 rounded-2xl border border-blue-100/50">
-            <p className="text-xs text-blue-700 font-medium leading-relaxed italic line-clamp-2">
-              "{plot.description}"
-            </p>
-          </div>
-        )}
-
-        <button
-          onClick={() => onEditBoundaries(plot)}
-          className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 text-white text-sm font-black rounded-2xl hover:bg-emerald-700 transition-all shadow-xl active:scale-95 border-b-4 border-emerald-800"
-        >
-          <MaximizeIcon className="w-4 h-4" />
-          Cập nhật ranh giới
-        </button>
+      <div className="mb-2">
+        <PlotStatusBadge status={plot.status} />
       </div>
+
+      <div className="grid grid-cols-2 gap-1.5 mb-2">
+        <div className="bg-gray-50 px-2 py-1.5 rounded-lg border border-gray-100">
+          <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Diện tích</p>
+          <div className="flex items-baseline gap-0.5">
+            <span className="text-xs font-black text-emerald-700">{plot.areaHa.toLocaleString('vi-VN')}</span>
+            <span className="text-[8px] font-bold text-emerald-500">ha</span>
+          </div>
+        </div>
+        <div className="bg-gray-50 px-2 py-1.5 rounded-lg border border-gray-100">
+          <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Ranh giới</p>
+          <div className="flex items-baseline gap-0.5">
+            <span className="text-xs font-black text-emerald-700">{plot.boundaries?.length || 0}</span>
+            <span className="text-[8px] font-bold text-emerald-500">điểm</span>
+          </div>
+        </div>
+      </div>
+
+      {plot.description && (
+        <p className="text-[10px] text-gray-400 italic line-clamp-1 mb-2">"{plot.description}"</p>
+      )}
+
+      <button
+        onClick={() => onEditBoundaries(plot)}
+        className="w-full flex items-center justify-center gap-1 py-1.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-lg hover:bg-gray-200 transition-all active:scale-95 border border-gray-200"
+      >
+        <MaximizeIcon className="w-3 h-3" />
+        Cập nhật ranh giới
+      </button>
     </div>
   )
 }

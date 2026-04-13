@@ -6,7 +6,6 @@ import { PlotFilters } from './components/PlotFilters'
 import { PlotTable } from './components/PlotTable'
 import { PlotCard } from './components/PlotCard'
 import { CreatePlotModal } from './components/CreatePlotModal'
-import { EditPlotModal } from './components/EditPlotModal'
 import { DeletePlotDialog } from './components/DeletePlotDialog'
 import { useDispatch, useSelector } from 'react-redux'
 import { AppDispatch, RootState } from '../../store'
@@ -30,7 +29,6 @@ export function LandPlotsPage() {
 
   // State quản lý các Modal
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [editingPlot, setEditingPlot] = useState<Plot | null>(null)
   const [deletingPlot, setDeletingPlot] = useState<Plot | null>(null)
 
   // Fetch dữ liệu khi mount
@@ -51,19 +49,18 @@ export function LandPlotsPage() {
   }, [plots, searchTerm, statusFilter])
 
   // Handlers cho CRUD
-  const handleCreatePlot = async (plotData: any) => {
+  const handleCreatePlot = (plotData: any) => {
     try {
-      await dispatch(createPlot(plotData)).unwrap()
-      toast.success('Tạo lô đất mới thành công')
+      dispatch(createPlot(plotData))
       setIsCreateModalOpen(false)
+      toast.success('Tạo lô đất mới thành công')
     } catch (err: any) {
       toast.error(err.message || 'Không thể tạo lô đất')
     }
   }
 
-  const handleEditPlot = (plotData: Plot) => {
-    console.log('Chưa hỗ trợ API cập nhật:', plotData)
-    setEditingPlot(null)
+  const handleEditPlot = (plot: Plot) => {
+    navigate('/dashboard/map', { state: { selectedPlotId: plot.id, mode: 'editing' } })
   }
 
   const handleDeletePlot = () => {
@@ -83,15 +80,14 @@ export function LandPlotsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 font-sans py-4 animate-in fade-in duration-500">
+    <div className="max-w-7xl space-y-6 font-sans py-4 animate-in fade-in duration-500 text-left ml-0 pl-4">
       {/* Header Section */}
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm transition-all duration-300">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 bg-white p-6 transition-all duration-300">
         <div className="flex items-center gap-4">
-          <div className="p-3 bg-emerald-100/50 rounded-2xl text-emerald-600 shadow-sm border border-emerald-200">
+          <div className="p-3 bg-emerald-100/50 rounded-2xl text-emerald-600">
             <LayoutGridIcon className="w-8 h-8" />
           </div>
-          <div>
+          <div className="text-left">
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Quản lý lô đất</h1>
             <p className="text-gray-500 mt-0.5 font-medium text-sm">
               Quản lý danh sách và thông tin các khu vực canh tác
@@ -101,7 +97,7 @@ export function LandPlotsPage() {
         <div>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-md active:scale-95 group"
+            className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all active:scale-95 group"
           >
             <PlusIcon className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
             Tạo lô đất mới
@@ -124,7 +120,7 @@ export function LandPlotsPage() {
         {viewMode === 'table' ? (
           <PlotTable
             plots={filteredPlots}
-            onEdit={setEditingPlot}
+            onEdit={handleEditPlot}
             onDelete={setDeletingPlot}
             onViewMap={handleViewMap}
           />
@@ -134,14 +130,14 @@ export function LandPlotsPage() {
               <PlotCard
                 key={plot.id}
                 plot={plot}
-                onEdit={setEditingPlot}
+                onEdit={handleEditPlot}
                 onDelete={setDeletingPlot}
                 onViewMap={handleViewMap}
               />
             ))}
             {filteredPlots.length === 0 && (
-              <div className="col-span-full bg-white rounded-2xl border border-gray-200 p-16 text-center shadow-sm">
-                <div className="mx-auto w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 text-gray-300 border border-gray-100">
+              <div className="col-span-full bg-white p-16 text-left">
+                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 text-gray-300 border border-gray-100">
                   <LayoutGridIcon className="w-8 h-8 font-thin" />
                 </div>
                 <h3 className="text-lg font-bold text-gray-900">Không tìm thấy lô đất nào phù hợp</h3>
@@ -158,13 +154,6 @@ export function LandPlotsPage() {
         onClose={() => setIsCreateModalOpen(false)}
         onSave={handleCreatePlot}
         existingPlots={plots}
-      />
-
-      <EditPlotModal
-        isOpen={!!editingPlot}
-        onClose={() => setEditingPlot(null)}
-        onSave={handleEditPlot}
-        plot={editingPlot}
       />
 
       <DeletePlotDialog

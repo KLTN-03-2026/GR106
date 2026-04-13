@@ -18,7 +18,7 @@ export function PlotFilters({
   onStatusFilterChange,
 }: PlotFiltersProps) {
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6 font-sans">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-transparent py-4 mb-2 font-sans">
       <div className="flex flex-1 items-center gap-4 w-full sm:w-auto">
         <div className="relative flex-1 sm:max-w-xs">
           <SearchIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -47,17 +47,17 @@ export function PlotFilters({
         </div>
       </div>
 
-      <div className="flex items-center bg-gray-100 p-1 rounded-lg border border-gray-200 font-sans">
+      <div className="flex items-center bg-gray-100 p-1 rounded-lg font-sans">
         <button
           onClick={() => onViewModeChange('table')}
-          className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-white text-emerald-700' : 'text-gray-500 hover:text-gray-700'}`}
           title="Xem dạng bảng"
         >
           <ListIcon className="w-4 h-4" />
         </button>
         <button
           onClick={() => onViewModeChange('card')}
-          className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`p-1.5 rounded-md transition-all ${viewMode === 'card' ? 'bg-white text-emerald-700' : 'text-gray-500 hover:text-gray-700'}`}
           title="Xem dạng thẻ"
         >
           <LayoutGridIcon className="w-4 h-4" />

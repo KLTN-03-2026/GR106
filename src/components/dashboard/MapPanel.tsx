@@ -1,8 +1,8 @@
 import { useRef, useCallback } from "react";
-import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap } from "@react-google-maps/api";
 import { ChevronDown, Maximize2, RefreshCw, Plus, Minus } from "lucide-react";
 import { Button } from "../ui/button";
-import { ENV } from "../../config/env";
+import { useGoogleMaps } from "../../providers/GoogleMapsProvider";
 
 const DEFAULT_CENTER = { lat: 16.0544, lng: 108.2022 };
 const DEFAULT_ZOOM = 13;
@@ -11,9 +11,7 @@ export default function MapPanel() {
   const mainMapRef = useRef<google.maps.Map | null>(null);
   const miniMapRef = useRef<google.maps.Map | null>(null);
 
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: ENV.GOOGLE_MAP_KEY,
-  });
+  const { isLoaded } = useGoogleMaps();
 
   const onMainMapLoad = useCallback((map: google.maps.Map) => {
     mainMapRef.current = map;

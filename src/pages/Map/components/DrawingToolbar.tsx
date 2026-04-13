@@ -7,6 +7,7 @@ interface DrawingToolbarProps {
   onModeChange: (mode: DrawingMode) => void
   onSave: () => void
   onCancel: () => void
+  onDeleteClick: () => void
   canSave: boolean
   hasBoundary: boolean
 }
@@ -16,6 +17,7 @@ export function DrawingToolbar({
   onModeChange,
   onSave,
   onCancel,
+  onDeleteClick,
   canSave,
   hasBoundary,
 }: DrawingToolbarProps) {
@@ -48,11 +50,7 @@ export function DrawingToolbar({
 
           {hasBoundary && (
             <button
-              onClick={() => {
-                if (window.confirm('Bạn có chắc chắn muốn xóa ranh giới này?')) {
-                  onSave() // Logic xóa ranh giới sẽ được xử lý qua onSave với mảng rỗng
-                }
-              }}
+              onClick={onDeleteClick}
               className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl text-sm font-bold hover:bg-red-100 transition-all active:scale-95 border border-red-100"
             >
               <Trash2Icon className="w-4 h-4" />

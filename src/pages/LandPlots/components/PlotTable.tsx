@@ -17,7 +17,7 @@ export function PlotTable({
 }: PlotTableProps) {
   if (plots.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center shadow-sm font-sans">
+      <div className="bg-transparent py-12 text-left font-sans">
         <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
           <MapIcon className="w-6 h-6 text-gray-400" />
         </div>
@@ -32,10 +32,10 @@ export function PlotTable({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden font-sans">
+    <div className="bg-transparent overflow-hidden font-sans text-left">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm text-gray-600">
-          <thead className="bg-gray-50 text-gray-700 border-b border-gray-200">
+          <thead className="bg-gray-50/50 text-gray-700">
             <tr>
               <th className="px-6 py-4 font-bold uppercase tracking-wider text-xs">Tên lô đất</th>
               <th className="px-6 py-4 font-bold uppercase tracking-wider text-xs">Diện tích (ha)</th>
@@ -77,7 +77,7 @@ export function PlotTable({
                     <button
                       onClick={() => onEdit(plot)}
                       className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-                      title="Chỉnh sửa"
+                      title="Chỉnh sửa ranh giới"
                     >
                       <Edit2Icon className="w-4.5 h-4.5" />
                     </button>
