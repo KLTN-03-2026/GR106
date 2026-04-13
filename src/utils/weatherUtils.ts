@@ -1,21 +1,19 @@
-export const translateWeather = (condition: string): string => {
-  const mapping: Record<string, string> = {
-    'Clear': 'Trời quang đãng (Clear)',
-    'Clouds': 'Nhiều mây (Clouds)',
-    'Rain': 'Có mưa (Rain)',
-    'Drizzle': 'Mưa phùn (Drizzle)',
-    'Thunderstorm': 'Dông bão (Thunderstorm)',
-    'Snow': 'Có tuyết (Snow)',
-    'Mist': 'Sương mù (Mist)',
-    'Smoke': 'Khói (Smoke)',
-    'Haze': 'Sương mờ (Haze)',
-    'Dust': 'Bụi (Dust)',
-    'Fog': 'Sương mù dày (Fog)',
-    'Sand': 'Bụi cát (Sand)',
-    'Ash': 'Tro núi lửa (Ash)',
-    'Squall': 'Gió giật (Squall)',
-    'Tornado': 'Lốc xoáy (Tornado)',
-  };
+import weatherBg from "../assets/weather-bg.png";
+import rainyBg from "../assets/Rainy.png";
 
-  return mapping[condition] || condition;
+export const translateWeather = (condition: string): string => {
+  const rainConditions = ["Rain", "Drizzle", "Thunderstorm"];
+  if (rainConditions.includes(condition)) {
+    return "Có mưa";
+  }
+  return "Trời nắng";
 };
+
+export const getWeatherBackground = (condition: string): string => {
+  const rainConditions = ["Rain", "Drizzle", "Thunderstorm"];
+  if (rainConditions.includes(condition)) {
+    return rainyBg;
+  }
+  return weatherBg;
+};
+

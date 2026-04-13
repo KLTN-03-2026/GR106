@@ -4,7 +4,6 @@ import {
   Droplets,
   Sun,
   CloudRain,
-  CloudLightning,
   Snowflake,
 } from "lucide-react";
 import { useWeather } from "../../hooks/useWeather";
@@ -21,16 +20,15 @@ interface WeatherCardProps {
 // Hàm phụ trợ chọn icon Lucide dựa trên mô tả thời tiết (để icon đồng bộ với text)
 const getWeatherIcon = (description: string) => {
   const desc = description.toLowerCase();
-  if (desc.includes("mưa dông") || desc.includes("thunderstorm"))
-    return <CloudLightning size={13} />;
-  if (desc.includes("mưa") || desc.includes("rain") || desc.includes("drizzle"))
+  if (desc.includes("mưa") || desc.includes("rain") || desc.includes("drizzle") || desc.includes("thunderstorm"))
     return <CloudRain size={13} />;
   if (desc.includes("tuyết") || desc.includes("snow"))
     return <Snowflake size={13} />;
-  if (desc.includes("quang") || desc.includes("clear"))
+  if (desc.includes("nắng") || desc.includes("quang") || desc.includes("clear"))
     return <Sun size={13} />;
   return <Cloud size={13} />; // Mặc định là mây
 };
+
 
 export default function WeatherCard({
   isRainy: defaultIsRainy = false,
