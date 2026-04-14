@@ -28,17 +28,36 @@ public class RlsDataSourceWrapper implements DataSource {
         return conn;
     }
 
+    //v1
+//    private void applyRls(Connection conn) throws SQLException {
+//        String userId = RlsContext.hasUser()
+//                ? RlsContext.getUserId().toString() : "";
+//        String farmId = RlsContext.hasFarm()
+//                ? RlsContext.getFarmId().toString() : "";
+//
+//        // Dùng set_config thay vì SET — tránh SQL injection
+//        try (PreparedStatement ps = conn.prepareStatement(
+//                "SELECT set_config('app.current_user_id', ?, false)," +
+//                        "       set_config('app.current_farm_id', ?, false)," +
+//                        "       set_config('app.bypass_rls', 'false', false)"
+//        )) {
+//            ps.setString(1, userId);
+//            ps.setString(2, farmId);
+//            ps.execute();
+//        }
+//    }
+
+    //v2 -> tránh ghi đè lên rls util
     private void applyRls(Connection conn) throws SQLException {
         String userId = RlsContext.hasUser()
                 ? RlsContext.getUserId().toString() : "";
         String farmId = RlsContext.hasFarm()
                 ? RlsContext.getFarmId().toString() : "";
 
-        // Dùng set_config thay vì SET — tránh SQL injection
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT set_config('app.current_user_id', ?, false)," +
-                        "       set_config('app.current_farm_id', ?, false)," +
-                        "       set_config('app.bypass_rls', 'false', false)"
+                "SELECT set_config('app.current_user_id', ?, true)," +
+                        "       set_config('app.current_farm_id', ?, true)"
+                // KHÔNG set bypass_rls ở đây — để RlsUtils tự quản lý
         )) {
             ps.setString(1, userId);
             ps.setString(2, farmId);
