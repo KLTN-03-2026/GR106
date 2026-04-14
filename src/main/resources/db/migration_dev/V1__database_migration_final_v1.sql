@@ -810,7 +810,7 @@ CREATE TABLE plan_stages (
     order_index         SMALLINT     NOT NULL,
     start_date          DATE         NOT NULL,
     end_date            DATE,
-    ai_suggestion_cache JSONB,
+    ai_suggestion_cache TEXT,
     ai_cached_at        TIMESTAMP,
     CONSTRAINT chk_template_needs_crop_stage CHECK (
         source = 'CUSTOM' OR crop_stage_id IS NOT NULL
