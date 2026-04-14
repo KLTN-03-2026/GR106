@@ -1,86 +1,115 @@
-# Báo cáo tích hợp API (Cập nhật 13/04/2026)
+# Báo cáo Tài liệu & Luồng xử lý API (FarmerAI)
+**Ngày cập nhật**: 14/04/2026
 
-Dự án đã tích hợp thành công các API cốt lõi. Dưới đây là danh sách chi tiết các endpoint đã được triển khai, xác thực và đồng bộ với hệ thống validation (Zod).
+Dự án FarmerAI được xây dựng trên kiến trúc **Multi-tenant**, đảm bảo tính cô lập dữ liệu giữa các trang trại và tính bảo mật cao thông qua cơ chế quản lý Token kép.
 
 ---
 
-## 1. Auth Controller (Xác thực & Bảo mật)
-Quản lý danh tính người dùng và bảo mật phiên làm việc.
-- **Service file**: `src/services/authService.ts`
-- **Trạng thái**: Hoàn tất 100%
+## Chương 1: Kiến trúc & Cơ chế xử lý API
 
-| Method | Endpoint | Mô tả | Data Payload |
+### 1.1. Tầng Client API (Axios Configuration)
+Ứng dụng sử dụng một instance `axios` tập trung (`src/config/axios.ts`) với các interceptor để quản lý vòng đời của một request.
+
+- **Request Interceptor**: Tự động lấy `accessToken` từ LocalStorage và đính kèm vào Header `Authorization: Bearer <Token>`. Cơ chế này được bỏ qua đối với các "Public Routes" như Login/Register.
+- **Response Interceptor (Silent Refresh)**: 
+    - Khi nhận mã lỗi **401 (Unauthorized)**, hệ thống tự động tạm dừng các request đang chờ.
+    - Một yêu cầu làm mới token (`/api/v1/auth/refresh`) sẽ được gửi ngầm (Silent).
+    - Nếu thành công, token mới được lưu vào máy khách, và các request cũ được "retry" tự động mà người dùng không nhận ra sự gián đoạn.
+    - Nếu thất bại, người dùng sẽ bị đăng xuất về trang `/login`.
+
+### 1.2. Tầng Validation & Schema (Zod)
+Mọi dữ liệu trao đổi với API đều đi qua lớp bảo vệ `Zod` (`src/schemas/`):
+- **Input Validation**: Dữ liệu người dùng nhập (Form) được kiểm tra định dạng (email, độ dài mật khẩu, kiểu dữ liệu tọa độ) trước khi gửi đi.
+- **Output Sanitization**: Dữ liệu phản hồi từ Server được "parse" lại qua Schema để đảm bảo tính nhất quán của kiểu dữ liệu (ví dụ: chuyển định dạng ngày tháng, xử lý giá trị null).
+
+---
+
+## Chương 2: Danh mục API chi tiết (Endpoint Specification)
+
+### 2.1. Module Xác thực (Auth)
+Quản lý phiên làm việc và bảo mật tài khoản.
+
+| Method | Endpoint | Mô tả | Payload Đặc trưng |
 | :--- | :--- | :--- | :--- |
-| POST | `/api/v1/auth/register` | Đăng ký tài khoản | `email, password, fullName` |
-| POST | `/api/v1/auth/login` | Đăng nhập hệ thống | `email, password` |
-| POST | `/api/v1/auth/verify` | Xác thực tài khoản (OTP/Token) | `token` |
-| POST | `/api/v1/auth/refresh` | Làm mới Token (Silent Refresh) | `refreshToken` |
-| POST | `/api/v1/auth/forgot-password`| Yêu cầu khôi phục mật khẩu | `email` |
-| POST | `/api/v1/auth/reset-password` | Đặt lại mật khẩu mới | `token, newPassword` |
-| POST | `/api/v1/auth/change-password`| Đổi mật khẩu trong Profile | `oldPassword, newPassword` |
+| POST | `/api/v1/auth/register` | Đăng ký tài khoản mới | `email, password, fullName` |
+| POST | `/api/v1/auth/login` | Đăng nhập lấy JWT | `email, password` |
+| POST | `/api/v1/auth/verify` | Kiểm tra token hợp lệ | `token` |
+| POST | `/api/v1/auth/refresh` | Làm mới phiên làm việc | `refreshToken` |
 
----
+### 2.2. Module Trang trại (Farm - Multi-tenant)
+Cốt lõi của hệ thống quản lý nhiều trang trại.
 
-## 2. Farm API (Quản lý Trang trại - Multi-tenant)
-Hệ thống hỗ trợ làm việc với nhiều trang trại đồng thời.
-- **Service/Store**: `src/services/farmService.ts`, `src/store/farmSlice.ts`
-- **Trạng thái**: Hoàn tất 100%
-
-| Method | Endpoint | Mô tả | Ghi chú |
+| Method | Endpoint | Mô tả | Payload Đặc trưng |
 | :--- | :--- | :--- | :--- |
-| GET | `/api/v1/farms` | Danh sách farm sở hữu | Trả về thông tin đầy đủ |
-| POST | `/api/v1/farms` | Tạo trang trại mới | Payload: `farmName, description` |
-| GET | `/api/v1/farms/{id}` | Lấy chi tiết 1 trang trại | Dùng cho trang Cài đặt Farm |
-| GET | `/api/v1/farms/summary` | Tóm tắt danh sách Farm | Dùng cho Sidebar/Farm Switcher |
-| POST | `/api/v1/farms/{id}/select` | **Chọn context làm việc** | Trả về **Farm Token** đặc thù cho Farm đó |
+| GET | `/api/v1/farms` | Lấy danh sách trang trại hiện có của user | - |
+| POST | `/api/v1/farms` | Tạo mới một trang trại | `farmName, description` |
+| POST | `/api/v1/farms/{farmId}/select` | **Chọn farm (Context Switch)** | Trả về `farmToken` |
+| GET | `/api/v1/farms/summary` | Lấy thông tin tóm tắt (dashboard) | - |
 
----
+### 2.3. Module Lô đất & Bản đồ (Plot)
+Quản lý dữ liệu địa lý trực thuộc mỗi trang trại.
 
-## 3. Plot API (Quản lý Lô đất)
-Quản lý dữ liệu không gian và trạng thái canh tác.
-- **Store file**: `src/store/plotSlice.ts`
-- **Trạng thái**: Cơ bản (Đang cập nhật Update/Delete)
-
-| Method | Endpoint | Mô tả | Ghi chú |
+| Method | Endpoint | Mô tả | Payload Đặc trưng |
 | :--- | :--- | :--- | :--- |
-| GET | `/api/v1/plots` | Lấy danh sách lô đất | Trả về GeoJSON coordinates |
-| POST | `/api/v1/plots` | Tạo lô đất mới | Cần `plotName, geometry, areaHa` |
-| PATCH | `/api/v1/plots/{id}` | Cập nhật ranh giới/tên | *Placeholder (Chờ tích hợp UI Map)* |
-| DELETE| `/api/v1/plots/{id}` | Xóa lô đất | *Placeholder* |
+| GET | `/api/v1/plots` | Lấy danh sách lô đất của farm | Trả về thông tin và tọa độ (GeoJSON) |
+| POST | `/api/v1/plots` | Tạo lô đất mới | `plotName, geometry, description` |
 
----
+### 2.4. Module Gói dịch vụ (Subscription)
+Quản lý subscription của các trang trại.
 
-## 4. Subscription & Payment (Thanh toán Gói cước)
-Tích hợp cổng SePay và quản lý đặc quyền tài khoản.
-- **Services**: `src/services/subscription/`, `src/services/payment/`
-- **Trạng thái**: Hoàn tất 100%
-
-| Method | Endpoint | Mô tả | Ghi chú |
+| Method | Endpoint | Mô tả | Payload Đặc trưng |
 | :--- | :--- | :--- | :--- |
-| GET | `/api/v1/subscriptions` | Danh sách gói cước (Pricing) | Phân tầng Free/Basic/Pro/Enterprise |
-| GET | `/api/v1/subscriptions/current` | Gói cước Active của Farm | Kiểm tra hạn dùng & hạn mức |
-| GET | `/api/v1/subscriptions/history` | Lịch sử giao dịch | Danh sách các lần nâng cấp |
-| POST | `/api/v1/payment/create` | Tạo lệnh thanh toán | Trả về Form SePay (OrderAmount, Sig...) |
-| GET | `/api/v1/payments/result/{code}`| Kiểm tra kết quả thanh toán | Dùng để verify trạng thái đơn hàng |
+| GET | `/api/v1/subscriptions` | Lấy danh mục các gói subscription | - |
+| GET | `/api/v1/subscriptions/current`| Lấy gói subscription hiện tại | - |
+| GET | `/api/v1/subscriptions/history`| Lấy lịch sử biến động dịch vụ | - |
+
+### 2.5. Module Thanh toán (Payment)
+Tạo thanh toán qua SePay và nhận webhooks (IPN).
+
+| Method | Endpoint | Mô tả | Payload Đặc trưng |
+| :--- | :--- | :--- | :--- |
+| POST | `/api/v1/payment/create` | Tạo link thanh toán Subscription qua SePay | `subscriptionPlanId, billingCycle` |
+| POST | `/api/v1/payment/ipn` | IPN callback từ SePay (server-to-server) | `order, transaction` |
 
 ---
 
-## 5. External Services (Dịch vụ bên thứ 3)
-Các tích hợp bổ trợ cho Dashboard.
+## Chương 3: Các Luồng xử lý nghiệp vụ chính
 
-- **Weather API**: Lấy dữ liệu thời tiết thời gian thực.
-    - **Endpoint**: `https://api.openweathermap.org/data/2.5/weather`
-    - **Method**: GET
-    - **Params**: `lat, lon, appid, units=metric`
+### 3.1. Luồng Multi-tenant Context Switch
+Đây là luồng quan trọng nhất để ứng dụng biết đang làm việc trên dữ liệu nào.
+1.  Người dùng chọn một Farm từ danh sách.
+2.  App gọi API `/select` với ID trang trại đó.
+3.  Server trả về một **Farm Token** (đã được mã hóa ID Farm và vai trò của người dùng).
+4.  App lưu Farm Token và đính kèm vào mọi request liên quan đến Lô đất, Cảm biến, Thành viên sau đó.
+5.  **Smart Security**: Hệ thống tự động phát hiện `farmId` từ URL để kích hoạt lại context khi người dùng tải lại trang.
+
+### 3.2. Luồng Thanh toán & Nâng cấp (SePay Workflow)
+1.  **Selection**: Người dùng chọn gói (`Basic/Pro`) và chu kỳ (`Tháng/Năm`).
+2.  **Creation**: Gọi `/api/v1/payment/create`, Server sinh URL thanh toán SePay.
+3.  **Redirection**: Người dùng được chuyển tới giao diện thanh toán SePay.
+4.  **IPN Callback**: SePay gọi ngầm tới Server dự án thông qua `/api/v1/payment/ipn` để xác nhận tiền đã vào tài khoản khách hàng.
+5.  **Return/Verification**: Sau khi thanh toán trong hệ thống, Client liên tục lắng nghe thay đổi thông qua API `/api/v1/subscriptions/current` để tự động cập nhật UI trạng thái dịch vụ mới.
 
 ---
 
-## 6. Luồng Multi-tenant & Security (Farm Token Flow)
-Hệ thống sử dụng cơ chế bảo mật kép để đảm bảo cô lập dữ liệu:
-1.  **User Authentication**: Đăng nhập lấy User JWT Token.
-2.  **Context Selection**: Gọi `/select` để chuyển đổi context sang một Farm cụ thể.
-3.  **Farm Token Usage**: Mọi request sau đó (Plots, Members, Map) PHẢI đính kèm Farm Token.
-4.  **Auto-Context**: Redux store và URL params được ưu tiên để tự động chọn đúng Farm context khi reload trang.
+## Chương 4: Quy ước Phản hồi & Xử lý lỗi
 
-> [!IMPORTANT]
-> Toàn bộ logic API đều đi qua `axiosInstance` với cơ chế **Auto-Refresh Token** khi access token hết hạn mà không làm gián đoạn trải nghiệm người dùng.
+### 4.1. Cấu trúc Response chuẩn
+```json
+{
+  "success": true,
+  "code": 200,
+  "message": "Thao tác thành công",
+  "data": { ... },
+  "timestamp": "2026-04-13T..."
+}
+```
+
+### 4.2. Xử lý lỗi tập trung
+- **Lỗi 400**: Sai validation (Hiển thị thông báo đỏ từ Zod).
+- **Lỗi 401**: Hết hạn phiên (Thực hiện Silent Refresh).
+- **Lỗi 403**: Không đủ quyền truy cập (Ví dụ: Worker cố gắng nâng cấp gói).
+- **Lỗi 500**: Lỗi hệ thống server (Hiển thị Toast thông báo bảo trì).
+
+---
+** FarmerAI Team - Advanced Coding Agent System **

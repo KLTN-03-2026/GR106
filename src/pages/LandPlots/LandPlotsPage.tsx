@@ -49,13 +49,17 @@ export function LandPlotsPage() {
   }, [plots, searchTerm, statusFilter])
 
   // Handlers cho CRUD
-  const handleCreatePlot = (plotData: any) => {
+  const handleCreatePlot = async (plotData: any) => {
     try {
-      dispatch(createPlot(plotData))
+      await dispatch(createPlot(plotData)).unwrap()
       setIsCreateModalOpen(false)
       toast.success('Tạo lô đất mới thành công')
     } catch (err: any) {
-      toast.error(err.message || 'Không thể tạo lô đất')
+      if (Array.isArray(err)) {
+        toast.error(err[0]?.message || 'Lỗi dữ liệu đầu vào')
+      } else {
+        toast.error(err.message || err || 'Không thể tạo lô đất')
+      }
     }
   }
 

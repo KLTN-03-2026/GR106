@@ -29,12 +29,10 @@ export function MapPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
-  // Fetch dữ liệu nếu chưa có
+  // Fetch dữ liệu khi mount
   useEffect(() => {
-    if (plots.length === 0 && !loading) {
-      dispatch(fetchPlots())
-    }
-  }, [dispatch, plots.length, loading])
+    dispatch(fetchPlots())
+  }, [dispatch])
 
   // Xử lý logic từ trang LandPlots chuyển qua
   useEffect(() => {

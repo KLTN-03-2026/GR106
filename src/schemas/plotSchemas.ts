@@ -7,20 +7,22 @@ export const geometrySchema = z.object({
 });
 
 // Schema cho một Plot đơn lẻ
+
+// có thê vẽ or không
 export const plotSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
-  areaHa: z.number(),
+  areaHa: z.number().optional().nullable(),
   status: z.enum(['ACTIVE', 'INACTIVE']),
-  description: z.string().optional(),
-  geometry: geometrySchema,
+  description: z.string().optional().nullable(),
+  geometry: geometrySchema.optional().nullable(),
 });
 
 // Schema cho Payload tạo Plot mới
 export const createPlotSchema = z.object({
   plotName: z.string().min(1, 'Tên lô đất không được để trống'),
-  geometry: geometrySchema,
-  description: z.string().optional(),
+  geometry: geometrySchema.optional().nullable(),
+  description: z.string().optional().nullable(),
 });
 
 // Base Response Schema
