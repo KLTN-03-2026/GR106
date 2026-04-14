@@ -55,6 +55,9 @@ public class FarmService {
         UserEntity owner = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
+        if(farmRepository.existsByOwner_IdAndName(userId, request.getFarmName()))
+            throw new AppException(ErrorCode.FARM_ALREADY_EXISTS);
+
         Instant now = Instant.now();
 
         // 1. Tạo farm
