@@ -54,7 +54,7 @@ export function PlotTable({
                   {plot.name}
                 </td>
                 <td className="px-6 py-4 font-medium">
-                  {plot.areaHa.toLocaleString('vi-VN')}
+                  {plot.areaHa == null ? 0 : plot.areaHa.toLocaleString('vi-VN')}
                 </td>
                 <td className="px-6 py-4">
                   <PlotStatusBadge status={plot.status} />

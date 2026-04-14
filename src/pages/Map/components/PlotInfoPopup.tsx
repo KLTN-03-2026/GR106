@@ -38,7 +38,7 @@ export function PlotInfoPopup({
         <div className="bg-gray-50 px-2 py-1.5 rounded-lg border border-gray-100">
           <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Diện tích</p>
           <div className="flex items-baseline gap-0.5">
-            <span className="text-xs font-black text-emerald-700">{plot.areaHa.toLocaleString('vi-VN')}</span>
+            <span className="text-xs font-black text-emerald-700">{plot.areaHa == null ? 0 : plot.areaHa.toLocaleString('vi-VN')}</span>
             <span className="text-[8px] font-bold text-emerald-500">ha</span>
           </div>
         </div>

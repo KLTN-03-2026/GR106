@@ -24,7 +24,7 @@ export function EditPlotModal({
   useEffect(() => {
     if (plot) {
       setName(plot.name)
-      setAreaHa(plot.areaHa.toString())
+      setAreaHa(plot.areaHa == null ? '' : plot.areaHa.toString())
       setDescription(plot.description || '')
       setStatus(plot.status)
       setError('')
@@ -154,7 +154,7 @@ export function EditPlotModal({
             <div className="flex flex-col gap-1">
               <span className="font-bold text-blue-900 leading-tight">Lưu ý ranh giới đất</span>
               <p className="text-sm text-blue-700 leading-relaxed font-medium">
-                Không thể chỉnh sửa ranh giới lô đất từ màn hình này. Vui lòng sử dụng chức năng 
+                Không thể chỉnh sửa ranh giới lô đất từ màn hình này. Vui lòng sử dụng chức năng
                 <span className="font-bold text-blue-800 decoration-blue-300 underline underline-offset-4 ml-1">Bản đồ lô đất</span>.
               </p>
             </div>
