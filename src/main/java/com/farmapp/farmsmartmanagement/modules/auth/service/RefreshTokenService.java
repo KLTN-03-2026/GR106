@@ -2,6 +2,7 @@ package com.farmapp.farmsmartmanagement.modules.auth.service;
 
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
+import com.farmapp.farmsmartmanagement.common.util.RlsUtils;
 import com.farmapp.farmsmartmanagement.modules.auth.dto.response.TokenResponse;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.RefreshTokenEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.security.JwtProvider;
@@ -23,6 +24,7 @@ public class RefreshTokenService {
     private final RefreshTokenRepository repo;
     private final JwtProvider jwtProvider;
     private final PermissionService permissionService;
+    private final RlsUtils rlsUtils;
 
     private String hash(String val) {
         try {
@@ -36,49 +38,52 @@ public class RefreshTokenService {
     // CREATE REFRESH TOKEN
     public String create(UUID userId, String userAgent, String ip) {
 
-        String raw = UUID.randomUUID().toString();
+        return rlsUtils.runAsAdmin(() -> {
+                String raw = UUID.randomUUID().toString();
 
-        // set fields
-        var now = Instant.now();
+                // set fields
+                var now = Instant.now();
 
-        RefreshTokenEntity entity = new RefreshTokenEntity();
-        entity.setUserId(userId);
-        entity.setTokenHash(hash(raw));
-        entity.setExpiresAt(now.plusSeconds(7 * 24 * 3600)); // 7 days
-        entity.setUserAgent(userAgent);
-        entity.setIpAddress(ip);
+                RefreshTokenEntity entity = new RefreshTokenEntity();
+                entity.setUserId(userId);
+                entity.setTokenHash(hash(raw));
+                entity.setExpiresAt(now.plusSeconds(7 * 24 * 3600)); // 7 days
+                entity.setUserAgent(userAgent);
+                entity.setIpAddress(ip);
 
-        repo.save(entity);
+                repo.save(entity);
 
-        return raw;
+                return raw;
+            });
     }
 
     // REFRESH (ROTATION + REUSE DETECT)
     @Transactional
     public TokenResponse refresh(String rawToken, String userAgent, String ipAddress) {
+        return rlsUtils.runAsAdmin(()->{
+                String hash = hash(rawToken);
 
-        String hash = hash(rawToken);
+                RefreshTokenEntity token = repo.findByTokenHash(hash)
+                        .orElseThrow(() -> new AppException(ErrorCode.INVALID_REFRESH_TOKEN));
 
-        RefreshTokenEntity token = repo.findByTokenHash(hash)
-                .orElseThrow(() -> new AppException(ErrorCode.INVALID_REFRESH_TOKEN));
+                if (token.getExpiresAt().isBefore(Instant.now())) {
+                    throw new AppException(ErrorCode.REFRESH_TOKEN_EXPIRED);
+                }
 
-        if (token.getExpiresAt().isBefore(Instant.now())) {
-            throw new AppException(ErrorCode.REFRESH_TOKEN_EXPIRED);
-        }
+                if (token.getRevokedAt() != null) {
+                    repo.revokeAll(token.getUserId(), Instant.now());
+                    throw new AppException(ErrorCode.REFRESH_TOKEN_REUSED);
+                }
 
-        if (token.getRevokedAt() != null) {
-            repo.revokeAll(token.getUserId(), Instant.now());
-            throw new AppException(ErrorCode.REFRESH_TOKEN_REUSED);
-        }
+                repo.revoke(hash, Instant.now());
 
-        repo.revoke(hash, Instant.now());
+                // dùng IP/UA mới từ request hiện tại thay vì của token cũ
+                String newRefresh = create(token.getUserId(), userAgent, ipAddress);
 
-        // dùng IP/UA mới từ request hiện tại thay vì của token cũ
-        String newRefresh = create(token.getUserId(), userAgent, ipAddress);
+                List<String> systemRoles = permissionService.loadSystemRoles(token.getUserId());
+                String access = jwtProvider.generateUserToken(token.getUserId(), systemRoles);
 
-        List<String> systemRoles = permissionService.loadSystemRoles(token.getUserId());
-        String access = jwtProvider.generateUserToken(token.getUserId(), systemRoles);
-
-        return new TokenResponse(access, newRefresh);
+                return new TokenResponse(access, newRefresh);
+            });
     }
 }

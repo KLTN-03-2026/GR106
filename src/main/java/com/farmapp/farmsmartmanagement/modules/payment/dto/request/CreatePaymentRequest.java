@@ -11,9 +11,9 @@ import java.util.UUID;
 @Setter
 public class CreatePaymentRequest {
 
-    @NotNull(message = "subscriptionPlanId is required")
+    @NotNull(message = "Chưa chọn gói dịch vụ")
     private UUID subscriptionPlanId;
 
-    @NotNull(message = "billingCycle is required")
+    @NotNull(message = "Chưa chọn thanh toán theo tháng hay năm")
     private BillingCycle billingCycle;
 }

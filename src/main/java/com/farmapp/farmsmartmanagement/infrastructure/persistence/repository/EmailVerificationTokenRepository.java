@@ -7,5 +7,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface EmailVerificationTokenRepository extends JpaRepository<EmailVerificationTokenEntity, UUID> {
+
     Optional<EmailVerificationTokenEntity> findByTokenHash(String tokenHash);
 }

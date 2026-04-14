@@ -1,5 +1,6 @@
 package com.farmapp.farmsmartmanagement.modules.auth.service;
 
+import com.farmapp.farmsmartmanagement.common.util.RlsUtils;
 import com.farmapp.farmsmartmanagement.domain.enums.UserStatus;
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
@@ -20,6 +21,7 @@ import com.farmapp.farmsmartmanagement.modules.auth.event.SendVerifyEmailEvent;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -48,101 +51,109 @@ public class AuthService {
     AppProperties appProperties; // thêm config frontend url
 
     ApplicationEventPublisher eventPublisher;
+    RlsUtils rlsUtils;
 
     // AuthService.java — register
     @Transactional
     public void register(RegisterRequest req) {
 
-        if (userRepository.findByEmail(req.email()).isPresent()) {
-            throw new AppException(ErrorCode.EMAIL_EXISTED);
-        }
+        rlsUtils.runAsAdmin(() ->{
+            if (userRepository.findByEmail(req.email()).isPresent()) {
+                throw new AppException(ErrorCode.EMAIL_EXISTED);
+            }
 
-        UserEntity user = new UserEntity();
-        user.setEmail(req.email());
-        user.setPassword(passwordEncoder.encode(req.password()));
-        user.setFullName(req.fullName());
-        user.setStatus(UserStatus.PENDING);
-        user.setIsLocked(false);
-        userRepository.save(user);
+            UserEntity user = new UserEntity();
+            user.setEmail(req.email());
+            user.setPassword(passwordEncoder.encode(req.password()));
+            user.setFullName(req.fullName());
+            user.setStatus(UserStatus.PENDING);
+            user.setIsLocked(false);
+            userRepository.save(user);
 
-        RoleEntity userRole = roleRepository.findByName("USER")
-                .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
-        userRoleRepository.save(new UserRoleEntity(user, userRole));
+            RoleEntity userRole = roleRepository.findByName("USER")
+                    .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+            userRoleRepository.save(new UserRoleEntity(user, userRole));
 
-        String rawToken = UUID.randomUUID().toString();
-        String hash = HashUtils.sha256(rawToken);
+            String rawToken = UUID.randomUUID().toString();
+            String hash = HashUtils.sha256(rawToken);
 
-        EmailVerificationTokenEntity token = new EmailVerificationTokenEntity();
-        token.setUserId(user.getId());
-        token.setTokenHash(hash);
-        token.setExpiresAt(Instant.now().plusSeconds(15 * 60));
-        emailVerificationTokenRepository.save(token);
+            EmailVerificationTokenEntity token = new EmailVerificationTokenEntity();
+            token.setUserId(user.getId());
+            token.setTokenHash(hash);
+            token.setExpiresAt(Instant.now().plusSeconds(15 * 60));
+            emailVerificationTokenRepository.save(token);
 
-        // KHÔNG gọi email ở đây nữa
-        // Dùng event — gửi sau khi transaction commit xong
-        String link = appProperties.getFrontendUrl() + "/verify-email?token=" + rawToken;
-        eventPublisher.publishEvent(
-                new SendVerifyEmailEvent(this, user.getFullName(), user.getEmail(), link)
-        );
+            // KHÔNG gọi email ở đây nữa
+            // Dùng event — gửi sau khi transaction commit xong
+            String link = appProperties.getFrontendUrl() + "/verify-email?token=" + rawToken;
+            eventPublisher.publishEvent(
+                    new SendVerifyEmailEvent(this, user.getFullName(), user.getEmail(), link)
+            );
+        });
+
     }
 
     @Transactional
     public TokenResponse login(LoginRequest req, String userAgent, String ip) {
+        return rlsUtils.runAsAdmin(()->{
+                UserEntity user = userRepository.findByEmail(req.email())
+                        .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_FOUND));
 
-        UserEntity user = userRepository.findByEmail(req.email())
-                .orElseThrow(() -> new AppException(ErrorCode.EMAIL_NOT_FOUND));
+                if (Boolean.TRUE.equals(user.getIsLocked())) {
+                    throw new AppException(ErrorCode.ACCOUNT_HAS_BEEN_BLOCKED);
+                }
 
-        if (Boolean.TRUE.equals(user.getIsLocked())) {
-            throw new AppException(ErrorCode.ACCOUNT_HAS_BEEN_BLOCKED);
-        }
+                // Check chưa verify email
+                if (user.getStatus() == UserStatus.PENDING) {
+                    throw new AppException(ErrorCode.ACCOUNT_NOT_VERIFIED);
+                }
 
-        // Check chưa verify email
-        if (user.getStatus() == UserStatus.PENDING) {
-            throw new AppException(ErrorCode.ACCOUNT_NOT_VERIFIED);
-        }
+                if (!passwordEncoder.matches(req.password(), user.getPassword())) {
+                    throw new AppException(ErrorCode.UNAUTHORIZED);
+                }
 
-        if (!passwordEncoder.matches(req.password(), user.getPassword())) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
-        }
-
-        refreshTokenRepository.revokeAll(user.getId(), Instant.now());
-        // Load system roles → đưa vào token
-        List<String> systemRoles = permissionRepository.findSystemRoles(user.getId());
-        String access = jwtProvider.generateUserToken(user.getId(), systemRoles);
+                refreshTokenRepository.revokeAll(user.getId(), Instant.now());
+                // Load system roles → đưa vào token
+                List<String> systemRoles = permissionRepository.findSystemRoles(user.getId());
+                String access = jwtProvider.generateUserToken(user.getId(), systemRoles);
 
 
-        String refresh = refreshTokenService.create(user.getId(), userAgent, ip);
+                String refresh = refreshTokenService.create(user.getId(), userAgent, ip);
 
-        return new TokenResponse(access, refresh);
+                return new TokenResponse(access, refresh);
+            });
     }
 
     @Transactional
     public void verify(String rawToken) {
+        rlsUtils.runAsAdmin(() -> {
+            String hash = HashUtils.sha256(rawToken);
+            log.info("RAW TOKEN: [{}]", rawToken);
+            log.info("HASH: [{}]", hash);
 
-        String hash = HashUtils.sha256(rawToken);
+            EmailVerificationTokenEntity token = emailVerificationTokenRepository
+                    .findByTokenHash(hash)
+                    .orElseThrow(() -> new AppException(ErrorCode.INVALID_REQUEST, "Token không hợp lệ"));
 
-        EmailVerificationTokenEntity token = emailVerificationTokenRepository
-                .findByTokenHash(hash)
-                .orElseThrow(() -> new AppException(ErrorCode.INVALID_REQUEST, "Token không hợp lệ"));
+            // Thứ tự: expired → revoked → used
+            if (token.getExpiresAt().isBefore(Instant.now())) {
+                throw new AppException(ErrorCode.INVALID_REQUEST, "Token đã hết hạn");
+            }
+            if (token.getRevokedAt() != null) {
+                throw new AppException(ErrorCode.INVALID_REQUEST, "Token đã bị thu hồi");
+            }
+            if (token.getUsedAt() != null) {
+                throw new AppException(ErrorCode.INVALID_REQUEST, "Token đã được sử dụng");
+            }
 
-        // Thứ tự: expired → revoked → used
-        if (token.getExpiresAt().isBefore(Instant.now())) {
-            throw new AppException(ErrorCode.INVALID_REQUEST, "Token đã hết hạn");
-        }
-        if (token.getRevokedAt() != null) {
-            throw new AppException(ErrorCode.INVALID_REQUEST, "Token đã bị thu hồi");
-        }
-        if (token.getUsedAt() != null) {
-            throw new AppException(ErrorCode.INVALID_REQUEST, "Token đã được sử dụng");
-        }
+            UserEntity user = userRepository.findById(token.getUserId())
+                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        UserEntity user = userRepository.findById(token.getUserId())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+            user.setStatus(UserStatus.ACTIVE);
+            token.setUsedAt(Instant.now());
 
-        user.setStatus(UserStatus.ACTIVE);
-        token.setUsedAt(Instant.now());
-
-        userRepository.save(user);
-        emailVerificationTokenRepository.save(token);
+            userRepository.save(user);
+            emailVerificationTokenRepository.save(token);
+        });
     }
 }

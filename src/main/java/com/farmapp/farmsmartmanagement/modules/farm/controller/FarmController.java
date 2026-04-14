@@ -8,12 +8,10 @@ import com.farmapp.farmsmartmanagement.modules.farm.service.FarmService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -55,15 +53,10 @@ public class FarmController {
             description = "Tạo một farm mới cho user hiện tại",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    @PreAuthorize("hasRole('USER') or hasAuthority('farm:create')")
     @PostMapping
     public ApiResponse<FarmResponse> createFarm(
 
-            @RequestBody(
-                    description = "Thông tin farm cần tạo",
-                    required = true
-            )
-            @Valid @org.springframework.web.bind.annotation.RequestBody CreateFarmRequest request
+            @Valid @RequestBody CreateFarmRequest request
     ){
         return ApiResponse.created(farmService.createFarm(request));
     }
