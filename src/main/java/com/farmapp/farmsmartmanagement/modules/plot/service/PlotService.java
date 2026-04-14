@@ -52,11 +52,15 @@ public class PlotService {
 
         PlotEntity newPlot = new PlotEntity();
 
-        newPlot.setGeometry(geometryFormatToGeometry(request.getGeometry()));
 
-        double areaSquareMeters = newPlot.getGeometry().getArea();
-        double areaHa = areaSquareMeters / 10_000; // 1 ha = 10,000 m²
-        newPlot.setAreaHa(areaHa);
+        if(newPlot.getGeometry() != null){
+
+            newPlot.setGeometry(geometryFormatToGeometry(request.getGeometry()));
+
+            double areaSquareMeters = newPlot.getGeometry().getArea();
+            double areaHa = areaSquareMeters / 10_000; // 1 ha = 10,000 m²
+            newPlot.setAreaHa(areaHa);
+        }
 
 
         newPlot.setName(request.getPlotName());

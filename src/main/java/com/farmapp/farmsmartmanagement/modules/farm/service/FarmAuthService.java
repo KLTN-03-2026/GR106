@@ -11,6 +11,7 @@ import com.farmapp.farmsmartmanagement.modules.auth.service.PermissionCacheServi
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmSelectResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +26,7 @@ public class FarmAuthService {
     private final PermissionCacheService permissionCacheService;
     private final JwtProvider jwtProvider;
 
+    @Transactional
     public FarmSelectResponse selectFarm(UUID userId, UUID farmId) {
 
         // Check owner trước (owner không cần có row farm_members)
