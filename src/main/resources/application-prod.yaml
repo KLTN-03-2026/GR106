@@ -5,7 +5,10 @@ spring:
     password: ${DB_PASSWORD}
 
   flyway:
+    enabled: false
     locations: classpath:db/migration
+
+
 
   data:
     redis:
