@@ -3,7 +3,7 @@ package com.farmapp.farmsmartmanagement.common.response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-public class ResponseUtil {
+public class ResponseUtil<A> {
 
     public static <T> ResponseEntity<ApiResponse<T>> success(T data) {
         return ResponseEntity

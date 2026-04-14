@@ -30,6 +30,7 @@ public class CropController {
     }
 
 
+    // ------------------ ADMIN ----------------------
     @PostMapping("/api/v1/crop-type")
     public ResponseEntity<ApiResponse<CropTypeResponse>> createCropType(
             @RequestBody @Valid CreateCropTypeRequest request
@@ -38,6 +39,7 @@ public class CropController {
                 .created(cropService.createCropType(request));
     }
 
+    // ------------------ ADMIN ----------------------
     @PostMapping("/api/v1/crop")
     public ResponseEntity<ApiResponse<CropResponse>> createSystemCrop(
             @RequestBody @Valid CreateSystemCropRequest request
@@ -46,6 +48,7 @@ public class CropController {
                 .created(cropService.createSystemCrop(request));
     }
 
+    // ------------------ ADMIN ----------------------
     @DeleteMapping("/api/v1/crop-type/{cropTypeId}")
     public ResponseEntity<ApiResponse<Void>> deleteCropType(
             @PathVariable("cropTypeId") UUID cropTypeId

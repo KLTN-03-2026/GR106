@@ -1,8 +1,11 @@
 package com.farmapp.farmsmartmanagement.modules.plot.controller;
 
+import com.farmapp.farmsmartmanagement.common.annotation.RequiresFarmToken;
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
+import com.farmapp.farmsmartmanagement.common.response.ResponseUtil;
 import com.farmapp.farmsmartmanagement.infrastructure.security.UserPrincipal;
 import com.farmapp.farmsmartmanagement.modules.plot.dto.request.CreatePlotRequest;
+import com.farmapp.farmsmartmanagement.modules.plot.dto.request.UpdatePlotRequest;
 import com.farmapp.farmsmartmanagement.modules.plot.dto.response.PlotResponse;
 import com.farmapp.farmsmartmanagement.modules.plot.service.PlotService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,10 +16,12 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/plots")
@@ -32,9 +37,13 @@ public class PlotController {
             summary = "Lấy danh sách lô đất",
             description = "API trả về toàn bộ lô đất trong hệ thống"
     )
+    @RequiresFarmToken
     @GetMapping
-    public ApiResponse<List<PlotResponse>> getAllPlots() {
-        return ApiResponse.success(plotService.getAllPlots());
+    public ResponseEntity<ApiResponse<List<PlotResponse>>> getAllPlots() {
+        return ResponseUtil
+                .success(
+                        plotService.getAllPlots()
+                );
     }
 
     // ========================= 2. CREATE =========================
@@ -43,19 +52,43 @@ public class PlotController {
             description = "Tạo một plot mới thuộc farm hiện tại",
             security = @SecurityRequirement(name = "bearerAuth")
     )
+    @RequiresFarmToken
     @PostMapping
-    public ApiResponse<PlotResponse> createPlot(
+    public ResponseEntity<ApiResponse<PlotResponse>> createPlot(
             @Parameter(hidden = true)
             @AuthenticationPrincipal UserPrincipal principal,
-
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Thông tin lô đất cần tạo",
-                    required = true
-            )
             @RequestBody @Valid CreatePlotRequest request
     ) {
-        return ApiResponse.created(
-                plotService.createPlot(principal.getFarmId(), request)
+        return ResponseUtil
+                .created(
+                        plotService.createPlot(principal.getFarmId(), request)
+                );
+    }
+
+    @RequiresFarmToken
+    @PatchMapping("/{plotId}")
+    public ResponseEntity<ApiResponse<PlotResponse>> updatePlot(
+            @PathVariable UUID plotId,
+            @RequestBody UpdatePlotRequest request,
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal UserPrincipal principal
+    ){
+        return ResponseUtil.success(
+                plotService.updatePlot(
+                        principal.getFarmId(), plotId, request
+                )
         );
+    }
+
+    @RequiresFarmToken
+    @DeleteMapping("/{plotId}")
+    public ResponseEntity<ApiResponse<Void>> deletePlot(
+            @PathVariable UUID plotId,
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal UserPrincipal principal
+    ){
+        plotService.deletePlot(principal.getFarmId(), plotId);
+
+        return ResponseUtil.noContent();
     }
 }

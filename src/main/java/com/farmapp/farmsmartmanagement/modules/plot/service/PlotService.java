@@ -91,7 +91,9 @@ public class PlotService {
             plot.setStatus(request.getStatus());
         }
 
-        if (request.getDescription() != null) {
+        if (Boolean.TRUE.equals(request.getIsClearDescription())) {
+            plot.setDescription(null);
+        } else if (request.getDescription() != null) {
             plot.setDescription(request.getDescription());
         }
 
@@ -101,11 +103,15 @@ public class PlotService {
 
             double areaSquareMeters = newGeometry.getArea();
             plot.setAreaHa(areaSquareMeters / 10_000);
+        } else if (Boolean.TRUE.equals(request.getIsClearGeometry())) {
+            plot.setGeometry(null);
+            plot.setAreaHa((double) 0);
         }
 
         return plotMapper.toResponse(plot);
     }
 
+    // Chưa cần sử dụng vì đã có hàm update
     @Transactional
     public PlotResponse updateGeometry(UUID plotId, GeometryFormat geometry) {
 
@@ -140,6 +146,8 @@ public class PlotService {
 
         plotRepository.save(plot);
     }
+
+
     private Geometry geometryFormatToGeometry(GeometryFormat geometry) {
         if (geometry != null) {
             GeometryFormat geo = geometry;

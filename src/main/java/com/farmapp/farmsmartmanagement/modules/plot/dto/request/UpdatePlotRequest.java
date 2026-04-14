@@ -20,4 +20,8 @@ public class UpdatePlotRequest {
 
     @Sanitize
     String description;
+
+    Boolean isClearDescription;
+
+    Boolean isClearGeometry;
 }
