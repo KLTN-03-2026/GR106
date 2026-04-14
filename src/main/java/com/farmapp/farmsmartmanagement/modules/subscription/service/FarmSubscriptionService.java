@@ -45,6 +45,7 @@ public class FarmSubscriptionService {
 
     EntityManager entityManager;
 
+    @Transactional
     public List<FarmSubscriptionResponse> getFarmSubscriptionHistory(UUID farmId){
         return farmSubscriptionRepository.findByFarm_Id(farmId)
                 .stream()
@@ -52,6 +53,7 @@ public class FarmSubscriptionService {
                 .toList();
     }
 
+    @Transactional
     public FarmSubscriptionResponse getCurrentFarmSubscription(UUID farmId){
 
         FarmEntity farm = farmRepository.findById(farmId)
