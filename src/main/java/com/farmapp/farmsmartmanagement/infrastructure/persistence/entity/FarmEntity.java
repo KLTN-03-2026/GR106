@@ -3,6 +3,7 @@ package com.farmapp.farmsmartmanagement.infrastructure.persistence.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.util.UUID;
@@ -11,6 +12,7 @@ import java.util.UUID;
 @Table(name = "farms")
 @Getter
 @Setter
+@SQLRestriction("deleted_at IS NULL")
 public class FarmEntity extends BaseEntity {
 
     @Id

@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 
@@ -15,6 +16,7 @@ import java.util.UUID;
 @Table(name = "plans")
 @Getter
 @Setter
+@SQLRestriction("deleted_at IS NULL")
 public class PlanEntity extends BaseEntity {
 
     @Id

@@ -33,7 +33,7 @@ public class RlsUtils {
     }
 
     private void setBypass(boolean bypass) {
-        em.createNativeQuery("SELECT set_config('app.bypass_rls', :val, true)")
+        em.createNativeQuery("SELECT set_config('app.bypass_rls', :val, true)") // true = transaction-local
                 .setParameter("val", bypass ? "true" : "false")
                 .getSingleResult();
     }

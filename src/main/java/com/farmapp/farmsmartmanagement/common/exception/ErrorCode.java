@@ -40,7 +40,8 @@ public enum ErrorCode {
     DEFAULT_SUBSCRIPTION_PLAN_NOT_FOUND(404, "Không tìm thấy gói đăng ký mặc định", HttpStatus.NOT_FOUND),
     FARM_ROLE_NOT_FOUND(404, "Không tìm thấy vai trò trong trang trại", HttpStatus.NOT_FOUND),
     CROP_TYPE_NOT_FOUND(404,"Không tìm thấy loại cây trồng" , HttpStatus.NOT_FOUND),
-    CROP_NOT_FOUND(404, "Không tìm cây trồng" , HttpStatus.NOT_FOUND ),
+    CROP_NOT_FOUND(404, "Không tìm thấy cây trồng" , HttpStatus.NOT_FOUND ),
+    PLOT_NOT_FOUND(404,"Không tìm thấy lô đất" , HttpStatus.NOT_FOUND),
 
 
     // --- Payment conflict ---
