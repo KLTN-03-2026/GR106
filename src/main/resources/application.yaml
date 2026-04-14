@@ -5,10 +5,10 @@ spring:
   application:
     name: farm-smart-management
 
+  profiles:
+    active: dev
+
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -25,7 +25,6 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
-    locations: classpath:db/migration
 
   mail:
     host: ${SMTP_HOST:}
@@ -39,14 +38,6 @@ spring:
           starttls:
             enable: true
             required: true
-
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-#    redis:
-#      host: localhost
-#      port: 6379
 
 springdoc:
   api-docs:
@@ -72,10 +63,9 @@ management:
     mail:
       enabled: false
 
-# ── SePay Payment ────────────────────────────────────────────────────
 payment:
   sepay:
-    merchant-code: ${SEPAY_MERCHANT_CODE}          # ← sửa 672789 → 762965
-    secret-key:    ${SEPAY_SECRET_KEY}# ← lấy từ dashboard
+    merchant-code: ${SEPAY_MERCHANT_CODE}
+    secret-key: ${SEPAY_SECRET_KEY}
     payment-url: ${SEPAY_PAYMENT_URL}
     return-url: ${SEPAY_RETURN_URL}
