@@ -1,75 +1,79 @@
-package com.farmapp.farmsmartmanagement.config.database;
-
-import javax.sql.DataSource;
-import java.io.PrintWriter;
-import java.sql.*;
-import java.util.logging.Logger;
-
-// Không có @Component — được tạo trong DataSourceConfig
-public class RlsDataSourceWrapper implements DataSource {
-
-    private final DataSource dataSource;
-
-    public RlsDataSourceWrapper(DataSource dataSource) {
-        this.dataSource = dataSource;
-    }
-
-    @Override
-    public Connection getConnection() throws SQLException {
-        Connection conn = dataSource.getConnection();
-        applyRls(conn);
-        return conn;
-    }
-
-    @Override
-    public Connection getConnection(String username, String password) throws SQLException {
-        Connection conn = dataSource.getConnection(username, password);
-        applyRls(conn);
-        return conn;
-    }
-
-    //v1
+//package com.farmapp.farmsmartmanagement.config.database;
+//
+//import lombok.extern.slf4j.Slf4j;
+//
+//import javax.sql.DataSource;
+//import java.io.PrintWriter;
+//import java.sql.*;
+//import java.util.logging.Logger;
+//
+//// Không có @Component — được tạo trong DataSourceConfig
+//@Slf4j
+//public class RlsDataSourceWrapper implements DataSource {
+//
+//    private final DataSource dataSource;
+//
+//    public RlsDataSourceWrapper(DataSource dataSource) {
+//        this.dataSource = dataSource;
+//    }
+//
+//    @Override
+//    public Connection getConnection() throws SQLException {
+//        Connection conn = dataSource.getConnection();
+//        applyRls(conn);
+//        return conn;
+//    }
+//
+//    @Override
+//    public Connection getConnection(String username, String password) throws SQLException {
+//        Connection conn = dataSource.getConnection(username, password);
+//        applyRls(conn);
+//        return conn;
+//    }
+//
+//    //v1
+////    private void applyRls(Connection conn) throws SQLException {
+////        String userId = RlsContext.hasUser()
+////                ? RlsContext.getUserId().toString() : "";
+////        String farmId = RlsContext.hasFarm()
+////                ? RlsContext.getFarmId().toString() : "";
+////
+////        // Dùng set_config thay vì SET — tránh SQL injection
+////        try (PreparedStatement ps = conn.prepareStatement(
+////                "SELECT set_config('app.current_user_id', ?, false)," +
+////                        "       set_config('app.current_farm_id', ?, false)," +
+////                        "       set_config('app.bypass_rls', 'false', false)"
+////        )) {
+////            ps.setString(1, userId);
+////            ps.setString(2, farmId);
+////            ps.execute();
+////        }
+////    }
+//
+//    //v2 -> tránh ghi đè lên rls util
 //    private void applyRls(Connection conn) throws SQLException {
 //        String userId = RlsContext.hasUser()
 //                ? RlsContext.getUserId().toString() : "";
 //        String farmId = RlsContext.hasFarm()
 //                ? RlsContext.getFarmId().toString() : "";
 //
-//        // Dùng set_config thay vì SET — tránh SQL injection
+//        log.info("user{}, farm{}",userId,farmId);
 //        try (PreparedStatement ps = conn.prepareStatement(
-//                "SELECT set_config('app.current_user_id', ?, false)," +
-//                        "       set_config('app.current_farm_id', ?, false)," +
-//                        "       set_config('app.bypass_rls', 'false', false)"
+//                "SELECT set_config('app.current_user_id', ?, true)," +
+//                        "       set_config('app.current_farm_id', ?, true)"
+//                // KHÔNG set bypass_rls ở đây — để RlsUtils tự quản lý
 //        )) {
 //            ps.setString(1, userId);
 //            ps.setString(2, farmId);
 //            ps.execute();
 //        }
 //    }
-
-    //v2 -> tránh ghi đè lên rls util
-    private void applyRls(Connection conn) throws SQLException {
-        String userId = RlsContext.hasUser()
-                ? RlsContext.getUserId().toString() : "";
-        String farmId = RlsContext.hasFarm()
-                ? RlsContext.getFarmId().toString() : "";
-
-        try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT set_config('app.current_user_id', ?, true)," +
-                        "       set_config('app.current_farm_id', ?, true)"
-                // KHÔNG set bypass_rls ở đây — để RlsUtils tự quản lý
-        )) {
-            ps.setString(1, userId);
-            ps.setString(2, farmId);
-            ps.execute();
-        }
-    }
-
-    @Override public PrintWriter getLogWriter() throws SQLException { return dataSource.getLogWriter(); }
-    @Override public void setLogWriter(PrintWriter out) throws SQLException { dataSource.setLogWriter(out); }
-    @Override public void setLoginTimeout(int seconds) throws SQLException { dataSource.setLoginTimeout(seconds); }
-    @Override public int getLoginTimeout() throws SQLException { return dataSource.getLoginTimeout(); }
-    @Override public Logger getParentLogger() throws SQLFeatureNotSupportedException { return dataSource.getParentLogger(); }
-    @Override public <T> T unwrap(Class<T> iface) throws SQLException { return dataSource.unwrap(iface); }
-    @Override public boolean isWrapperFor(Class<?> iface) throws SQLException { return dataSource.isWrapperFor(iface); }
-}
+//
+//    @Override public PrintWriter getLogWriter() throws SQLException { return dataSource.getLogWriter(); }
+//    @Override public void setLogWriter(PrintWriter out) throws SQLException { dataSource.setLogWriter(out); }
+//    @Override public void setLoginTimeout(int seconds) throws SQLException { dataSource.setLoginTimeout(seconds); }
+//    @Override public int getLoginTimeout() throws SQLException { return dataSource.getLoginTimeout(); }
+//    @Override public Logger getParentLogger() throws SQLFeatureNotSupportedException { return dataSource.getParentLogger(); }
+//    @Override public <T> T unwrap(Class<T> iface) throws SQLException { return dataSource.unwrap(iface); }
+//    @Override public boolean isWrapperFor(Class<?> iface) throws SQLException { return dataSource.isWrapperFor(iface); }
+//}

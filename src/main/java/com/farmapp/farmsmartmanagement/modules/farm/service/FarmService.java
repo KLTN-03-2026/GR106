@@ -16,6 +16,7 @@ import jakarta.persistence.PersistenceContext;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
@@ -47,6 +49,8 @@ public class FarmService {
     public FarmResponse createFarm(CreateFarmRequest request) {
 
         UUID userId = securityUtils.getCurrentUserId();
+        em.createNativeQuery("SET LOCAL app.current_user_id = '" + userId + "'").executeUpdate();
+        em.createNativeQuery("SET LOCAL app.bypass_rls = 'true'").executeUpdate(); // hoặc dùng RlsUtils
 
         UserEntity owner = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
@@ -60,12 +64,12 @@ public class FarmService {
         farm.setOwner(owner);
         farm.setCreatedBy(owner);
         farm.setCreatedAt(now);
+        // Set RLS cho farm vừa tạo — vì RlsContext chưa có farmId tại thời điểm này
+
+
         farmRepository.save(farm);
 
-        // Set RLS cho farm vừa tạo — vì RlsContext chưa có farmId tại thời điểm này
-        em.createNativeQuery(
-                "SET LOCAL app.current_farm_id = '" + farm.getId() + "'"
-        ).executeUpdate();
+
 
         // 2. Tạo farm_configs
         FarmConfigEntity config = new FarmConfigEntity();
@@ -125,6 +129,7 @@ public class FarmService {
         return farmMapper.toResponse(farm);
     }
 
+    @Transactional
     public List<FarmResponse> getFarms() {
         UUID userId = securityUtils.getCurrentUserId();
         return farmRepository.findAllByOwnerId(userId)
@@ -134,9 +139,9 @@ public class FarmService {
     }
 
 
+    @Transactional
     public List<FarmSummaryResponse> getFarmsSummary() {
         UUID userId = securityUtils.getCurrentUserId();
-
         return farmRepository.findFarmSummariesByUserId(userId)
                 .stream()
                 .map(p -> FarmSummaryResponse.builder()
