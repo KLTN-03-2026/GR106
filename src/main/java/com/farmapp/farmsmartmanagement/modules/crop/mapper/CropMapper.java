@@ -14,6 +14,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Mapper(componentModel = "spring")
@@ -21,6 +22,10 @@ public interface CropMapper {
 
     @Mapping(source = "clonedFrom.id", target = "clonedFromId")
     CropResponse toResponse(CropEntity entity);
+
+    @Mapping(source = "clonedFrom.id", target = "clonedFromId")
+    List<CropResponse> toResponses(List<CropEntity> entity);
+
 
     CropTypeResponse toTypeResponse(CropTypeEntity entity);
 

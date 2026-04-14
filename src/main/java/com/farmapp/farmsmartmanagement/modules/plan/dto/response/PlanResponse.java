@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Getter
@@ -15,10 +16,14 @@ import java.util.UUID;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PlanResponse {
     UUID id;
-    UUID cloned_from_id;
+    UUID farmId;
+    UUID clonedFromId;
     String name;
-    Instant start_date;
-    Instant end_date;
+    LocalDate startDate;
+    LocalDate endDate;
     PlanStatus status;
     String note;
+    UUID createdById;
+    Instant createdAt;
+    Instant deletedAt;
 }

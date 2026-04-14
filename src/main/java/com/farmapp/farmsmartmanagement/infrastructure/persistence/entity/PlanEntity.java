@@ -28,6 +28,14 @@ public class PlanEntity extends BaseEntity {
     @JoinColumn(name = "farm_id", nullable = false)
     private FarmEntity farm;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "crop_id", nullable = false)
+    private CropEntity crop;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cloned_from_id")
+    private PlanEntity clonedFrom;
+
     @Column(nullable = false)
     private String name;
 
@@ -42,5 +50,15 @@ public class PlanEntity extends BaseEntity {
     @Column(columnDefinition = "plan_status")
     private PlanStatus status;
 
+    @Column(name = "notes")
     private String notes;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by",nullable = false)
+    private UserEntity createdBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deleted_by")
+    private UserEntity deletedBy;
+
 }

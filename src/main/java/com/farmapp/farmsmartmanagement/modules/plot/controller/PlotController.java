@@ -69,7 +69,7 @@ public class PlotController {
     @PatchMapping("/{plotId}")
     public ResponseEntity<ApiResponse<PlotResponse>> updatePlot(
             @PathVariable UUID plotId,
-            @RequestBody UpdatePlotRequest request,
+            @RequestBody @Valid UpdatePlotRequest request,
             @Parameter(hidden = true)
             @AuthenticationPrincipal UserPrincipal principal
     ){

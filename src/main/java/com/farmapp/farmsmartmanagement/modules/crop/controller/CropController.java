@@ -2,6 +2,7 @@ package com.farmapp.farmsmartmanagement.modules.crop.controller;
 
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
 import com.farmapp.farmsmartmanagement.common.response.ResponseUtil;
+import com.farmapp.farmsmartmanagement.domain.enums.CropScope;
 import com.farmapp.farmsmartmanagement.modules.crop.dto.request.CreateCropTypeRequest;
 import com.farmapp.farmsmartmanagement.modules.crop.dto.request.CreateSystemCropRequest;
 import com.farmapp.farmsmartmanagement.modules.crop.dto.response.CropResponse;
@@ -23,10 +24,17 @@ import java.util.UUID;
 public class CropController {
     CropService cropService;
 
+    //--------------------- PUBLIC ------------------------------
     @GetMapping("/api/v1/crop-type")
     public ResponseEntity<ApiResponse<List<CropTypeResponse>>> getAllCropType() {
         return ResponseUtil
                 .success(cropService.getAllCropTypes());
+    }
+
+    // ---------------------------- PUBLIC ----------------------------
+    @GetMapping("/api/v1/crops")
+    public ResponseEntity<ApiResponse<List<CropResponse>>> getAllSystemCrops() {
+       return  ResponseUtil.success(cropService.getAllSystemCrops());
     }
 
 
@@ -40,7 +48,7 @@ public class CropController {
     }
 
     // ------------------ ADMIN ----------------------
-    @PostMapping("/api/v1/crop")
+    @PostMapping("/api/v1/crops")
     public ResponseEntity<ApiResponse<CropResponse>> createSystemCrop(
             @RequestBody @Valid CreateSystemCropRequest request
     ) {

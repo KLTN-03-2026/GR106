@@ -45,7 +45,17 @@ public class CropService {
                 .toList();
     }
 
+    @Transactional
+    public List<CropResponse> getAllSystemCrops() {
+        return rlsUtils.runAsAdmin(() -> cropMapper.toResponses(
+                cropRepository.findAllByScope(CropScope.SYSTEM))
+        );
+    }
+
+
     // ==================== SYSTEM crop (admin) ====================
+
+
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public CropTypeResponse createCropType(CreateCropTypeRequest request){
