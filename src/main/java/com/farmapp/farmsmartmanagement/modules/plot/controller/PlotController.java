@@ -35,7 +35,8 @@ public class PlotController {
     // ========================= 1. GET ALL =========================
     @Operation(
             summary = "Lấy danh sách lô đất",
-            description = "API trả về toàn bộ lô đất trong hệ thống"
+            description = "API trả về toàn bộ lô đất trong farm hiện tại",
+            security = @SecurityRequirement(name = "bearerAuth")
     )
     @RequiresFarmToken
     @GetMapping
@@ -49,7 +50,7 @@ public class PlotController {
     // ========================= 2. CREATE =========================
     @Operation(
             summary = "Tạo lô đất mới",
-            description = "Tạo một plot mới thuộc farm hiện tại",
+            description = "API cho phép tạo một lô đất (plot) mới thuộc farm hiện tại",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @RequiresFarmToken
@@ -65,9 +66,16 @@ public class PlotController {
                 );
     }
 
+    // ========================= 3. UPDATE =========================
+    @Operation(
+            summary = "Cập nhật lô đất",
+            description = "API cho phép cập nhật thông tin của một lô đất theo ID",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
     @RequiresFarmToken
     @PatchMapping("/{plotId}")
     public ResponseEntity<ApiResponse<PlotResponse>> updatePlot(
+            @Parameter(description = "ID của lô đất", required = true)
             @PathVariable UUID plotId,
             @RequestBody @Valid UpdatePlotRequest request,
             @Parameter(hidden = true)
@@ -80,9 +88,16 @@ public class PlotController {
         );
     }
 
+    // ========================= 4. DELETE =========================
+    @Operation(
+            summary = "Xóa lô đất",
+            description = "API cho phép xóa một lô đất khỏi farm theo ID",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
     @RequiresFarmToken
     @DeleteMapping("/{plotId}")
     public ResponseEntity<ApiResponse<Void>> deletePlot(
+            @Parameter(description = "ID của lô đất", required = true)
             @PathVariable UUID plotId,
             @Parameter(hidden = true)
             @AuthenticationPrincipal UserPrincipal principal

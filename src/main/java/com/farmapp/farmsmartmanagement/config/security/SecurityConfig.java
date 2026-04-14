@@ -37,7 +37,7 @@ public class SecurityConfig {
                     // SePay IPN — server-to-server, không có JWT
                     "/api/v1/payment/ipn",
 
-                    "/api/v1/crop-type",
+                    "/api/v1/crop-types",
                     "/api/v1/crops"
             };
     @Bean
