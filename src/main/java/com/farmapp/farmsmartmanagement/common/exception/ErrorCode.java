@@ -40,8 +40,10 @@ public enum ErrorCode {
     DEFAULT_SUBSCRIPTION_PLAN_NOT_FOUND(404, "Không tìm thấy gói đăng ký mặc định", HttpStatus.NOT_FOUND),
     FARM_ROLE_NOT_FOUND(404, "Không tìm thấy vai trò trong trang trại", HttpStatus.NOT_FOUND),
     CROP_TYPE_NOT_FOUND(404,"Không tìm thấy loại cây trồng" , HttpStatus.NOT_FOUND),
+    PLAN_NOT_FOUND(404,"Không tìm thấy kế hoạch", HttpStatus.NOT_FOUND),
     CROP_NOT_FOUND(404, "Không tìm thấy cây trồng" , HttpStatus.NOT_FOUND ),
     PLOT_NOT_FOUND(404,"Không tìm thấy lô đất" , HttpStatus.NOT_FOUND),
+    PLAN_STAGE_STATUS_INITIAL_NOT_FOUND(404, "Không tìm thấy trạng thái khởi tạo ban đầu", HttpStatus.NOT_FOUND),
 
 
     // --- Payment conflict ---
@@ -57,6 +59,7 @@ public enum ErrorCode {
     FARM_ALREADY_EXISTS(409, "Tên trang trại đã tồn tại", HttpStatus.CONFLICT),
     CROP_TYPE_IN_USE(409, "Loại cây trồng đang được sử dụng" ,HttpStatus.CONFLICT ),
     PLAN_STAGE_ALREADY_EXISTS(409,"Tên giai đoạn đã tồn tại", HttpStatus.CONFLICT),
+    PLAN_STAGE_OVERLAP(409,"Thời gian bị trùng với giai đoạn khác" , HttpStatus.CONFLICT ),
 
     // --- Invalid ---
     INVALID_DATE_RANGE(400, "Thời gian bắt đầu phải trước thời gian kết thúc" , HttpStatus.BAD_REQUEST ),
