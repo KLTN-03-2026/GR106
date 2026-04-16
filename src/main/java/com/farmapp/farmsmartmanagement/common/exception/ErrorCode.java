@@ -44,6 +44,8 @@ public enum ErrorCode {
     CROP_NOT_FOUND(404, "Không tìm thấy cây trồng" , HttpStatus.NOT_FOUND ),
     PLOT_NOT_FOUND(404,"Không tìm thấy lô đất" , HttpStatus.NOT_FOUND),
     PLAN_STAGE_STATUS_INITIAL_NOT_FOUND(404, "Không tìm thấy trạng thái khởi tạo ban đầu", HttpStatus.NOT_FOUND),
+    TASK_STATUS_INITIAL_NOT_FOUND(404, "Không tìm thấy trạng thái khởi tạo ban đầu", HttpStatus.NOT_FOUND),
+    PLAN_STAGE_NOT_FOUND(404, "Không tìm thấy giai đoạn của kế hoạch", HttpStatus.NOT_FOUND),
 
 
     // --- Payment conflict ---

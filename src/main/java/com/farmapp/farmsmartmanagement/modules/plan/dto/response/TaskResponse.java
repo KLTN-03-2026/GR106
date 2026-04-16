@@ -1,0 +1,40 @@
+package com.farmapp.farmsmartmanagement.modules.plan.dto.response;
+
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.experimental.FieldDefaults;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.UUID;
+
+@Getter
+@Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class TaskResponse {
+
+    UUID id;
+
+    UUID planStageId;
+    UUID farmId;
+    UUID plotId;
+
+    UUID statusId;
+    String statusName;
+
+    String name;
+    String description;
+
+    LocalDate startDate;
+    LocalDate endDate;
+
+    BigDecimal progressPercent;
+
+    Instant acceptedAt;
+    Instant completedAt;
+
+    UUID createdBy;
+    Instant createdAt;
+}

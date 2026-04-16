@@ -6,7 +6,6 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
@@ -14,7 +13,7 @@ import java.util.UUID;
 
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class TaskCreateRequest {
+public class CreateTaskRequest {
 
 
     @Sanitize
