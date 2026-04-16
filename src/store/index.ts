@@ -3,6 +3,7 @@ import authReducer from './authSlice';
 import farmReducer from './farmSlice';
 import plotReducer from './plotSlice';
 import cropReducer from './cropSlice';
+import seasonPlanReducer from './seasonPlanSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     farm: farmReducer,
     plot: plotReducer,
     crop: cropReducer,
+    seasonPlan: seasonPlanReducer,
   }
 });
 

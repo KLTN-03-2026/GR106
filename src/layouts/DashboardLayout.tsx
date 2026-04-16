@@ -33,6 +33,7 @@ export default function DashboardLayout() {
     if (p.includes("/tasks")) return "task";
     if (p.includes("/gemini")) return "gemini";
     if (p.includes("/crop-catalog")) return "crop-catalog";
+    if (p.includes("/season-plans")) return "season-plans";
     if (p.includes("/change-password")) return "settings";
 
     // Default to 'tree' for any farm-specific action not matching above
@@ -43,7 +44,7 @@ export default function DashboardLayout() {
 
   const [active, setActive] = useState(getActive());
 
-  const wideSidebarPaths = ["/members", "/land-plots", "/map", "/subscription", "/crop-catalog"];
+  const wideSidebarPaths = ["/members", "/land-plots", "/map", "/subscription", "/crop-catalog", "/season-plans"];
   const isWideSidebarPage =
     wideSidebarPaths.some(path => location.pathname.includes(path)) ||
     (location.pathname.startsWith("/farms") && location.pathname !== "/farms");
@@ -92,10 +93,12 @@ export default function DashboardLayout() {
       }
     } else if (key === "change-password") {
       navigate("/change-password");
+    } else if (key === "season-plans") {
+      navigate(currentFarmId ? `/farms/${currentFarmId}/season-plans` : "/farms");
     } else if (key === "settings") {
       // Handled by Sidebar internally for sub-menu or default to dashboard
     } else {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/dashboard` : "/farms");
+      navigate("/dashboard");
     }
   };
 

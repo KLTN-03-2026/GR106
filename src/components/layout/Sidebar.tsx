@@ -9,7 +9,8 @@ import {
   CreditCard, 
   Settings,
   Trees,
-  Key
+  Key,
+  Zap,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "../../utils/cn";
@@ -38,6 +39,7 @@ const NAV_GROUPS = [
       { key: "map", label: "Bản đồ nông trại", icon: MapIcon },
       { key: "land-plots", label: "Lô đất & Cây trồng", icon: Grid3X3 },
       { key: "crop-catalog", label: "Danh mục cây trồng", icon: Trees },
+      { key: "season-plans", label: "Kế hoạch mùa vụ", icon: Zap },
       { key: "members", label: "Thành viên", icon: Users },
     ]
   },
@@ -55,7 +57,7 @@ export default function Sidebar({
   setActive,
   variant = "compact",
 }: SidebarProps) {
-  const { logout, user } = useAuth();
+  const { logout, user, currentFarmId } = useAuth();
   const { data: currentSubscription, isLoading: loadingSub } = useCurrentSubscription();
 
   if (variant === "compact") {
@@ -76,7 +78,9 @@ export default function Sidebar({
           </Button>
 
           {/* Navigation Items */}
-          {NAV_ICONS.map(({ icon: Icon, key }) => (
+          {NAV_ICONS
+            .filter(item => item.key !== "season-plans" || !!currentFarmId)
+            .map(({ icon: Icon, key }) => (
             <Button
               key={key}
               onClick={() => setActive(key)}
@@ -146,7 +150,9 @@ export default function Sidebar({
               {group.title}
             </h3>
             <div className="flex flex-col gap-0.5">
-              {group.items.map((item) => (
+              {group.items
+                .filter(item => item.key !== "season-plans" || !!currentFarmId)
+                .map((item) => (
                 <div key={item.key} className="flex flex-col gap-1">
                   <button
                     onClick={() => {

@@ -38,25 +38,25 @@ const AdminDashboardPage: React.FC = () => {
   ];
 
   return (
-    <div className="w-full space-y-8 p-12">
-      {/* Hero Banner Section - Light Sage Sync */}
-      <div className="relative bg-green-50/50 rounded-[1.2rem] p-6 overflow-hidden shadow-sm border border-green-100/50 h-[100px] flex items-center">
-        <div className="relative z-10 w-full flex flex-col md:flex-row items-center justify-between gap-6 px-4">
-          <div className="space-y-0.5">
-            <h1 className="text-xl font-black text-slate-800 tracking-tight">
+    <div className="w-full space-y-6 p-6">
+      {/* Hero Banner Section - Compact Sage Style */}
+      <div className="relative bg-green-50/50 rounded-xl py-3 px-4 border border-green-100/50 flex items-center">
+        <div className="relative z-10 w-full flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="space-y-0 text-center md:text-left">
+            <h1 className="text-lg font-black text-slate-800 tracking-tight">
               Hệ thống <span className="text-green-600 font-medium">Quản trị</span>
             </h1>
-            <p className="text-[11px] text-slate-500 font-light">
+            <p className="text-[10px] text-slate-400 font-light tracking-wide -mt-0.5">
               Chào mừng trở lại. Không gian điều hành danh mục nông nghiệp.
             </p>
           </div>
 
           <div className="flex-shrink-0">
-            <div className="bg-white border border-green-100 px-4 py-2 rounded-xl flex items-center gap-2 shadow-sm">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <div className="bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-lg flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
               <div className="flex flex-col">
-                <span className="text-slate-800 text-[11px] font-bold leading-none mb-0.5 tracking-tight">Hệ thống ổn định</span>
-                <span className="text-[8px] text-green-600 font-bold uppercase tracking-widest">Dịch vụ hoạt động</span>
+                <span className="text-slate-800 text-[10px] font-bold leading-none mb-0.5 tracking-tight">Hệ thống ổn định</span>
+                <span className="text-[7px] text-green-600 font-bold uppercase tracking-widest">Hoạt động bình thường</span>
               </div>
             </div>
           </div>
@@ -70,7 +70,7 @@ const AdminDashboardPage: React.FC = () => {
       </div>
 
       {/* Action Cards Grid - Ultra Compact */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-5xl">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {adminActions.map((action, index) => (
           <div
             key={index}

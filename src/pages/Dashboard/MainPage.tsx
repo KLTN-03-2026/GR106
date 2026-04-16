@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../../store';
+import { fetchPlots } from '../../store/plotSlice';
+import { fetchCrops } from '../../store/cropSlice';
 import {
   StatCard,
   WeatherCard,
@@ -11,63 +13,38 @@ import {
   MapPanel,
   TaskBar,
 } from "../../components/dashboard";
+import { Trees } from 'lucide-react';
 
-// [ĐANG CHỜ API] - Các chỉ số Dashboard sẽ được kết nối sau khi Backend cung cấp đầy đủ API
-function useFarmStats(farmId?: string) {
-  const [data] = useState({
-    totalPlots: 0,
-    totalCrops: 0,
-    totalArea: 0,
-    totalPlants: 0,
-    performancePct: 0,
-  });
-  const [isPending, setIsPending] = useState(true);
-
-  useEffect(() => {
-    if (!farmId) return;
-    setIsPending(true);
-    const timer = setTimeout(() => {
-      setIsPending(false);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [farmId]);
-
-  return { data, isPending };
-}
-
-function useNpkData(farmId?: string) {
-  const [data] = useState([]);
-  const [isPending, setIsPending] = useState(true);
+/**
+ * Hook lấy số liệu tổng hợp từ Redux Store thay vì Mock Timer
+ */
+function useDashboardData(farmId?: string) {
+  const dispatch = useDispatch<AppDispatch>();
+  
+  // Lấy dữ liệu từ store
+  const { plots, loading: plotsLoading } = useSelector((state: RootState) => state.plot);
+  const { crops, loading: cropsLoading } = useSelector((state: RootState) => state.crop);
 
   useEffect(() => {
-    if (!farmId) return;
-    setIsPending(true);
-    const timer = setTimeout(() => {
-      setIsPending(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [farmId]);
+    if (farmId) {
+      dispatch(fetchPlots(farmId));
+      dispatch(fetchCrops());
+    }
+  }, [farmId, dispatch]);
 
-  return { data, isPending };
-}
+  const isLoading = plotsLoading || cropsLoading;
 
-function useTasksSummary(farmId?: string) {
-  const [data] = useState({
-    completed: 0,
-    pending: 0,
-  });
-  const [isPending, setIsPending] = useState(true);
-
-  useEffect(() => {
-    if (!farmId) return;
-    setIsPending(true);
-    const timer = setTimeout(() => {
-      setIsPending(false);
-    }, 600);
-    return () => clearTimeout(timer);
-  }, [farmId]);
-
-  return { data, isPending };
+  return {
+    stats: {
+      totalPlots: plots.length,
+      totalCrops: crops.length,
+      totalArea: plots.reduce((acc, p) => acc + (p.areaHa || 0), 0),
+      totalPlants: 0, // Chờ API cụ thể
+      performancePct: 0, // Chờ chỉ số thực từ API
+    },
+    npkData: [], // Chờ API NPK
+    isLoading
+  };
 }
 
 export default function MainPage() {
@@ -75,9 +52,7 @@ export default function MainPage() {
   const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
   const farmId = routeFarmId || currentFarmId || undefined;
 
-  const { data: statsData, isPending: statsLoading } = useFarmStats(farmId);
-  const { data: npkData, isPending: npkLoading } = useNpkData(farmId);
-  const { data: taskData, isPending: taskLoading } = useTasksSummary(farmId);
+  const { stats, npkData, isLoading } = useDashboardData(farmId);
 
   return (
     <div className="flex h-full w-full overflow-hidden p-3 gap-3">
@@ -85,18 +60,18 @@ export default function MainPage() {
       <div className="flex flex-col flex-1 gap-3 overflow-hidden">
 
         <TaskBar
-          completed={taskData?.completed || 0}
-          pending={taskData?.pending || 0}
-          isLoading={taskLoading}
+          completed={0}
+          pending={0}
+          isLoading={isLoading}
         />
 
         {/* Row 1 */}
         <div className="flex flex-1 gap-3 min-h-0 overflow-hidden flex-col xl:flex-row">
           <div className="grid grid-cols-2 gap-3 flex-1 min-h-0 overflow-hidden">
-            <StatCard label="Tổng lô đất" value={statsLoading ? "..." : statsData?.totalPlots || 0} unit="Plots" />
-            <StatCard label="Loại cây trồng" value={statsLoading ? "..." : statsData?.totalCrops || 0} unit="Crops" />
-            <StatCard label="Tổng diện tích" value={statsLoading ? "..." : statsData?.totalArea || 0} unit="Hectares" />
-            <StatCard label="Tổng số cây" value={statsLoading ? "..." : statsData?.totalPlants || "0"} unit="Plants" />
+            <StatCard label="Tổng lô đất" value={isLoading ? "..." : stats.totalPlots} unit="Lô" />
+            <StatCard label="Loại cây trồng" value={isLoading ? "..." : stats.totalCrops} unit="Loại" />
+            <StatCard label="Tổng diện tích" value={isLoading ? "..." : stats.totalArea.toFixed(1)} unit="ha" />
+            <StatCard label="Tổng số cây" value={isLoading ? "..." : stats.totalPlants} unit="Cây" />
           </div>
 
           <div className="flex-1 min-h-0 overflow-hidden">
@@ -107,10 +82,10 @@ export default function MainPage() {
         {/* Row 2 */}
         <div className="flex flex-1 gap-4 min-h-0 overflow-hidden flex-col lg:flex-row">
           <div className="flex-1 min-h-0 overflow-hidden">
-            <NpkPanel data={npkData} isLoading={npkLoading} />
+            <NpkPanel data={npkData} isLoading={isLoading} />
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">
-            <DonutChart pct={statsData?.performancePct || 0} isLoading={statsLoading} />
+            <DonutChart pct={stats.performancePct} isLoading={isLoading} />
           </div>
         </div>
 

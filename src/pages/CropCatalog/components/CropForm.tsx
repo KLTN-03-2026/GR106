@@ -27,7 +27,7 @@ export const CropForm: React.FC<CropFormProps> = ({
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { cropTypes, cropTypesLoading } = useSelector((state: RootState) => state.crop);
-  
+
   const [activeTab, setActiveTab] = useState<TabType>('basic');
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
 
@@ -81,8 +81,8 @@ export const CropForm: React.FC<CropFormProps> = ({
   const onSubmit = (data: CreateCropFormInput) => {
     // Kiểm tra trùng tên (không cho phép trùng)
     const isDuplicate = existingCrops.some(
-      (crop) => 
-        crop.name.toLowerCase().trim() === data.name.toLowerCase().trim() && 
+      (crop) =>
+        crop.name.toLowerCase().trim() === data.name.toLowerCase().trim() &&
         crop.id !== initialData?.id
     );
 
@@ -161,8 +161,8 @@ export const CropForm: React.FC<CropFormProps> = ({
               onClick={() => setActiveTab(tab.id as TabType)}
               className={`
                 flex items-center gap-2 px-6 py-4 text-sm font-bold rounded-t-2xl transition-all relative
-                ${activeTab === tab.id 
-                  ? 'bg-white text-green-700 border-x border-t border-slate-100 -mb-[1px] shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.02)]' 
+                ${activeTab === tab.id
+                  ? 'bg-white text-green-700 border-x border-t border-slate-100 -mb-[1px] shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.02)]'
                   : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100/50'}
               `}
             >
@@ -219,9 +219,9 @@ export const CropForm: React.FC<CropFormProps> = ({
                       ))}
                     </select>
                     {cropTypesLoading && (
-                       <div className="absolute right-10 top-1/2 -translate-y-1/2">
-                          <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
-                       </div>
+                      <div className="absolute right-10 top-1/2 -translate-y-1/2">
+                        <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                      </div>
                     )}
                   </div>
                   {errors.cropTypeId && <p className="mt-2 text-xs font-bold text-red-500">{errors.cropTypeId.message}</p>}
@@ -299,7 +299,7 @@ export const CropForm: React.FC<CropFormProps> = ({
                   <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-lg ring-4 ring-white">
                     {index + 1}
                   </div>
-                  
+
                   <button
                     type="button"
                     onClick={() => removeStage(index)}

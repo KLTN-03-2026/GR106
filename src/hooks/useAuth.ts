@@ -10,6 +10,7 @@ export const useAuth = () => {
     isAuthenticated: auth.isAuthenticated,
     accessToken: auth.accessToken,
     user: auth.user,
+    currentFarmId: auth.currentFarmId,
     logout: () => dispatch(logout())
   };
 };
