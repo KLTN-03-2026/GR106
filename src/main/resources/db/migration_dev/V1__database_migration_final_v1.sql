@@ -737,7 +737,7 @@ CREATE TABLE plan_stage_statuses (
     name        VARCHAR(100) NOT NULL,
     is_initial  BOOLEAN      NOT NULL DEFAULT FALSE,
     is_terminal BOOLEAN      NOT NULL DEFAULT FALSE,
-    order_index SMALLINT,
+    order_index SMALLINT     NOT NULL,
     color       VARCHAR(20),
     created_at  TIMESTAMP NOT NULL DEFAULT NOW()
 );
