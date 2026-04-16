@@ -27,7 +27,7 @@ export function PlotCard({ plot, onEdit, onDelete, onViewMap }: PlotCardProps) {
           <div className="flex items-center text-gray-600 text-sm bg-gray-50 px-3 py-2 rounded-lg">
             <MaximizeIcon className="w-4 h-4 mr-2 text-emerald-600" />
             <span className="font-bold text-gray-900 mr-1 text-base">
-              {plot.areaHa.toLocaleString('vi-VN')}
+              {plot.areaHa == null ? 0 : plot.areaHa.toLocaleString('vi-VN')}
             </span>{' '}
             ha
           </div>
