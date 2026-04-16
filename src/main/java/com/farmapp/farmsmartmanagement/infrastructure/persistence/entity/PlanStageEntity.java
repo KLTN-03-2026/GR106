@@ -1,10 +1,16 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.entity;
 
+import com.farmapp.farmsmartmanagement.domain.enums.PlanStageSource;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.type.SqlTypes;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -12,19 +18,33 @@ import java.util.UUID;
 @Table(name = "plan_stages")
 @Getter
 @Setter
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class PlanStageEntity {
 
     @Id
     @GeneratedValue
     @UuidGenerator
-    private UUID id;
+    UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "plan_id", nullable = false)
-    private PlanEntity plan;
+    PlanEntity plan;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "crop_stage_id")
+    CropStageEntity cropStage;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "status_id", nullable = false)
+    PlanStageStatusEntity status;
 
     @Column(nullable = false)
     private String name;
+
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "source", nullable = false)
+    PlanStageSource source;
 
     @Column(name = "order_index")
     private Short orderIndex;
@@ -34,4 +54,11 @@ public class PlanStageEntity {
 
     @Column(name = "end_date")
     private LocalDate endDate;
+
+    @Column(name = "ai_suggestion_cache")
+    String aiSuggestionCache;
+
+    @Column(name = "ai_cached_at")
+    Instant aiCachedAt;
+
 }
