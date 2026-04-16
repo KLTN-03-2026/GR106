@@ -32,6 +32,7 @@ const PaymentSuccessPage = lazy(() => import('../pages/Pricing/PaymentSuccessPag
 const FarmActionsPage = lazy(() => import('../pages/FarmManagement/FarmActionsPage'));
 const CropCatalogPage = lazy(() => import('../pages/CropCatalog/CropCatalogPage'));
 const SeasonPlanPage = lazy(() => import('../pages/SeasonPlan/SeasonPlanPage'));
+const SeasonPlanListPage = lazy(() => import('../pages/SeasonPlan/SeasonPlanListPage'));
 const AdminDashboardPage = lazy(() => import('../pages/Admin/AdminDashboardPage'));
 
 
@@ -70,7 +71,8 @@ export const AppRoutes: React.FC = () => {
             <Route path="land-plots" element={<Suspense fallback={<LoadingPage />}><LandPlotsPage /></Suspense>} />
             <Route path="map" element={<Suspense fallback={<LoadingPage />}><MapPage /></Suspense>} />
             <Route path="crop-catalog" element={<Suspense fallback={<LoadingPage />}><CropCatalogPage /></Suspense>} />
-            <Route path="season-plans" element={<Suspense fallback={<LoadingPage />}><SeasonPlanPage /></Suspense>} />
+            <Route path="season-plans" element={<Suspense fallback={<LoadingPage />}><SeasonPlanListPage /></Suspense>} />
+            <Route path="season-plans/:planId" element={<Suspense fallback={<LoadingPage />}><SeasonPlanPage /></Suspense>} />
             <Route path="wallet" element={<Suspense fallback={<LoadingPage />}><WalletPage /></Suspense>} />
             <Route path="activity" element={<Suspense fallback={<LoadingPage />}><ActivityPage /></Suspense>} />
             <Route path="tasks" element={<Suspense fallback={<LoadingPage />}><TasksPage /></Suspense>} />

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, Fragment, useRef } from 'react';
+import React, { useMemo, useState, Fragment, useRef, useEffect } from 'react';
 import { SeasonPlan, Phase } from '../../../types/seasonPlan';
 import { ChevronRight, ChevronDown, Zap, CheckSquare, Plus } from 'lucide-react';
 import { cn } from '../../../utils/cn';
@@ -12,6 +12,7 @@ interface PlanTimelineProps {
   onSelect: (selection: SelectionState) => void;
   onUpdatePlan: (plan: SeasonPlan) => void;
   onAddPhase: (planId: string, name: string) => void;
+  preExpandedPlanId?: string;
 }
 
 export function PlanTimeline({
@@ -20,6 +21,7 @@ export function PlanTimeline({
   onSelect,
   onUpdatePlan,
   onAddPhase,
+  preExpandedPlanId,
 }: PlanTimelineProps) {
   const [expandedPlans, setExpandedPlans] = useState<Set<string>>(new Set());
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
@@ -29,6 +31,19 @@ export function PlanTimeline({
   const ganttBodyRef = useRef<HTMLDivElement>(null);
   const ganttHeaderRef = useRef<HTMLDivElement>(null);
   const scrollBarRef = useRef<HTMLDivElement>(null);
+
+  // Auto-expand the pre-selected plan
+  useEffect(() => {
+    if (preExpandedPlanId && plans.length > 0) {
+      const plan = plans.find(p => p.id === preExpandedPlanId);
+      if (plan) {
+        setExpandedPlans(new Set([preExpandedPlanId]));
+        // Auto-expand all phases
+        const phaseIds = new Set(plan.phases.map(ph => ph.id));
+        setExpandedPhases(phaseIds);
+      }
+    }
+  }, [preExpandedPlanId, plans]);
 
   // Sync scrolling between header, body and bottom scrollbar
   const syncScroll = (source: 'body' | 'scrollbar') => (e: React.UIEvent<HTMLDivElement>) => {

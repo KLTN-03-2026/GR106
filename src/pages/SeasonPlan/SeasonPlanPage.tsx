@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
 import { 
@@ -11,7 +11,7 @@ import {
   updateTask
 } from '../../store/seasonPlanSlice';
 import { SeasonPlan, PlanStatus, Phase } from '../../types/seasonPlan';
-import { Search } from 'lucide-react';
+import { Search, ArrowLeft } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { Button } from '../../components/ui/button';
 
@@ -30,12 +30,15 @@ export interface SelectionState {
 }
 
 export function SeasonPlanPage() {
-  const { farmId } = useParams<{ farmId: string }>();
+  const { farmId, planId } = useParams<{ farmId: string; planId?: string }>();
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   
-  // State từ Redux
   const { plans } = useSelector((state: RootState) => state.seasonPlan);
   const farmPlans = plans.filter((p: SeasonPlan) => p.farmId === farmId || p.farmId === '');
+
+  const currentPlan = planId ? farmPlans.find(p => p.id === planId) : null;
+  const displayPlans = currentPlan ? [currentPlan] : farmPlans;
 
   // UI State
   const [statusFilter, setStatusFilter] = useState<PlanStatus | 'ALL'>('ALL');
@@ -48,7 +51,14 @@ export function SeasonPlanPage() {
   // Selection state (Jira style)
   const [selectedItem, setSelectedItem] = useState<SelectionState | null>(null);
 
-  const filteredPlans = farmPlans.filter((p: SeasonPlan) => {
+  // Auto-select the plan and expand when viewing single plan
+  useEffect(() => {
+    if (currentPlan) {
+      setSelectedItem({ type: 'PLAN', id: currentPlan.id, planId: currentPlan.id });
+    }
+  }, [currentPlan]);
+
+  const filteredPlans = displayPlans.filter((p: SeasonPlan) => {
     const matchesStatus = statusFilter === 'ALL' || p.status === statusFilter;
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
@@ -131,39 +141,99 @@ export function SeasonPlanPage() {
 
   const selectedData = getSelectedData();
 
+  const getStatusLabel = (status: PlanStatus) => {
+    switch (status) {
+      case 'DRAFT': return 'Bản nháp';
+      case 'IN_PROGRESS': return 'Đang thực hiện';
+      case 'COMPLETED': return 'Hoàn thành';
+      case 'CANCELLED': return 'Đã hủy';
+      default: return status;
+    }
+  };
+
+  const getStatusColor = (status: PlanStatus) => {
+    switch (status) {
+      case 'DRAFT': return 'bg-slate-100 text-slate-600';
+      case 'IN_PROGRESS': return 'bg-amber-100 text-amber-700';
+      case 'COMPLETED': return 'bg-emerald-100 text-emerald-700';
+      case 'CANCELLED': return 'bg-red-100 text-red-700';
+      default: return 'bg-slate-100 text-slate-600';
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('vi-VN', {
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric'
+    });
+  };
+
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-hidden">
       {/* Header */}
       <div className="bg-white border-b border-slate-200 px-6 py-4 flex flex-col gap-4 shrink-0">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Kế hoạch mùa vụ</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Quản lý và thiết lập kế hoạch canh tác theo mô hình Jira</p>
+          <div className="flex items-center gap-4">
+            {currentPlan ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(`/farms/${farmId}/season-plans`)}
+                  className="text-slate-500 hover:text-slate-700"
+                >
+                  <ArrowLeft size={20} />
+                </Button>
+                <div>
+                  <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{currentPlan.name}</h1>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className={cn(
+                      "px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full",
+                      getStatusColor(currentPlan.status)
+                    )}>
+                      {getStatusLabel(currentPlan.status)}
+                    </span>
+                    <span className="text-sm text-slate-500">
+                      {formatDate(currentPlan.startDate)} - {formatDate(currentPlan.endDate)}
+                    </span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Kế hoạch mùa vụ</h1>
+                <p className="text-sm text-slate-500 mt-0.5">Quản lý và thiết lập kế hoạch canh tác</p>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-3">
-             <Button 
+          {!currentPlan && (
+            <div className="flex items-center gap-3">
+              <Button 
                 className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 transition-all font-bold px-6"
                 onClick={() => setIsCreateModalOpen(true)}
-             >
-              + Tạo vụ mùa
-            </Button>
-          </div>
+              >
+                + Tạo vụ mùa
+              </Button>
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="relative group flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input 
-              type="text"
-              placeholder="Tìm nhanh kế hoạch..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all shadow-inner"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          
-          <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl shrink-0">
-             {(['ALL', 'DRAFT', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] as const).map((status) => (
+        {!currentPlan && (
+          <div className="flex items-center gap-4">
+            <div className="relative group flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <input 
+                type="text"
+                placeholder="Tìm nhanh kế hoạch..."
+                className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all shadow-inner"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl shrink-0">
+              {(['ALL', 'DRAFT', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] as const).map((status) => (
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
@@ -179,9 +249,10 @@ export function SeasonPlanPage() {
                    status === 'IN_PROGRESS' ? 'Đang thực hiện' : 
                    status === 'COMPLETED' ? 'Hoàn thành' : 'Đã hủy'}
                 </button>
-             ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="flex-1 flex overflow-hidden min-h-0 relative">
@@ -192,6 +263,7 @@ export function SeasonPlanPage() {
             selectedId={selectedItem?.id}
             onUpdatePlan={handleUpdatePlan}
             onAddPhase={handleAddPhase}
+            preExpandedPlanId={planId}
           />
         </div>
 
