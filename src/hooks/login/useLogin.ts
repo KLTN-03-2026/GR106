@@ -29,8 +29,21 @@ export function useLogin() {
       if (response.success && response.data.accessToken) {
         dispatch(loginSuccess(response.data));
         
-        // Điều hướng sau login
-        const from = (location.state as any)?.from?.pathname || '/dashboard';
+        // Điều hướng sau login dựa trên role (PB 02)
+        const user = response.data.user;
+        let redirectPath = '/dashboard';
+        
+        if (user) {
+          if (user.role === 'ADMIN' || user.role === 'ROLE_ADMIN') {
+            redirectPath = '/admin/dashboard';
+          } else if (user.role === 'WORKER' || user.role === 'ROLE_WORKER' || user.role === 'employee') {
+            redirectPath = '/tasks';
+          } else if (user.role === 'OWNER' || user.role === 'ROLE_OWNER' || user.role === 'manager') {
+            redirectPath = '/dashboard';
+          }
+        }
+
+        const from = (location.state as any)?.from?.pathname || redirectPath;
         navigate(from, { replace: true });
       } else {
         setServerError('Email hoặc mật khẩu không đúng');

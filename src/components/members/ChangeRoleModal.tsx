@@ -1,13 +1,10 @@
 import React, { useState } from 'react'
-import { X, AlertCircle } from 'lucide-react'
+import { useParams } from 'react-router-dom'
+import { X, AlertCircle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Modal } from '../ui/Modal'
-
-interface Member {
-  id: string
-  name: string
-  role: 'owner' | 'manager' | 'worker'
-}
+import { memberService } from '../../services/memberService'
+import { Member, MemberRole } from '../../types/member'
 
 interface ChangeRoleModalProps {
   isOpen: boolean
@@ -20,23 +17,38 @@ export function ChangeRoleModal({
   onClose,
   member,
 }: ChangeRoleModalProps) {
-  const [newRole, setNewRole] = useState<'manager' | 'worker'>(
-    member.role === 'manager' ? 'manager' : 'worker',
+  const { farmId } = useParams<{ farmId: string }>()
+  const [newRole, setNewRole] = useState<MemberRole>(
+    (member.role === 'manager' || member.role === 'worker') ? member.role : 'worker',
   )
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const getRoleLabel = (role: string) => {
     const labels = {
       owner: 'Chủ trang trại',
       manager: 'Quản lý trang trại',
       worker: 'Nhân công',
+      employee: 'Nhân công',
     }
-    return labels[role as keyof typeof labels]
+    return labels[role as keyof typeof labels] || role
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    toast.success('Đã thay đổi vai trò thành công')
-    onClose()
+    if (!farmId) return
+
+    try {
+      setIsSubmitting(true)
+      const res = await memberService.changeRole(farmId, member.id, { role: newRole })
+      if (res.success) {
+        toast.success('Đã thay đổi vai trò thành công')
+        onClose()
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Có lỗi xảy ra khi thay đổi vai trò')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -73,9 +85,10 @@ export function ChangeRoleModal({
               id="newRole"
               value={newRole}
               onChange={(e) =>
-                setNewRole(e.target.value as 'manager' | 'worker')
+                setNewRole(e.target.value as MemberRole)
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              disabled={isSubmitting}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
             >
               <option value="worker">Nhân công</option>
               <option value="manager">Quản lý trang trại</option>
@@ -94,15 +107,24 @@ export function ChangeRoleModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-70"
             >
-              Xác nhận
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Đang xử lý...</span>
+                </>
+              ) : (
+                'Xác nhận'
+              )}
             </button>
           </div>
         </form>

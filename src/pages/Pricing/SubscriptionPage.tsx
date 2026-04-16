@@ -3,7 +3,7 @@ import { createPaymentService } from '@/services/payment';
 import { getSubscriptionPlansService } from '@/services/subscription';
 import { BillingCycle } from '@/types/payment/payment';
 import { SubscriptionPlan } from '@/types/subscription/subscription';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 
 import { useEffect, useState } from 'react';
@@ -27,7 +27,7 @@ const SubscriptionPage = () => {
     const selected = plans.find((p) => p.id === selectedPlan);
 
     const getPrice = (plan: SubscriptionPlan) =>
-        billing === 'ANNUAL' ? plan.priceAnnual : plan.priceMonthly;
+        billing === 'YEARLY' ? plan.priceAnnual : plan.priceMonthly;
 
     useEffect(() => {
         const fetchPlans = async () => {
@@ -64,39 +64,15 @@ const SubscriptionPage = () => {
                 farmId: farmId || undefined
             });
 
-            const formData = res.data.formData;
-            if (!formData) {
-                setError('Không nhận được thông tin thanh toán');
+            const checkoutUrl = res.data.checkoutUrl;
+            if (!checkoutUrl) {
+                setError('Không thể lấy liên kết thanh toán. Vui lòng thử lại sau.');
+                setLoading(false);
                 return;
             }
 
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = formData.actionUrl;
-
-            const fields: [string, string][] = [
-                ['order_amount', formData.orderAmount],
-                ['merchant', formData.merchant],
-                ['currency', formData.currency],
-                ['operation', formData.operation],
-                ['order_description', formData.orderDescription],
-                ['order_invoice_number', formData.orderInvoiceNumber],
-                ['success_url', formData.successUrl],
-                ['error_url', formData.errorUrl],
-                ['cancel_url', formData.cancelUrl],
-                ['signature', formData.signature],
-            ];
-
-            fields.forEach(([name, value]) => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = name;
-                input.value = value;
-                form.appendChild(input);
-            });
-
-            document.body.appendChild(form);
-            form.submit();
+            // Chuyển hướng người dùng qua cổng thanh toán PayOS
+            window.location.href = checkoutUrl;
 
         } catch (err: any) {
             setError(err?.response?.data?.message || 'Lỗi hệ thống khi tạo thanh toán');
@@ -119,7 +95,7 @@ const SubscriptionPage = () => {
                     </div>
                     <div>
                         <p className="text-xs font-semibold text-green-800">Cổng thanh toán bảo mật</p>
-                        <p className="text-[10px] text-green-600">Mọi giao dịch sẽ được thực hiện qua cổng SePay an toàn.</p>
+                        <p className="text-[10px] text-green-600">Mọi giao dịch sẽ được thực hiện qua cổng PayOS an toàn.</p>
                     </div>
                 </div>
 
@@ -132,8 +108,8 @@ const SubscriptionPage = () => {
                         Hàng tháng
                     </button>
                     <button
-                        onClick={() => setBilling('ANNUAL')}
-                        className={`px-4 py-1.5 text-sm rounded-lg transition-all duration-200 ${billing === 'ANNUAL' ? 'bg-white shadow-sm font-medium' : 'text-gray-500 hover:text-gray-700'}`}
+                        onClick={() => setBilling('YEARLY')}
+                        className={`px-4 py-1.5 text-sm rounded-lg transition-all duration-200 ${billing === 'YEARLY' ? 'bg-white shadow-sm font-medium' : 'text-gray-500 hover:text-gray-700'}`}
                     >
                         Hàng năm
                         <span className="ml-1 text-[10px] text-green-600 font-semibold">-20%</span>
@@ -187,7 +163,7 @@ const SubscriptionPage = () => {
                                             </span>
                                             <span className="text-sm text-gray-500">₫</span>
                                             <span className="text-xs text-gray-400 ml-1">
-                                                / {billing === 'ANNUAL' ? 'năm' : 'tháng'}
+                                                / {billing === 'YEARLY' ? 'năm' : 'tháng'}
                                             </span>
                                         </div>
 
@@ -256,14 +232,14 @@ const SubscriptionPage = () => {
                                     <div className="flex flex-col gap-0.5">
                                         <span className="font-semibold text-gray-900 text-sm">Chi tiết thanh toán</span>
                                         <span className="text-xs text-gray-500">
-                                            Gói {selected.name} — {billing === 'ANNUAL' ? 'Thanh toán hàng năm' : 'Thanh toán hàng tháng'}
+                                            Gói {selected.name} — {billing === 'YEARLY' ? 'Thanh toán hàng năm' : 'Thanh toán hàng tháng'}
                                         </span>
                                     </div>
                                     <div className="text-right">
                                         <div className="text-lg font-bold text-green-700">
                                             {getPrice(selected).toLocaleString()} ₫
                                         </div>
-                                        {billing === 'ANNUAL' && (
+                                        {billing === 'YEARLY' && (
                                             <span className="text-[10px] text-green-600 font-medium">Đã tiết kiệm 20%</span>
                                         )}
                                     </div>

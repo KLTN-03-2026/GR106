@@ -1,7 +1,5 @@
-import React from 'react'
-import { X, AlertCircle } from 'lucide-react'
-import { toast } from 'sonner'
-import { Modal } from '../ui/Modal'
+import { useParams } from 'react-router-dom'
+import { memberService } from '../../services/memberService'
 
 interface Invitation {
   id: string
@@ -11,18 +9,36 @@ interface Invitation {
 interface CancelInviteModalProps {
   isOpen: boolean
   onClose: () => void
+  onSuccess?: () => void
   invitation: Invitation
 }
 
 export function CancelInviteModal({
   isOpen,
   onClose,
+  onSuccess,
   invitation,
 }: CancelInviteModalProps) {
-  const handleSubmit = (e: React.FormEvent) => {
+  const { farmId } = useParams<{ farmId: string }>()
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    toast.success('Đã hủy lời mời')
-    onClose()
+    if (!farmId) return
+
+    try {
+      setIsSubmitting(true)
+      const res = await memberService.cancelInvitation(farmId, invitation.id)
+      if (res.success) {
+        toast.success('Đã hủy lời mời')
+        if (onSuccess) onSuccess()
+        onClose()
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Không thể hủy lời mời')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (

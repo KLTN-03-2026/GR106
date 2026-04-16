@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 import {
   StatCard,
   WeatherCard,
@@ -9,8 +12,8 @@ import {
   TaskBar,
 } from "../../components/dashboard";
 
-// Mock Hooks moved directly into this file to avoid external dependencies
-function useFarmStats() {
+// [ĐANG CHỜ API] - Các chỉ số Dashboard sẽ được kết nối sau khi Backend cung cấp đầy đủ API
+function useFarmStats(farmId?: string) {
   const [data] = useState({
     totalPlots: 0,
     totalCrops: 0,
@@ -21,30 +24,34 @@ function useFarmStats() {
   const [isPending, setIsPending] = useState(true);
 
   useEffect(() => {
+    if (!farmId) return;
+    setIsPending(true);
     const timer = setTimeout(() => {
       setIsPending(false);
     }, 800);
     return () => clearTimeout(timer);
-  }, []);
+  }, [farmId]);
 
   return { data, isPending };
 }
 
-function useNpkData() {
+function useNpkData(farmId?: string) {
   const [data] = useState([]);
   const [isPending, setIsPending] = useState(true);
 
   useEffect(() => {
+    if (!farmId) return;
+    setIsPending(true);
     const timer = setTimeout(() => {
       setIsPending(false);
     }, 1000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [farmId]);
 
   return { data, isPending };
 }
 
-function useTasksSummary() {
+function useTasksSummary(farmId?: string) {
   const [data] = useState({
     completed: 0,
     pending: 0,
@@ -52,19 +59,25 @@ function useTasksSummary() {
   const [isPending, setIsPending] = useState(true);
 
   useEffect(() => {
+    if (!farmId) return;
+    setIsPending(true);
     const timer = setTimeout(() => {
       setIsPending(false);
     }, 600);
     return () => clearTimeout(timer);
-  }, []);
+  }, [farmId]);
 
   return { data, isPending };
 }
 
 export default function MainPage() {
-  const { data: statsData, isPending: statsLoading } = useFarmStats();
-  const { data: npkData, isPending: npkLoading } = useNpkData();
-  const { data: taskData, isPending: taskLoading } = useTasksSummary();
+  const { farmId: routeFarmId } = useParams<{ farmId: string }>();
+  const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
+  const farmId = routeFarmId || currentFarmId || undefined;
+
+  const { data: statsData, isPending: statsLoading } = useFarmStats(farmId);
+  const { data: npkData, isPending: npkLoading } = useNpkData(farmId);
+  const { data: taskData, isPending: taskLoading } = useTasksSummary(farmId);
 
   return (
     <div className="flex h-full w-full overflow-hidden p-3 gap-3">

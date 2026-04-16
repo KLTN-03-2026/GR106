@@ -18,7 +18,7 @@ export function PlotFilters({
   onStatusFilterChange,
 }: PlotFiltersProps) {
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-transparent py-4 mb-2 font-sans">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-transparent px-6 py-4 mb-2 font-sans">
       <div className="flex flex-1 items-center gap-4 w-full sm:w-auto">
         <div className="relative flex-1 sm:max-w-xs">
           <SearchIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />

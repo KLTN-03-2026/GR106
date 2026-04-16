@@ -5,44 +5,54 @@ export const useReveal = (threshold = 0.1) => {
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    // SSR or Browser compatibility safety check
     if (typeof window === 'undefined' || !window.IntersectionObserver) {
       setVisible(true);
       return;
     }
 
-    // Capture the current target to be used in the closure
     const target = ref.current;
-    
-    // Ensure target is a valid DOM Element
-    if (!target || !(target instanceof Element)) {
-      return;
-    }
+    if (!target) return;
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          // Once visible, we can stop observing this specific target
-          observer.unobserve(entry.target);
+    let observer: IntersectionObserver | null = null;
+
+    const initObserver = () => {
+      if (!target || !(target instanceof Element)) return;
+
+      try {
+        observer = new IntersectionObserver(
+          ([entry]) => {
+            if (entry.isIntersecting) {
+              setVisible(true);
+              if (observer) {
+                observer.unobserve(entry.target);
+              }
+            }
+          },
+          { threshold }
+        );
+
+        if (target && document.body.contains(target)) {
+          observer.observe(target);
         }
-      },
-      { threshold }
-    );
+      } catch (error) {
+        console.warn('IntersectionObserver init failed:', error);
+        setVisible(true);
+      }
+    };
 
-    try {
-      observer.observe(target);
-    } catch (error) {
-      console.warn('IntersectionObserver failed to observe target:', error);
-      // Fallback: make it visible if observer fails
-      setVisible(true);
-    }
+    // Wait for next frame to ensure DOM is fully rendered
+    const frameId = requestAnimationFrame(initObserver);
 
     return () => {
-      if (target && target instanceof Element) {
-        observer.unobserve(target);
+      cancelAnimationFrame(frameId);
+      if (observer && target instanceof Element) {
+        try {
+          observer.unobserve(target);
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+        observer.disconnect();
       }
-      observer.disconnect();
     };
   }, [threshold]);
 

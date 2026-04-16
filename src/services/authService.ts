@@ -40,7 +40,10 @@ export const authService = {
     return response.data;
   },
 
-  // Placeholder APIs for future implementation
+  // ──────────────────────────────────────────────
+  // [ĐANG CHỜ API]
+  // Chưa xuất hiện trong tài liệu Backend mới nhất
+  // ──────────────────────────────────────────────
 
   async forgotPassword(email: string): Promise<ApiResponse<string>> {
     const response = await axiosInstance.post<ApiResponse<string>>(

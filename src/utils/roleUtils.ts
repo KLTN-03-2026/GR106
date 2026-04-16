@@ -9,6 +9,7 @@ export const ROLE_DISPLAY_NAMES: Record<RoleId, string> = {
   manager: 'Người quản lý trang trại',
   employee: 'Nhân công',
   user: 'Người dùng mới',
+  admin: 'Quản trị viên',
 };
 
 /**

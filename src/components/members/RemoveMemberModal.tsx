@@ -1,17 +1,15 @@
-import React from 'react'
-import { X, AlertTriangle } from 'lucide-react'
+import React, { useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { X, AlertTriangle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Modal } from '../ui/Modal'
-
-interface MemberProps {
-  id: string
-  name: string
-}
+import { memberService } from '../../services/memberService'
+import { Member } from '../../types/member'
 
 interface RemoveMemberModalProps {
   isOpen: boolean
   onClose: () => void
-  member: MemberProps
+  member: Member
 }
 
 export function RemoveMemberModal({
@@ -19,10 +17,25 @@ export function RemoveMemberModal({
   onClose,
   member,
 }: RemoveMemberModalProps) {
-  const handleSubmit = (e: React.FormEvent) => {
+  const { farmId } = useParams<{ farmId: string }>()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    toast.success('Đã xóa thành viên khỏi trang trại')
-    onClose()
+    if (!farmId) return
+
+    try {
+      setIsSubmitting(true)
+      const res = await memberService.removeMember(farmId, member.id)
+      if (res.success) {
+        toast.success('Đã xóa thành viên khỏi trang trại')
+        onClose()
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Có lỗi xảy ra khi xóa thành viên')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -65,15 +78,24 @@ export function RemoveMemberModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-70"
             >
-              Xóa thành viên
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Đang xóa...</span>
+                </>
+              ) : (
+                'Xóa thành viên'
+              )}
             </button>
           </div>
         </form>

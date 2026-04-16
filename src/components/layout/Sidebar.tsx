@@ -37,6 +37,7 @@ const NAV_GROUPS = [
     items: [
       { key: "map", label: "Bản đồ nông trại", icon: MapIcon },
       { key: "land-plots", label: "Lô đất & Cây trồng", icon: Grid3X3 },
+      { key: "crop-catalog", label: "Danh mục cây trồng", icon: Trees },
       { key: "members", label: "Thành viên", icon: Users },
     ]
   },

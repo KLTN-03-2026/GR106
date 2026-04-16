@@ -8,11 +8,13 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
-  const token = localStorage.getItem("token");
-  if (!token || !hasRole(token, requiredRole)) {
-    return <Navigate to="/login"
-    
-     />;
+  const token = localStorage.getItem("userToken") || localStorage.getItem("accessToken");
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (!hasRole(token, requiredRole)) {
+    return <Navigate to="/unauthorized" replace />;
   }
   return <>{children}</>;
 };

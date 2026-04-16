@@ -11,7 +11,7 @@ export interface Farm {
 }
 
 export interface CreateFarmRequest {
-  name: string;
+  farmName: string;
   address?: string;
   totalArea?: number;
   description?: string;

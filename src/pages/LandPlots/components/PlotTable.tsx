@@ -17,14 +17,14 @@ export function PlotTable({
 }: PlotTableProps) {
   if (plots.length === 0) {
     return (
-      <div className="bg-transparent py-12 text-left font-sans">
-        <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-          <MapIcon className="w-6 h-6 text-gray-400" />
+      <div className="bg-transparent py-24 font-sans flex flex-col items-center justify-center text-center">
+        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-5">
+          <MapIcon className="w-8 h-8 text-gray-400" />
         </div>
-        <h3 className="text-lg font-medium text-gray-900 mb-1">
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">
           Không tìm thấy lô đất nào
         </h3>
-        <p className="text-gray-500">
+        <p className="text-sm text-gray-500 max-w-xs">
           Thử thay đổi bộ lọc hoặc tạo lô đất mới.
         </p>
       </div>

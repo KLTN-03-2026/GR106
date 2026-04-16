@@ -3,6 +3,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { PublicRoutes } from './PublicRoutes';
 import { PrivateRoutes } from './PrivateRoutes';
 import { LoadingPage } from '../components/ui/LoadingPage';
+import ProtectedRoute from './ProtectedRoute';
+
 
 // Pages
 const HomePage = lazy(() => import('../pages/landing/HomePage'));
@@ -28,10 +30,13 @@ const SubscriptionPage = lazy(() => import('../pages/Pricing/SubscriptionPage'))
 const PaymentResultPage = lazy(() => import('../pages/Pricing/PaymentResultPage'));
 const PaymentSuccessPage = lazy(() => import('../pages/Pricing/PaymentSuccessPage'));
 const FarmActionsPage = lazy(() => import('../pages/FarmManagement/FarmActionsPage'));
+const CropCatalogPage = lazy(() => import('../pages/CropCatalog/CropCatalogPage'));
+const AdminDashboardPage = lazy(() => import('../pages/Admin/AdminDashboardPage'));
 
 
 // Layouts
 const DashboardLayout = lazy(() => import('../layouts/DashboardLayout'));
+const AdminLayout = lazy(() => import('../layouts/AdminLayout'));
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -55,21 +60,31 @@ export const AppRoutes: React.FC = () => {
           <Route path="/dashboard" element={<Suspense fallback={<LoadingPage />}><MainPage /></Suspense>} />
           <Route path="/change-password" element={<Suspense fallback={<LoadingPage />}><ChangePasswordPage /></Suspense>} />
           <Route path="/farms" element={<Suspense fallback={<LoadingPage />}><ManagementDashboardPage /></Suspense>} />
-          <Route path="/farms/:farmId/actions" element={<Suspense fallback={<LoadingPage />}><FarmActionsPage /></Suspense>} />
-          <Route path="/farms/:farmId/subscription" element={<Suspense fallback={<LoadingPage />}><SubscriptionHistoryPage /></Suspense>} />
-          <Route path="/farms/:farmId/subscription/pricing" element={<Suspense fallback={<LoadingPage />}><SubscriptionPage /></Suspense>} />
           
-          {/* Dashboard pages */}
-          <Route path="/wallet" element={<Suspense fallback={<LoadingPage />}><WalletPage /></Suspense>} />
-          <Route path="/activity" element={<Suspense fallback={<LoadingPage />}><ActivityPage /></Suspense>} />
-          <Route path="/tasks" element={<Suspense fallback={<LoadingPage />}><TasksPage /></Suspense>} />
-          <Route path="/gemini" element={<Suspense fallback={<LoadingPage />}><GeminiPage /></Suspense>} />
+          <Route path="/farms/:farmId">
+            <Route path="actions" element={<Suspense fallback={<LoadingPage />}><FarmActionsPage /></Suspense>} />
+            <Route path="subscription" element={<Suspense fallback={<LoadingPage />}><SubscriptionHistoryPage /></Suspense>} />
+            <Route path="subscription/pricing" element={<Suspense fallback={<LoadingPage />}><SubscriptionPage /></Suspense>} />
+            <Route path="members" element={<Suspense fallback={<LoadingPage />}><MembersPage /></Suspense>} />
+            <Route path="land-plots" element={<Suspense fallback={<LoadingPage />}><LandPlotsPage /></Suspense>} />
+            <Route path="map" element={<Suspense fallback={<LoadingPage />}><MapPage /></Suspense>} />
+            <Route path="crop-catalog" element={<Suspense fallback={<LoadingPage />}><CropCatalogPage /></Suspense>} />
+            <Route path="wallet" element={<Suspense fallback={<LoadingPage />}><WalletPage /></Suspense>} />
+            <Route path="activity" element={<Suspense fallback={<LoadingPage />}><ActivityPage /></Suspense>} />
+            <Route path="tasks" element={<Suspense fallback={<LoadingPage />}><TasksPage /></Suspense>} />
+            <Route path="gemini" element={<Suspense fallback={<LoadingPage />}><GeminiPage /></Suspense>} />
+          </Route>
+          
           <Route path="/payment-result" element={<Suspense fallback={<LoadingPage />}><PaymentResultPage /></Suspense>} />
-          
-          <Route path="/farms/:farmId/members" element={<Suspense fallback={<LoadingPage />}><MembersPage /></Suspense>} />
-          <Route path="/farms/:farmId/land-plots" element={<Suspense fallback={<LoadingPage />}><LandPlotsPage /></Suspense>} />
-          <Route path="/farms/:farmId/map" element={<Suspense fallback={<LoadingPage />}><MapPage /></Suspense>} />
         </Route>
+
+
+        {/* Admin Routes */}
+        <Route element={<ProtectedRoute requiredRole="ROLE_ADMIN"><Suspense fallback={<LoadingPage />}><AdminLayout /></Suspense></ProtectedRoute>}>
+          <Route path="/admin/dashboard" element={<Suspense fallback={<LoadingPage />}><AdminDashboardPage /></Suspense>} />
+          <Route path="/admin/crop-catalog" element={<Suspense fallback={<LoadingPage />}><CropCatalogPage /></Suspense>} />
+        </Route>
+
 
         {/* Standalone payment pages (No Sidebar) */}
         <Route path="/payment/success" element={<Suspense fallback={<LoadingPage />}><PaymentSuccessPage /></Suspense>} />

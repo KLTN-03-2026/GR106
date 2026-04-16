@@ -25,3 +25,11 @@ export interface CreatePlotInput {
   geometry: Geometry;
   description?: string;
 }
+
+export interface UpdatePlotInput {
+  name?: string;
+  areaHa?: number;
+  description?: string;
+  status?: PlotStatus;
+  geometry?: Geometry | null;
+}

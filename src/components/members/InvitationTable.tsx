@@ -1,27 +1,42 @@
-import { useState } from 'react'
-import { Mail } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Mail, Loader2 } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
 import { CancelInviteModal } from './CancelInviteModal'
 import { toast } from 'sonner'
+import { memberService } from '../../services/memberService'
+import { Invitation, InvitationStatus } from '../../types/member'
 
-type InvitationStatus = 'pending' | 'expired' | 'cancelled' | 'accepted'
-
-interface Invitation {
-  id: string
-  email: string
-  role: 'manager' | 'worker'
-  status: InvitationStatus
-  sentDate: string
-}
+import { useParams } from 'react-router-dom'
 
 export function InvitationTable() {
-  const [invitations] = useState<Invitation[]>([])
+  const { farmId } = useParams<{ farmId: string }>()
+  const [invitations, setInvitations] = useState<Invitation[]>([])
+  const [loading, setLoading] = useState(true)
   const [selectedInvitation, setSelectedInvitation] =
     useState<Invitation | null>(null)
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false)
   const [activeFilter, setActiveFilter] = useState<InvitationStatus | 'all'>(
     'all',
   )
+
+  const fetchInvitations = async () => {
+    if (!farmId) return
+    try {
+      setLoading(true)
+      const res = await memberService.getInvitations(farmId)
+      if (res.success) {
+        setInvitations(res.data)
+      }
+    } catch (err: any) {
+      toast.error('Không thể tải danh sách lời mời')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchInvitations()
+  }, [farmId])
 
   const handleCancelInvite = (invitation: Invitation) => {
     setSelectedInvitation(invitation)
@@ -75,7 +90,12 @@ export function InvitationTable() {
         </button>
       </div>
 
-      {filteredInvitations.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mx-auto mb-4" />
+          <p className="text-gray-500">Đang tải danh sách lời mời...</p>
+        </div>
+      ) : filteredInvitations.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Mail className="w-8 h-8 text-gray-400" />
@@ -159,6 +179,7 @@ export function InvitationTable() {
             setIsCancelModalOpen(false)
             setSelectedInvitation(null)
           }}
+          onSuccess={fetchInvitations}
           invitation={selectedInvitation}
         />
       )}

@@ -38,7 +38,7 @@ export interface RefreshRequest {
   refreshToken: string;
 }
 
-export type RoleId = 'owner' | 'manager' | 'employee' | 'user';
+export type RoleId = 'owner' | 'manager' | 'employee' | 'user' | 'admin';
 
 export interface JwtPayload {
   sub: string; // user ID

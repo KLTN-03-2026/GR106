@@ -1,25 +1,24 @@
-import { useMemo, useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { PlusIcon, LayoutGridIcon } from 'lucide-react'
-import { Plot } from '../../types/plot'
-import { PlotFilters } from './components/PlotFilters'
-import { PlotTable } from './components/PlotTable'
-import { PlotCard } from './components/PlotCard'
-import { CreatePlotModal } from './components/CreatePlotModal'
-import { DeletePlotDialog } from './components/DeletePlotDialog'
-import { useDispatch, useSelector } from 'react-redux'
-import { AppDispatch, RootState } from '../../store'
-import { fetchPlots, createPlot } from '../../store/plotSlice'
-import { toast } from 'sonner'
-
-
+import { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../store';
+import { Plot } from '../../types/plot';
+import { fetchPlots, createPlot, updatePlot, deletePlot } from '../../store/plotSlice';
+import { toast } from 'sonner';
+import { LayoutGridIcon, PlusIcon } from 'lucide-react';
+import { PlotTable } from './components/PlotTable';
+import { PlotCard } from './components/PlotCard';
+import { PlotFilters } from './components/PlotFilters';
+import { CreatePlotModal } from './components/CreatePlotModal';
+import { EditPlotModal } from './components/EditPlotModal';
+import { DeletePlotDialog } from './components/DeletePlotDialog';
 
 export function LandPlotsPage() {
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
 
-  // Redux State
-  const { currentFarmId } = useSelector((state: RootState) => state.auth)
+  const { farmId } = useParams<{ farmId: string }>();
+
   const { plots } = useSelector((state: RootState) => state.plot)
 
   // Local UI State
@@ -29,12 +28,14 @@ export function LandPlotsPage() {
 
   // State quản lý các Modal
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [editingPlot, setEditingPlot] = useState<Plot | null>(null)
   const [deletingPlot, setDeletingPlot] = useState<Plot | null>(null)
 
-  // Fetch dữ liệu khi mount
   useEffect(() => {
-    dispatch(fetchPlots())
-  }, [dispatch])
+    if (farmId) {
+      dispatch(fetchPlots(farmId));
+    }
+  }, [dispatch, farmId]);
 
   // Xử lý lọc dữ liệu
   const filteredPlots = useMemo(() => {
@@ -50,33 +51,53 @@ export function LandPlotsPage() {
 
   // Handlers cho CRUD
   const handleCreatePlot = async (plotData: any) => {
+    if (!farmId) return;
     try {
-      await dispatch(createPlot(plotData)).unwrap()
+      await dispatch(createPlot({ farmId, plotData })).unwrap()
       setIsCreateModalOpen(false)
       toast.success('Tạo lô đất mới thành công')
+      dispatch(fetchPlots(farmId))
     } catch (err: any) {
-      if (Array.isArray(err)) {
-        toast.error(err[0]?.message || 'Lỗi dữ liệu đầu vào')
-      } else {
-        toast.error(err.message || err || 'Không thể tạo lô đất')
+      toast.error(err || 'Không thể tạo lô đất')
+    }
+  }
+
+  const handleUpdatePlot = async (updatedPlot: Plot) => {
+    if (!farmId) return;
+    try {
+      await dispatch(updatePlot({ 
+        farmId,
+        plotId: updatedPlot.id, 
+        plotData: {
+          name: updatedPlot.name,
+          areaHa: updatedPlot.areaHa,
+          description: updatedPlot.description,
+          status: updatedPlot.status
+        }
+      })).unwrap()
+      setEditingPlot(null)
+      toast.success('Cập nhật thông tin lô đất thành công')
+      dispatch(fetchPlots(farmId))
+    } catch (err: any) {
+      toast.error(err || 'Không thể cập nhật lô đất')
+    }
+  }
+
+  const handleDeletePlot = async () => {
+    if (deletingPlot && farmId) {
+      try {
+        await dispatch(deletePlot({ farmId, plotId: deletingPlot.id })).unwrap()
+        toast.success('Đã xóa lô đất thành công')
+        setDeletingPlot(null)
+        dispatch(fetchPlots(farmId))
+      } catch (err: any) {
+        toast.error(err || 'Không thể xóa lô đất')
       }
     }
   }
 
-  const handleEditPlot = (plot: Plot) => {
-    navigate('/dashboard/map', { state: { selectedPlotId: plot.id, mode: 'editing' } })
-  }
-
-  const handleDeletePlot = () => {
-    if (deletingPlot) {
-      console.log('Chưa hỗ trợ API xóa:', deletingPlot.id)
-      setDeletingPlot(null)
-    }
-  }
-
-
   const handleViewMap = (plot: Plot) => {
-    navigate(currentFarmId ? `/farms/${currentFarmId}/map` : '/map', {
+    navigate(farmId ? `/farms/${farmId}/map` : '/map', {
       state: {
         selectedPlotId: plot.id,
       },
@@ -84,7 +105,7 @@ export function LandPlotsPage() {
   }
 
   return (
-    <div className="max-w-7xl space-y-6 font-sans py-4 animate-in fade-in duration-500 text-left ml-0 pl-4">
+    <div className="w-full flex-1 space-y-6 font-sans py-4 animate-in fade-in duration-500 text-left">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4 bg-white p-6 transition-all duration-300">
         <div className="flex items-center gap-4">
@@ -124,7 +145,7 @@ export function LandPlotsPage() {
         {viewMode === 'table' ? (
           <PlotTable
             plots={filteredPlots}
-            onEdit={handleEditPlot}
+            onEdit={setEditingPlot}
             onDelete={setDeletingPlot}
             onViewMap={handleViewMap}
           />
@@ -134,7 +155,7 @@ export function LandPlotsPage() {
               <PlotCard
                 key={plot.id}
                 plot={plot}
-                onEdit={handleEditPlot}
+                onEdit={setEditingPlot}
                 onDelete={setDeletingPlot}
                 onViewMap={handleViewMap}
               />
@@ -158,6 +179,13 @@ export function LandPlotsPage() {
         onClose={() => setIsCreateModalOpen(false)}
         onSave={handleCreatePlot}
         existingPlots={plots}
+      />
+
+      <EditPlotModal
+        isOpen={!!editingPlot}
+        onClose={() => setEditingPlot(null)}
+        onSave={handleUpdatePlot}
+        plot={editingPlot}
       />
 
       <DeletePlotDialog

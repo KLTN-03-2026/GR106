@@ -18,6 +18,21 @@ export const farmService = {
     return response.data;
   },
 
+  /**
+   * Lấy thông tin tổng quan farm (Dashboard summary)
+   * GET /api/v1/farms/summary
+   */
+  async getFarmSummary(): Promise<ApiResponse<any[]>> {
+    const response = await axiosInstance.get<ApiResponse<any[]>>(
+      '/api/v1/farms/summary'
+    );
+    return response.data;
+  },
+
+  /**
+   * Lấy chi tiết farm
+   * [ĐANG CHỜ API] - Hiện chưa có trong tài liệu Backend mới nhất
+   */
   async getFarmDetail(id: string): Promise<ApiResponse<Farm>> {
     const response = await axiosInstance.get<ApiResponse<Farm>>(
       `/api/v1/farms/${id}`

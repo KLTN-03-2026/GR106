@@ -1,24 +1,25 @@
-import { useState, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
-import { useDispatch, useSelector } from 'react-redux'
-import { AppDispatch, RootState } from '../../store'
-import { fetchPlots, createPlot } from '../../store/plotSlice'
-import { FarmMap } from './components/FarmMap'
-import { DrawingToolbar, DrawingMode } from './components/DrawingToolbar'
-import { CreatePlotModal } from '../LandPlots/components/CreatePlotModal'
-import { toast } from 'sonner'
-import { BoundaryConfirmDialog } from './components/BoundaryConfirmDialog'
-import { DeleteBoundaryDialog } from './components/DeleteBoundaryDialog'
-import { Plot, GeoPoint } from '../../types/plot'
-import { isSelfIntersecting } from '../../utils/plotUtils'
+import { useState, useEffect } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../store';
+import { fetchPlots, createPlot, updatePlot } from '../../store/plotSlice';
+import { Plot, GeoPoint, Geometry } from '../../types/plot';
+import { toast } from 'sonner';
 
+import { FarmMap } from './components/FarmMap';
+import { DrawingToolbar, DrawingMode } from './components/DrawingToolbar';
+import { BoundaryConfirmDialog } from './components/BoundaryConfirmDialog';
+import { DeleteBoundaryDialog } from './components/DeleteBoundaryDialog';
+import { CreatePlotModal } from '../LandPlots/components/CreatePlotModal';
+import { isSelfIntersecting } from '../../utils/plotUtils';
 
 export function MapPage() {
   const location = useLocation()
+  const { farmId } = useParams<{ farmId: string }>()
   const dispatch = useDispatch<AppDispatch>()
   
   // Redux State
-  const { plots, loading } = useSelector((state: RootState) => state.plot)
+  const { plots } = useSelector((state: RootState) => state.plot)
   const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null)
   
   // Drawing State
@@ -31,8 +32,10 @@ export function MapPage() {
 
   // Fetch dữ liệu khi mount
   useEffect(() => {
-    dispatch(fetchPlots())
-  }, [dispatch])
+    if (farmId) {
+      dispatch(fetchPlots(farmId))
+    }
+  }, [dispatch, farmId])
 
   // Xử lý logic từ trang LandPlots chuyển qua
   useEffect(() => {
@@ -76,37 +79,45 @@ export function MapPage() {
   }
 
   const handleCreatePlotFromMap = async (plotData: any) => {
+    if (!farmId) return;
     try {
-      await dispatch(createPlot(plotData)).unwrap()
+      await dispatch(createPlot({ farmId, plotData })).unwrap()
       toast.success('Tạo lô đất mới thành công')
       setIsCreateModalOpen(false)
       setMode('none')
       setCurrentPath([])
+      dispatch(fetchPlots(farmId))
     } catch (err: any) {
       toast.error(err.message || 'Không thể tạo lô đất')
     }
   }
 
   const handleConfirmSave = async () => {
+    if (!farmId) return;
     setIsConfirmOpen(false)
     
     // Nếu đang chọn một lô đất cũ, thực hiện cập nhật
     if (selectedPlot && (selectedPlot.geometry || (selectedPlot.boundaries && selectedPlot.boundaries.length > 0))) {
-      const payload = {
-        ...selectedPlot,
-        areaHa: calculatedArea,
-        geometry: {
-          type: 'Polygon',
-          coordinates: [[...currentPath.map(p => [p.lng, p.lat]), [currentPath[0]?.lng, currentPath[0]?.lat]]]
-        }
+      const geometry: Geometry = {
+        type: 'Polygon',
+        coordinates: [[...currentPath.map(p => [p.lng, p.lat]), [currentPath[0]?.lng, currentPath[0]?.lat]]]
       }
       
       try {
-        console.log('Update Plot Action Placeholder:', payload)
-        // Khi có API sẽ gọi: await dispatch(updatePlot(payload)).unwrap()
-        toast.info('Đã ghi nhận thay đổi ranh giới (Chờ API cập nhật)')
+        const result = await dispatch(updatePlot({ 
+          farmId,
+          plotId: selectedPlot.id, 
+          plotData: { 
+            areaHa: calculatedArea,
+            geometry 
+          } 
+        })).unwrap()
+        
+        toast.success('Cập nhật ranh giới lô đất thành công')
+        setSelectedPlot(result) // Cập nhật local state với dữ liệu mới từ API
         setMode('none')
         setCurrentPath([])
+        dispatch(fetchPlots(farmId))
       } catch (err: any) {
         toast.error(err.message || 'Lỗi cập nhật ranh giới')
       }
@@ -146,26 +157,30 @@ export function MapPage() {
   }
 
   const handleDeleteBoundary = async () => {
+    if (!farmId) return;
     setIsDeleteModalOpen(false)
     if (!selectedPlot) return
 
-    const payload = {
-      ...selectedPlot,
-      areaHa: 0,
-      geometry: null
-    }
-
     try {
-      console.log('Delete Boundary Action Placeholder:', payload)
-      // Khi có API: await dispatch(updatePlot(payload)).unwrap()
+      // PB 06/07: Xóa ranh giới là update geometry về null
+      const result = await dispatch(updatePlot({ 
+        farmId,
+        plotId: selectedPlot.id, 
+        plotData: { 
+          areaHa: 0,
+          geometry: null 
+        } 
+      })).unwrap()
+      
       toast.success('Đã xóa ranh giới lô đất')
+      setSelectedPlot(result) // Cập nhật local state để UI (Toolbar/Map) nhận diện ranh giới đã mất
       setMode('none')
       setCurrentPath([])
+      dispatch(fetchPlots(farmId))
     } catch (err: any) {
       toast.error(err.message || 'Lỗi khi xóa ranh giới')
     }
   }
-
   return (
     <div className="h-[calc(100vh-100px)] w-full rounded-2xl border border-gray-200 overflow-hidden relative shadow-inner animate-in fade-in duration-700">
       <FarmMap

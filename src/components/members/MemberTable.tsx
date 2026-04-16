@@ -1,30 +1,43 @@
-import { useState } from 'react'
-import { MoreVertical, Users, Search, UserPlus } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { MoreVertical, Users, UserPlus, Loader2 } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
 import { ChangeRoleModal } from './ChangeRoleModal'
 import { RemoveMemberModal } from './RemoveMemberModal'
 import { getRoleDisplayName } from '../../utils/roleUtils'
 import { InviteModal } from './InviteModal'
-
-type MemberStatus = 'active' | 'pending' | 'rejected'
-type MemberRole = 'owner' | 'manager' | 'worker'
-
-interface Member {
-  id: string
-  name: string
-  email: string
-  role: MemberRole
-  status: MemberStatus
-  isOwner: boolean
-}
+import { memberService } from '../../services/memberService'
+import { Member, MemberStatus, MemberRole } from '../../types/member'
+import { toast } from 'sonner'
 
 export function MemberTable() {
-  const [members] = useState<Member[]>([])
+  const { farmId } = useParams<{ farmId: string }>()
+  const [members, setMembers] = useState<Member[]>([])
+  const [loading, setLoading] = useState(true)
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
   const [isChangeRoleModalOpen, setIsChangeRoleModalOpen] = useState(false)
   const [isRemoveMemberModalOpen, setIsRemoveMemberModalOpen] = useState(false)
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [activeFilter, setActiveFilter] = useState<MemberStatus | 'all'>('all')
+
+  const fetchMembers = async () => {
+    if (!farmId) return
+    try {
+      setLoading(true)
+      const res = await memberService.getMembers(farmId)
+      if (res.success) {
+        setMembers(res.data)
+      }
+    } catch (err: any) {
+      toast.error('Không thể tải danh sách thành viên')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchMembers()
+  }, [farmId])
 
   const handleChangeRole = (member: Member) => {
     setSelectedMember(member)
@@ -77,7 +90,12 @@ export function MemberTable() {
       </div>
 
       <div className="bg-white rounded-[24px] border border-slate-200 overflow-hidden shadow-sm">
-        {filteredMembers.length === 0 ? (
+        {loading ? (
+          <div className="p-12 text-center">
+            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mx-auto mb-4" />
+            <p className="text-xs text-slate-500 font-medium">Đang tải danh sách thành viên...</p>
+          </div>
+        ) : filteredMembers.length === 0 ? (
           <div className="p-12 text-center">
             <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
               <Users className="w-8 h-8 text-slate-300" />
@@ -117,12 +135,12 @@ export function MemberTable() {
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center border border-emerald-50">
                           <span className="text-emerald-700 font-bold text-sm">
-                            {member.name.charAt(0).toUpperCase()}
+                            {member.name ? member.name.charAt(0).toUpperCase() : '?'}
                           </span>
                         </div>
                         <div>
                           <div className="text-sm font-bold text-slate-800">
-                            {member.name}
+                            {member.name || 'Người dùng chưa cập nhật'}
                           </div>
                           <div className="text-[10px] text-slate-400">{member.email}</div>
                         </div>
@@ -142,7 +160,7 @@ export function MemberTable() {
                           <button className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
                             <MoreVertical className="w-4 h-4 text-slate-400" />
                           </button>
-                          <div className="absolute right-0 mt-1 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 hidden group-hover/menu:block z-10">
+                          <div className="absolute right-0 mt-1 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 hidden group-hover/menu:block z-10 transition-all">
                             <button
                               onClick={() => handleChangeRole(member)}
                               className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
@@ -169,7 +187,10 @@ export function MemberTable() {
 
       <InviteModal
         isOpen={isInviteModalOpen}
-        onClose={() => setIsInviteModalOpen(false)}
+        onClose={() => {
+          setIsInviteModalOpen(false)
+          fetchMembers()
+        }}
       />
 
       {selectedMember && (
@@ -179,6 +200,7 @@ export function MemberTable() {
             onClose={() => {
               setIsChangeRoleModalOpen(false)
               setSelectedMember(null)
+              fetchMembers()
             }}
             member={selectedMember}
           />
@@ -187,6 +209,7 @@ export function MemberTable() {
             onClose={() => {
               setIsRemoveMemberModalOpen(false)
               setSelectedMember(null)
+              fetchMembers()
             }}
             member={selectedMember}
           />

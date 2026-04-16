@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
-import { X, UserPlus, Mail, Users } from 'lucide-react'
+import { useParams } from 'react-router-dom'
+import { X, UserPlus, Mail, Users, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Modal } from '../ui/Modal'
 import { cn } from '../../utils/cn'
+import { memberService } from '../../services/memberService'
 
 interface InviteModalProps {
   isOpen: boolean
@@ -10,16 +12,18 @@ interface InviteModalProps {
 }
 
 export function InviteModal({ isOpen, onClose }: InviteModalProps) {
+  const { farmId } = useParams<{ farmId: string }>()
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<'manager' | 'worker'>('worker')
   const [emailError, setEmailError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const validateEmail = (emailArg: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     return emailRegex.test(emailArg)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setEmailError('')
 
@@ -33,14 +37,33 @@ export function InviteModal({ isOpen, onClose }: InviteModalProps) {
       return
     }
 
-    toast.success('Đã gửi lời mời thành công đến ' + email)
-    handleClose()
+    if (!farmId) {
+      toast.error('Không tìm thấy thông tin trang trại')
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      const res = await memberService.inviteMember(farmId, { 
+        email, 
+        roleId: role 
+      })
+      if (res.success) {
+        toast.success('Đã gửi lời mời thành công đến ' + email)
+        handleClose()
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Có lỗi xảy ra khi gửi lời mời')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleClose = () => {
     setEmail('')
     setRole('worker')
     setEmailError('')
+    setIsSubmitting(false)
     onClose()
   }
 

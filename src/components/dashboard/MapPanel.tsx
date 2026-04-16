@@ -11,7 +11,7 @@ export default function MapPanel() {
   const mainMapRef = useRef<google.maps.Map | null>(null);
   const miniMapRef = useRef<google.maps.Map | null>(null);
 
-  const { isLoaded } = useGoogleMaps();
+   const { isLoaded } = useGoogleMaps();
 
   const onMainMapLoad = useCallback((map: google.maps.Map) => {
     mainMapRef.current = map;
@@ -25,7 +25,10 @@ export default function MapPanel() {
     const main = mainMapRef.current;
     const mini = miniMapRef.current;
     if (!main || !mini) return;
-    mini.setCenter(main.getCenter()!);
+    const center = main.getCenter();
+    if (center) {
+      mini.setCenter(center);
+    }
   }, []);
 
   const handleZoomIn = useCallback(() => {

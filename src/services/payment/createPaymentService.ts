@@ -8,7 +8,7 @@ class CreatePaymentService {
     async createPayment(
         data: CreatePaymentRequest
     ): Promise<ApiResponse<CreatePaymentResponse>> {
-        const response = await axiosInstance.post('api/v1/payment/create', data);
+        const response = await axiosInstance.post('/api/v1/payment/create', data);
         return response.data;
     }
 }

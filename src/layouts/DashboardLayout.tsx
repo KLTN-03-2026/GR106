@@ -4,16 +4,25 @@ import Sidebar from "../components/layout/Sidebar";
 import { useDispatch, useSelector } from "react-redux";
 import { clearFarmContext } from "../store/authSlice";
 import { RootState } from "../store";
+import { getRolesFromToken } from "../utils/jwt";
+import { Navigate } from "react-router-dom";
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
   const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
+  const userToken = useSelector((state: RootState) => state.auth.userToken);
+  const isAdmin = userToken ? getRolesFromToken(userToken).includes('ROLE_ADMIN') : false;
+
+  // Redirect admin away from /dashboard immediately
+  if (isAdmin && location.pathname === "/dashboard") {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
 
   const getActive = () => {
     const p = location.pathname;
-    if (p === "/dashboard") return "dashboard";
+    if (p.includes("/dashboard")) return "dashboard";
     if (p === "/farms") return "tree";
     if (p.includes("/members")) return "members";
     if (p.includes("/land-plots")) return "land-plots";
@@ -23,24 +32,30 @@ export default function DashboardLayout() {
     if (p.includes("/wallet")) return "wallet";
     if (p.includes("/tasks")) return "task";
     if (p.includes("/gemini")) return "gemini";
+    if (p.includes("/crop-catalog")) return "crop-catalog";
     if (p.includes("/change-password")) return "settings";
-    
+
     // Default to 'tree' for any farm-specific action not matching above
     if (p.startsWith("/farms/")) return "tree";
-    
+
     return p.split("/").pop() || "dashboard";
   };
 
   const [active, setActive] = useState(getActive());
 
-  const wideSidebarPaths = ["/members", "/land-plots", "/map", "/subscription"];
-  const isWideSidebarPage = 
-    wideSidebarPaths.some(path => location.pathname.includes(path)) || 
+  const wideSidebarPaths = ["/members", "/land-plots", "/map", "/subscription", "/crop-catalog"];
+  const isWideSidebarPage =
+    wideSidebarPaths.some(path => location.pathname.includes(path)) ||
     (location.pathname.startsWith("/farms") && location.pathname !== "/farms");
 
   useEffect(() => {
     setActive(getActive());
   }, [location.pathname]);
+
+  // If admin on /dashboard, show nothing while redirecting to prevent flash
+  if (isAdmin && location.pathname === "/dashboard") {
+    return null;
+  }
 
   const handleNav = (key: string) => {
     setActive(key);
@@ -54,27 +69,33 @@ export default function DashboardLayout() {
         navigate("/farms");
       }
     } else if (key === "activity") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/activity` : "/activity");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/activity` : "/farms");
     } else if (key === "map") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/map` : "/map");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/map` : "/farms");
     } else if (key === "land-plots") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/land-plots` : "/land-plots");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/land-plots` : "/farms");
     } else if (key === "members") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/members` : "/members");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/members` : "/farms");
     } else if (key === "wallet") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/wallet` : "/wallet");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/wallet` : "/farms");
     } else if (key === "task") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/tasks` : "/tasks");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/tasks` : "/farms");
     } else if (key === "gemini") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/gemini` : "/gemini");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/gemini` : "/farms");
     } else if (key === "subscription") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/subscription` : "/subscription");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/subscription` : "/farms");
+    } else if (key === "crop-catalog") {
+      if (isAdmin) {
+        navigate("/admin/crop-catalog");
+      } else {
+        navigate(currentFarmId ? `/farms/${currentFarmId}/crop-catalog` : "/farms");
+      }
     } else if (key === "change-password") {
       navigate("/change-password");
     } else if (key === "settings") {
       // Handled by Sidebar internally for sub-menu or default to dashboard
     } else {
-      navigate("/dashboard");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/dashboard` : "/farms");
     }
   };
 

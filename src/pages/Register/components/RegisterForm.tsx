@@ -69,7 +69,7 @@ export const RegisterForm: React.FC = () => {
         // 3. Create Initial Farm
         try {
           await farmService.createFarm({
-            name: data.farmName,
+            farmName: data.farmName,
             description: `Trang trại của ${data.fullName}`
           });
           
@@ -111,7 +111,7 @@ export const RegisterForm: React.FC = () => {
             type="text"
             disabled={isLoading}
             className={`block w-full pl-10 pr-3 py-2 border ${errors.fullName ? 'border-red-300 text-red-900 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'} rounded-md shadow-sm sm:text-sm transition-colors`}
-            placeholder="Nguyễn Văn A"
+            placeholder="Họ và tên của bạn"
             {...register('fullName')} />
           
         </div>
@@ -163,7 +163,7 @@ export const RegisterForm: React.FC = () => {
             type="text"
             disabled={isLoading}
             className={`block w-full pl-10 pr-3 py-2 border ${errors.farmName ? 'border-red-300 text-red-900 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-emerald-500 focus:border-emerald-500'} rounded-md shadow-sm sm:text-sm transition-colors`}
-            placeholder="Trang trại Xanh"
+            placeholder="Tên trang trại (VD: Trang trại Xanh)"
             {...register('farmName')} />
           
         </div>

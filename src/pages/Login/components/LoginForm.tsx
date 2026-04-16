@@ -7,6 +7,7 @@ import { Loader2, Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { authService } from '../../../services/authService';
 import { loginSuccess } from '../../../store/authSlice';
+import { getRolesFromToken } from '../../../utils/jwt';
 import { loginSchema } from '../../../schemas/authSchemas';
 import { LoginInput } from '../../../types/auth';
 
@@ -28,7 +29,14 @@ export const LoginForm: React.FC = () => {
       if (response.success) {
         dispatch(loginSuccess(response.data));
         toast.success('Đăng nhập thành công');
-        navigate('/dashboard');
+        // Redirect based on user role
+        const token = response.data.accessToken;
+        const roles = getRolesFromToken(token);
+        if (roles.includes('ROLE_ADMIN')) {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (error: any) {
       toast.error(

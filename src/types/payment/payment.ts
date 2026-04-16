@@ -15,7 +15,7 @@ export interface ApiResponse<T> {
     message?: string;
 }
 
-export type BillingCycle = 'MONTHLY' | 'ANNUAL';
+export type BillingCycle = 'MONTHLY' | 'YEARLY';
 
 export interface CreatePaymentRequest {
     subscriptionPlanId: string;
@@ -23,26 +23,8 @@ export interface CreatePaymentRequest {
     farmId?: string;
 }
 
-export interface SepayFormData {
-    actionUrl: string;
-    orderAmount: string;
-    merchant: string;
-    currency: string;
-    operation: string;
-    orderDescription: string;
-    orderInvoiceNumber: string;
-    successUrl: string;
-    errorUrl: string;
-    cancelUrl: string;
-    signature: string;
-}
-
 export interface CreatePaymentResponse {
-    transactionId: string;
-    orderCode: string;
-    amount: string;
-    currency: string;
-    status: string;
-    expiredAt: string;
-    formData: SepayFormData;
+    checkoutUrl: string;
+    orderCode: number;
+    paymentStatus: string;
 }
