@@ -67,6 +67,9 @@ public class PlanService {
             crop = cropRepository.findByIdAndScope(request.getCropId(), CropScope.FARM);
         }
 
+        if(crop == null)
+            throw new AppException(ErrorCode.CROP_NOT_FOUND);
+
         if(planRepository.existsByFarmIdAndName(farm.getId(), request.getName()))
             throw new AppException(ErrorCode.PLAN_ALREADY_EXISTS);
 
