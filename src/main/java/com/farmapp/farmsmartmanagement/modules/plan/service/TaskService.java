@@ -6,18 +6,23 @@ import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreateTaskRequest;
+import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdateTaskRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.TaskResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.mapper.TaskMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -34,7 +39,10 @@ public class TaskService {
     SecurityUtils securityUtils;
 
     @Transactional
-    public TaskResponse createTask(UUID planStageId, CreateTaskRequest request){
+    public TaskResponse createTask(UUID planId, UUID planStageId, CreateTaskRequest request){
+
+        if(!planStageRepository.existsByPlanId(planId))
+            throw new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND);
 
         UUID farmId = securityUtils.getCurrentFarmId();
         UUID userId = securityUtils.getCurrentUserId();
@@ -56,9 +64,9 @@ public class TaskService {
         }
 
         // validate date
-        if (request.getStartDate() != null && request.getEndDate() != null &&
-                request.getStartDate().isAfter(request.getEndDate())) {
-            throw new AppException(ErrorCode.INVALID_DATE_RANGE);
+        if (request.getStartDate().isBefore(planStage.getStartDate()) ||
+        request.getEndDate().isAfter(planStage.getEndDate())) {
+            throw new AppException(ErrorCode.TASK_OUT_OF_TIME_PLAN_STAGE);
         }
 
         // initial status
@@ -83,4 +91,74 @@ public class TaskService {
 
         return taskMapper.toResponse(taskRepository.save(task));
     }
+
+    @Transactional
+    public TaskResponse updateTask(UUID planId, UUID planStageId, UUID taskId, UpdateTaskRequest request){
+
+        if(!planStageRepository.existsByPlanId(planId))
+            throw new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND);
+
+        UUID farmId = securityUtils.getCurrentFarmId();
+        UUID userId = securityUtils.getCurrentUserId();
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        // check farm
+        FarmEntity farm = farmRepository.findById(farmId)
+                .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
+
+        // check planStage
+        PlanStageEntity planStage = planStageRepository.findById(planStageId)
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
+
+        // check ownership
+        if (!planStage.getPlan().getFarm().getId().equals(farmId)) {
+            throw new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND);
+        }
+
+        // validate date
+        if (request.getStartDate().isBefore(planStage.getStartDate()) ||
+                request.getEndDate().isAfter(planStage.getEndDate())) {
+            throw new AppException(ErrorCode.TASK_OUT_OF_TIME_PLAN_STAGE);
+        }
+
+        TaskEntity updateTask = taskRepository.findById(taskId)
+                .orElseThrow(()-> new AppException(ErrorCode.TASK_NOT_FOUND));
+
+        // nếu không có thay đổi thì return luôn
+        if (!hasChanges(updateTask, request)) {
+            return taskMapper.toResponse(updateTask);
+        }
+
+        taskMapper.updateEntityFromRequest(request, updateTask);
+
+        return taskMapper.toResponse(updateTask);
+    }
+    @Transactional
+    public List<TaskResponse> findAllByPlanStageId(UUID planStageId) {
+        return taskMapper.toResponses(
+                taskRepository.findAllByPlanStageId(planStageId)
+        );
+    }
+
+
+    @Transactional
+    public void deleteTask(UUID taskId) {
+        taskRepository.deleteById(taskId);
+    }
+
+
+
+
+
+    private boolean hasChanges(TaskEntity entity, UpdateTaskRequest request) {
+        return !(Objects.equals(entity.getName(), request.getName())
+                && Objects.equals(entity.getDescription(), request.getDescription())
+                && Objects.equals(entity.getStartDate(), request.getStartDate())
+                && Objects.equals(entity.getEndDate(), request.getEndDate()));
+    }
+
+
+
 }

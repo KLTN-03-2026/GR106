@@ -21,8 +21,7 @@ public class TaskResponse {
     UUID farmId;
     UUID plotId;
 
-    UUID statusId;
-    String statusName;
+    TaskStatusResponse status;
 
     String name;
     String description;

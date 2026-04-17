@@ -37,14 +37,14 @@ public class CreatePlanRequest {
     @AssertTrue(message = "Thời gian bắt đầu phải trước thời gian kết thúc")
     private boolean isDateRangeValid() {
         if (startDate == null || endDate == null) return true;
-        return startDate.isBefore(endDate);
+        return !startDate.isAfter(endDate);
     }
 
     @JsonIgnore
     @AssertTrue(message = "Thời gian kết thúc không được nằm trong quá khứ")
     private boolean isEndDateValid() {
         if (endDate == null) return true;
-        return LocalDate.now().isBefore(endDate);
+        return !endDate.isAfter(LocalDate.now());
     }
 
 

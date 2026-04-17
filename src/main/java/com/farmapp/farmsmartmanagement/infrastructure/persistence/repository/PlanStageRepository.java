@@ -44,4 +44,6 @@ public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID
     List<PlanStageEntity> findPreviousStage(UUID planId, LocalDate startDate, Pageable pageable);
 
     List<PlanStageEntity> findAllByPlanId(UUID planId);
+
+    boolean existsByPlanId(UUID planId);
 }

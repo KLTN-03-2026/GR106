@@ -46,6 +46,7 @@ public enum ErrorCode {
     PLAN_STAGE_STATUS_INITIAL_NOT_FOUND(404, "Không tìm thấy trạng thái khởi tạo ban đầu", HttpStatus.NOT_FOUND),
     TASK_STATUS_INITIAL_NOT_FOUND(404, "Không tìm thấy trạng thái khởi tạo ban đầu", HttpStatus.NOT_FOUND),
     PLAN_STAGE_NOT_FOUND(404, "Không tìm thấy giai đoạn của kế hoạch", HttpStatus.NOT_FOUND),
+    TASK_NOT_FOUND(404,"Không tìm thấy công việc" ,HttpStatus.NOT_FOUND ),
 
 
     // --- Payment conflict ---
@@ -66,9 +67,9 @@ public enum ErrorCode {
     // --- Invalid ---
     INVALID_DATE_RANGE(400, "Thời gian bắt đầu phải trước thời gian kết thúc" , HttpStatus.BAD_REQUEST ),
     INVALID_DATE_NOW(400,"Thời gian kết thúc không được ở quá khứ", HttpStatus.BAD_REQUEST ),
+    TASK_OUT_OF_TIME_PLAN_STAGE(400,"Thơi gian công việc phải nằm trong thời gian giai đoạn" ,HttpStatus.BAD_REQUEST ),
+;
 
-
-    ;
     private final int code;
     private final String message;
     private final HttpStatus httpStatus;

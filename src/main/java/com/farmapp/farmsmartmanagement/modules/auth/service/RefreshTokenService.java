@@ -3,6 +3,7 @@ package com.farmapp.farmsmartmanagement.modules.auth.service;
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.common.util.RlsUtils;
+import com.farmapp.farmsmartmanagement.config.app.JwtProperties;
 import com.farmapp.farmsmartmanagement.modules.auth.dto.response.TokenResponse;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.RefreshTokenEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.security.JwtProvider;
@@ -25,6 +26,7 @@ public class RefreshTokenService {
     private final JwtProvider jwtProvider;
     private final PermissionService permissionService;
     private final RlsUtils rlsUtils;
+    private final JwtProperties jwtProperties;
 
     private String hash(String val) {
         try {

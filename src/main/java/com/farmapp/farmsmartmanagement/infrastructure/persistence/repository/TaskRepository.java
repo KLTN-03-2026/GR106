@@ -13,4 +13,6 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
     List<TaskEntity> findByPlanStage_Id(UUID planStageId);
 
     List<TaskEntity> findByPlot_Id(UUID plotId);
+
+    List<TaskEntity> findAllByPlanStageId(UUID planStageId);
 }
