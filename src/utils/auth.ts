@@ -1,11 +1,6 @@
 // Tiện ích decode JWT và kiểm tra quyền dựa vào payload
 
-export interface JwtPayload {
-  sub: string;
-  roles: string[];
-  iat: number;
-  exp: number;
-}
+import { JwtPayload } from '../types/auth/auth.ts';
 
 // Decode JWT không dùng thư viện ngoài
 export function decodeToken(token: string): JwtPayload | null {
@@ -20,5 +15,9 @@ export function decodeToken(token: string): JwtPayload | null {
 
 export function hasRole(token: string, role: string): boolean {
   const payload = decodeToken(token);
-  return payload?.roles?.includes(role) ?? false;
+  if (!payload) return false;
+  
+  const roles = payload.roles || payload.authorities || (payload.role ? [payload.role] : []);
+  const normalizedRoles = Array.isArray(roles) ? roles.map(r => r.toUpperCase()) : [];
+  return normalizedRoles.includes(role.toUpperCase());
 }

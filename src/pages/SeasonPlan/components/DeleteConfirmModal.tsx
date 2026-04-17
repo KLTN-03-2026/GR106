@@ -1,4 +1,4 @@
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SeasonPlan } from '../../../types/seasonPlan';
 import { Button } from '../../../components/ui/button';
@@ -18,7 +18,7 @@ export function DeleteConfirmModal({
 }: DeleteConfirmModalProps) {
   if (!isOpen || !plan) return null;
 
-  const isInProgress = plan.status === 'IN_PROGRESS';
+  const isOngoing = ['ACTIVE', 'READY_TO_HARVEST', 'HARVESTING'].includes(plan.status);
 
   return (
     <AnimatePresence>
@@ -44,7 +44,7 @@ export function DeleteConfirmModal({
                 Hành động này không thể hoàn tác.
               </div>
 
-              {isInProgress && (
+              {isOngoing && (
                 <div className="w-full p-4 bg-amber-50 rounded-2xl border border-amber-200 mb-6 flex gap-3 text-left">
                   <div className="w-5 h-5 bg-amber-200 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                     <span className="text-[10px] font-black text-amber-700">!</span>

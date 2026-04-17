@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { AuthTokens, UserInfo } from '../types/auth';
+import { getUserFromToken } from '../utils/jwt';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -10,11 +11,15 @@ interface AuthState {
   subscriptionVersion: number; // Tăng lên để buộc các hook subscription tải lại
 }
 
+const savedAccessToken = localStorage.getItem('accessToken') || localStorage.getItem('userToken');
+const userFromToken = savedAccessToken ? getUserFromToken(savedAccessToken) : null;
+const userFromStorage = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null;
+
 const initialState: AuthState = {
   isAuthenticated: !!localStorage.getItem('userToken'),
   userToken: localStorage.getItem('userToken'),
-  accessToken: localStorage.getItem('accessToken') || localStorage.getItem('userToken'),
-  user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null,
+  accessToken: savedAccessToken,
+  user: userFromToken || userFromStorage,
   currentFarmId: localStorage.getItem('currentFarmId'),
   subscriptionVersion: 0
 };
@@ -32,9 +37,15 @@ const authSlice = createSlice({
       localStorage.setItem('userToken', action.payload.accessToken);
       localStorage.setItem('accessToken', action.payload.accessToken);
       localStorage.setItem('refreshToken', action.payload.refreshToken);
+      
+      // Cập nhật user từ token nếu payload không có user sẵn
+      const userFromToken = getUserFromToken(action.payload.accessToken);
       if (action.payload.user) {
         state.user = action.payload.user;
         localStorage.setItem('user', JSON.stringify(action.payload.user));
+      } else if (userFromToken) {
+        state.user = userFromToken;
+        localStorage.setItem('user', JSON.stringify(userFromToken));
       } else {
         state.user = null;
       }
@@ -70,6 +81,13 @@ const authSlice = createSlice({
       state.currentFarmId = action.payload.farmId;
       state.accessToken = action.payload.token;
       
+      // Quan trọng: Cập nhật lại user info từ farm token (để lấy Role chuẩn trong farm)
+      const userFromFarmToken = getUserFromToken(action.payload.token);
+      if (userFromFarmToken) {
+        state.user = userFromFarmToken;
+        localStorage.setItem('user', JSON.stringify(userFromFarmToken));
+      }
+
       localStorage.setItem('currentFarmId', action.payload.farmId);
       localStorage.setItem('accessToken', action.payload.token);
     },
@@ -91,6 +109,14 @@ const authSlice = createSlice({
     setAccessToken: (state, action: PayloadAction<{ token: string; farmId?: string }>) => {
       state.accessToken = action.payload.token;
       localStorage.setItem('accessToken', action.payload.token);
+      
+      // Giải mã token mới để cập nhật role/info
+      const userFromToken = getUserFromToken(action.payload.token);
+      if (userFromToken) {
+        state.user = userFromToken;
+        localStorage.setItem('user', JSON.stringify(userFromToken));
+      }
+
       if (action.payload.farmId) {
         state.currentFarmId = action.payload.farmId;
         localStorage.setItem('currentFarmId', action.payload.farmId);

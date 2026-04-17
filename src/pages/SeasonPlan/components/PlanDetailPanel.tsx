@@ -15,6 +15,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SeasonPlan, PlanStatus, Phase, Task } from '../../../types/seasonPlan';
 import { cn } from '../../../utils/cn';
 import { Button } from '../../../components/ui/button';
+import { canEditPlan } from '../../../utils/seasonPlanUtils';
+import { UserInfo } from '../../../types/auth/auth';
 
 interface PlanDetailPanelProps {
   selection: null | 
@@ -29,6 +31,8 @@ interface PlanDetailPanelProps {
   onUpdateTask: (planId: string, phaseId: string, task: Task) => void;
   onSelectPhase: (planId: string, phaseId: string) => void;
   onSelectTask: (planId: string, phaseId: string, taskId: string) => void;
+  onDeletePlan?: (planId: string) => void;
+  user?: UserInfo | null;
 }
 
 export function PlanDetailPanel({
@@ -40,8 +44,12 @@ export function PlanDetailPanel({
   onAddTask,
   onUpdateTask,
   onSelectPhase,
-  onSelectTask
+  onSelectTask,
+  onDeletePlan,
+  user
 }: PlanDetailPanelProps) {
+  const canEdit = canEditPlan(user?.role);
+  const canDelete = canEditPlan(user?.role); // Simplified for PB11: owner/admin can delete
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const addTaskRef = useRef<HTMLInputElement>(null);
@@ -52,13 +60,14 @@ export function PlanDetailPanel({
 
   const handleDelete = () => {
     if (selection.type === 'PLAN') {
-      if (plan.status === 'IN_PROGRESS') {
+      const isOngoing = ['ACTIVE', 'READY_TO_HARVEST', 'HARVESTING'].includes(plan.status);
+      if (isOngoing) {
         const updatedPhases = plan.phases.map(p => 
           p.status === 'DRAFT' ? { ...p, status: 'CANCELLED' as PlanStatus, tasks: p.tasks.map(t => ({ ...t, status: 'CANCELLED' as PlanStatus })) } : p
         );
         onUpdatePlan({ ...plan, status: 'CANCELLED', phases: updatedPhases });
-      } else {
-        // Here we could call an onDeletePlan prop if we want hard delete
+      } else if (onDeletePlan) {
+        onDeletePlan(plan.id);
       }
       onClose();
     }
@@ -101,22 +110,54 @@ export function PlanDetailPanel({
   };
 
   const renderStatusDropdown = (currentStatus: PlanStatus, onStatusChange: (s: PlanStatus) => void) => {
+    const getLabel = (s: PlanStatus) => {
+      switch (s) {
+        case 'DRAFT': return 'Bản nháp';
+        case 'ACTIVE': return 'Đang thực hiện';
+        case 'READY_TO_HARVEST': return 'Sẵn sàng thu hoạch';
+        case 'HARVESTING': return 'Đang thu hoạch';
+        case 'COMPLETED': return 'Hoàn thành';
+        case 'CANCELLED': return 'Đã hủy';
+        default: return s;
+      }
+    };
+
+    const getColorClass = (s: PlanStatus) => {
+      switch (s) {
+        case 'ACTIVE': return "bg-indigo-600 text-white";
+        case 'READY_TO_HARVEST': return "bg-lime-600 text-white";
+        case 'HARVESTING': return "bg-emerald-600 text-white";
+        case 'COMPLETED': return "bg-slate-400 text-white";
+        case 'CANCELLED': return "bg-rose-600 text-white";
+        default: return "bg-slate-200 text-slate-700";
+      }
+    };
+
+    if (!canEdit) {
+      return (
+        <div className={cn(
+          "h-8 px-3 rounded flex items-center font-black text-[10px] uppercase tracking-widest shadow-sm",
+          getColorClass(currentStatus)
+        )}>
+           {getLabel(currentStatus)}
+        </div>
+      );
+    }
     return (
       <select
         value={currentStatus}
         onChange={(e) => onStatusChange(e.target.value as PlanStatus)}
         className={cn(
           "h-8 px-3 rounded font-black text-[10px] uppercase tracking-widest outline-none border-none shadow-sm cursor-pointer transition-all",
-          currentStatus === 'IN_PROGRESS' ? "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-100" :
-          currentStatus === 'COMPLETED' ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-100" :
-          currentStatus === 'CANCELLED' ? "bg-rose-600 text-white hover:bg-rose-700 shadow-rose-100" :
-          "bg-slate-200 text-slate-700 hover:bg-slate-300"
+          getColorClass(currentStatus)
         )}
       >
-        <option value="DRAFT">Bản nháp</option>
-        <option value="IN_PROGRESS">Đang thực hiện</option>
-        <option value="COMPLETED">Hoàn thành</option>
-        <option value="CANCELLED">Đã hủy</option>
+        <option value="DRAFT" className="bg-white text-slate-900">Bản nháp</option>
+        <option value="ACTIVE" className="bg-white text-slate-900">Đang thực hiện</option>
+        <option value="READY_TO_HARVEST" className="bg-white text-slate-900">Sẵn sàng thu hoạch</option>
+        <option value="HARVESTING" className="bg-white text-slate-900">Đang thu hoạch</option>
+        <option value="COMPLETED" className="bg-white text-slate-900">Hoàn thành</option>
+        <option value="CANCELLED" className="bg-white text-slate-900">Đã hủy</option>
       </select>
     );
   };
@@ -141,14 +182,16 @@ export function PlanDetailPanel({
                </span>
             </div>
             <div className="flex gap-2">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-xl"
-                onClick={() => setShowDeleteConfirm(true)}
-              >
-                <Trash2 size={18} />
-              </Button>
+              {canDelete && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-xl"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  <Trash2 size={18} />
+                </Button>
+              )}
               <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-400 hover:bg-slate-50 rounded-xl" onClick={onClose}>
                 <X size={18} />
               </Button>
@@ -170,9 +213,11 @@ export function PlanDetailPanel({
                  {selection.type === 'PHASE' && renderStatusDropdown(selection.phase.status, (s) => onUpdatePhase(plan.id, { ...selection.phase, status: s }))}
                  {selection.type === 'TASK' && renderStatusDropdown(selection.task.status, (s) => onUpdateTask(plan.id, selection.phase.id, { ...selection.task, status: s }))}
                  
-                 <Button variant="ghost" size="sm" className="h-8 text-[11px] font-bold text-slate-500 hover:bg-slate-100">
-                    <Plus size={14} className="mr-2" /> Ghép nối
-                 </Button>
+                 {canEdit && (
+                   <Button variant="ghost" size="sm" className="h-8 text-[11px] font-bold text-slate-500 hover:bg-slate-100">
+                      <Plus size={14} className="mr-2" /> Ghép nối
+                   </Button>
+                 )}
               </div>
             </div>
 
@@ -220,11 +265,12 @@ export function PlanDetailPanel({
                           <td className="px-4 py-3 text-right">
                                <span className={cn(
                                "text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-tighter",
-                               task.status === 'COMPLETED' ? "bg-emerald-100 text-emerald-700" :
-                               task.status === 'IN_PROGRESS' ? "bg-blue-100 text-blue-700" :
+                               task.status === 'COMPLETED' ? "bg-slate-100 text-slate-400" :
+                               task.status === 'ACTIVE' ? "bg-indigo-100 text-indigo-700" :
+                               task.status === 'HARVESTING' ? "bg-emerald-100 text-emerald-700" :
                                "bg-slate-100 text-slate-500"
                              )}>
-                               {task.status === 'COMPLETED' ? 'Hoàn thành' : task.status === 'IN_PROGRESS' ? 'Đang làm' : 'Bản nháp'}
+                               {task.status === 'COMPLETED' ? 'Hoàn thành' : task.status === 'ACTIVE' ? 'Đang làm' : (task.status === 'HARVESTING' ? 'Thu hoạch' : 'Bản nháp')}
                              </span>
                           </td>
                         </tr>
@@ -245,7 +291,7 @@ export function PlanDetailPanel({
                         }}
                       />
                     </div>
-                  ) : (
+                  ) : canEdit ? (
                     <button 
                       onClick={() => setIsAddingTask(true)}
                       className="w-full px-4 py-3 text-[11px] font-black text-slate-400 hover:text-indigo-600 hover:bg-slate-50 transition-all text-left flex items-center gap-2"
@@ -253,7 +299,7 @@ export function PlanDetailPanel({
                       <Plus size={14} />
                       THÊM CÔNG VIỆC CON
                     </button>
-                  )}
+                  ) : null}
                 </div>
               </div>
             )}
@@ -302,10 +348,10 @@ export function PlanDetailPanel({
                   <Trash2 size={32} />
                 </div>
                 <h3 className="text-xl font-black text-slate-800 mb-2">
-                  {plan.status === 'IN_PROGRESS' ? 'Hủy kế hoạch?' : 'Xóa kế hoạch?'}
+                  {['ACTIVE', 'READY_TO_HARVEST', 'HARVESTING'].includes(plan.status) ? 'Hủy kế hoạch?' : 'Xóa kế hoạch?'}
                 </h3>
                 <p className="text-sm text-slate-500 mb-8 leading-relaxed">
-                  {plan.status === 'IN_PROGRESS' 
+                  {['ACTIVE', 'READY_TO_HARVEST', 'HARVESTING'].includes(plan.status) 
                     ? 'Kế hoạch này đang thực hiện. Việc xóa sẽ chuyển tất cả công việc chưa bắt đầu sang trạng thái "Đã hủy". Bạn có chắc chắn không?'
                     : 'Dữ liệu này sẽ được gỡ bỏ khỏi hệ thống. Hành động này không thể hoàn tác.'
                   }

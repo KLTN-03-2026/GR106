@@ -8,15 +8,19 @@ interface StatusBadgeProps {
 
 const STATUS_LABELS: Record<PlanStatus, string> = {
   DRAFT: 'Bản nháp',
-  IN_PROGRESS: 'Đang thực hiện',
+  ACTIVE: 'Đang thực hiện',
+  READY_TO_HARVEST: 'Sẵn sàng thu hoạch',
+  HARVESTING: 'Đang thu hoạch',
   COMPLETED: 'Hoàn thành',
   CANCELLED: 'Đã hủy',
 };
 
 const STATUS_COLORS: Record<PlanStatus, string> = {
   DRAFT: 'bg-slate-100 text-slate-700 border-slate-200',
-  IN_PROGRESS: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  COMPLETED: 'bg-blue-50 text-blue-700 border-blue-200',
+  ACTIVE: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  READY_TO_HARVEST: 'bg-lime-50 text-lime-700 border-lime-200',
+  HARVESTING: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  COMPLETED: 'bg-slate-50 text-slate-400 border-slate-200',
   CANCELLED: 'bg-rose-50 text-rose-700 border-rose-200',
 };
 

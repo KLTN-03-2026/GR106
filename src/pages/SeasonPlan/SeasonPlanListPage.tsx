@@ -1,18 +1,44 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../../store';
 import { SeasonPlan, PlanStatus } from '../../types/seasonPlan';
-import { Search, Calendar, MapPin, Wheat } from 'lucide-react';
+import { fetchPlans, createPlan } from '../../store/seasonPlanSlice';
+import { fetchPlots } from '../../store/plotSlice';
+import { fetchCrops } from '../../store/cropSlice';
+import { canEditPlan } from '../../utils/seasonPlanUtils';
+import { Search, Calendar, MapPin, Wheat, Loader2, Info } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { Button } from '../../components/ui/button';
 import { CreatePlanModal } from './components/CreatePlanModal';
+import { useAuth } from '../../hooks/useAuth';
 
 export function SeasonPlanListPage() {
   const { farmId } = useParams<{ farmId: string }>();
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
   
-  const { plans } = useSelector((state: RootState) => state.seasonPlan);
+  const { plans, loading, error } = useSelector((state: RootState) => state.seasonPlan);
+  const { plots } = useSelector((state: RootState) => state.plot);
+  const { crops } = useSelector((state: RootState) => state.crop);
+  const { user, accessToken } = useAuth();
+  
+  // Kiểm tra quyền: Ưu tiên role trong user object, fallback kiểm tra trực tiếp trong token
+  const canEdit = canEditPlan(user?.role, accessToken);
+
+   useEffect(() => {
+     // Ensure we have proper farm context
+     if (user && accessToken && !farmId) {
+       // Try to get farmId from user's farms if available
+       // This is a fallback - ideally farmId should come from route params
+     }
+     
+     // Fetch data only when we have necessary context
+     dispatch(fetchPlans());
+     dispatch(fetchPlots());
+     dispatch(fetchCrops());
+   }, [dispatch, user, accessToken, farmId]);
+
   const farmPlans = plans.filter((p: SeasonPlan) => p.farmId === farmId || p.farmId === '');
 
   const [statusFilter, setStatusFilter] = useState<PlanStatus | 'ALL'>('ALL');
@@ -25,14 +51,22 @@ export function SeasonPlanListPage() {
     return matchesStatus && matchesSearch;
   });
 
-  const handleCreatePlan = (_newPlanData: Omit<SeasonPlan, 'id' | 'farmId'>) => {
-    setIsCreateModalOpen(false);
+  const handleCreatePlan = async (newPlanData: any) => {
+    try {
+      await dispatch(createPlan(newPlanData)).unwrap();
+      setIsCreateModalOpen(false);
+    } catch (err) {
+      // Error is handled by Redux state, but we could also show a toast here
+      console.error('Failed to create plan:', err);
+    }
   };
 
   const getStatusLabel = (status: PlanStatus) => {
     switch (status) {
       case 'DRAFT': return 'Bản nháp';
-      case 'IN_PROGRESS': return 'Đang thực hiện';
+      case 'ACTIVE': return 'Đang thực hiện';
+      case 'READY_TO_HARVEST': return 'Sẵn sàng thu hoạch';
+      case 'HARVESTING': return 'Đang thu hoạch';
       case 'COMPLETED': return 'Hoàn thành';
       case 'CANCELLED': return 'Đã hủy';
       default: return status;
@@ -42,8 +76,10 @@ export function SeasonPlanListPage() {
   const getStatusColor = (status: PlanStatus) => {
     switch (status) {
       case 'DRAFT': return 'bg-slate-100 text-slate-600';
-      case 'IN_PROGRESS': return 'bg-amber-100 text-amber-700';
-      case 'COMPLETED': return 'bg-emerald-100 text-emerald-700';
+      case 'ACTIVE': return 'bg-indigo-100 text-indigo-700';
+      case 'READY_TO_HARVEST': return 'bg-lime-100 text-lime-700';
+      case 'HARVESTING': return 'bg-emerald-100 text-emerald-700';
+      case 'COMPLETED': return 'bg-slate-100 text-slate-400';
       case 'CANCELLED': return 'bg-red-100 text-red-700';
       default: return 'bg-slate-100 text-slate-600';
     }
@@ -57,6 +93,18 @@ export function SeasonPlanListPage() {
     });
   };
 
+   const getPlotName = (id: string) => {
+     if (!id) return 'Chưa chọn lô đất';
+     const plot = plots.find(p => p.id === id);
+     return plot ? plot.name : 'Lô đất không xác định';
+   };
+ 
+   const getCropName = (id: string) => {
+     if (!id) return 'Chưa chọn cây trồng';
+     const crop = crops.find(c => c.id === id);
+     return crop ? crop.name : 'Cây trồng không xác định';
+   };
+
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-hidden">
       {/* Header */}
@@ -67,12 +115,19 @@ export function SeasonPlanListPage() {
             <p className="text-sm text-slate-500 mt-0.5">Danh sách các mùa vụ của trang trại</p>
           </div>
           <div className="flex items-center gap-3">
-            <Button 
-              className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 transition-all font-bold px-6"
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              + Tạo vụ mùa
-            </Button>
+            {canEdit ? (
+              <Button 
+                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 transition-all font-bold px-6"
+                onClick={() => setIsCreateModalOpen(true)}
+              >
+                + Tạo vụ mùa
+              </Button>
+            ) : (
+              <div className="px-4 py-2 bg-slate-100 rounded-xl flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                <Info size={14} />
+                Chế độ chỉ xem
+              </div>
+            )}
           </div>
         </div>
 
@@ -88,8 +143,8 @@ export function SeasonPlanListPage() {
             />
           </div>
           
-          <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl shrink-0">
-            {(['ALL', 'DRAFT', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] as const).map((status) => (
+          <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl shrink-0 overflow-x-auto max-w-full no-scrollbar">
+            {(['ALL', 'DRAFT', 'ACTIVE', 'READY_TO_HARVEST', 'HARVESTING', 'COMPLETED', 'CANCELLED'] as const).map((status) => (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
@@ -109,7 +164,24 @@ export function SeasonPlanListPage() {
 
       {/* Season Cards Grid */}
       <div className="flex-1 overflow-auto p-6">
-        {filteredPlans.length === 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center h-full text-slate-400">
+            <Loader2 size={48} className="mb-4 animate-spin text-indigo-500" />
+            <p className="text-lg font-medium">Đang tải kế hoạch...</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center h-full text-red-500">
+            <p className="text-lg font-medium">Lỗi khi tải dữ liệu</p>
+            <p className="text-sm">{typeof error === 'string' ? error : JSON.stringify(error)}</p>
+            <Button 
+               variant="outline" 
+               className="mt-4 border-red-200 text-red-600 hover:bg-red-50"
+               onClick={() => dispatch(fetchPlans())}
+            >
+              Thử lại
+            </Button>
+          </div>
+        ) : filteredPlans.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-400">
             <Calendar size={48} className="mb-4 opacity-50" />
             <p className="text-lg font-medium">Chưa có mùa vụ nào</p>
@@ -145,12 +217,12 @@ export function SeasonPlanListPage() {
                   
                   <div className="flex items-center gap-2 text-sm text-slate-500">
                     <Wheat size={14} />
-                    <span>Crop ID: {plan.cropId}</span>
+                    <span className="font-medium text-slate-700">{getCropName(plan.cropId)}</span>
                   </div>
 
                   <div className="flex items-center gap-2 text-sm text-slate-500">
                     <MapPin size={14} />
-                    <span>Plot ID: {plan.plotId}</span>
+                    <span className="font-medium text-slate-700">{getPlotName(plan.plotId)}</span>
                   </div>
                 </div>
 

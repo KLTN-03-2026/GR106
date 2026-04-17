@@ -84,60 +84,134 @@ export const hasPlanOverlap = (
   );
 };
 /**
- * Đồng bộ toàn bộ các giai đoạn phía sau khi một giai đoạn thay đổi
+ * Đồng bộ toàn bộ các giai đoạn khi một giai đoạn thay đổi (thời lượng hoặc ngày bắt đầu)
  */
-export const rippleUpdatePhases = (phases: Phase[], changedIndex: number, newDuration?: number): Phase[] => {
+export const rippleUpdatePhases = (
+  phases: Phase[], 
+  changedIndex: number, 
+  updates: { newDuration?: number, newStartDate?: string }
+): Phase[] => {
   const newPhases = [...phases];
-  
+  const { newDuration, newStartDate } = updates;
+
   const updateTasks = (phase: Phase, oldStart: string): Phase => {
     if (!phase.tasks || phase.tasks.length === 0) return phase;
     
     const oldStartDate = new Date(oldStart).getTime();
     const newStartDate = new Date(phase.startDate).getTime();
-    const offset = newStartDate - oldStartDate;
+    const offsetDays = Math.round((newStartDate - oldStartDate) / (1000 * 60 * 60 * 24));
     
+    if (offsetDays === 0) return phase;
+
     return {
       ...phase,
       tasks: phase.tasks.map(task => ({
         ...task,
-        startDate: addDays(task.startDate, Math.round(offset / (1000 * 60 * 60 * 24))),
-        endDate: addDays(task.endDate, Math.round(offset / (1000 * 60 * 60 * 24)))
+        startDate: addDays(task.startDate, offsetDays),
+        endDate: addDays(task.endDate, offsetDays)
       }))
     };
   };
 
-  if (newDuration !== undefined) {
-    const oldStart = newPhases[changedIndex].startDate;
-    newPhases[changedIndex] = {
-      ...newPhases[changedIndex],
-      duration: newDuration,
-      endDate: addDays(oldStart, newDuration)
-    };
-    // Duration change only affects current phase's end date, no task shift needed for THIS phase
-    // but the sub-phases will shift
+  // 1. Cập nhật cho giai đoạn bị thay đổi trực tiếp
+  const targetPhase = newPhases[changedIndex];
+  const oldStart = targetPhase.startDate;
+  
+  if (newStartDate !== undefined) {
+    targetPhase.startDate = newStartDate;
+    targetPhase.endDate = addDays(newStartDate, targetPhase.duration);
   }
+  
+  if (newDuration !== undefined) {
+    targetPhase.duration = newDuration;
+    targetPhase.endDate = addDays(targetPhase.startDate, newDuration);
+  }
+  
+  newPhases[changedIndex] = updateTasks(targetPhase, oldStart);
 
-  // Cập nhật tất cả các giai đoạn phía sau
+  // 2. Cập nhật tất cả các giai đoạn phía sau để chúng nối tiếp nhau
   for (let i = changedIndex + 1; i < newPhases.length; i++) {
-    const oldStart = newPhases[i].startDate;
+    const currentOldStart = newPhases[i].startDate;
     const prevPhase = newPhases[i - 1];
-    const duration = newPhases[i].duration;
     
     newPhases[i] = {
       ...newPhases[i],
       startDate: prevPhase.endDate,
-      endDate: addDays(prevPhase.endDate, duration)
+      endDate: addDays(prevPhase.endDate, newPhases[i].duration)
     };
     
-    // Shift tasks
-    newPhases[i] = updateTasks(newPhases[i], oldStart);
+    newPhases[i] = updateTasks(newPhases[i], currentOldStart);
   }
 
   return newPhases;
 };
 
 /**
- * Nhân bản kế hoạch với ngày bắt đầu mới
+ * Tính toán lại ngày bắt đầu/kết thúc của toàn bộ kế hoạch dựa trên các giai đoạn
+ */
+export const syncPlanDatesWithPhases = (plan: SeasonPlan): SeasonPlan => {
+  if (plan.phases.length === 0) return plan;
+  
+  const startDate = plan.phases[0].startDate;
+  const endDate = plan.phases[plan.phases.length - 1].endDate;
+  
+  return {
+    ...plan,
+    startDate,
+    endDate
+  };
+};
+
+/**
+ * Kiểm tra quyền thao tác dựa trên Role (PB11)
+ * Chủ trang trại (Owner/Admin) -> Toàn quyền
+ * Quản lý (Manager) -> Chỉ xem
+ */
+export const canEditPlan = (role: string | undefined | null, token?: string | null): boolean => {
+  if (role) {
+    const upperRole = role.toUpperCase();
+    if (upperRole === 'OWNER' || upperRole === 'ADMIN' || upperRole === 'ROLE_OWNER' || upperRole === 'ROLE_ADMIN' || upperRole === 'USER' || upperRole === 'ROLE_USER') {
+      return true;
+    }
+  }
+
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const rawRoles = payload.roles || payload.authorities || payload.role || [];
+      
+      let roles: string[] = [];
+      if (Array.isArray(rawRoles)) {
+        roles = rawRoles.map((r: any) => String(r));
+      } else if (typeof rawRoles === 'string') {
+        roles = rawRoles.split(',').map((r: string) => r.trim());
+      }
+
+      const upperRoles = roles.map(r => r.toUpperCase());
+      return (
+        upperRoles.includes('ROLE_OWNER') || 
+        upperRoles.includes('OWNER') || 
+        upperRoles.includes('ROLE_ADMIN') || 
+        upperRoles.includes('ADMIN') ||
+        upperRoles.includes('ROLE_USER') ||
+        upperRoles.includes('USER')
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
+};
+
+export const canDeletePlan = (role: string | undefined, status: string): boolean => {
+  if (!canEditPlan(role)) return false;
+  // PB11: Cho phép xóa/hủy kể cả khi đang thực hiện (có xác nhận)
+  return status !== 'COMPLETED' && status !== 'CANCELLED';
+};
+
+/**
+ * Nhân bản kế hoạch với ngày bắt đầu mới và sao chép toàn bộ nhiệm vụ
  */
 export const clonePlanLogic = (plan: SeasonPlan, newName: string, newStartDate: string): SeasonPlan => {
   const newPhases: Phase[] = [];
@@ -146,12 +220,25 @@ export const clonePlanLogic = (plan: SeasonPlan, newName: string, newStartDate: 
   plan.phases.forEach((phase, index) => {
     const duration = phase.duration;
     const endDate = addDays(currentDate, duration);
+    
+    // Sao chép và cập nhật ngày cho các tasks
+    const oldStartDate = new Date(phase.startDate).getTime();
+    const nStart = new Date(currentDate).getTime();
+    const offsetDays = Math.round((nStart - oldStartDate) / (1000 * 60 * 60 * 24));
+
     newPhases.push({
       ...phase,
-      id: `phase-${index}-${Date.now()}`,
+      id: `phase-${Date.now()}-${index}`,
       startDate: currentDate,
       endDate: endDate,
-      status: 'DRAFT' // Mặc định là bản nháp khi nhân bản
+      status: 'DRAFT',
+      tasks: phase.tasks.map(task => ({
+        ...task,
+        id: `task-${Date.now()}-${Math.random()}`,
+        startDate: addDays(task.startDate, offsetDays),
+        endDate: addDays(task.endDate, offsetDays),
+        status: 'DRAFT'
+      }))
     });
     currentDate = endDate;
   });

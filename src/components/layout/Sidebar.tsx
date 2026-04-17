@@ -17,6 +17,7 @@ import { cn } from "../../utils/cn";
 import { useAuth } from "../../hooks/useAuth";
 import { NAV_ICONS } from "../../layouts/NavIcon";
 import { useCurrentSubscription } from "../../hooks/subscription/useSubscription";
+import { getRoleDisplayName } from "../../utils/roleUtils";
 
 interface SidebarProps {
   active: string;
@@ -189,7 +190,9 @@ export default function Sidebar({
             {user?.fullName?.split(" ").pop()?.charAt(0) || "U"}
           </div>
           <div className="flex-1 overflow-hidden">
-            <p className="text-[10px] font-bold text-slate-400 uppercase truncate">Chủ trang trại</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase truncate">
+              {getRoleDisplayName(user?.role)}
+            </p>
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-export type PlanStatus = 'DRAFT' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type PlanStatus = 'DRAFT' | 'ACTIVE' | 'READY_TO_HARVEST' | 'HARVESTING' | 'COMPLETED' | 'CANCELLED';
 
 export interface PhaseConfig {
   name: string;
@@ -32,6 +32,7 @@ export interface Phase {
 export interface SeasonPlan {
   id: string;
   farmId: string;
+  clonedFromId?: string | null;
   name: string;
   plotId: string;
   cropId: string;
@@ -40,6 +41,10 @@ export interface SeasonPlan {
   status: PlanStatus;
   phases: Phase[];
   description?: string;
+  note?: string;
+  createdById?: string;
+  createdAt?: string;
+  deletedAt?: string | null;
 }
 
 export interface CreateSeasonPlanRequest {

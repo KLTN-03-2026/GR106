@@ -42,7 +42,9 @@ export type RoleId = 'owner' | 'manager' | 'employee' | 'user' | 'admin';
 
 export interface JwtPayload {
   sub: string; // user ID
-  roles: string[]; // Array of roles: ["ROLE_USER", "ROLE_OWNER", etc.]
+  roles?: string[]; // Array of roles: ["ROLE_USER", "ROLE_OWNER", etc.]
+  authorities?: string[]; // Array of strings (common in Spring Security)
+  role?: string;         // Single role string
   fullName?: string; // Họ tên thực tế từ Backend
   name?: string;     // Tên dự phòng từ Backend
   email?: string;    // Email thực tế

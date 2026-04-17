@@ -3,8 +3,9 @@ import { SeasonPlan, Phase } from '../../../types/seasonPlan';
 import { ChevronRight, ChevronDown, Zap, CheckSquare, Plus } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import { Button } from '../../../components/ui/button';
-import { rippleUpdatePhases, hasPlanOverlap } from '../../../utils/seasonPlanUtils';
+import { rippleUpdatePhases, hasPlanOverlap, syncPlanDatesWithPhases, canEditPlan, addDays } from '../../../utils/seasonPlanUtils';
 import { SelectionState } from '../SeasonPlanPage';
+import { UserInfo } from '../../../types/auth/auth';
 
 interface PlanTimelineProps {
   plans: SeasonPlan[];
@@ -13,6 +14,7 @@ interface PlanTimelineProps {
   onUpdatePlan: (plan: SeasonPlan) => void;
   onAddPhase: (planId: string, name: string) => void;
   preExpandedPlanId?: string;
+  user?: UserInfo | null;
 }
 
 export function PlanTimeline({
@@ -22,6 +24,7 @@ export function PlanTimeline({
   onUpdatePlan,
   onAddPhase,
   preExpandedPlanId,
+  user,
 }: PlanTimelineProps) {
   const [expandedPlans, setExpandedPlans] = useState<Set<string>>(new Set());
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
@@ -57,58 +60,72 @@ export function PlanTimeline({
     }
   };
 
-  const [resizingPhase, setResizingPhase] = useState<{
+  const [dragState, setDragState] = useState<{
+    type: 'MOVE' | 'RESIZE';
     planId: string;
     phaseId: string;
     initialDuration: number;
+    initialStartDate: string;
     startX: number;
   } | null>(null);
 
-  const handleMouseDown = (e: React.MouseEvent, planId: string, phase: Phase) => {
+  const canEdit = canEditPlan(user?.role);
+
+  const handleMouseDown = (e: React.MouseEvent, planId: string, phase: Phase, type: 'MOVE' | 'RESIZE') => {
+    if (!canEdit) return;
     e.stopPropagation();
-    setResizingPhase({
+    
+    setDragState({
+      type,
       planId,
       phaseId: phase.id,
       initialDuration: phase.duration,
+      initialStartDate: phase.startDate,
       startX: e.clientX
     });
   };
 
   const handleMouseMove = () => {
-    if (!resizingPhase) return;
-    // Visually we could show a ghost bar here
+    if (!dragState) return;
+    // Possible enhancement: Show ghost bar or live preview
   };
 
   const handleMouseUp = (e: React.MouseEvent) => {
-    if (!resizingPhase) return;
+    if (!dragState) return;
     
-    const deltaX = e.clientX - resizingPhase.startX;
+    const deltaX = e.clientX - dragState.startX;
     const deltaDays = Math.round(deltaX / pixelsPerDay);
-    const newDuration = Math.max(1, resizingPhase.initialDuration + deltaDays);
     
-    if (newDuration !== resizingPhase.initialDuration) {
-      const plan = plans.find(p => p.id === resizingPhase.planId);
+    if (deltaDays !== 0) {
+      const plan = plans.find(p => p.id === dragState.planId);
       if (plan) {
-        const phaseIndex = plan.phases.findIndex(ph => ph.id === resizingPhase.phaseId);
-        const updatedPhases = rippleUpdatePhases(plan.phases, phaseIndex, newDuration);
+        const phaseIndex = plan.phases.findIndex(ph => ph.id === dragState.phaseId);
         
+        let updatedPhases = plan.phases;
+        if (dragState.type === 'RESIZE') {
+          const newDuration = Math.max(1, dragState.initialDuration + deltaDays);
+          updatedPhases = rippleUpdatePhases(plan.phases, phaseIndex, { newDuration });
+        } else {
+          const newStartDate = addDays(dragState.initialStartDate, deltaDays);
+          updatedPhases = rippleUpdatePhases(plan.phases, phaseIndex, { newStartDate });
+        }
+        
+        // Sync plan dates
+        const updatedPlan = syncPlanDatesWithPhases({
+          ...plan,
+          phases: updatedPhases
+        });
+
         // Conflict check
-        const newEndDate = updatedPhases[updatedPhases.length - 1].endDate;
-        if (hasPlanOverlap(plan.plotId, plan.startDate, newEndDate, plans, plan.id)) {
+        if (hasPlanOverlap(updatedPlan.plotId, updatedPlan.startDate, updatedPlan.endDate, plans, updatedPlan.id)) {
           alert('Cảnh báo: Thay đổi này gây ra xung đột thời gian với kế hoạch khác trên cùng lô đất.');
-          // We still allow it but warn, or we could block it. 
-          // PB11 says "Cảnh báo nếu có xung đột", so alert is minimal valid.
         }
 
-        onUpdatePlan({
-          ...plan,
-          phases: updatedPhases,
-          endDate: newEndDate
-        });
+        onUpdatePlan(updatedPlan);
       }
     }
     
-    setResizingPhase(null);
+    setDragState(null);
   };
 
   const toggleExpandPlan = (planId: string, e: React.MouseEvent) => {
@@ -402,24 +419,31 @@ export function PlanTimeline({
                        return (
                          <Fragment key={phase.id}>
                             <div className="h-11 border-b border-slate-100 relative flex items-center">
-                               <div 
-                                 className={cn(
-                                   "absolute h-6 border rounded-sm flex items-center px-2 shadow-sm transition-all cursor-pointer",
-                                   selectedId === phase.id 
-                                     ? "border-indigo-500 bg-indigo-100 shadow-indigo-200 z-10" 
-                                     : "border-indigo-200/60 bg-indigo-50/50 hover:bg-indigo-50 hover:border-indigo-300"
+                              <div 
+                                className={cn(
+                                  "absolute h-6 border rounded-sm flex items-center px-2 shadow-sm transition-all",
+                                  canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-default",
+                                  selectedId === phase.id 
+                                    ? "border-indigo-500 bg-indigo-100 shadow-indigo-200 z-10" 
+                                    : "border-indigo-200/60 bg-indigo-50/50 hover:bg-indigo-50 hover:border-indigo-300"
+                                )}
+                                style={getPositionStyle(phase.startDate, phase.endDate)}
+                                onClick={() => onSelect({ type: 'PHASE', id: phase.id, planId: plan.id })}
+                                onMouseDown={(e) => handleMouseDown(e, plan.id, phase, 'MOVE')}
+                              >
+                                 <span className="text-[9px] font-black text-slate-700 truncate uppercase mt-[-1px] pointer-events-none">
+                                   {phase.name}
+                                 </span>
+                                 {canEdit && (
+                                   <div 
+                                      className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-indigo-400/50 rounded-r-sm transition-colors z-20"
+                                      onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        handleMouseDown(e, plan.id, phase, 'RESIZE');
+                                      }}
+                                   />
                                  )}
-                                 style={getPositionStyle(phase.startDate, phase.endDate)}
-                                 onClick={() => onSelect({ type: 'PHASE', id: phase.id, planId: plan.id })}
-                               >
-                                  <span className="text-[9px] font-black text-slate-700 truncate uppercase mt-[-1px] pointer-events-none">
-                                    {phase.name}
-                                  </span>
-                                  <div 
-                                     className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-indigo-400/50 rounded-r-sm transition-colors"
-                                     onMouseDown={(e) => handleMouseDown(e, plan.id, phase)}
-                                  />
-                               </div>
+                              </div>
                             </div>
 
                             {isPhaseExpanded && phase.tasks && phase.tasks.map((task) => (

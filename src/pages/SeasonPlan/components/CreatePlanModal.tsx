@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Calendar, MapPin, Sprout, Info } from 'lucide-react';
+import { X, Calendar, MapPin, Sprout, Info, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
@@ -20,8 +20,9 @@ export function CreatePlanModal({
   onSave,
   existingPlans,
 }: CreatePlanModalProps) {
-  const { plots } = useSelector((state: RootState) => state.plot);
-  const { crops } = useSelector((state: RootState) => state.crop);
+  const { plots, loading: plotsLoading } = useSelector((state: RootState) => state.plot);
+  const { crops, loading: cropsLoading } = useSelector((state: RootState) => state.crop);
+  const { loading: planLoading } = useSelector((state: RootState) => state.seasonPlan);
 
   const [plotId, setPlotId] = useState('');
   const [cropId, setCropId] = useState('');
@@ -69,6 +70,7 @@ export function CreatePlanModal({
       endDate,
       status: 'DRAFT',
       phases,
+      note: '', // Thêm trường note cho API
     });
 
     // Reset
@@ -123,9 +125,10 @@ export function CreatePlanModal({
                   <select
                     value={plotId}
                     onChange={(e) => setPlotId(e.target.value)}
-                    className="w-full bg-slate-50 border-2 border-transparent focus:border-emerald-500/20 focus:bg-white rounded-2xl py-3 pl-12 pr-4 outline-none transition-all font-bold text-slate-700 appearance-none"
+                    className="w-full bg-slate-50 border-2 border-transparent focus:border-emerald-500/20 focus:bg-white rounded-2xl py-3 pl-12 pr-4 outline-none transition-all font-bold text-slate-700 appearance-none disabled:opacity-50"
+                    disabled={plotsLoading}
                   >
-                    <option value="">Chọn lô đất</option>
+                    <option value="">{plotsLoading ? 'Đang tải lô đất...' : 'Chọn lô đất'}</option>
                     {plots.map((plot) => (
                       <option key={plot.id} value={plot.id}>
                         {plot.name} ({plot.areaHa} ha)
@@ -144,9 +147,10 @@ export function CreatePlanModal({
                   <select
                     value={cropId}
                     onChange={(e) => setCropId(e.target.value)}
-                    className="w-full bg-slate-50 border-2 border-transparent focus:border-emerald-500/20 focus:bg-white rounded-2xl py-3 pl-12 pr-4 outline-none transition-all font-bold text-slate-700 appearance-none"
+                    className="w-full bg-slate-50 border-2 border-transparent focus:border-emerald-500/20 focus:bg-white rounded-2xl py-3 pl-12 pr-4 outline-none transition-all font-bold text-slate-700 appearance-none disabled:opacity-50"
+                    disabled={cropsLoading}
                   >
-                    <option value="">Chọn cây trồng</option>
+                    <option value="">{cropsLoading ? 'Đang tải cây trồng...' : 'Chọn cây trồng'}</option>
                     {crops.map((crop) => (
                       <option key={crop.id} value={crop.id}>
                         {crop.name}
@@ -189,9 +193,17 @@ export function CreatePlanModal({
               </Button>
               <Button
                 type="submit"
-                className="flex-[2] py-6 rounded-2xl font-black uppercase tracking-wider bg-slate-900 text-white shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all border-none"
+                disabled={planLoading}
+                className="flex-[2] py-6 rounded-2xl font-black uppercase tracking-wider bg-slate-900 text-white shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all border-none relative overflow-hidden"
               >
-                Tạo kế hoạch
+                {planLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="animate-spin" size={18} />
+                    <span>Đang tạo...</span>
+                  </div>
+                ) : (
+                  'Tạo kế hoạch'
+                )}
               </Button>
             </div>
           </form>

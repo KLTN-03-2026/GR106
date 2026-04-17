@@ -1,19 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../../store';
+import { RootState, AppDispatch } from '../../store';
 import { 
-  addPlan, 
+  addPlan,
   updatePlan, 
   addPhase,
   updatePhase,
   addTask,
-  updateTask
+  updateTask,
+  fetchPlans,
+  createPlan,
+  deletePlan as removePlan
 } from '../../store/seasonPlanSlice';
 import { SeasonPlan, PlanStatus, Phase } from '../../types/seasonPlan';
-import { Search, ArrowLeft } from 'lucide-react';
+import { Search, ArrowLeft, Loader2, Info } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { Button } from '../../components/ui/button';
+import { useAuth } from '../../hooks/useAuth';
+import { canEditPlan } from '../../utils/seasonPlanUtils';
+import { fetchPlots } from '../../store/plotSlice';
+import { fetchCrops } from '../../store/cropSlice';
 
 import { PlanTimeline } from './components/PlanTimeline';
 import { CreatePlanModal } from './components/CreatePlanModal';
@@ -32,9 +39,27 @@ export interface SelectionState {
 export function SeasonPlanPage() {
   const { farmId, planId } = useParams<{ farmId: string; planId?: string }>();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   
-  const { plans } = useSelector((state: RootState) => state.seasonPlan);
+  const { plans, loading, error } = useSelector((state: RootState) => state.seasonPlan);
+  const { plots } = useSelector((state: RootState) => state.plot);
+  const { crops } = useSelector((state: RootState) => state.crop);
+  const { user, accessToken } = useAuth();
+  const canEdit = canEditPlan(user?.role, accessToken);
+
+   useEffect(() => {
+     // Ensure we have proper farm context
+     if (user && accessToken && !farmId) {
+       // Try to get farmId from user's farms if available
+       // This is a fallback - ideally farmId should come from route params
+     }
+     
+     // Fetch data only when we have necessary context
+     dispatch(fetchPlans());
+     dispatch(fetchPlots());
+     dispatch(fetchCrops());
+   }, [dispatch, user, accessToken, farmId]);
+
   const farmPlans = plans.filter((p: SeasonPlan) => p.farmId === farmId || p.farmId === '');
 
   const currentPlan = planId ? farmPlans.find(p => p.id === planId) : null;
@@ -53,10 +78,10 @@ export function SeasonPlanPage() {
 
   // Auto-select the plan and expand when viewing single plan
   useEffect(() => {
-    if (currentPlan) {
+    if (currentPlan && !selectedItem) {
       setSelectedItem({ type: 'PLAN', id: currentPlan.id, planId: currentPlan.id });
     }
-  }, [currentPlan]);
+  }, [currentPlan, selectedItem]);
 
   const filteredPlans = displayPlans.filter((p: SeasonPlan) => {
     const matchesStatus = statusFilter === 'ALL' || p.status === statusFilter;
@@ -64,13 +89,13 @@ export function SeasonPlanPage() {
     return matchesStatus && matchesSearch;
   });
 
-  const handleCreatePlan = (newPlanData: Omit<SeasonPlan, 'id' | 'farmId'>) => {
-    const newPlan: SeasonPlan = {
-      ...newPlanData,
-      id: `plan-${Date.now()}`,
-      farmId: farmId || '',
-    };
-    dispatch(addPlan(newPlan));
+  const handleCreatePlan = async (newPlanData: any) => {
+    try {
+      await dispatch(createPlan(newPlanData)).unwrap();
+      setIsCreateModalOpen(false);
+    } catch (err) {
+      console.error('Failed to create plan:', err);
+    }
   };
 
   const handleUpdatePlan = (updatedPlan: SeasonPlan) => {
@@ -144,7 +169,9 @@ export function SeasonPlanPage() {
   const getStatusLabel = (status: PlanStatus) => {
     switch (status) {
       case 'DRAFT': return 'Bản nháp';
-      case 'IN_PROGRESS': return 'Đang thực hiện';
+      case 'ACTIVE': return 'Đang thực hiện';
+      case 'READY_TO_HARVEST': return 'Sẵn sàng thu hoạch';
+      case 'HARVESTING': return 'Đang thu hoạch';
       case 'COMPLETED': return 'Hoàn thành';
       case 'CANCELLED': return 'Đã hủy';
       default: return status;
@@ -154,8 +181,10 @@ export function SeasonPlanPage() {
   const getStatusColor = (status: PlanStatus) => {
     switch (status) {
       case 'DRAFT': return 'bg-slate-100 text-slate-600';
-      case 'IN_PROGRESS': return 'bg-amber-100 text-amber-700';
-      case 'COMPLETED': return 'bg-emerald-100 text-emerald-700';
+      case 'ACTIVE': return 'bg-indigo-100 text-indigo-700';
+      case 'READY_TO_HARVEST': return 'bg-lime-100 text-lime-700';
+      case 'HARVESTING': return 'bg-emerald-100 text-emerald-700';
+      case 'COMPLETED': return 'bg-slate-100 text-slate-400';
       case 'CANCELLED': return 'bg-red-100 text-red-700';
       default: return 'bg-slate-100 text-slate-600';
     }
@@ -168,6 +197,18 @@ export function SeasonPlanPage() {
       year: 'numeric'
     });
   };
+
+   const getPlotName = (id: string) => {
+     if (!id) return 'Chưa chọn lô đất';
+     const plot = plots.find(p => p.id === id);
+     return plot ? plot.name : 'Lô đất không xác định';
+   };
+ 
+   const getCropName = (id: string) => {
+     if (!id) return 'Chưa chọn cây trồng';
+     const crop = crops.find(c => c.id === id);
+     return crop ? crop.name : 'Cây trồng không xác định';
+   };
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-hidden">
@@ -197,6 +238,14 @@ export function SeasonPlanPage() {
                     <span className="text-sm text-slate-500">
                       {formatDate(currentPlan.startDate)} - {formatDate(currentPlan.endDate)}
                     </span>
+                    <div className="w-1 h-1 bg-slate-300 rounded-full" />
+                    <span className="text-sm font-medium text-slate-700">
+                      {getCropName(currentPlan.cropId)}
+                    </span>
+                    <div className="w-1 h-1 bg-slate-300 rounded-full" />
+                    <span className="text-sm font-medium text-slate-700">
+                      {getPlotName(currentPlan.plotId)}
+                    </span>
                   </div>
                 </div>
               </>
@@ -209,12 +258,19 @@ export function SeasonPlanPage() {
           </div>
           {!currentPlan && (
             <div className="flex items-center gap-3">
-              <Button 
-                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 transition-all font-bold px-6"
-                onClick={() => setIsCreateModalOpen(true)}
-              >
-                + Tạo vụ mùa
-              </Button>
+              {canEdit ? (
+                <Button 
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 transition-all font-bold px-6"
+                  onClick={() => setIsCreateModalOpen(true)}
+                >
+                  + Tạo vụ mùa
+                </Button>
+              ) : (
+                <div className="px-4 py-2 bg-slate-100 rounded-xl flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                  <Info size={14} />
+                  Chế độ chỉ xem
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -232,8 +288,8 @@ export function SeasonPlanPage() {
               />
             </div>
             
-            <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl shrink-0">
-              {(['ALL', 'DRAFT', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] as const).map((status) => (
+            <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl shrink-0 overflow-x-auto max-w-full no-scrollbar">
+              {(['ALL', 'DRAFT', 'ACTIVE', 'READY_TO_HARVEST', 'HARVESTING', 'COMPLETED', 'CANCELLED'] as const).map((status) => (
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
@@ -244,10 +300,7 @@ export function SeasonPlanPage() {
                       : "text-slate-500 hover:text-slate-900 font-medium"
                   )}
                 >
-                  {status === 'ALL' ? 'Tất cả' : 
-                   status === 'DRAFT' ? 'Bản nháp' : 
-                   status === 'IN_PROGRESS' ? 'Đang thực hiện' : 
-                   status === 'COMPLETED' ? 'Hoàn thành' : 'Đã hủy'}
+                  {status === 'ALL' ? 'Tất cả' : getStatusLabel(status)}
                 </button>
               ))}
             </div>
@@ -257,14 +310,36 @@ export function SeasonPlanPage() {
 
       <div className="flex-1 flex overflow-hidden min-h-0 relative">
         <div className="flex-1 flex flex-col min-w-0">
-          <PlanTimeline 
-            plans={filteredPlans}
-            onSelect={(selection) => setSelectedItem(selection)}
-            selectedId={selectedItem?.id}
-            onUpdatePlan={handleUpdatePlan}
-            onAddPhase={handleAddPhase}
-            preExpandedPlanId={planId}
-          />
+          {loading ? (
+            <div className="flex-1 flex flex-col items-center justify-center bg-white/50 backdrop-blur-sm z-50">
+              <Loader2 className="animate-spin text-indigo-500 mb-4" size={48} />
+              <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Đang tải dữ liệu...</p>
+            </div>
+          ) : error ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white">
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-4">
+                <Info size={32} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">Không thể tải kế hoạch</h3>
+              <p className="text-slate-500 text-sm max-w-md mb-6">{typeof error === 'string' ? error : 'Đã có lỗi xảy ra trong quá trình kết nối máy chủ.'}</p>
+              <Button 
+                onClick={() => dispatch(fetchPlans())}
+                className="bg-slate-900 text-white hover:bg-slate-800"
+              >
+                Thử lại
+              </Button>
+            </div>
+          ) : (
+            <PlanTimeline 
+              plans={filteredPlans}
+              onSelect={(selection) => setSelectedItem(selection)}
+              selectedId={selectedItem?.id}
+              onUpdatePlan={handleUpdatePlan}
+              onAddPhase={handleAddPhase}
+              preExpandedPlanId={planId}
+              user={user}
+            />
+          )}
         </div>
 
         <PlanDetailPanel 
@@ -277,6 +352,8 @@ export function SeasonPlanPage() {
           onUpdateTask={(planId, phaseId, task) => dispatch(updateTask({ planId, phaseId, task }))}
           onSelectPhase={(planId, phaseId) => setSelectedItem({ type: 'PHASE', id: phaseId, planId })}
           onSelectTask={(planId, phaseId, taskId) => setSelectedItem({ type: 'TASK', id: taskId, planId, phaseId })}
+          onDeletePlan={(planId) => dispatch(removePlan(planId))}
+          user={user}
         />
       </div>
 
