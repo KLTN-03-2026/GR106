@@ -8,10 +8,7 @@ import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.FarmEnt
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanStageEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanStageStatusEntity;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.FarmRepository;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.PlanRepository;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.PlanStageRepository;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.PlanStageStatusRepository;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanStageRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlanStageResponse;
@@ -35,6 +32,8 @@ public class PlanStageService {
     PlanStageRepository planStageRepository;
     PlanStageStatusRepository planStageStatusRepository;
     FarmRepository farmRepository;
+    TaskRepository taskRepository;
+
 
     PlanStageMapper planStageMapper;
 
@@ -116,5 +115,12 @@ public class PlanStageService {
         newPlanStage.setStatus(statusEntityList.getFirst());
 
         return  planStageMapper.toResponse(planStageRepository.save(newPlanStage));
+    }
+
+    @Transactional
+    public void deletePlanStageCustom(UUID stageId){
+        taskRepository.deleteByPlanStageId(stageId);
+
+        planStageRepository.deleteById(stageId);
     }
 }

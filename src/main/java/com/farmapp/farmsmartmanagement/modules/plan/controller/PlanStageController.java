@@ -60,4 +60,14 @@ public class PlanStageController {
                 planStageService.findAllByPlanId(planId)
         );
     }
+
+    @DeleteMapping("/api/v1/plans/{planId}/stages/{stageId}")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<Void>> deletePlanStage(
+            @PathVariable("planId") UUID planId,
+            @PathVariable("stageId") UUID stageId
+    ){
+        planStageService.deletePlanStageCustom(stageId);
+        return  ResponseUtil.noContent();
+    }
 }
