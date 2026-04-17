@@ -12,8 +12,12 @@ export const seasonPlanService = {
    * GET /api/v1/plans
    */
   async getPlans(): Promise<SeasonPlan[]> {
+    console.log('[SeasonPlan Service] getPlans called');
     const response = await axiosInstance.get('/api/v1/plans');
+    console.log('[SeasonPlan Service] getPlans response:', response.data);
+    
     const validated = getPlansResponseSchema.parse(response.data);
+    console.log('[SeasonPlan Service] getPlans validated data:', validated.data);
     
     // Map API data back to frontend SeasonPlan type if needed
     // (Backend snippet doesn't show phases, we might need to handle that)
@@ -31,6 +35,8 @@ export const seasonPlanService = {
    * POST /api/v1/plans
    */
   async createPlan(data: CreateSeasonPlanRequest): Promise<SeasonPlan> {
+    console.log('[SeasonPlan Service] Creating plan with data:', data);
+    
     // Chuyển đổi từ frontend request sang backend request nếu cần
     const payload = {
       name: data.name,
@@ -41,8 +47,13 @@ export const seasonPlanService = {
       plotId: data.plotId, 
     };
 
+    console.log('[SeasonPlan Service] Payload sent to API:', payload);
+
     const response = await axiosInstance.post('/api/v1/plans', payload);
+    console.log('[SeasonPlan Service] API Response:', response.data);
+    
     const validated = createPlanResponseSchema.parse(response.data);
+    console.log('[SeasonPlan Service] Validated response data:', validated.data);
     
     return {
       ...validated.data,

@@ -47,18 +47,24 @@ export function SeasonPlanPage() {
   const { user, accessToken } = useAuth();
   const canEdit = canEditPlan(user?.role, accessToken);
 
-   useEffect(() => {
-     // Ensure we have proper farm context
-     if (user && accessToken && !farmId) {
-       // Try to get farmId from user's farms if available
-       // This is a fallback - ideally farmId should come from route params
-     }
-     
-     // Fetch data only when we have necessary context
-     dispatch(fetchPlans());
-     dispatch(fetchPlots());
-     dispatch(fetchCrops());
-   }, [dispatch, user, accessToken, farmId]);
+useEffect(() => {
+      // Không fetch data nếu chưa có farm context
+      if (!farmId || !accessToken) {
+        console.log('[SeasonPlanPage] Waiting for farm context...');
+        return;
+      }
+      
+      // Chỉ fetch plans - plots và crops chỉ fetch khi tạo mùa vụ mới
+      dispatch(fetchPlans());
+    }, [dispatch, user, accessToken, farmId]);
+
+  // Fetch plots và crops khi mở modal tạo mùa vụ
+  useEffect(() => {
+    if (isCreateModalOpen) {
+      dispatch(fetchPlots());
+      dispatch(fetchCrops());
+    }
+  }, [isCreateModalOpen, dispatch]);
 
   const farmPlans = plans.filter((p: SeasonPlan) => p.farmId === farmId || p.farmId === '');
 
@@ -90,11 +96,13 @@ export function SeasonPlanPage() {
   });
 
   const handleCreatePlan = async (newPlanData: any) => {
+    console.log('[SeasonPlanPage] handleCreatePlan called with:', newPlanData);
     try {
       await dispatch(createPlan(newPlanData)).unwrap();
+      console.log('[SeasonPlanPage] createPlan succeeded');
       setIsCreateModalOpen(false);
     } catch (err) {
-      console.error('Failed to create plan:', err);
+      console.error('[SeasonPlanPage] createPlan failed:', err);
     }
   };
 
@@ -198,17 +206,17 @@ export function SeasonPlanPage() {
     });
   };
 
-   const getPlotName = (id: string) => {
-     if (!id) return 'Chưa chọn lô đất';
-     const plot = plots.find(p => p.id === id);
-     return plot ? plot.name : 'Lô đất không xác định';
-   };
- 
-   const getCropName = (id: string) => {
-     if (!id) return 'Chưa chọn cây trồng';
-     const crop = crops.find(c => c.id === id);
-     return crop ? crop.name : 'Cây trồng không xác định';
-   };
+const getPlotName = (id: string) => {
+      if (!id) return '';
+      const plot = plots.find(p => p.id === id);
+      return plot ? plot.name : '';
+    };
+  
+    const getCropName = (id: string) => {
+      if (!id) return '';
+      const crop = crops.find(c => c.id === id);
+      return crop ? crop.name : '';
+    };
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-hidden">
@@ -238,14 +246,22 @@ export function SeasonPlanPage() {
                     <span className="text-sm text-slate-500">
                       {formatDate(currentPlan.startDate)} - {formatDate(currentPlan.endDate)}
                     </span>
-                    <div className="w-1 h-1 bg-slate-300 rounded-full" />
-                    <span className="text-sm font-medium text-slate-700">
-                      {getCropName(currentPlan.cropId)}
-                    </span>
-                    <div className="w-1 h-1 bg-slate-300 rounded-full" />
-                    <span className="text-sm font-medium text-slate-700">
-                      {getPlotName(currentPlan.plotId)}
-                    </span>
+                    {getCropName(currentPlan.cropId) && (
+                      <>
+                        <div className="w-1 h-1 bg-slate-300 rounded-full" />
+                        <span className="text-sm font-medium text-slate-700">
+                          {getCropName(currentPlan.cropId)}
+                        </span>
+                      </>
+                    )}
+                    {getPlotName(currentPlan.plotId) && (
+                      <>
+                        <div className="w-1 h-1 bg-slate-300 rounded-full" />
+                        <span className="text-sm font-medium text-slate-700">
+                          {getPlotName(currentPlan.plotId)}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </>

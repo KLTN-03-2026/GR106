@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { SeasonPlan, Phase, CreateSeasonPlanRequest } from '../types/seasonPlan';
 import { seasonPlanService } from '../services/seasonPlanService';
+import { RootState } from '../store';
 
 interface SeasonPlanState {
   plans: SeasonPlan[];
@@ -17,11 +18,22 @@ const initialState: SeasonPlanState = {
 // Async Thunk to fetch all plans
 export const fetchPlans = createAsyncThunk(
   'seasonPlan/fetchPlans',
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
     try {
+      const state = getState() as RootState;
+      const currentFarmId = state.auth.currentFarmId;
+      
+      if (!currentFarmId) {
+        console.warn('[SeasonPlan Slice] No farm selected, skipping fetchPlans');
+        return rejectWithValue('Chưa chọn farm');
+      }
+      
+      console.log('[SeasonPlan Slice] fetchPlans called, farmId:', currentFarmId);
       const plans = await seasonPlanService.getPlans();
+      console.log('[SeasonPlan Slice] fetchPlans received:', plans);
       return plans;
     } catch (error: any) {
+      console.error('[SeasonPlan Slice] fetchPlans error:', error);
       return rejectWithValue(error.response?.data || error.message);
     }
   }
@@ -32,9 +44,12 @@ export const createPlan = createAsyncThunk(
   'seasonPlan/createPlan',
   async (data: CreateSeasonPlanRequest, { rejectWithValue }) => {
     try {
+      console.log('[SeasonPlan Slice] createPlan thunk called with data:', data);
       const newPlan = await seasonPlanService.createPlan(data);
+      console.log('[SeasonPlan Slice] createPlan thunk received:', newPlan);
       return newPlan;
     } catch (error: any) {
+      console.error('[SeasonPlan Slice] createPlan error:', error);
       return rejectWithValue(error.response?.data || error.message);
     }
   }
@@ -114,27 +129,33 @@ const seasonPlanSlice = createSlice({
       .addCase(fetchPlans.pending, (state) => {
         state.loading = true;
         state.error = null;
+        console.log('[SeasonPlan Slice] fetchPlans pending');
       })
       .addCase(fetchPlans.fulfilled, (state, action) => {
         state.loading = false;
+        console.log('[SeasonPlan Slice] fetchPlans fulfilled, payload length:', action.payload?.length);
         state.plans = action.payload;
       })
       .addCase(fetchPlans.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        console.log('[SeasonPlan Slice] fetchPlans rejected, error:', action.payload);
       })
       // createPlan
       .addCase(createPlan.pending, (state) => {
         state.loading = true;
         state.error = null;
+        console.log('[SeasonPlan Slice] createPlan pending');
       })
       .addCase(createPlan.fulfilled, (state, action) => {
         state.loading = false;
+        console.log('[SeasonPlan Slice] createPlan fulfilled, payload:', action.payload);
         state.plans.push(action.payload);
       })
       .addCase(createPlan.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        console.log('[SeasonPlan Slice] createPlan rejected, error:', action.payload);
       });
   }
 });
