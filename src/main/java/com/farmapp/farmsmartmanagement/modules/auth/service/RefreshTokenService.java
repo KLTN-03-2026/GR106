@@ -47,7 +47,7 @@ public class RefreshTokenService {
                 RefreshTokenEntity entity = new RefreshTokenEntity();
                 entity.setUserId(userId);
                 entity.setTokenHash(hash(raw));
-                entity.setExpiresAt(now.plusSeconds(7 * 24 * 3600)); // 7 days
+                entity.setExpiresAt(now.plusSeconds(jwtProperties.getRefreshExpiration())); // 7 days
                 entity.setUserAgent(userAgent);
                 entity.setIpAddress(ip);
 
