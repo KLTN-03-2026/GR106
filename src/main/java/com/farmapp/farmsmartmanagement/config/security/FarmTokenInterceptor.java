@@ -44,4 +44,15 @@ public class FarmTokenInterceptor implements HandlerInterceptor {
 
         return true;
     }
+
+    private String extractFarmIdFromPath(String uri) {
+        // /api/v1/farms/{farmId}/...
+        String[] parts = uri.split("/");
+        for (int i = 0; i < parts.length - 1; i++) {
+            if (parts[i].equals("farms")) {
+                return parts[i + 1];
+            }
+        }
+        return null;
+    }
 }
