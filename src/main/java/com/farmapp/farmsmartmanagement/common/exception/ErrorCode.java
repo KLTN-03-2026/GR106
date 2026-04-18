@@ -56,13 +56,20 @@ public enum ErrorCode {
 
     // --- Existed ---
     PLOT_ALREADY_EXISTS(409, "Tên lô đất đã tồn tại", HttpStatus.CONFLICT),
+
     CROP_ALREADY_EXISTS(409, "Tên cây trồng đã tồn tại", HttpStatus.CONFLICT),
     CROP_TYPE_ALREADY_EXISTS(409, "Tên loại cây trồng đã tồn tại", HttpStatus.CONFLICT),
+
     PLAN_ALREADY_EXISTS(409,"Tên kế hoạch đã tồn tại", HttpStatus.CONFLICT),
+
     FARM_ALREADY_EXISTS(409, "Tên trang trại đã tồn tại", HttpStatus.CONFLICT),
+
     CROP_TYPE_IN_USE(409, "Loại cây trồng đang được sử dụng" ,HttpStatus.CONFLICT ),
+
     PLAN_STAGE_ALREADY_EXISTS(409,"Tên giai đoạn đã tồn tại", HttpStatus.CONFLICT),
     PLAN_STAGE_OVERLAP(409,"Thời gian bị trùng với giai đoạn khác" , HttpStatus.CONFLICT ),
+
+    WAREHOUSE_ALREADY_EXISTS(409, "Tên kho đã tồn tại", HttpStatus.CONFLICT),
 
     // --- Invalid ---
     INVALID_DATE_RANGE(400, "Thời gian bắt đầu phải trước thời gian kết thúc" , HttpStatus.BAD_REQUEST ),
