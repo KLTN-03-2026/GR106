@@ -23,9 +23,9 @@ public interface PlanPlotRepository extends JpaRepository<PlanPlotEntity, UUID> 
             @Param("plotId") UUID plotId
     );
 
-    @Query(value = """
-        SELECT p FROM PlanPlotEntity pp
-        JOIN FETCH pp.plot p
+    @Query("""
+        SELECT DISTINCT pp.plot
+        FROM PlanPlotEntity pp
         WHERE pp.plan.id = :planId
     """)
     List<PlotEntity> findPlotsByPlanId(UUID planId);
