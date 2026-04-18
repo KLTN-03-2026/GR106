@@ -61,6 +61,7 @@ export default function DashboardLayout() {
   const handleNav = (key: string) => {
     setActive(key);
     if (key === "dashboard") {
+      dispatch(clearFarmContext());
       navigate("/dashboard");
     } else if (key === "tree") {
       if (isWideSidebarPage && currentFarmId) {

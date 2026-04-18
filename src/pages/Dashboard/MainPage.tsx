@@ -13,7 +13,6 @@ import {
   MapPanel,
   TaskBar,
 } from "../../components/dashboard";
-import { Trees } from 'lucide-react';
 
 /**
  * Hook lấy số liệu tổng hợp từ Redux Store thay vì Mock Timer
@@ -27,7 +26,7 @@ function useDashboardData(farmId?: string) {
 
   useEffect(() => {
     if (farmId) {
-      dispatch(fetchPlots(farmId));
+      dispatch(fetchPlots());
       dispatch(fetchCrops());
     }
   }, [farmId, dispatch]);
@@ -49,8 +48,8 @@ function useDashboardData(farmId?: string) {
 
 export default function MainPage() {
   const { farmId: routeFarmId } = useParams<{ farmId: string }>();
-  const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
-  const farmId = routeFarmId || currentFarmId || undefined;
+  // Chỉ sử dụng farmId nếu nó tồn tại trên URL (Route Param)
+  const farmId = routeFarmId || undefined;
 
   const { stats, npkData, isLoading } = useDashboardData(farmId);
 

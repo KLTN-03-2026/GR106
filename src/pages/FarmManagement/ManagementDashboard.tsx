@@ -18,7 +18,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { farmService } from '../../services/farmService';
-import { selectFarm } from '../../store/authSlice';
+import { selectFarm, clearFarmContext } from '../../store/authSlice';
 import { CreateFarmModal } from '../../components/farm';
 import { EditFarmModal } from '../../components/farm/EditFarmModal';
 import { fetchFarmsSummary } from '../../store/farmSlice';
@@ -32,10 +32,16 @@ export function ManagementDashboardPage() {
   const [editingFarm, setEditingFarm] = useState<any | null>(null);
 
   const { farmSummary, loading, error } = useSelector((state: RootState) => state.farm);
+  
+  // Tự động xóa farm context khi vào trang danh sách farm
+  useEffect(() => {
+    dispatch(clearFarmContext());
+  }, [dispatch]);
 
   useEffect(() => {
     dispatch(fetchFarmsSummary());
   }, [dispatch]);
+
 
   const handleSelectFarm = async (farm: any) => {
     try {
