@@ -11,11 +11,9 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -24,6 +22,17 @@ import java.util.UUID;
 public class WarehouseController {
 
     WarehouseService warehouseService;
+
+    @GetMapping("/api/v1/farms/{farmId}/warehouses")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<List<WarehouseResponse>>> getAllWarehouses(
+            @PathVariable("farmId") UUID farmId
+    ){
+        return ResponseUtil.success(
+                warehouseService.findAllWarehouses()
+        );
+    }
+
 
     @PostMapping("/api/v1/farms/{farmId}/warehouses")
     @RequiresFarmToken
@@ -34,5 +43,16 @@ public class WarehouseController {
         return ResponseUtil.created(
                 warehouseService.createWarehouse(farmId, request)
         );
+    }
+
+    @DeleteMapping("/api/v1/farms/{farmId}/warehouses/{warehouseId}")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<Void>> deleteWarehouse(
+            @PathVariable("farmId") UUID farmId,
+            @PathVariable("warehouseId") UUID warehouseId
+    ){
+        warehouseService.deleteWarehouse(farmId, warehouseId);
+
+        return ResponseUtil.noContent();
     }
 }

@@ -47,7 +47,7 @@ public enum ErrorCode {
     TASK_STATUS_INITIAL_NOT_FOUND(404, "Không tìm thấy trạng thái khởi tạo ban đầu", HttpStatus.NOT_FOUND),
     PLAN_STAGE_NOT_FOUND(404, "Không tìm thấy giai đoạn của kế hoạch", HttpStatus.NOT_FOUND),
     TASK_NOT_FOUND(404,"Không tìm thấy công việc" ,HttpStatus.NOT_FOUND ),
-
+    WAREHOUSE_NOT_FOUND(404, "Không tìm thấy kho", HttpStatus.NOT_FOUND),
 
     // --- Payment conflict ---
     PAYMENT_ALREADY_PROCESSED(409, "Payment already processed", HttpStatus.CONFLICT),

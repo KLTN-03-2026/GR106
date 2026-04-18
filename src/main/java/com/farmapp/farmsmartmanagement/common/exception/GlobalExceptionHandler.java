@@ -9,6 +9,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -70,6 +71,20 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.<String>builder()
                         .success(false)
                         .code(400)
+                        .message(message)
+                        .build());
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiResponse<String>> handleHttpMessageMethodNotSupported(
+            HttpRequestMethodNotSupportedException ex) {
+        String message = "Phương thức không được hỗ trợ";
+        log.warn("HttpRequestMethodNotSupported: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.<String>builder()
+                        .success(false)
+                        .code(405)
                         .message(message)
                         .build());
     }

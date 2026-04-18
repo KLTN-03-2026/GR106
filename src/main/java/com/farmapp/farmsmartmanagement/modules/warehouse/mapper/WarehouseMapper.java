@@ -9,10 +9,13 @@ import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 
+import java.util.List;
+
 @Mapper(componentModel = "spring")
 public interface WarehouseMapper {
 
     WarehouseResponse toResponse(WarehouseEntity entity);
+    List<WarehouseResponse> toResponses(List<WarehouseEntity> entity);
 
     WarehouseEntity createEntityFromRequest(CreateWarehouseRequest request);
 
