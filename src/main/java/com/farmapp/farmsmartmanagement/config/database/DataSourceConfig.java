@@ -28,19 +28,19 @@ public class DataSourceConfig {
                 .build();
     }
 
-//    @Primary
-//    @Bean("dataSource")
-//    public DataSource dataSource(
-//            @Qualifier("hikariDataSource") HikariDataSource hikariDataSource) {
-//        return new RlsDataSourceWrapper(hikariDataSource);
-//    }
-
     @Primary
     @Bean("dataSource")
     public DataSource dataSource(
             @Qualifier("hikariDataSource") HikariDataSource hikariDataSource) {
-        return hikariDataSource; // ❌ bỏ wrapper
+        return new RlsDataSourceWrapper(hikariDataSource); // ✅ bật lại
     }
+
+//    @Primary
+//    @Bean("dataSource")
+//    public DataSource dataSource(
+//            @Qualifier("hikariDataSource") HikariDataSource hikariDataSource) {
+//        return hikariDataSource; // ❌ bỏ wrapper
+//    }
 
     // Flyway dùng raw connection, không qua RLS wrapper
     @Bean
