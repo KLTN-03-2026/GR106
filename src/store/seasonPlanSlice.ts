@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
-import { SeasonPlan, Phase, CreateSeasonPlanRequest } from '../types/seasonPlan';
+import { SeasonPlan, Task, CreateSeasonPlanRequest } from '../types/seasonPlan';
 import { seasonPlanService } from '../services/seasonPlanService';
 import { RootState } from '../store';
 
@@ -15,41 +15,117 @@ const initialState: SeasonPlanState = {
   error: null,
 };
 
-// Async Thunk to fetch all plans
+// --- PLAN THUNKS ---
+
 export const fetchPlans = createAsyncThunk(
   'seasonPlan/fetchPlans',
   async (_, { rejectWithValue, getState }) => {
     try {
       const state = getState() as RootState;
       const currentFarmId = state.auth.currentFarmId;
-      
-      if (!currentFarmId) {
-        console.warn('[SeasonPlan Slice] No farm selected, skipping fetchPlans');
-        return rejectWithValue('Chưa chọn farm');
-      }
-      
-      console.log('[SeasonPlan Slice] fetchPlans called, farmId:', currentFarmId);
-      const plans = await seasonPlanService.getPlans();
-      console.log('[SeasonPlan Slice] fetchPlans received:', plans);
-      return plans;
+      if (!currentFarmId) return rejectWithValue('Chưa chọn farm');
+      return await seasonPlanService.getPlans();
     } catch (error: any) {
-      console.error('[SeasonPlan Slice] fetchPlans error:', error);
       return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
 
-// Async Thunk to create a new plan
 export const createPlan = createAsyncThunk(
   'seasonPlan/createPlan',
   async (data: CreateSeasonPlanRequest, { rejectWithValue }) => {
     try {
-      console.log('[SeasonPlan Slice] createPlan thunk called with data:', data);
-      const newPlan = await seasonPlanService.createPlan(data);
-      console.log('[SeasonPlan Slice] createPlan thunk received:', newPlan);
-      return newPlan;
+      return await seasonPlanService.createPlan(data);
     } catch (error: any) {
-      console.error('[SeasonPlan Slice] createPlan error:', error);
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// --- STAGE THUNKS ---
+
+export const fetchStages = createAsyncThunk(
+  'seasonPlan/fetchStages',
+  async (planId: string, { rejectWithValue }) => {
+    try {
+      return { planId, phases: await seasonPlanService.getStages(planId) };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const createPhase = createAsyncThunk(
+  'seasonPlan/createPhase',
+  async ({ planId, data }: { planId: string; data: { name: string; startDate: string; endDate: string } }, { rejectWithValue }) => {
+    try {
+      return { planId, phase: await seasonPlanService.createStage(planId, data) };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const removePhase = createAsyncThunk(
+  'seasonPlan/removePhase',
+  async ({ planId, stageId }: { planId: string; stageId: string }, { rejectWithValue }) => {
+    try {
+      await seasonPlanService.deleteStage(planId, stageId);
+      return { planId, stageId };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// --- TASK THUNKS ---
+
+export const fetchTasks = createAsyncThunk(
+  'seasonPlan/fetchTasks',
+  async ({ planId, stageId }: { planId: string; stageId: string }, { rejectWithValue }) => {
+    try {
+      return { planId, stageId, tasks: await seasonPlanService.getTasks(planId, stageId) };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const createSeasonTask = createAsyncThunk(
+  'seasonPlan/createTask',
+  async (
+    { planId, stageId, data }: { planId: string; stageId: string; data: { name: string; description: string; startDate: string; endDate: string; plotId: string } }, 
+    { rejectWithValue }
+  ) => {
+    try {
+      return { planId, stageId, task: await seasonPlanService.createTask(planId, stageId, data) };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const updateSeasonTask = createAsyncThunk(
+  'seasonPlan/updateTask',
+  async (
+    { planId, stageId, taskId, data }: { planId: string; stageId: string; taskId: string; data: Partial<Task> }, 
+    { rejectWithValue }
+  ) => {
+    try {
+      return { planId, stageId, task: await seasonPlanService.updateTask(planId, stageId, taskId, data) };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const removeSeasonTask = createAsyncThunk(
+  'seasonPlan/removeTask',
+  async ({ planId, stageId, taskId }: { planId: string; stageId: string; taskId: string }, { rejectWithValue }) => {
+    try {
+      await seasonPlanService.deleteTask(planId, stageId, taskId);
+      return { planId, stageId, taskId };
+    } catch (error: any) {
       return rejectWithValue(error.response?.data || error.message);
     }
   }
@@ -67,111 +143,75 @@ const seasonPlanSlice = createSlice({
     },
     updatePlan: (state, action: PayloadAction<SeasonPlan>) => {
       const index = state.plans.findIndex(p => p.id === action.payload.id);
-      if (index !== -1) {
-        state.plans[index] = action.payload;
-      }
+      if (index !== -1) state.plans[index] = action.payload;
     },
     deletePlan: (state, action: PayloadAction<string>) => {
       state.plans = state.plans.filter(p => p.id !== action.payload);
     },
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading = action.payload;
-    },
-    setError: (state, action: PayloadAction<string | null>) => {
-      state.error = action.payload;
-    },
-    addPhase: (state, action: PayloadAction<{ planId: string; phase: Phase }>) => {
-      const plan = state.plans.find(p => p.id === action.payload.planId);
-      if (plan) {
-        if (!plan.phases) plan.phases = [];
-        plan.phases.push(action.payload.phase);
-        // Cập nhật endDate của kế hoạch nếu giai đoạn mới vượt quá
-        if (new Date(action.payload.phase.endDate) > new Date(plan.endDate)) {
-          plan.endDate = action.payload.phase.endDate;
-        }
-      }
-    },
-    updatePhase: (state, action: PayloadAction<{ planId: string; phase: Phase }>) => {
-      const plan = state.plans.find(p => p.id === action.payload.planId);
-      if (plan) {
-        const index = plan.phases.findIndex(ph => ph.id === action.payload.phase.id);
-        if (index !== -1) {
-          plan.phases[index] = action.payload.phase;
-        }
-      }
-    },
-    addTask: (state, action: PayloadAction<{ planId: string; phaseId: string; task: any }>) => {
-      const plan = state.plans.find(p => p.id === action.payload.planId);
-      if (plan) {
-        const phase = plan.phases.find(ph => ph.id === action.payload.phaseId);
-        if (phase) {
-          if (!phase.tasks) phase.tasks = [];
-          phase.tasks.push(action.payload.task);
-        }
-      }
-    },
-    updateTask: (state, action: PayloadAction<{ planId: string; phaseId: string; task: any }>) => {
-      const plan = state.plans.find(p => p.id === action.payload.planId);
-      if (plan) {
-        const phase = plan.phases.find(ph => ph.id === action.payload.phaseId);
-        if (phase) {
-          const taskIndex = phase.tasks.findIndex(t => t.id === action.payload.task.id);
-          if (taskIndex !== -1) {
-            phase.tasks[taskIndex] = action.payload.task;
-          }
-        }
-      }
-    }
   },
   extraReducers: (builder) => {
     builder
-      // fetchPlans
-      .addCase(fetchPlans.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        console.log('[SeasonPlan Slice] fetchPlans pending');
+      // Plans
+      .addCase(fetchPlans.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(fetchPlans.fulfilled, (state, action) => { state.loading = false; state.plans = action.payload; })
+      .addCase(fetchPlans.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
+      .addCase(createPlan.fulfilled, (state, action) => { state.plans.push(action.payload); })
+      
+      // Stages
+      .addCase(fetchStages.fulfilled, (state, action) => {
+        const plan = state.plans.find(p => p.id === action.payload.planId);
+        if (plan) plan.phases = action.payload.phases;
       })
-      .addCase(fetchPlans.fulfilled, (state, action) => {
-        state.loading = false;
-        console.log('[SeasonPlan Slice] fetchPlans fulfilled, payload length:', action.payload?.length);
-        state.plans = action.payload;
+      .addCase(createPhase.fulfilled, (state, action) => {
+        const plan = state.plans.find(p => p.id === action.payload.planId);
+        if (plan) {
+          if (!plan.phases) plan.phases = [];
+          plan.phases.push(action.payload.phase);
+        }
       })
-      .addCase(fetchPlans.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-        console.log('[SeasonPlan Slice] fetchPlans rejected, error:', action.payload);
+      .addCase(removePhase.fulfilled, (state, action) => {
+        const plan = state.plans.find(p => p.id === action.payload.planId);
+        if (plan) plan.phases = plan.phases.filter(ph => ph.id !== action.payload.stageId);
       })
-      // createPlan
-      .addCase(createPlan.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        console.log('[SeasonPlan Slice] createPlan pending');
+      
+      // Tasks
+      .addCase(fetchTasks.fulfilled, (state, action) => {
+        const plan = state.plans.find(p => p.id === action.payload.planId);
+        if (plan) {
+          const phase = plan.phases.find(ph => ph.id === action.payload.stageId);
+          if (phase) phase.tasks = action.payload.tasks;
+        }
       })
-      .addCase(createPlan.fulfilled, (state, action) => {
-        state.loading = false;
-        console.log('[SeasonPlan Slice] createPlan fulfilled, payload:', action.payload);
-        state.plans.push(action.payload);
+      .addCase(createSeasonTask.fulfilled, (state, action) => {
+        const plan = state.plans.find(p => p.id === action.payload.planId);
+        if (plan) {
+          const phase = plan.phases.find(ph => ph.id === action.payload.stageId);
+          if (phase) {
+            if (!phase.tasks) phase.tasks = [];
+            phase.tasks.push(action.payload.task);
+          }
+        }
       })
-      .addCase(createPlan.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-        console.log('[SeasonPlan Slice] createPlan rejected, error:', action.payload);
+      .addCase(updateSeasonTask.fulfilled, (state, action) => {
+        const plan = state.plans.find(p => p.id === action.payload.planId);
+        if (plan) {
+          const phase = plan.phases.find(ph => ph.id === action.payload.stageId);
+          if (phase) {
+            const index = phase.tasks.findIndex(t => t.id === action.payload.task.id);
+            if (index !== -1) phase.tasks[index] = action.payload.task;
+          }
+        }
+      })
+      .addCase(removeSeasonTask.fulfilled, (state, action) => {
+        const plan = state.plans.find(p => p.id === action.payload.planId);
+        if (plan) {
+          const phase = plan.phases.find(ph => ph.id === action.payload.stageId);
+          if (phase) phase.tasks = phase.tasks.filter(t => t.id !== action.payload.taskId);
+        }
       });
   }
 });
 
-export const { 
-  setPlans, 
-  addPlan, 
-  updatePlan, 
-  deletePlan, 
-  setLoading, 
-  setError,
-  addPhase,
-  updatePhase,
-  addTask,
-  updateTask
-} = seasonPlanSlice.actions;
-
+export const { setPlans, addPlan, updatePlan, deletePlan } = seasonPlanSlice.actions;
 export default seasonPlanSlice.reducer;
 

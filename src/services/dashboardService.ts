@@ -38,7 +38,8 @@ export const dashboardService = {
           const plots = plotsResponse.data.data || [];
           return {
             count: plots.length,
-            area: plots.reduce((sum: number, p: any) => sum + (p.areaHa || 0), 0)
+            area: plots.reduce((sum: number, p: any) => sum + (Number(p.areaHa) || 0), 0),
+            plots: plots
           };
         } catch (err) {
           console.warn(`[BackgroundSync] Failed to fetch plots for farm ${farm.id}`, err);
@@ -47,13 +48,17 @@ export const dashboardService = {
       });
 
       const results = await Promise.all(scanPromises);
+      const allPlots: any[] = [];
       
       results.forEach(res => {
         totalPlots += res.count;
         totalArea += res.area;
+        if (res.plots) {
+          allPlots.push(...res.plots);
+        }
       });
 
-      return { totalPlots, totalArea };
+      return { totalPlots, totalArea, allPlots };
     } catch (error) {
       console.error('[BackgroundSync] Error aggregating stats:', error);
       throw error;

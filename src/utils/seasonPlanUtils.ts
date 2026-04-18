@@ -168,13 +168,20 @@ export const syncPlanDatesWithPhases = (plan: SeasonPlan): SeasonPlan => {
  * Quản lý (Manager) -> Chỉ xem
  */
 export const canEditPlan = (role: string | undefined | null, token?: string | null): boolean => {
+  // Check role from props/state first
   if (role) {
-    const upperRole = role.toUpperCase();
-    if (upperRole === 'OWNER' || upperRole === 'ADMIN' || upperRole === 'ROLE_OWNER' || upperRole === 'ROLE_ADMIN' || upperRole === 'USER' || upperRole === 'ROLE_USER') {
+    const r = role.toUpperCase();
+    // Chủ trang trại, Admin, User (chủ sở hữu) -> Được sửa
+    if (r === 'OWNER' || r === 'ADMIN' || r === 'ROLE_OWNER' || r === 'ROLE_ADMIN' || r === 'USER' || r === 'ROLE_USER') {
       return true;
+    }
+    // Quản lý (MANAGER) -> Chỉ xem
+    if (r === 'MANAGER' || r === 'ROLE_MANAGER') {
+      return false;
     }
   }
 
+  // Fallback check from token if role is not clear
   if (token) {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
@@ -188,14 +195,12 @@ export const canEditPlan = (role: string | undefined | null, token?: string | nu
       }
 
       const upperRoles = roles.map(r => r.toUpperCase());
-      return (
-        upperRoles.includes('ROLE_OWNER') || 
-        upperRoles.includes('OWNER') || 
-        upperRoles.includes('ROLE_ADMIN') || 
-        upperRoles.includes('ADMIN') ||
-        upperRoles.includes('ROLE_USER') ||
-        upperRoles.includes('USER')
+      const hasEditingRole = upperRoles.some(r => 
+        ['OWNER', 'ROLE_OWNER', 'ADMIN', 'ROLE_ADMIN', 'USER', 'ROLE_USER'].includes(r)
       );
+      const isStrictManager = upperRoles.some(r => ['MANAGER', 'ROLE_MANAGER'].includes(r));
+
+      return hasEditingRole && !isStrictManager;
     } catch {
       return false;
     }

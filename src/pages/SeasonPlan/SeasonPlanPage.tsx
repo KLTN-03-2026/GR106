@@ -5,16 +5,20 @@ import { RootState, AppDispatch } from '../../store';
 import { 
   addPlan,
   updatePlan, 
-  addPhase,
-  updatePhase,
-  addTask,
-  updateTask,
   fetchPlans,
   createPlan,
-  deletePlan as removePlan
+  deletePlan,
+  fetchStages,
+  fetchTasks,
+  createPhase,
+  removePhase,
+  createSeasonTask,
+  updateSeasonTask,
+  removeSeasonTask
 } from '../../store/seasonPlanSlice';
-import { SeasonPlan, PlanStatus, Phase } from '../../types/seasonPlan';
-import { Search, ArrowLeft, Loader2, Info } from 'lucide-react';
+import { SeasonPlan, PlanStatus, Task } from '../../types/seasonPlan';
+import { Search, ArrowLeft, Loader2, Info, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Modal } from '../../components/ui/Modal';
 import { cn } from '../../utils/cn';
 import { Button } from '../../components/ui/button';
 import { useAuth } from '../../hooks/useAuth';
@@ -47,30 +51,6 @@ export function SeasonPlanPage() {
   const { user, accessToken } = useAuth();
   const canEdit = canEditPlan(user?.role, accessToken);
 
-useEffect(() => {
-      // Không fetch data nếu chưa có farm context
-      if (!farmId || !accessToken) {
-        console.log('[SeasonPlanPage] Waiting for farm context...');
-        return;
-      }
-      
-      // Chỉ fetch plans - plots và crops chỉ fetch khi tạo mùa vụ mới
-      dispatch(fetchPlans());
-    }, [dispatch, user, accessToken, farmId]);
-
-  // Fetch plots và crops khi mở modal tạo mùa vụ
-  useEffect(() => {
-    if (isCreateModalOpen) {
-      dispatch(fetchPlots());
-      dispatch(fetchCrops());
-    }
-  }, [isCreateModalOpen, dispatch]);
-
-  const farmPlans = plans.filter((p: SeasonPlan) => p.farmId === farmId || p.farmId === '');
-
-  const currentPlan = planId ? farmPlans.find(p => p.id === planId) : null;
-  const displayPlans = currentPlan ? [currentPlan] : farmPlans;
-
   // UI State
   const [statusFilter, setStatusFilter] = useState<PlanStatus | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -81,6 +61,43 @@ useEffect(() => {
   
   // Selection state (Jira style)
   const [selectedItem, setSelectedItem] = useState<SelectionState | null>(null);
+
+  // Notification Modal state
+  const [notification, setNotification] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+    details?: string[];
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
+
+  const farmPlans = plans.filter((p: SeasonPlan) => p.farmId === farmId || p.farmId === '');
+  const currentPlan = planId ? farmPlans.find(p => p.id === planId) : null;
+  const displayPlans = currentPlan ? [currentPlan] : farmPlans;
+
+  useEffect(() => {
+    // Không fetch data nếu chưa có farm context
+    if (!farmId || !accessToken) {
+      console.log('[SeasonPlanPage] Waiting for farm context...');
+      return;
+    }
+    
+    // Chỉ fetch plans - plots và crops chỉ fetch khi tạo mùa vụ mới
+    dispatch(fetchPlans());
+  }, [dispatch, user, accessToken, farmId]);
+
+  // Fetch plots và crops khi mở modal tạo mùa vụ
+  useEffect(() => {
+    if (isCreateModalOpen) {
+      dispatch(fetchPlots());
+      dispatch(fetchCrops());
+    }
+  }, [isCreateModalOpen, dispatch]);
 
   // Auto-select the plan and expand when viewing single plan
   useEffect(() => {
@@ -96,10 +113,8 @@ useEffect(() => {
   });
 
   const handleCreatePlan = async (newPlanData: any) => {
-    console.log('[SeasonPlanPage] handleCreatePlan called with:', newPlanData);
     try {
       await dispatch(createPlan(newPlanData)).unwrap();
-      console.log('[SeasonPlanPage] createPlan succeeded');
       setIsCreateModalOpen(false);
     } catch (err) {
       console.error('[SeasonPlanPage] createPlan failed:', err);
@@ -110,44 +125,245 @@ useEffect(() => {
     dispatch(updatePlan(updatedPlan));
   };
 
-  const handleAddPhase = (planId: string, name: string) => {
-    const plan = plans.find(p => p.id === planId);
-    if (!plan) return;
+  // --- API Workflow Orchestration ---
 
-    const lastPhase = plan.phases[plan.phases.length - 1];
-    const startDate = lastPhase ? lastPhase.endDate : plan.startDate;
-    const endDate = new Date(new Date(startDate).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  // Khi chọn một Plan, tự động load các Giai đoạn (Stages)
+  useEffect(() => {
+    if (selectedItem?.planId) {
+      dispatch(fetchStages(selectedItem.planId));
+    }
+  }, [selectedItem?.planId, dispatch]);
 
-    const newPhase: Phase = {
-      id: `phase-${Date.now()}`,
-      name,
-      startDate,
-      endDate,
-      duration: 7,
-      status: 'DRAFT',
-      color: 'bg-indigo-500',
-      tasks: []
-    };
+  // Khi chọn một Phase, tự động load các Công việc (Tasks)
+  useEffect(() => {
+    if (selectedItem?.type === 'PHASE' || selectedItem?.type === 'TASK') {
+      const stageId = selectedItem.type === 'PHASE' ? selectedItem.id : selectedItem.phaseId;
+      if (stageId && selectedItem.planId) {
+        dispatch(fetchTasks({ planId: selectedItem.planId, stageId }));
+      }
+    }
+  }, [selectedItem?.id, selectedItem?.phaseId, selectedItem?.type, selectedItem?.planId, dispatch]);
 
-    dispatch(addPhase({ planId, phase: newPhase }));
+  const extractErrorMessage = (err: any): string => {
+    if (typeof err === 'string') return err;
+    if (Array.isArray(err)) {
+      return err.map(e => e.message || JSON.stringify(e)).join(', ');
+    }
+    if (err.data && typeof err.data === 'object') {
+      // Handle array of errors (like Zod errors)
+      if (Array.isArray(err.data)) {
+        return err.data.map((e: any) => e.message || e.code || JSON.stringify(e)).join('; ');
+      }
+      // Handle single error message
+      return err.message || err.code || JSON.stringify(err.data);
+    }
+    return err.message || 'Có lỗi xảy ra';
   };
 
-  const handleAddTask = (planId: string, phaseId: string, name: string) => {
+  const handleAddPhase = async (planId: string, name: string) => {
+    console.log('[SeasonPlanPage] handleAddPhase triggered:', { planId, name });
     const plan = plans.find(p => p.id === planId);
-    if (!plan) return;
-    const phase = plan.phases.find(ph => ph.id === phaseId);
-    if (!phase) return;
+    if (!plan) {
+      console.error('[SeasonPlanPage] handleAddPhase: Plan not found in state:', planId);
+      return;
+    }
 
-    const newTask = {
-      id: `task-${Date.now()}`,
-      name,
-      startDate: phase.startDate,
-      endDate: phase.endDate,
-      duration: phase.duration,
-      status: 'DRAFT' as PlanStatus
-    };
+    const lastPhase = plan.phases && plan.phases.length > 0 ? plan.phases[plan.phases.length - 1] : null;
+    
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    let startDate: string;
+    if (lastPhase) {
+      const nextDate = new Date(lastPhase.endDate);
+      nextDate.setDate(nextDate.getDate() + 1);
+      startDate = nextDate.toISOString().split('T')[0];
+    } else {
+      startDate = plan.startDate;
+    }
 
-    dispatch(addTask({ planId, phaseId, task: newTask }));
+    // Nếu ngày bắt đầu tính toán được nằm trong quá khứ, sử dụng ngày hôm nay
+    if (startDate < todayStr) {
+      startDate = todayStr;
+    }
+
+    // Thời gian mặc định 1 tuần cho giai đoạn mới
+    const nextEndDate = new Date(startDate);
+    nextEndDate.setDate(nextEndDate.getDate() + 7);
+    const calculatedEndDate = nextEndDate.toISOString().split('T')[0];
+
+    // Cap at plan end date to avoid 400 errors from backend
+    let finalEndDate = calculatedEndDate;
+    if (plan.endDate && calculatedEndDate > plan.endDate) {
+      finalEndDate = plan.endDate < startDate ? startDate : plan.endDate;
+    }
+
+    try {
+      console.log('[SeasonPlanPage] Dispatching createPhase with dates:', { startDate, endDate: finalEndDate });
+      const result = await dispatch(createPhase({ planId, data: { name, startDate, endDate: finalEndDate } })).unwrap();
+      console.log('[SeasonPlanPage] createPhase successful:', result);
+    } catch (err: any) {
+      console.error('[SeasonPlanPage] createPhase failed:', err);
+      let errorMsg = 'Thời gian bị trùng hoặc không hợp lệ';
+      let details: string[] = [];
+      
+      if (err && typeof err === 'object') {
+        if (err.message) errorMsg = err.message;
+        if (err.data && typeof err.data === 'object') {
+          details = Object.entries(err.data).map(([key, val]: [string, any]) => {
+            const valStr = typeof val === 'object' ? JSON.stringify(val) : String(val);
+            return `${key}: ${valStr}`;
+          });
+        }
+      }
+
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi tạo giai đoạn',
+        message: errorMsg,
+        details: details.length > 0 ? details : undefined
+      });
+    }
+  };
+
+  const handleAddTask = async (planId: string, phaseId: string, name: string) => {
+    console.log('[SeasonPlanPage] handleAddTask initiated:', { planId, phaseId, name });
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) {
+      console.error('[SeasonPlanPage] handleAddTask: Plan not found in local state', planId);
+      return;
+    }
+    const phase = plan.phases?.find(ph => ph.id === phaseId);
+    if (!phase) {
+      console.error('[SeasonPlanPage] handleAddTask: Phase not found in local state', phaseId);
+      return;
+    }
+
+    try {
+      // Đảm bảo plotId là một chuỗi UUID hợp lệ, không để null lọt qua
+      const plotId = (typeof plan.plotId === 'string' && plan.plotId.length === 36) 
+        ? plan.plotId 
+        : "00000000-0000-0000-0000-000000000000";
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      
+      // Kiểm tra xem Giai đoạn có nằm trong quá khứ không
+      if (phase.endDate < todayStr) {
+        setNotification({
+          isOpen: true,
+          type: 'error',
+          title: 'Giai đoạn đã quá hạn',
+          message: `Giai đoạn "${phase.name}" đã kết thúc vào ngày ${phase.endDate}. Bạn không thể thêm công việc mới vào giai đoạn đã qua. Hãy tạo một giai đoạn mới hoặc điều chỉnh thời gian của giai đoạn này.`
+        });
+        return;
+      }
+
+      // Đối với các giai đoạn đang diễn ra nhưng có ngày bắt đầu cũ, ta lấy max(startDate, today)
+      const taskStartDate = phase.startDate < todayStr ? todayStr : phase.startDate;
+      const taskEndDate = phase.endDate;
+
+      const payload = { 
+        name, 
+        description: '', 
+        startDate: taskStartDate, 
+        endDate: taskEndDate,
+        plotId 
+      };
+
+      console.log('[SeasonPlanPage] createSeasonTask payload:', JSON.stringify(payload, null, 2));
+
+      const result = await dispatch(createSeasonTask({ 
+        planId, 
+        stageId: phaseId, 
+        data: payload
+      })).unwrap();
+
+      console.log('[SeasonPlanPage] createSeasonTask success:', result);
+    } catch (err: any) {
+      console.error('[SeasonPlanPage] createSeasonTask failed. Error object:', err);
+      let errorMsg = 'Dữ liệu đầu vào không hợp lệ hoặc thiếu thông tin bắt buộc';
+      let details: string[] = [];
+      
+      if (Array.isArray(err)) {
+        // Handle array of Zod errors or similar
+        details = err.map((e: any) => `${e.path?.join('.') || 'error'}: ${e.message}`);
+      } else if (err && typeof err === 'object') {
+        if (err.message) errorMsg = err.message;
+        if (err.data && typeof err.data === 'object') {
+          details = Object.entries(err.data).map(([key, val]: [string, any]) => {
+            const valStr = typeof val === 'object' ? JSON.stringify(val) : String(val);
+            return `${key}: ${valStr}`;
+          });
+        }
+      } else if (typeof err === 'string') {
+        errorMsg = err;
+      }
+
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi tạo công việc',
+        message: errorMsg,
+        details: details.length > 0 ? details : undefined
+      });
+    }
+  };
+
+  const handleDeletePhase = async (planId: string, stageId: string) => {
+    try {
+      await dispatch(removePhase({ planId, stageId })).unwrap();
+      setSelectedItem(null);
+    } catch (err: any) {
+      console.error('[SeasonPlanPage] deletePhase failed:', err);
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi xóa giai đoạn',
+        message: err.message || 'Không thể xóa giai đoạn này'
+      });
+    }
+  };
+
+  const handleDeleteTask = async (planId: string, stageId: string, taskId: string) => {
+    try {
+      await dispatch(removeSeasonTask({ planId, stageId, taskId })).unwrap();
+      // Since we are in the panel, if we delete the task, we might want to select the phase instead
+      setSelectedItem({ type: 'PHASE', id: stageId, planId: planId! });
+    } catch (err: any) {
+      console.error('[SeasonPlanPage] deleteTask failed:', err);
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi xóa công việc',
+        message: err.message || 'Không thể xóa công việc này'
+      });
+    }
+  };
+
+  const handleUpdateTask = async (planId: string, stageId: string, task: Task) => {
+    try {
+      // Find the plan to get the real plotId
+      const plan = plans.find(p => p.id === planId);
+      
+      // Create a clean payload for the update
+      const data = {
+        name: task.name,
+        description: task.description || '',
+        startDate: task.startDate,
+        endDate: task.endDate,
+        plotId: task.plotId || plan?.plotId || '',
+        progressPercent: task.progressPercent
+      };
+      await dispatch(updateSeasonTask({ planId, stageId, taskId: task.id, data })).unwrap();
+    } catch (err: any) {
+      console.error('[SeasonPlanPage] updateTask failed:', err);
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi cập nhật',
+        message: extractErrorMessage(err)
+      });
+    }
   };
 
   const getSelectedData = () => {
@@ -158,14 +374,14 @@ useEffect(() => {
     if (selectedItem.type === 'PLAN') return { type: 'PLAN' as const, plan };
     
     if (selectedItem.type === 'PHASE') {
-      const phase = plan.phases.find(ph => ph.id === selectedItem.id);
+      const phase = plan.phases?.find(ph => ph.id === selectedItem.id);
       return phase ? { type: 'PHASE' as const, plan, phase } : null;
     }
 
     if (selectedItem.type === 'TASK') {
-      const phase = plan.phases.find(ph => ph.id === selectedItem.phaseId);
+      const phase = plan.phases?.find(ph => ph.id === selectedItem.phaseId);
       if (!phase) return null;
-      const task = phase.tasks.find(t => t.id === selectedItem.id);
+      const task = phase.tasks?.find(t => t.id === selectedItem.id);
       return task ? { type: 'TASK' as const, plan, phase, task } : null;
     }
 
@@ -174,25 +390,37 @@ useEffect(() => {
 
   const selectedData = getSelectedData();
 
-  const getStatusLabel = (status: PlanStatus) => {
-    switch (status) {
+  const getStatusLabel = (status: PlanStatus | any) => {
+    const code = typeof status === 'string' ? status : status?.code;
+    const name = typeof status === 'string' ? null : status?.name;
+    if (name) return name;
+
+    switch (code) {
       case 'DRAFT': return 'Bản nháp';
       case 'ACTIVE': return 'Đang thực hiện';
       case 'READY_TO_HARVEST': return 'Sẵn sàng thu hoạch';
       case 'HARVESTING': return 'Đang thu hoạch';
       case 'COMPLETED': return 'Hoàn thành';
       case 'CANCELLED': return 'Đã hủy';
-      default: return status;
+      case 'ASSIGNED': return 'Đã giao việc';
+      case 'IN_PROGRESS': return 'Đang thực hiện';
+      case 'OVERDUE': return 'Trễ hạn';
+      default: return code || 'N/A';
     }
   };
 
-  const getStatusColor = (status: PlanStatus) => {
-    switch (status) {
+  const getStatusColor = (status: PlanStatus | any) => {
+    const code = typeof status === 'string' ? status : status?.code;
+    
+    switch (code) {
       case 'DRAFT': return 'bg-slate-100 text-slate-600';
-      case 'ACTIVE': return 'bg-indigo-100 text-indigo-700';
+      case 'ACTIVE':
+      case 'IN_PROGRESS': return 'bg-indigo-100 text-indigo-700';
       case 'READY_TO_HARVEST': return 'bg-lime-100 text-lime-700';
       case 'HARVESTING': return 'bg-emerald-100 text-emerald-700';
       case 'COMPLETED': return 'bg-slate-100 text-slate-400';
+      case 'OVERDUE': return 'bg-rose-100 text-rose-700';
+      case 'ASSIGNED': return 'bg-blue-100 text-blue-700';
       case 'CANCELLED': return 'bg-red-100 text-red-700';
       default: return 'bg-slate-100 text-slate-600';
     }
@@ -353,23 +581,29 @@ const getPlotName = (id: string) => {
               onUpdatePlan={handleUpdatePlan}
               onAddPhase={handleAddPhase}
               preExpandedPlanId={planId}
-              user={user}
+              canEdit={canEdit}
             />
           )}
         </div>
 
         <PlanDetailPanel 
-          selection={selectedData}
           isOpen={!!selectedItem}
+          selection={selectedData}
           onClose={() => setSelectedItem(null)}
           onUpdatePlan={handleUpdatePlan}
-          onUpdatePhase={(planId, phase) => dispatch(updatePhase({ planId, phase }))}
+          onUpdatePhase={(_id, phase) => {
+            // Note: stage update API not in provided list, but we can handle local if needed
+            console.log('Update phase:', phase);
+          }}
+          onDeletePhase={handleDeletePhase}
           onAddTask={handleAddTask}
-          onUpdateTask={(planId, phaseId, task) => dispatch(updateTask({ planId, phaseId, task }))}
-          onSelectPhase={(planId, phaseId) => setSelectedItem({ type: 'PHASE', id: phaseId, planId })}
-          onSelectTask={(planId, phaseId, taskId) => setSelectedItem({ type: 'TASK', id: taskId, planId, phaseId })}
-          onDeletePlan={(planId) => dispatch(removePlan(planId))}
-          user={user}
+          onUpdateTask={handleUpdateTask}
+          onDeleteTask={handleDeleteTask}
+          onSelectPhase={(_id, phaseId) => setSelectedItem({ type: 'PHASE', id: phaseId, planId: planId! })}
+          onSelectTask={(_pid, stageId, taskId) => setSelectedItem({ type: 'TASK', id: taskId, phaseId: stageId, planId: planId! })}
+          onDeletePlan={(id) => dispatch(deletePlan(id))}
+          onClone={(p) => setCloneSourcePlan(p)}
+          canEdit={canEdit}
         />
       </div>
 
@@ -388,6 +622,55 @@ const getPlotName = (id: string) => {
           plan={cloneSourcePlan}
         />
       )}
+
+      {/* Notification Modal */}
+      <Modal 
+        isOpen={notification.isOpen} 
+        onClose={() => setNotification(prev => ({ ...prev, isOpen: false }))}
+      >
+        <div className="bg-white rounded-[32px] p-8 w-full max-w-sm overflow-hidden border border-slate-100 shadow-2xl">
+          <div className="flex flex-col items-center text-center">
+            <div className={cn(
+              "w-20 h-20 rounded-3xl flex items-center justify-center mb-6",
+              notification.type === 'success' ? "bg-emerald-50 text-emerald-500" : "bg-rose-50 text-rose-500"
+            )}>
+              {notification.type === 'success' ? <CheckCircle2 size={40} /> : <AlertCircle size={40} />}
+            </div>
+            
+            <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2">
+              {notification.title}
+            </h3>
+            
+            <p className="text-sm font-medium text-slate-500 mb-6 leading-relaxed">
+              {notification.message}
+            </p>
+
+            {notification.details && notification.details.length > 0 && (
+              <div className="w-full bg-slate-50 rounded-2xl p-4 mb-6 text-left">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Chi tiết lỗi:</p>
+                <ul className="space-y-1">
+                  {notification.details.map((detail, idx) => (
+                    <li key={idx} className="text-xs text-rose-600 font-bold flex items-start gap-2">
+                      <div className="w-1 h-1 rounded-full bg-rose-400 mt-1.5 shrink-0" />
+                      {detail}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <Button
+              onClick={() => setNotification(prev => ({ ...prev, isOpen: false }))}
+              className={cn(
+                "w-full py-6 rounded-2xl font-black uppercase tracking-wider text-white border-none shadow-lg",
+                notification.type === 'success' ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-100" : "bg-slate-900 hover:bg-slate-800 shadow-slate-100"
+              )}
+            >
+              Đóng
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

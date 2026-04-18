@@ -1,11 +1,10 @@
 import React, { useMemo, useState, Fragment, useRef, useEffect } from 'react';
 import { SeasonPlan, Phase } from '../../../types/seasonPlan';
 import { ChevronRight, ChevronDown, Zap, CheckSquare, Plus } from 'lucide-react';
-import { cn } from '../../../utils/cn';
 import { Button } from '../../../components/ui/button';
-import { rippleUpdatePhases, hasPlanOverlap, syncPlanDatesWithPhases, canEditPlan, addDays } from '../../../utils/seasonPlanUtils';
+import { cn } from '../../../utils/cn';
+import { rippleUpdatePhases, hasPlanOverlap, syncPlanDatesWithPhases, addDays } from '../../../utils/seasonPlanUtils';
 import { SelectionState } from '../SeasonPlanPage';
-import { UserInfo } from '../../../types/auth/auth';
 
 interface PlanTimelineProps {
   plans: SeasonPlan[];
@@ -14,7 +13,7 @@ interface PlanTimelineProps {
   onUpdatePlan: (plan: SeasonPlan) => void;
   onAddPhase: (planId: string, name: string) => void;
   preExpandedPlanId?: string;
-  user?: UserInfo | null;
+  canEdit?: boolean;
 }
 
 export function PlanTimeline({
@@ -24,7 +23,7 @@ export function PlanTimeline({
   onUpdatePlan,
   onAddPhase,
   preExpandedPlanId,
-  user,
+  canEdit = false,
 }: PlanTimelineProps) {
   const [expandedPlans, setExpandedPlans] = useState<Set<string>>(new Set());
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
@@ -69,17 +68,19 @@ export function PlanTimeline({
     startX: number;
   } | null>(null);
 
-  const canEdit = canEditPlan(user?.role);
+  // const canEdit = canEditPlan(user?.role); // Removed in favor of prop
 
   const handleMouseDown = (e: React.MouseEvent, planId: string, phase: Phase, type: 'MOVE' | 'RESIZE') => {
     if (!canEdit) return;
     e.stopPropagation();
     
+    const duration = Math.round((new Date(phase.endDate).getTime() - new Date(phase.startDate).getTime()) / (1000 * 60 * 60 * 24));
+    
     setDragState({
       type,
       planId,
       phaseId: phase.id,
-      initialDuration: phase.duration,
+      initialDuration: duration,
       initialStartDate: phase.startDate,
       startX: e.clientX
     });
@@ -152,8 +153,11 @@ export function PlanTimeline({
 
   const handleAddPhaseSubmit = (planId: string) => {
     const name = addPhaseInputRef.current?.value;
+    console.log('[PlanTimeline] handleAddPhaseSubmit:', { planId, name });
     if (name && name.trim()) {
       onAddPhase(planId, name.trim());
+    } else {
+      console.warn('[PlanTimeline] Invalid phase name:', name);
     }
     setIsAddingPhaseTo(null);
   };
@@ -363,13 +367,24 @@ export function PlanTimeline({
                             placeholder="Tên giai đoạn mới..."
                             className="w-full px-3 py-1.5 text-xs font-bold bg-white border border-indigo-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20"
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleAddPhaseSubmit(plan.id);
-                              if (e.key === 'Escape') setIsAddingPhaseTo(null);
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleAddPhaseSubmit(plan.id);
+                              }
+                              if (e.key === 'Escape') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsAddingPhaseTo(null);
+                              }
                             }}
-                            onBlur={() => setIsAddingPhaseTo(null)}
+                            onBlur={() => {
+                              // Small delay to allow Enter key to be processed before blur unmounts
+                              setTimeout(() => setIsAddingPhaseTo(null), 100);
+                            }}
                           />
                         </div>
-                      ) : (
+                      ) : canEdit ? (
                         <button 
                           className="flex h-11 items-center pl-12 pr-4 text-[11px] font-black text-slate-400 hover:text-indigo-600 uppercase tracking-widest transition-colors"
                           onClick={() => setIsAddingPhaseTo(plan.id)}
@@ -377,7 +392,7 @@ export function PlanTimeline({
                           <Plus size={14} className="mr-2" />
                           Thêm giai đoạn
                         </button>
-                      )}
+                      ) : null}
                     </>
                   )}
                 </Fragment>
@@ -446,18 +461,40 @@ export function PlanTimeline({
                               </div>
                             </div>
 
-                            {isPhaseExpanded && phase.tasks && phase.tasks.map((task) => (
-                               <div key={task.id} className="h-11 border-b border-slate-50 relative flex items-center">
-                                  <div
-                                    className={cn(
-                                      "absolute h-4 rounded-sm border transition-all cursor-pointer",
-                                      selectedId === task.id ? "bg-blue-500 border-blue-600" : "bg-blue-100 border-blue-200 hover:border-blue-400"
-                                    )}
-                                    style={getPositionStyle(task.startDate, task.endDate)}
-                                    onClick={() => onSelect({ type: 'TASK', id: task.id, planId: plan.id, phaseId: phase.id })}
-                                  />
-                               </div>
-                            ))}
+                            {isPhaseExpanded && phase.tasks && phase.tasks.map((task) => {
+                               const statusCode = typeof task.status === 'string' ? task.status : task.status.code;
+                               const statusColor = typeof task.status === 'string' ? '' : task.status.color;
+                               
+                               return (
+                                 <div key={task.id} className="h-11 border-b border-slate-50 relative flex items-center">
+                                    <div
+                                      className={cn(
+                                        "absolute h-4 rounded-sm border transition-all cursor-pointer overflow-hidden",
+                                        selectedId === task.id ? "border-blue-600 shadow-sm z-10" : "border-slate-200 hover:border-slate-400"
+                                      )}
+                                      style={{
+                                        ...getPositionStyle(task.startDate, task.endDate),
+                                        backgroundColor: statusColor && statusCode === 'CUSTOM' ? `${statusColor}20` : undefined
+                                      }}
+                                      onClick={() => onSelect({ type: 'TASK', id: task.id, planId: plan.id, phaseId: phase.id })}
+                                    >
+                                       {/* Progress Background */}
+                                       <div 
+                                         className={cn(
+                                            "h-full transition-all",
+                                            statusCode === 'COMPLETED' ? "bg-emerald-500" :
+                                            statusCode === 'OVERDUE' ? "bg-rose-500" :
+                                            "bg-blue-500"
+                                         )}
+                                         style={{ 
+                                            width: `${task.progressPercent}%`,
+                                            backgroundColor: statusColor && statusCode === 'CUSTOM' ? statusColor : undefined
+                                         }}
+                                       />
+                                    </div>
+                                 </div>
+                               );
+                            })}
                          </Fragment>
                        );
                     })}

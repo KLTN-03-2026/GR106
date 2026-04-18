@@ -1,17 +1,14 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
 import { MoreVertical, Users, UserPlus, Loader2 } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
 import { ChangeRoleModal } from './ChangeRoleModal'
 import { RemoveMemberModal } from './RemoveMemberModal'
 import { getRoleDisplayName } from '../../utils/roleUtils'
 import { InviteModal } from './InviteModal'
-import { memberService } from '../../services/memberService'
 import { Member, MemberStatus, MemberRole } from '../../types/member'
-import { toast } from 'sonner'
 
 export function MemberTable() {
-  const { farmId } = useParams<{ farmId: string }>()
+  // const { farmId } = useParams<{ farmId: string }>()
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
@@ -21,23 +18,14 @@ export function MemberTable() {
   const [activeFilter, setActiveFilter] = useState<MemberStatus | 'all'>('all')
 
   const fetchMembers = async () => {
-    if (!farmId) return
-    try {
-      setLoading(true)
-      const res = await memberService.getMembers(farmId)
-      if (res.success) {
-        setMembers(res.data)
-      }
-    } catch (err: any) {
-      toast.error('Không thể tải danh sách thành viên')
-    } finally {
-      setLoading(false)
-    }
+    // Member API is currently not available, disabling to prevent 404 errors
+    setLoading(false);
+    setMembers([]);
   }
 
   useEffect(() => {
     fetchMembers()
-  }, [farmId])
+  }, [])
 
   const handleChangeRole = (member: Member) => {
     setSelectedMember(member)

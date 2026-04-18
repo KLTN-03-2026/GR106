@@ -1,6 +1,5 @@
 import { jwtDecode } from 'jwt-decode';
-import { RoleId, JwtPayload } from '../types/auth'; // Ensure these are exported from auth.ts
-import { getRoleDisplayName } from './roleUtils';
+import { RoleId, JwtPayload } from '../types/auth/auth';
 
 export const decodeToken = (token: string): JwtPayload | null => {
   try {
@@ -35,18 +34,26 @@ export const getRolesFromToken = (token: string): string[] => {
   return [];
 };
 
-export const parseRole = (roles: string[]): RoleId => {
-  if (!roles || !Array.isArray(roles)) return 'user';
-  
-  const upperRoles = roles.map(r => r.toUpperCase());
+export const parseRole = (roles: string[], perms?: string[]): RoleId => {
+  const upperRoles = (roles || []).map(r => r.toUpperCase());
   
   if (upperRoles.includes('ROLE_ADMIN') || upperRoles.includes('ADMIN')) return 'admin';
   if (upperRoles.includes('ROLE_OWNER') || upperRoles.includes('OWNER')) return 'owner';
+  
+  // Nâng cấp quyền hiển thị nếu có các perms quan trọng của Chủ trang trại
+  if (perms && perms.length > 0) {
+    if (perms.includes('farm:delete') || perms.includes('farm:update') || perms.includes('member:invite')) {
+      return 'owner';
+    }
+    if (perms.includes('task:assign') || perms.includes('plan:create')) {
+      return 'manager';
+    }
+  }
+
   if (upperRoles.includes('ROLE_MANAGER') || upperRoles.includes('MANAGER')) return 'manager';
   if (upperRoles.includes('ROLE_EMPLOYEE') || upperRoles.includes('EMPLOYEE') || upperRoles.includes('ROLE_WORKER') || upperRoles.includes('WORKER')) return 'employee';
-  if (upperRoles.includes('ROLE_USER') || upperRoles.includes('USER')) return 'user';
   
-  return 'user'; // default to user for safety
+  return 'user';
 };
 
 // Tạo user object từ JWT token bằng cách giải mã các trường thực tế
@@ -55,10 +62,12 @@ export const getUserFromToken = (token: string) => {
   if (!payload) return null;
 
   const roles = getRolesFromToken(token);
-  const role = parseRole(roles);
+  const perms = payload.perms || payload.permissions || [];
+  const role = parseRole(roles, perms);
   
   // Ưu tiên lấy fullName từ token
-  const fullName = payload.fullName || payload.name || getRoleDisplayName(role);
+  // Nếu không có tên, dùng Email. Nếu không có Email, mới dùng "Thành viên"
+  const fullName = payload.fullName || payload.name || payload.email || 'Thành viên';
   const email = payload.email || 'user@example.com';
 
   return {
@@ -66,5 +75,6 @@ export const getUserFromToken = (token: string) => {
     email: email,
     fullName: fullName,
     role: role,
+    perms: perms
   };
 };

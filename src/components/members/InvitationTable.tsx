@@ -1,42 +1,30 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Mail, Loader2 } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
 import { CancelInviteModal } from './CancelInviteModal'
 import { toast } from 'sonner'
-import { memberService } from '../../services/memberService'
-import { Invitation, InvitationStatus } from '../../types/member'
-
-import { useParams } from 'react-router-dom'
+import { Invitation, MemberRole } from '../../types/member'
 
 export function InvitationTable() {
-  const { farmId } = useParams<{ farmId: string }>()
+  // const { farmId } = useParams<{ farmId: string }>()
   const [invitations, setInvitations] = useState<Invitation[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedInvitation, setSelectedInvitation] =
     useState<Invitation | null>(null)
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false)
-  const [activeFilter, setActiveFilter] = useState<InvitationStatus | 'all'>(
+  const [activeFilter, setActiveFilter] = useState<string>(
     'all',
   )
 
   const fetchInvitations = async () => {
-    if (!farmId) return
-    try {
-      setLoading(true)
-      const res = await memberService.getInvitations(farmId)
-      if (res.success) {
-        setInvitations(res.data)
-      }
-    } catch (err: any) {
-      toast.error('Không thể tải danh sách lời mời')
-    } finally {
-      setLoading(false)
-    }
+    // Member API is currently not available, disabling to prevent 404 errors
+    setLoading(false);
+    setInvitations([]);
   }
 
   useEffect(() => {
     fetchInvitations()
-  }, [farmId])
+  }, [])
 
   const handleCancelInvite = (invitation: Invitation) => {
     setSelectedInvitation(invitation)
@@ -47,8 +35,8 @@ export function InvitationTable() {
     toast.success('Đã gửi lại lời mời thành công')
   }
 
-  const getRoleLabel = (role: 'manager' | 'worker') => {
-    return role === 'manager' ? 'Quản lý trang trại' : 'Nhân công'
+  const getRoleLabel = (role: MemberRole) => {
+    return role === 'manager' ? 'Quản lý trang trại' : role === 'worker' ? 'Nhân công' : role;
   }
 
   const filteredInvitations = invitations.filter(
@@ -143,7 +131,7 @@ export function InvitationTable() {
                     <StatusBadge status={invitation.status} />
                   </td>
                   <td className="px-6 py-4 text-gray-600">
-                    {invitation.sentDate}
+                    {invitation.invitedAt}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">

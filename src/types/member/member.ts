@@ -16,7 +16,7 @@ export interface Invitation {
   id: string;
   email: string;
   role: MemberRole;
-  status: 'pending' | 'expired' | 'canceled';
+  status: 'pending' | 'expired' | 'cancelled';
   invitedAt: string;
   expiresAt: string;
 }

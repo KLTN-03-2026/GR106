@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
-import { fetchPlots, clearPlots, setAggregateStats } from '../../store/plotSlice';
-import { fetchCrops } from '../../store/cropSlice';
+import { fetchPlots, clearPlots, setAggregateStats, setPlots } from '../../store/plotSlice';
+import { fetchCrops, fetchCropTypes } from '../../store/cropSlice';
 import { dashboardService } from '../../services/dashboardService';
 import {
   StatCard,
@@ -25,11 +25,12 @@ function useDashboardData(farmId?: string) {
   
   // Lấy dữ liệu từ store
   const { plots, aggregateStats, loading: plotsLoading } = useSelector((state: RootState) => state.plot);
-  const { crops, loading: cropsLoading } = useSelector((state: RootState) => state.crop);
+  const { crops, cropTypes, loading: cropsLoading, cropTypesLoading } = useSelector((state: RootState) => state.crop);
 
   useEffect(() => {
-    // 1. Luôn load cây trồng (Global)
+    // 1. Luôn load danh mục cây trồng và loại cây (Global)
     dispatch(fetchCrops());
+    dispatch(fetchCropTypes());
 
     if (farmId) {
       // 2a. CHẾ ĐỘ TRANG TRẠI: Load lô đất của farm này
@@ -43,8 +44,9 @@ function useDashboardData(farmId?: string) {
         setIsSyncing(true);
         // Chạy ngầm việc quét nền
         dashboardService.fetchAggregateStats(hubToken)
-          .then(stats => {
-            dispatch(setAggregateStats(stats));
+          .then(data => {
+            dispatch(setAggregateStats({ totalPlots: data.totalPlots, totalArea: data.totalArea }));
+            dispatch(setPlots(data.allPlots));
           })
           .catch(err => {
             console.error('[Dashboard] Background aggregate failed', err);
@@ -56,16 +58,16 @@ function useDashboardData(farmId?: string) {
     }
   }, [farmId, dispatch, hubToken]);
 
-  const isLoading = (farmId && plotsLoading) || cropsLoading || isSyncing;
+  const isLoading = (farmId && plotsLoading) || cropsLoading || cropTypesLoading || isSyncing;
 
   return {
     stats: {
-      totalPlots: farmId ? plots.length : aggregateStats.totalPlots,
-      totalCrops: crops.length,
-      totalArea: farmId 
-        ? plots.reduce((acc, p) => acc + (p.areaHa || 0), 0)
+      totalPlots: plots.length > 0 ? plots.length : aggregateStats.totalPlots,
+      totalCrops: cropTypes.length, 
+      totalArea: plots.length > 0 
+        ? plots.reduce((acc, p) => acc + (Number(p.areaHa) || 0), 0)
         : aggregateStats.totalArea,
-      totalPlants: 0, 
+      totalPlants: crops.length,
       performancePct: 0, 
     },
     npkData: [], 

@@ -187,12 +187,19 @@ export default function Sidebar({
       <div className="mt-auto pt-4 border-t border-slate-100 flex flex-col gap-2">
         <div className="flex items-center gap-3 px-2 mb-2">
           <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs border-2 border-white shadow-sm">
-            {user?.fullName?.split(" ").pop()?.charAt(0) || "U"}
+            {((!user?.fullName || user.fullName === 'Thành viên') ? getRoleDisplayName(user?.role) : user.fullName).split(" ").pop()?.charAt(0) || "U"}
           </div>
           <div className="flex-1 overflow-hidden">
-            <p className="text-[10px] font-bold text-slate-400 uppercase truncate">
-              {getRoleDisplayName(user?.role)}
-            </p>
+            <h4 className="text-xs font-black text-slate-800 truncate">
+              {(!user?.fullName || user.fullName === 'Thành viên') 
+                ? getRoleDisplayName(user?.role) 
+                : user.fullName}
+            </h4>
+            {user?.fullName && user.fullName !== 'Thành viên' && (
+              <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
+                {getRoleDisplayName(user?.role)}
+              </p>
+            )}
           </div>
         </div>
 

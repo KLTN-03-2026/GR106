@@ -7,10 +7,10 @@ export interface ApiResponse<T> {
 }
 
 export interface UserInfo {
-  id: string;
-  email: string;
-  fullName: string;
-  role: string;
+  id?: string;
+  email?: string;
+  fullName?: string;
+  role?: string;
 }
 
 export interface AuthTokens {
@@ -50,6 +50,8 @@ export interface JwtPayload {
   email?: string;    // Email thực tế
   iat?: number;
   exp?: number;
+  perms?: string[];       // Danh sách quyền (ví dụ: farm:update)
+  permissions?: string[]; // Dự phòng cho trường hợp Backend dùng 'permissions'
 }
 
 export interface LoginInput extends LoginRequest {}

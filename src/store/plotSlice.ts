@@ -113,6 +113,10 @@ const plotSlice = createSlice({
     },
     setAggregateStats: (state, action: PayloadAction<PlotStats>) => {
       state.aggregateStats = action.payload;
+    },
+    setPlots: (state, action: PayloadAction<Plot[]>) => {
+      state.plots = action.payload;
+      state.loading = false;
     }
   },
   extraReducers: (builder) => {
@@ -175,5 +179,5 @@ const plotSlice = createSlice({
   },
 });
 
-export const { clearPlotError, clearPlots, setAggregateStats } = plotSlice.actions;
+export const { clearPlotError, clearPlots, setAggregateStats, setPlots } = plotSlice.actions;
 export default plotSlice.reducer;

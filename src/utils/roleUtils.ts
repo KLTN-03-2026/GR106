@@ -8,13 +8,11 @@ export const ROLE_DISPLAY_NAMES: Record<RoleId, string> = {
   owner: 'Chủ trang trại',
   manager: 'Người quản lý trang trại',
   employee: 'Nhân công',
-  user: 'Người dùng mới',
+  user: 'Người dùng',
   admin: 'Quản trị viên',
 };
 
-/**
- * Lấy tên hiển thị tiếng Việt của một vai trò
- */
+
 export const getRoleDisplayName = (role: string | undefined): string => {
   if (!role) return 'Người dùng';
   

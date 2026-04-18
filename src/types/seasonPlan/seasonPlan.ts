@@ -1,4 +1,11 @@
-export type PlanStatus = 'DRAFT' | 'ACTIVE' | 'READY_TO_HARVEST' | 'HARVESTING' | 'COMPLETED' | 'CANCELLED';
+export interface StatusObject {
+  id: string;
+  code: string;
+  name: string;
+  color: string;
+}
+
+export type PlanStatus = 'DRAFT' | 'ACTIVE' | 'READY_TO_HARVEST' | 'HARVESTING' | 'COMPLETED' | 'CANCELLED' | 'UNASSIGNED' | 'ASSIGNED' | 'OVERDUE';
 
 export interface PhaseConfig {
   name: string;
@@ -9,24 +16,36 @@ export interface PhaseConfig {
 
 export interface Task {
   id: string;
+  planStageId: string;
+  farmId?: string;
+  plotId: string | null;
   name: string;
+  description: string;
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
-  duration: number;
-  status: PlanStatus;
-  description?: string;
+  status: StatusObject;
+  progressPercent: number;
+  acceptedAt?: string;
+  completedAt?: string;
+  createdBy?: string;
+  createdAt?: string;
+  // Local/Extended fields for resource management
+  assignedMembers?: string[];
+  materials?: { id: string; name: string; quantity: number }[];
 }
 
 export interface Phase {
   id: string;
+  planId: string;
   name: string;
+  source: 'TEMPLATE' | 'MANUAL' | 'CUSTOM';
+  orderIndex: number;
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
-  duration: number;
-  status: PlanStatus;
-  color: string;
-  description?: string;
-  tasks: Task[];
+  status: StatusObject;
+  aiSuggestionCache?: string;
+  description?: string; // Not in API snippet but useful
+  tasks: Task[]; // Usually fetched separately but managed together in UI
 }
 
 export interface SeasonPlan {
@@ -38,7 +57,7 @@ export interface SeasonPlan {
   cropId: string;
   startDate: string;
   endDate: string;
-  status: PlanStatus;
+  status: PlanStatus | StatusObject; // Handle both legacy and new API
   phases: Phase[];
   description?: string;
   note?: string;

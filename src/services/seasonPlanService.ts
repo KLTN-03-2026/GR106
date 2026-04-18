@@ -1,59 +1,50 @@
 import { axiosInstance } from '../config/axios';
-import { SeasonPlan, CreateSeasonPlanRequest } from '../types/seasonPlan';
-import { getPlansResponseSchema, createPlanResponseSchema } from '../schemas/seasonPlanSchemas';
+import { SeasonPlan, CreateSeasonPlanRequest, Phase, Task } from '../types/seasonPlan';
+import { 
+  getPlansResponseSchema, 
+  createPlanResponseSchema,
+  getStagesResponseSchema,
+  createStageResponseSchema,
+  getTasksResponseSchema,
+  createTaskResponseSchema
+} from '../schemas/seasonPlanSchemas';
 
 /**
- * Service Quản lý kế hoạch sản xuất (Season Plan)
+ * Service Quản lý kế hoạch sản xuất (Season Plan) & Công việc (Task)
  * Đồng bộ theo API Backend: /api/v1/plans
  */
 export const seasonPlanService = {
   /**
    * Lấy danh sách kế hoạch của farm hiện tại
-   * GET /api/v1/plans
    */
   async getPlans(): Promise<SeasonPlan[]> {
-    console.log('[SeasonPlan Service] getPlans called');
     const response = await axiosInstance.get('/api/v1/plans');
-    console.log('[SeasonPlan Service] getPlans response:', response.data);
-    
     const validated = getPlansResponseSchema.parse(response.data);
-    console.log('[SeasonPlan Service] getPlans validated data:', validated.data);
     
-    // Map API data back to frontend SeasonPlan type if needed
-    // (Backend snippet doesn't show phases, we might need to handle that)
     return validated.data.map(plan => ({
       ...plan,
       plotId: plan.plotId || '',
       cropId: plan.cropId || '',
-      phases: [], // API chưa trả về phases, sẽ được xử lý ở tầng store hoặc generator
+      phases: [], 
       description: plan.note || '',
     })) as SeasonPlan[];
   },
 
   /**
    * Tạo kế hoạch mới
-   * POST /api/v1/plans
    */
   async createPlan(data: CreateSeasonPlanRequest): Promise<SeasonPlan> {
-    console.log('[SeasonPlan Service] Creating plan with data:', data);
-    
-    // Chuyển đổi từ frontend request sang backend request nếu cần
     const payload = {
       name: data.name,
       cropId: data.cropId,
       startDate: data.startDate,
-      endDate: (data as any).endDate || data.startDate, // Backend yêu cầu endDate
+      endDate: (data as any).endDate || data.startDate,
       note: (data as any).note || '',
       plotId: data.plotId, 
     };
 
-    console.log('[SeasonPlan Service] Payload sent to API:', payload);
-
     const response = await axiosInstance.post('/api/v1/plans', payload);
-    console.log('[SeasonPlan Service] API Response:', response.data);
-    
     const validated = createPlanResponseSchema.parse(response.data);
-    console.log('[SeasonPlan Service] Validated response data:', validated.data);
     
     return {
       ...validated.data,
@@ -62,5 +53,50 @@ export const seasonPlanService = {
       phases: [],
       description: validated.data.note || '',
     } as SeasonPlan;
+  },
+
+  // --- STAGE APIs ---
+
+  async getStages(planId: string): Promise<Phase[]> {
+    const response = await axiosInstance.get(`/api/v1/plans/${planId}/stages`);
+    const validated = getStagesResponseSchema.parse(response.data);
+    return validated.data.map(stage => ({
+      ...stage,
+      tasks: [], // Tasks are fetched separately
+    })) as Phase[];
+  },
+
+  async createStage(planId: string, data: { name: string; startDate: string; endDate: string }): Promise<Phase> {
+    const response = await axiosInstance.post(`/api/v1/plans/${planId}/stages`, data);
+    const validated = createStageResponseSchema.parse(response.data);
+    return { ...validated.data, tasks: [] } as Phase;
+  },
+
+  async deleteStage(planId: string, stageId: string): Promise<void> {
+    await axiosInstance.delete(`/api/v1/plans/${planId}/stages/${stageId}`);
+  },
+
+  // --- TASK APIs ---
+
+  async getTasks(planId: string, stageId: string): Promise<Task[]> {
+    const response = await axiosInstance.get(`/api/v1/plans/${planId}/stages/${stageId}/tasks`);
+    const validated = getTasksResponseSchema.parse(response.data);
+    return validated.data as Task[];
+  },
+
+  async createTask(planId: string, stageId: string, data: { name: string; description: string; startDate: string; endDate: string; plotId: string }): Promise<Task> {
+    const response = await axiosInstance.post(`/api/v1/plans/${planId}/stages/${stageId}/tasks`, data);
+    const validated = createTaskResponseSchema.parse(response.data);
+    return validated.data as Task;
+  },
+
+  async updateTask(planId: string, stageId: string, taskId: string, data: Partial<Task>): Promise<Task> {
+    const response = await axiosInstance.patch(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}`, data);
+    const validated = createTaskResponseSchema.parse(response.data); // Reuse same schema
+    return validated.data as Task;
+  },
+
+  async deleteTask(planId: string, stageId: string, taskId: string): Promise<void> {
+    await axiosInstance.delete(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}`);
   }
 };

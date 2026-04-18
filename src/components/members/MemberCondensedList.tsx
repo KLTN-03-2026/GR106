@@ -1,6 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { memberService } from '../../services/memberService';
 import { Member } from '../../types/member';
 
 export const MemberCondensedList: React.FC = () => {
@@ -10,22 +9,10 @@ export const MemberCondensedList: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchMembers = async () => {
-      if (!farmId) return;
-      try {
-        setLoading(true);
-        const res = await memberService.getMembers(farmId);
-        if (res.success) {
-          setMembers(res.data.slice(0, 5)); // Just show up to 5 members in condensed view
-        }
-      } catch (err) {
-        console.error('Lỗi khi tải danh sách thành viên:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMembers();
-  }, [farmId]);
+    // Member API is currently not available, disabling to prevent 404 errors
+    setLoading(false);
+    setMembers([]);
+  }, []);
 
   return (
     <div className="flex flex-col gap-3">

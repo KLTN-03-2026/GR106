@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
-import { SeasonPlan, PlanStatus } from '../../types/seasonPlan';
+import { SeasonPlan, PlanStatus, StatusObject } from '../../types/seasonPlan';
 import { fetchPlans, createPlan } from '../../store/seasonPlanSlice';
 import { fetchPlots } from '../../store/plotSlice';
 import { fetchCrops } from '../../store/cropSlice';
 import { canEditPlan } from '../../utils/seasonPlanUtils';
-import { Search, Calendar, Loader2, Info } from 'lucide-react';
+import { Search, Calendar, Loader2, Info, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Modal } from '../../components/ui/Modal';
 import { cn } from '../../utils/cn';
 import { Button } from '../../components/ui/button';
 import { CreatePlanModal } from './components/CreatePlanModal';
@@ -24,16 +25,14 @@ export function SeasonPlanListPage() {
   // Kiểm tra quyền: Ưu tiên role trong user object, fallback kiểm tra trực tiếp trong token
   const canEdit = canEditPlan(user?.role, accessToken);
 
-useEffect(() => {
-      // Không fetch data nếu chưa có farm context
-      if (!farmId || !accessToken) {
-        console.log('[SeasonPlanListPage] Waiting for farm context...');
-        return;
-      }
-      
-      // Chỉ fetch plans - plots và crops chỉ fetch khi tạo mùa vụ mới
-      dispatch(fetchPlans());
-    }, [dispatch, user, accessToken, farmId]);
+  useEffect(() => {
+ 
+    if (!farmId || !accessToken) {
+      return;
+    }
+    
+    dispatch(fetchPlans());
+  }, [dispatch, accessToken, farmId]);
 
   const farmPlans = plans.filter((p: SeasonPlan) => p.farmId === farmId || p.farmId === '');
 
@@ -41,7 +40,20 @@ useEffect(() => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  // Fetch plots và crops khi mở modal tạo mùa vụ
+  // Notification Modal state
+  const [notification, setNotification] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+    details?: string[];
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
+
   useEffect(() => {
     if (isCreateModalOpen) {
       dispatch(fetchPlots());
@@ -61,26 +73,46 @@ useEffect(() => {
       await dispatch(createPlan(newPlanData)).unwrap();
       console.log('[SeasonPlanListPage] createPlan succeeded');
       setIsCreateModalOpen(false);
-    } catch (err) {
-      // Error is handled by Redux state, but we could also show a toast here
+    } catch (err: any) {
       console.error('[SeasonPlanListPage] createPlan failed:', err);
+      let errorMsg = 'Dữ liệu không hợp lệ. Hãy kiểm tra lại thời gian bắt đầu/kết thúc.';
+      let details: string[] = [];
+      
+      if (err && typeof err === 'object') {
+        if (err.message) errorMsg = err.message;
+        if (err.data && typeof err.data === 'object') {
+          details = Object.entries(err.data).map(([key, val]: [string, any]) => `${key}: ${val}`);
+        }
+      } else if (typeof err === 'string') {
+        errorMsg = err;
+      }
+
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi tạo kế hoạch',
+        message: errorMsg,
+        details: details.length > 0 ? details : undefined
+      });
     }
   };
 
-  const getStatusLabel = (status: PlanStatus) => {
-    switch (status) {
+  const getStatusLabel = (status: PlanStatus | StatusObject) => {
+    const code = typeof status === 'string' ? status : status.code;
+    switch (code) {
       case 'DRAFT': return 'Bản nháp';
       case 'ACTIVE': return 'Đang thực hiện';
       case 'READY_TO_HARVEST': return 'Sẵn sàng thu hoạch';
       case 'HARVESTING': return 'Đang thu hoạch';
       case 'COMPLETED': return 'Hoàn thành';
       case 'CANCELLED': return 'Đã hủy';
-      default: return status;
+      default: return code;
     }
   };
 
-  const getStatusColor = (status: PlanStatus) => {
-    switch (status) {
+  const getStatusColor = (status: PlanStatus | StatusObject) => {
+    const code = typeof status === 'string' ? status : status.code;
+    switch (code) {
       case 'DRAFT': return 'bg-slate-100 text-slate-600';
       case 'ACTIVE': return 'bg-indigo-100 text-indigo-700';
       case 'READY_TO_HARVEST': return 'bg-lime-100 text-lime-700';
@@ -92,12 +124,13 @@ useEffect(() => {
   };
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return '---';
     return new Date(dateStr).toLocaleDateString('vi-VN', {
       day: 'numeric',
       month: 'numeric',
       year: 'numeric'
     });
-};
+  };
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-hidden">
@@ -213,18 +246,18 @@ useEffect(() => {
                 <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="flex -space-x-2">
-                      {plan.phases.slice(0, 3).map((phase, idx) => (
-                        <div
-                          key={phase.id}
-                          className={cn(
-                            "w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-bold text-white",
-                            phase.color || 'bg-purple-500'
-                          )}
-                          style={{ backgroundColor: phase.color?.replace('bg-', '') || '#8b5cf6' }}
-                        >
-                          {idx + 1}
-                        </div>
-                      ))}
+                      {plan.phases.slice(0, 3).map((phase, idx) => {
+                        const color = phase.status?.color || '#8b5cf6';
+                        return (
+                          <div
+                            key={phase.id}
+                            className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-bold text-white shadow-sm"
+                            style={{ backgroundColor: color.startsWith('bg-') ? undefined : color }}
+                          >
+                            {idx + 1}
+                          </div>
+                        );
+                      })}
                       {plan.phases.length > 3 && (
                         <div className="w-6 h-6 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center text-[8px] font-bold text-slate-600">
                           +{plan.phases.length - 3}
@@ -254,6 +287,55 @@ useEffect(() => {
         onSave={handleCreatePlan}
         existingPlans={plans}
       />
+
+      {/* Notification Modal */}
+      <Modal 
+        isOpen={notification.isOpen} 
+        onClose={() => setNotification(prev => ({ ...prev, isOpen: false }))}
+      >
+        <div className="bg-white rounded-[32px] p-8 w-full max-w-sm overflow-hidden border border-slate-100 shadow-2xl">
+          <div className="flex flex-col items-center text-center">
+            <div className={cn(
+              "w-20 h-20 rounded-3xl flex items-center justify-center mb-6",
+              notification.type === 'success' ? "bg-emerald-50 text-emerald-500" : "bg-rose-50 text-rose-500"
+            )}>
+              {notification.type === 'success' ? <CheckCircle2 size={40} /> : <AlertCircle size={40} />}
+            </div>
+            
+            <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2">
+              {notification.title}
+            </h3>
+            
+            <p className="text-sm font-medium text-slate-500 mb-6 leading-relaxed">
+              {notification.message}
+            </p>
+
+            {notification.details && notification.details.length > 0 && (
+              <div className="w-full bg-slate-50 rounded-2xl p-4 mb-6 text-left">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Chi tiết lỗi:</p>
+                <ul className="space-y-1">
+                  {notification.details.map((detail, idx) => (
+                    <li key={idx} className="text-xs text-rose-600 font-bold flex items-start gap-2">
+                      <div className="w-1 h-1 rounded-full bg-rose-400 mt-1.5 shrink-0" />
+                      {detail}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <Button
+              onClick={() => setNotification(prev => ({ ...prev, isOpen: false }))}
+              className={cn(
+                "w-full py-6 rounded-2xl font-black uppercase tracking-wider text-white border-none shadow-lg",
+                notification.type === 'success' ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-100" : "bg-slate-900 hover:bg-slate-800 shadow-slate-100"
+              )}
+            >
+              Đóng
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
