@@ -36,6 +36,6 @@ public class CreatePlanStageRequest {
     @AssertTrue(message = "Thời gian kết thúc không được nằm trong quá khứ")
     private boolean isEndDateValid() {
         if (endDate == null) return true;
-        return !endDate.isAfter(LocalDate.now());
+        return !endDate.isBefore(LocalDate.now());
     }
 }
