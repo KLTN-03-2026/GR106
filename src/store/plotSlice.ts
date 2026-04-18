@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { axiosInstance } from '../config/axios';
 import { 
   getPlotsResponseSchema, 
@@ -9,14 +9,24 @@ import {
 } from '../schemas/plotSchemas';
 import { Plot, CreatePlotInput, UpdatePlotInput } from '../types/plot';
 
+interface PlotStats {
+  totalPlots: number;
+  totalArea: number;
+}
+
 interface PlotState {
   plots: Plot[];
+  aggregateStats: PlotStats; // Số liệu tổng hợp toàn hệ thống
   loading: boolean;
   error: any;
 }
 
 const initialState: PlotState = {
   plots: [],
+  aggregateStats: {
+    totalPlots: 0,
+    totalArea: 0,
+  },
   loading: false,
   error: null,
 };
@@ -96,6 +106,13 @@ const plotSlice = createSlice({
   reducers: {
     clearPlotError: (state) => {
       state.error = null;
+    },
+    clearPlots: (state) => {
+      state.plots = [];
+      state.error = null;
+    },
+    setAggregateStats: (state, action: PayloadAction<PlotStats>) => {
+      state.aggregateStats = action.payload;
     }
   },
   extraReducers: (builder) => {
@@ -158,5 +175,5 @@ const plotSlice = createSlice({
   },
 });
 
-export const { clearPlotError } = plotSlice.actions;
+export const { clearPlotError, clearPlots, setAggregateStats } = plotSlice.actions;
 export default plotSlice.reducer;

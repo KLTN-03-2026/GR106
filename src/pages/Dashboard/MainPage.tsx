@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
-import { fetchPlots } from '../../store/plotSlice';
+import { fetchPlots, clearPlots, setAggregateStats } from '../../store/plotSlice';
 import { fetchCrops } from '../../store/cropSlice';
+import { dashboardService } from '../../services/dashboardService';
 import {
   StatCard,
   WeatherCard,
@@ -19,27 +20,55 @@ import {
  */
 function useDashboardData(farmId?: string) {
   const dispatch = useDispatch<AppDispatch>();
+  const { hubToken } = useSelector((state: RootState) => state.auth);
+  const [isSyncing, setIsSyncing] = useState(false);
   
   // Lấy dữ liệu từ store
-  const { plots, loading: plotsLoading } = useSelector((state: RootState) => state.plot);
+  const { plots, aggregateStats, loading: plotsLoading } = useSelector((state: RootState) => state.plot);
   const { crops, loading: cropsLoading } = useSelector((state: RootState) => state.crop);
 
   useEffect(() => {
-    dispatch(fetchPlots());
+    // 1. Luôn load cây trồng (Global)
     dispatch(fetchCrops());
-  }, [farmId, dispatch]);
 
-  const isLoading = plotsLoading || cropsLoading;
+    if (farmId) {
+      // 2a. CHẾ ĐỘ TRANG TRẠI: Load lô đất của farm này
+      dispatch(fetchPlots());
+      setIsSyncing(false);
+    } else {
+      // 2b. CHẾ ĐỘ HUB: Quét nền lấy dữ liệu tổng hợp
+      dispatch(clearPlots());
+      
+      if (hubToken) {
+        setIsSyncing(true);
+        // Chạy ngầm việc quét nền
+        dashboardService.fetchAggregateStats(hubToken)
+          .then(stats => {
+            dispatch(setAggregateStats(stats));
+          })
+          .catch(err => {
+            console.error('[Dashboard] Background aggregate failed', err);
+          })
+          .finally(() => {
+            setIsSyncing(false);
+          });
+      }
+    }
+  }, [farmId, dispatch, hubToken]);
+
+  const isLoading = (farmId && plotsLoading) || cropsLoading || isSyncing;
 
   return {
     stats: {
-      totalPlots: plots.length,
+      totalPlots: farmId ? plots.length : aggregateStats.totalPlots,
       totalCrops: crops.length,
-      totalArea: plots.reduce((acc, p) => acc + (p.areaHa || 0), 0),
-      totalPlants: 0, // Chờ API cụ thể
-      performancePct: 0, // Chờ chỉ số thực từ API
+      totalArea: farmId 
+        ? plots.reduce((acc, p) => acc + (p.areaHa || 0), 0)
+        : aggregateStats.totalArea,
+      totalPlants: 0, 
+      performancePct: 0, 
     },
-    npkData: [], // Chờ API NPK
+    npkData: [], 
     isLoading
   };
 }
