@@ -9,7 +9,6 @@ import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanEnt
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanStageEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanStageStatusEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
-import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanStageRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlanStageResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.mapper.PlanStageMapper;
@@ -54,7 +53,7 @@ public class PlanStageService {
         FarmEntity farm = farmRepository.findById(farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
 
-        if(!planRepository.existsByFarmId(farm.getId()))
+        if(planRepository.existsByFarm_Id(farm.getId()))
             throw new AppException(ErrorCode.FARM_NOT_FOUND);
 
         PlanEntity plan = planRepository.findById(planId)
@@ -75,7 +74,7 @@ public class PlanStageService {
         FarmEntity farm = farmRepository.findById(farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
 
-        if(!planRepository.existsByFarmId(farm.getId()))
+        if(planRepository.existsByFarm_Id(farm.getId()))
             throw new AppException(ErrorCode.FARM_NOT_FOUND);
 
         PlanEntity plan = planRepository.findById(planId)

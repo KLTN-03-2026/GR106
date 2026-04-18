@@ -2,28 +2,23 @@ package com.farmapp.farmsmartmanagement.modules.plan.service;
 
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
+import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
 import com.farmapp.farmsmartmanagement.domain.enums.CropScope;
 import com.farmapp.farmsmartmanagement.domain.enums.PlanStatus;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.CropEntity;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.FarmEntity;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanEntity;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.UserEntity;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.CropRepository;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.FarmRepository;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.PlanRepository;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.UserRepository;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanRequest;
+import com.farmapp.farmsmartmanagement.modules.plan.dto.response.AddPlotToPlanResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlanResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.mapper.PlanMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.apache.catalina.User;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,8 +33,12 @@ public class PlanService {
     FarmRepository farmRepository;
     UserRepository userRepository;
 
+    PlotRepository plotRepository;
     PlanMapper planMapper;
 
+    PlanPlotRepository planPlotRepository;
+
+    SecurityUtils securityUtils;
 
 //    Tất cả farm mà user là member -> check file byPassRlsWithUser.txt
 //    @Transactional
@@ -70,7 +69,7 @@ public class PlanService {
         if(crop == null)
             throw new AppException(ErrorCode.CROP_NOT_FOUND);
 
-        if(planRepository.existsByFarmIdAndName(farm.getId(), request.getName()))
+        if(planRepository.existsByFarm_IdAndName(farm.getId(), request.getName()))
             throw new AppException(ErrorCode.PLAN_ALREADY_EXISTS);
 
         PlanEntity newPlan = new PlanEntity();
@@ -88,4 +87,124 @@ public class PlanService {
     }
 
 
+    @Transactional
+    @PreAuthorize("hasAuthority('plan:delete')")
+    public void deletePlan(UUID planId) {
+        UUID farmId = securityUtils.getCurrentFarmId();
+
+        PlanEntity plan = planRepository
+                .findByIdAndFarm_Id(planId, farmId)  // ← vừa tìm vừa check ownership
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
+
+        plan.setDeletedAt(Instant.now());
+        plan.setDeletedBy(userRepository.getReferenceById(securityUtils.getCurrentUserId()));
+    }
+
+//    @Transactional
+//    @PreAuthorize("hasAuthority('plan:update')")
+//    public AddPlotToPlanResponse addPlotToPlan(UUID planId, List<UUID> plotIds) {
+//        UUID farmId = securityUtils.getCurrentFarmId();
+//
+//        PlanEntity plan = planRepository
+//                .findByIdAndFarm_Id(planId, farmId)
+//                .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
+//
+//        List<PlotEntity> plots = plotRepository
+//                .findAllByIdInAndFarmId(plotIds, farmId);
+//
+//        if (plots.size() != plotIds.size()) {
+//            throw new AppException(ErrorCode.PLOT_NOT_FOUND);
+//        }
+//
+//        List<UUID> existingPlotIds = planPlotRepository.findPlotIdsByPlanId(planId);
+//        if (plotIds.stream().anyMatch(existingPlotIds::contains)) {
+//            throw new AppException(ErrorCode.PLOT_ALREADY_IN_PLAN);
+//        }
+//
+//        FarmEntity farm = farmRepository.getReferenceById(farmId);
+//
+//        List<PlanPlotEntity> planPlots = plots.stream()
+//                .map(plot -> {
+//                    PlanPlotEntity planPlot = new PlanPlotEntity();
+//                    planPlot.setPlan(plan);
+//                    planPlot.setPlot(plot);
+//                    planPlot.setFarm(farm);
+//                    planPlot.setPlotNameSnapshot(plot.getName());
+//                    planPlot.setCreatedAt(Instant.now());
+//                    return planPlot;
+//                }).toList();
+//
+//        planPlotRepository.saveAll(planPlots);
+//
+//        List<AddPlotToPlanResponse.PlotSnapshotResponse> addedPlots = planPlots.stream()
+//                .map(pp -> AddPlotToPlanResponse.PlotSnapshotResponse.builder()
+//                        .plotId(pp.getPlot().getId())
+//                        .plotName(pp.getPlotNameSnapshot())
+//                        .build())
+//                .toList();
+//
+//        return AddPlotToPlanResponse.builder()
+//                .planId(planId)
+//                .addedPlots(addedPlots)
+//                .build();
+//    }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('plan:update')")
+    public AddPlotToPlanResponse addPlotToPlan(UUID planId, List<UUID> plotIds) {
+        UUID farmId = securityUtils.getCurrentFarmId();
+
+        PlanEntity plan = planRepository
+                .findByIdAndFarm_Id(planId, farmId)
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
+
+        List<PlotEntity> plots = plotRepository
+                .findAllByIdInAndFarmId(plotIds, farmId);
+
+        if (plots.size() != plotIds.size()) {
+            throw new AppException(ErrorCode.PLOT_NOT_FOUND);
+        }
+
+        // Lấy những plot đã có trong plan
+        List<UUID> existingPlotIds = planPlotRepository.findPlotIdsByPlanId(planId);
+
+        // Chỉ lấy những plot chưa có — bỏ qua plot đã tồn tại
+        List<PlotEntity> newPlots = plots.stream()
+                .filter(plot -> !existingPlotIds.contains(plot.getId()))
+                .toList();
+
+        if (newPlots.isEmpty()) {
+            return AddPlotToPlanResponse.builder()
+                    .planId(planId)
+                    .addedPlots(List.of())
+                    .build();
+        }
+
+        FarmEntity farm = farmRepository.getReferenceById(farmId);
+
+        List<PlanPlotEntity> planPlots = newPlots.stream()
+                .map(plot -> {
+                    PlanPlotEntity planPlot = new PlanPlotEntity();
+                    planPlot.setPlan(plan);
+                    planPlot.setPlot(plot);
+                    planPlot.setFarm(farm);
+                    planPlot.setPlotNameSnapshot(plot.getName());
+                    planPlot.setCreatedAt(Instant.now());
+                    return planPlot;
+                }).toList();
+
+        planPlotRepository.saveAll(planPlots);
+
+        List<AddPlotToPlanResponse.PlotSnapshotResponse> addedPlots = planPlots.stream()
+                .map(pp -> AddPlotToPlanResponse.PlotSnapshotResponse.builder()
+                        .plotId(pp.getPlot().getId())
+                        .plotName(pp.getPlotNameSnapshot())
+                        .build())
+                .toList();
+
+        return AddPlotToPlanResponse.builder()
+                .planId(planId)
+                .addedPlots(addedPlots)
+                .build();
+    }
 }

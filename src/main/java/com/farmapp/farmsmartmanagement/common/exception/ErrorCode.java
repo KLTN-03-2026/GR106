@@ -61,7 +61,7 @@ public enum ErrorCode {
     CROP_TYPE_ALREADY_EXISTS(409, "Tên loại cây trồng đã tồn tại", HttpStatus.CONFLICT),
 
     PLAN_ALREADY_EXISTS(409,"Tên kế hoạch đã tồn tại", HttpStatus.CONFLICT),
-
+    PLOT_ALREADY_IN_PLAN(409, "Lô đất này đã ở trong kế hoạch",  HttpStatus.CONFLICT),
     FARM_ALREADY_EXISTS(409, "Tên trang trại đã tồn tại", HttpStatus.CONFLICT),
 
     CROP_TYPE_IN_USE(409, "Loại cây trồng đang được sử dụng" ,HttpStatus.CONFLICT ),
