@@ -16,4 +16,6 @@ public interface PlanRepository extends JpaRepository<PlanEntity, UUID> {
     boolean existsByFarm_Id(UUID farmId);
 
     Optional<PlanEntity> findByIdAndFarm_Id(UUID planId, UUID farmId);
+
+    boolean existsByIdAndFarm_Id(UUID planId, UUID farmId);
 }

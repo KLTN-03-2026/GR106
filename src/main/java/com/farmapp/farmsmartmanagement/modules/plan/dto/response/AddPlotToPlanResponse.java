@@ -15,14 +15,4 @@ import java.util.UUID;
 public class AddPlotToPlanResponse {
     UUID planId;
     List<PlotSnapshotResponse> addedPlots;
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    public static class PlotSnapshotResponse {
-        UUID plotId;
-        String plotName;
-    }
 }

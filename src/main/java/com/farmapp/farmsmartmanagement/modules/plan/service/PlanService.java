@@ -10,6 +10,7 @@ import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.AddPlotToPlanResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlanResponse;
+import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlotSnapshotResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.mapper.PlanMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -195,8 +196,8 @@ public class PlanService {
 
         planPlotRepository.saveAll(planPlots);
 
-        List<AddPlotToPlanResponse.PlotSnapshotResponse> addedPlots = planPlots.stream()
-                .map(pp -> AddPlotToPlanResponse.PlotSnapshotResponse.builder()
+        List<PlotSnapshotResponse> addedPlots = planPlots.stream()
+                .map(pp -> PlotSnapshotResponse.builder()
                         .plotId(pp.getPlot().getId())
                         .plotName(pp.getPlotNameSnapshot())
                         .build())
@@ -206,5 +207,21 @@ public class PlanService {
                 .planId(planId)
                 .addedPlots(addedPlots)
                 .build();
+    }
+
+    public List<PlotSnapshotResponse> getPlotsByPlan(UUID planId) {
+        UUID farmId = securityUtils.getCurrentFarmId();
+
+        if(!planRepository.existsByIdAndFarm_Id(planId,farmId))
+            throw new AppException(ErrorCode.PLAN_NOT_FOUND);
+
+        List<PlotEntity> plots = planPlotRepository.findPlotsByPlanId(planId);
+
+        return plots.stream()
+                .map(plotEntity -> PlotSnapshotResponse.builder()
+                        .plotId(plotEntity.getId())
+                        .plotName(plotEntity.getName())
+                        .build())
+                .toList();
     }
 }

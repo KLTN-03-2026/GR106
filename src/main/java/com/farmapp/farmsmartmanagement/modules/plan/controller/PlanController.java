@@ -8,6 +8,7 @@ import com.farmapp.farmsmartmanagement.modules.plan.dto.request.AddPlotToPlanReq
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.AddPlotToPlanResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlanResponse;
+import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlotSnapshotResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.service.PlanService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -94,4 +95,19 @@ public class PlanController {
         );
     }
 
+
+    @GetMapping("/api/v1/plans/{planId}/plots")
+    @RequiresFarmToken
+    @Operation(
+            summary = "Lấy danh sách plot của kế hoạch",
+            description = "API trả về danh sách các plot thuộc một plan",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<ApiResponse<List<PlotSnapshotResponse>>> getPlotsByPlan(
+            @PathVariable("planId") UUID planId
+    ) {
+        return ResponseUtil.success(
+                planService.getPlotsByPlan(planId)
+        );
+    }
 }
