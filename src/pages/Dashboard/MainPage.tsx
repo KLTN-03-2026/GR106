@@ -25,10 +25,8 @@ function useDashboardData(farmId?: string) {
   const { crops, loading: cropsLoading } = useSelector((state: RootState) => state.crop);
 
   useEffect(() => {
-    if (farmId) {
-      dispatch(fetchPlots());
-      dispatch(fetchCrops());
-    }
+    dispatch(fetchPlots());
+    dispatch(fetchCrops());
   }, [farmId, dispatch]);
 
   const isLoading = plotsLoading || cropsLoading;
