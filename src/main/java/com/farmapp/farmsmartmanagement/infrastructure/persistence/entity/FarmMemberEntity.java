@@ -29,7 +29,7 @@ public class FarmMemberEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "farm_role_id", nullable = false)
-    private FarmRoleEntity role;
+    private FarmRoleEntity farmRole;
 
     @Column(name = "is_active")
     private Boolean isActive;
