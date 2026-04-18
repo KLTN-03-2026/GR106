@@ -32,6 +32,7 @@ public class TaskService {
     TaskStatusRepository taskStatusRepository;
     PlanStageRepository planStageRepository;
     FarmRepository farmRepository;
+    PlanPlotRepository planPlotRepository;
 
     UserRepository userRepository;
 
@@ -75,11 +76,17 @@ public class TaskService {
             throw new AppException(ErrorCode.TASK_STATUS_INITIAL_NOT_FOUND);
         }
 
+        PlotEntity plot = null;
+        if(request.getPlotId() != null)
+            plot = planPlotRepository
+                    .findPlotByPlanIdAndPlotId(planId, request.getPlotId())
+                    .orElseThrow(() -> new AppException(ErrorCode.PLOT_NOT_FOUND));
+
         // create task
         TaskEntity task = new TaskEntity();
         task.setPlanStage(planStage);
         task.setFarm(farm);
-        task.setPlot(null); // -> Sau này triển khai
+        task.setPlot(plot); // -> Sau này triển khai
         task.setStatus(status);
         task.setName(request.getName());
         task.setDescription(request.getDescription());
@@ -125,6 +132,14 @@ public class TaskService {
 
         TaskEntity updateTask = taskRepository.findById(taskId)
                 .orElseThrow(()-> new AppException(ErrorCode.TASK_NOT_FOUND));
+
+        if(request.getPlotId() != null){
+            PlotEntity plot = planPlotRepository
+                    .findPlotByPlanIdAndPlotId(planId, request.getPlotId())
+                    .orElseThrow(() -> new AppException(ErrorCode.PLOT_NOT_FOUND));
+            updateTask.setPlot(plot);
+        }
+
 
         // nếu không có thay đổi thì return luôn
         if (!hasChanges(updateTask, request)) {
