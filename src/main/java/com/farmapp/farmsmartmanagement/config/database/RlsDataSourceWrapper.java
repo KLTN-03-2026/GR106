@@ -41,7 +41,7 @@ public class RlsDataSourceWrapper implements DataSource {
 
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT set_config('app.current_user_id', ?, false)," +
-                        "       set_config('app.current_farm_id', ?, false)" +
+                        "       set_config('app.current_farm_id', ?, false)," +
                         "       set_config('app.bypass_rls', 'false', false)" // reset bypass
         )) {
             ps.setString(1, userId);
