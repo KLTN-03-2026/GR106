@@ -7,11 +7,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface FarmRepository extends JpaRepository<FarmEntity, UUID> {
 
     List<FarmEntity> findByOwner_Id(UUID ownerId);
+
+    Optional<FarmEntity> findByIdAndOwner_Id(UUID farmId,UUID ownerId);
 
     boolean existsByOwner_IdAndName(UUID ownerId, String name);
 

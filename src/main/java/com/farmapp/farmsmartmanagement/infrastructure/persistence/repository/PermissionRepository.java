@@ -36,4 +36,12 @@ public interface PermissionRepository extends JpaRepository<PermissionEntity, UU
     WHERE ur.user_id = :userId
     """, nativeQuery = true)
     List<String> findSystemRoles(@Param("userId") UUID userId);
+
+    @Query("""
+    SELECT p.name
+    FROM FarmRolePermissionEntity frp
+    JOIN frp.permission p
+    WHERE frp.farmRole.name = :roleName
+""")
+    List<String> findPermissionsByFarmRole(@Param("roleName") String roleName);
 }

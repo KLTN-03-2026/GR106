@@ -29,35 +29,29 @@ public class FarmAuthService {
     @Transactional
     public FarmSelectResponse selectFarm(UUID userId, UUID farmId) {
 
-        // Check owner trước (owner không cần có row farm_members)
-        boolean isOwner = farmRepository
-                .findById(farmId)
-                .map(farm -> userId.equals(farm.getOwner().getId()))
+        // Chỉ cần check farm_members — owner cũng có row ở đây
+        FarmMemberEntity member = farmMemberRepository
+                .findByFarm_IdAndUser_Id(farmId, userId)
+                .filter(FarmMemberEntity::getIsActive)
+                .orElseThrow(() -> new AppException(ErrorCode.FORBIDDEN));
+
+        // Farm có tồn tại không (soft delete)
+        farmRepository.findById(farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
 
-        // Nếu không phải owner thì check active member
-        boolean isMember = !isOwner && farmMemberRepository
-                .findByFarm_IdAndUser_Id(farmId, userId)
-                .map(FarmMemberEntity::getIsActive)
-                .orElse(false);
+        String farmRole = member.getFarmRole().getName(); // OWNER | MANAGER | WORKER
 
-        if (!isOwner && !isMember) {
-            throw new AppException(ErrorCode.FORBIDDEN);
-        }
-
-        // Load system roles
-        List<String> systemRoles = permissionRepository.findSystemRoles(userId);
-
-        // Load farm permissions (có cache)
-        List<String> cached = permissionCacheService.get(userId, farmId);
-        List<String> permissions;
-        if (cached != null) {
-            permissions = cached;
-        } else {
-            permissions = permissionRepository.findPermissions(userId, farmId);
+        // Load permissions theo role (có cache)
+        List<String> permissions = permissionCacheService.get(userId, farmId);
+        if (permissions == null) {
+            permissions = permissionRepository.findPermissionsByFarmRole(farmRole);
             permissionCacheService.save(userId, farmId, permissions);
         }
 
-        return new FarmSelectResponse(jwtProvider.generateFarmToken(userId, farmId, systemRoles, permissions));
+        List<String> systemRoles = permissionRepository.findSystemRoles(userId);
+
+        return new FarmSelectResponse(
+                jwtProvider.generateFarmToken(userId, farmId, systemRoles, permissions)
+        );
     }
 }

@@ -8,6 +8,7 @@ import com.farmapp.farmsmartmanagement.domain.enums.SubscriptionStatus;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.request.CreateFarmRequest;
+import com.farmapp.farmsmartmanagement.modules.farm.dto.request.UpdateFarmRequest;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmSummaryResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.mapper.FarmMapper;
@@ -17,6 +18,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -123,11 +125,24 @@ public class FarmService {
         FarmMemberEntity member = new FarmMemberEntity();
         member.setFarm(farm);
         member.setUser(owner);
-        member.setRole(ownerRole);
+        member.setFarmRole(ownerRole);
         member.setIsActive(true);
         member.setJoinedAt(now);
 
         farmMemberRepository.save(member);
+
+        return farmMapper.toResponse(farm);
+    }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('farm:update')")
+    public FarmResponse updateFarm(UUID farmId, UpdateFarmRequest request) {
+
+        UUID userId = securityUtils.getCurrentUserId();
+
+        FarmEntity farm = farmRepository.findByIdAndOwner_Id(farmId, userId)
+                        .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
+        farmMapper.updateEntityFromRequest(request, farm);
 
         return farmMapper.toResponse(farm);
     }
@@ -140,7 +155,6 @@ public class FarmService {
                 .map(farmMapper::toResponse)
                 .toList();
     }
-
 
     @Transactional
     public List<FarmSummaryResponse> getFarmsSummary() {
