@@ -41,6 +41,11 @@ public class FarmTokenInterceptor implements HandlerInterceptor {
             log.warn("Farm token required but got user-only token. userId={}", principal.getUserId());
             throw new AppException(ErrorCode.FARM_TOKEN_REQUIRED);
         }
+        // Thêm: validate farmId trong path khớp token
+        String pathFarmId = extractFarmIdFromPath(request.getRequestURI());
+        if (pathFarmId != null && !principal.getFarmId().toString().equals(pathFarmId)) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
 
         return true;
     }
