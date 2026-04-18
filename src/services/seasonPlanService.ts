@@ -98,5 +98,34 @@ export const seasonPlanService = {
 
   async deleteTask(planId: string, stageId: string, taskId: string): Promise<void> {
     await axiosInstance.delete(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}`);
+  },
+
+  /**
+   * Cập nhật thông tin kế hoạch
+   */
+  async updatePlan(planId: string, data: Partial<SeasonPlan>): Promise<SeasonPlan> {
+    // Chỉ gửi các trường hợp lệ theo Swagger
+    const payload = {
+      name: data.name,
+      cropId: data.cropId,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      note: data.note || (data as any).description || '',
+      plotId: data.plotId,
+    };
+    const response = await axiosInstance.patch(`/api/v1/plans/${planId}`, payload);
+    const validated = createPlanResponseSchema.parse(response.data);
+    return {
+      ...validated.data,
+      phases: data.phases || [],
+      description: validated.data.note || '',
+    } as SeasonPlan;
+  },
+
+  /**
+   * Xóa kế hoạch
+   */
+  async deletePlan(planId: string): Promise<void> {
+    await axiosInstance.delete(`/api/v1/plans/${planId}`);
   }
 };

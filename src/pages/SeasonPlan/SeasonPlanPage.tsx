@@ -7,7 +7,7 @@ import {
   updatePlan, 
   fetchPlans,
   createPlan,
-  deletePlan,
+  removePlan,
   fetchStages,
   fetchTasks,
   createPhase,
@@ -30,6 +30,7 @@ import { PlanTimeline } from './components/PlanTimeline';
 import { CreatePlanModal } from './components/CreatePlanModal';
 import { ClonePlanModal } from './components/ClonePlanModal';
 import { PlanDetailPanel } from './components/PlanDetailPanel';
+import { CreatePhaseModal } from './components/CreatePhaseModal';
 
 export type SelectionType = 'PLAN' | 'PHASE' | 'TASK';
 
@@ -59,6 +60,12 @@ export function SeasonPlanPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [cloneSourcePlan, setCloneSourcePlan] = useState<SeasonPlan | null>(null);
   
+  // Phase Modal state
+  const [isCreatePhaseModalOpen, setIsCreatePhaseModalOpen] = useState(false);
+  const [phaseModalTargetPlanId, setPhaseModalTargetPlanId] = useState<string | null>(null);
+  const [phaseModalInitialData, setPhaseModalInitialData] = useState<{ name: string; startDate: string; endDate: string } | undefined>(undefined);
+  const [isPhaseSaving, setIsPhaseSaving] = useState(false);
+  
   // Selection state (Jira style)
   const [selectedItem, setSelectedItem] = useState<SelectionState | null>(null);
 
@@ -81,15 +88,11 @@ export function SeasonPlanPage() {
   const displayPlans = currentPlan ? [currentPlan] : farmPlans;
 
   useEffect(() => {
-    // Không fetch data nếu chưa có farm context
-    if (!farmId || !accessToken) {
-      console.log('[SeasonPlanPage] Waiting for farm context...');
-      return;
-    }
-    
-    // Chỉ fetch plans - plots và crops chỉ fetch khi tạo mùa vụ mới
+    // Fetch plans, plots and crops
     dispatch(fetchPlans());
-  }, [dispatch, user, accessToken, farmId]);
+    dispatch(fetchPlots());
+    dispatch(fetchCrops());
+  }, [dispatch, accessToken, farmId]);
 
   // Fetch plots và crops khi mở modal tạo mùa vụ
   useEffect(() => {
@@ -121,8 +124,37 @@ export function SeasonPlanPage() {
     }
   };
 
-  const handleUpdatePlan = (updatedPlan: SeasonPlan) => {
-    dispatch(updatePlan(updatedPlan));
+  const handleUpdatePlan = async (updatedPlan: SeasonPlan) => {
+    try {
+      await dispatch(updatePlan({ planId: updatedPlan.id, data: updatedPlan })).unwrap();
+    } catch (err: any) {
+      console.error('[SeasonPlanPage] updatePlan failed:', err);
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi cập nhật kế hoạch',
+        message: extractErrorMessage(err)
+      });
+    }
+  };
+
+  const handleDeletePlan = async (planId: string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa kế hoạch này? Tất cả giai đoạn và công việc liên quan sẽ bị xóa.')) {
+      return;
+    }
+    
+    try {
+      await dispatch(removePlan(planId)).unwrap();
+      setSelectedItem(null);
+    } catch (err: any) {
+      console.error('[SeasonPlanPage] deletePlan failed:', err);
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi xóa kế hoạch',
+        message: extractErrorMessage(err)
+      });
+    }
   };
 
   // --- API Workflow Orchestration ---
@@ -160,16 +192,12 @@ export function SeasonPlanPage() {
     return err.message || 'Có lỗi xảy ra';
   };
 
-  const handleAddPhase = async (planId: string, name: string) => {
-    console.log('[SeasonPlanPage] handleAddPhase triggered:', { planId, name });
+  const handleAddPhase = (planId: string) => {
+    console.log('[SeasonPlanPage] handleAddPhase triggered:', planId);
     const plan = plans.find(p => p.id === planId);
-    if (!plan) {
-      console.error('[SeasonPlanPage] handleAddPhase: Plan not found in state:', planId);
-      return;
-    }
+    if (!plan) return;
 
     const lastPhase = plan.phases && plan.phases.length > 0 ? plan.phases[plan.phases.length - 1] : null;
-    
     const todayStr = new Date().toISOString().split('T')[0];
     
     let startDate: string;
@@ -181,26 +209,30 @@ export function SeasonPlanPage() {
       startDate = plan.startDate;
     }
 
-    // Nếu ngày bắt đầu tính toán được nằm trong quá khứ, sử dụng ngày hôm nay
-    if (startDate < todayStr) {
-      startDate = todayStr;
-    }
+    if (startDate < todayStr) startDate = todayStr;
 
-    // Thời gian mặc định 1 tuần cho giai đoạn mới
     const nextEndDate = new Date(startDate);
     nextEndDate.setDate(nextEndDate.getDate() + 7);
-    const calculatedEndDate = nextEndDate.toISOString().split('T')[0];
+    let endDate = nextEndDate.toISOString().split('T')[0];
 
-    // Cap at plan end date to avoid 400 errors from backend
-    let finalEndDate = calculatedEndDate;
-    if (plan.endDate && calculatedEndDate > plan.endDate) {
-      finalEndDate = plan.endDate < startDate ? startDate : plan.endDate;
+    if (plan.endDate && endDate > plan.endDate) {
+      endDate = plan.endDate < startDate ? startDate : plan.endDate;
     }
 
+    setPhaseModalTargetPlanId(planId);
+    setPhaseModalInitialData({ name: '', startDate, endDate });
+    setIsCreatePhaseModalOpen(true);
+  };
+
+  const handleSaveNewPhase = async (data: { name: string; startDate: string; endDate: string }) => {
+    if (!phaseModalTargetPlanId) return;
+
+    setIsPhaseSaving(true);
     try {
-      console.log('[SeasonPlanPage] Dispatching createPhase with dates:', { startDate, endDate: finalEndDate });
-      const result = await dispatch(createPhase({ planId, data: { name, startDate, endDate: finalEndDate } })).unwrap();
-      console.log('[SeasonPlanPage] createPhase successful:', result);
+      console.log('[SeasonPlanPage] Saving new phase:', { planId: phaseModalTargetPlanId, data });
+      await dispatch(createPhase({ planId: phaseModalTargetPlanId, data })).unwrap();
+      setIsCreatePhaseModalOpen(false);
+      setPhaseModalTargetPlanId(null);
     } catch (err: any) {
       console.error('[SeasonPlanPage] createPhase failed:', err);
       let errorMsg = 'Thời gian bị trùng hoặc không hợp lệ';
@@ -223,11 +255,13 @@ export function SeasonPlanPage() {
         message: errorMsg,
         details: details.length > 0 ? details : undefined
       });
+    } finally {
+      setIsPhaseSaving(false);
     }
   };
 
-  const handleAddTask = async (planId: string, phaseId: string, name: string) => {
-    console.log('[SeasonPlanPage] handleAddTask initiated:', { planId, phaseId, name });
+  const handleAddTask = async (planId: string, phaseId: string, data: { name: string; description: string; startDate: string; endDate: string; plotId?: string }) => {
+    console.log('[SeasonPlanPage] handleAddTask initiated:', { planId, phaseId, ...data });
     const plan = plans.find(p => p.id === planId);
     if (!plan) {
       console.error('[SeasonPlanPage] handleAddTask: Plan not found in local state', planId);
@@ -240,33 +274,22 @@ export function SeasonPlanPage() {
     }
 
     try {
-      // Đảm bảo plotId là một chuỗi UUID hợp lệ, không để null lọt qua
-      const plotId = (typeof plan.plotId === 'string' && plan.plotId.length === 36) 
-        ? plan.plotId 
-        : "00000000-0000-0000-0000-000000000000";
+      // Ưu tiên plotId truyền lên từ form, sau đó mới lấy từ plan
+      const plotId = data.plotId || plan.plotId;
 
-      const todayStr = new Date().toISOString().split('T')[0];
-      
-      // Kiểm tra xem Giai đoạn có nằm trong quá khứ không
-      if (phase.endDate < todayStr) {
+      if (!plotId) {
         setNotification({
           isOpen: true,
           type: 'error',
-          title: 'Giai đoạn đã quá hạn',
-          message: `Giai đoạn "${phase.name}" đã kết thúc vào ngày ${phase.endDate}. Bạn không thể thêm công việc mới vào giai đoạn đã qua. Hãy tạo một giai đoạn mới hoặc điều chỉnh thời gian của giai đoạn này.`
+          title: 'Thiếu thông tin lô đất',
+          message: 'Vui lòng chọn lô đất cho công việc này.'
         });
         return;
       }
 
-      // Đối với các giai đoạn đang diễn ra nhưng có ngày bắt đầu cũ, ta lấy max(startDate, today)
-      const taskStartDate = phase.startDate < todayStr ? todayStr : phase.startDate;
-      const taskEndDate = phase.endDate;
-
+      // Payload construct from provided data
       const payload = { 
-        name, 
-        description: '', 
-        startDate: taskStartDate, 
-        endDate: taskEndDate,
+        ...data,
         plotId 
       };
 
@@ -344,16 +367,29 @@ export function SeasonPlanPage() {
     try {
       // Find the plan to get the real plotId
       const plan = plans.find(p => p.id === planId);
-      
-      // Create a clean payload for the update
+      const plotId = task.plotId || plan?.plotId;
+
+      if (!plotId) {
+        setNotification({
+          isOpen: true,
+          type: 'error',
+          title: 'Thiếu thông tin lô đất',
+          message: 'Công việc này thiếu thông tin lô đất. Vui lòng kiểm tra lại cấu hình kế hoạch.'
+        });
+        return;
+      }
+
+      // Khởi tạo payload CẬP NHẬT chuẩn xác theo Swagger: 
+      // name, description, startDate, endDate, plotId
       const data = {
         name: task.name,
         description: task.description || '',
         startDate: task.startDate,
         endDate: task.endDate,
-        plotId: task.plotId || plan?.plotId || '',
-        progressPercent: task.progressPercent
+        plotId: plotId
       };
+
+      console.log('[SeasonPlanPage] updateSeasonTask payload:', JSON.stringify(data, null, 2));
       await dispatch(updateSeasonTask({ planId, stageId, taskId: task.id, data })).unwrap();
     } catch (err: any) {
       console.error('[SeasonPlanPage] updateTask failed:', err);
@@ -579,6 +615,7 @@ const getPlotName = (id: string) => {
               onSelect={(selection) => setSelectedItem(selection)}
               selectedId={selectedItem?.id}
               onUpdatePlan={handleUpdatePlan}
+              onDeletePlan={handleDeletePlan}
               onAddPhase={handleAddPhase}
               preExpandedPlanId={planId}
               canEdit={canEdit}
@@ -589,11 +626,16 @@ const getPlotName = (id: string) => {
         <PlanDetailPanel 
           isOpen={!!selectedItem}
           selection={selectedData}
+          plots={plots}
           onClose={() => setSelectedItem(null)}
           onUpdatePlan={handleUpdatePlan}
-          onUpdatePhase={(_id, phase) => {
-            // Note: stage update API not in provided list, but we can handle local if needed
-            console.log('Update phase:', phase);
+          onUpdatePhase={(id, phase) => {
+            // Theo Swagger không có PATCH Stage riêng, nên ta cập nhật thông qua Plan
+            const plan = plans.find(p => p.id === phase.planId);
+            if (!plan) return;
+            
+            const updatedPhases = plan.phases.map(ph => ph.id === id ? phase : ph);
+            handleUpdatePlan({ ...plan, phases: updatedPhases });
           }}
           onDeletePhase={handleDeletePhase}
           onAddTask={handleAddTask}
@@ -601,7 +643,7 @@ const getPlotName = (id: string) => {
           onDeleteTask={handleDeleteTask}
           onSelectPhase={(_id, phaseId) => setSelectedItem({ type: 'PHASE', id: phaseId, planId: planId! })}
           onSelectTask={(_pid, stageId, taskId) => setSelectedItem({ type: 'TASK', id: taskId, phaseId: stageId, planId: planId! })}
-          onDeletePlan={(id) => dispatch(deletePlan(id))}
+          onDeletePlan={handleDeletePlan}
           onClone={(p) => setCloneSourcePlan(p)}
           canEdit={canEdit}
         />
@@ -612,6 +654,14 @@ const getPlotName = (id: string) => {
         onClose={() => setIsCreateModalOpen(false)}
         onSave={handleCreatePlan}
         existingPlans={plans}
+      />
+
+      <CreatePhaseModal 
+        isOpen={isCreatePhaseModalOpen}
+        onClose={() => setIsCreatePhaseModalOpen(false)}
+        onSave={handleSaveNewPhase}
+        initialData={phaseModalInitialData}
+        isLoading={isPhaseSaving}
       />
 
       {cloneSourcePlan && (

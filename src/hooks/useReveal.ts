@@ -23,7 +23,7 @@ export const useReveal = (threshold = 0.1) => {
           ([entry]) => {
             if (entry.isIntersecting) {
               setVisible(true);
-              if (observer) {
+              if (observer && entry.target) {
                 observer.unobserve(entry.target);
               }
             }
@@ -31,7 +31,7 @@ export const useReveal = (threshold = 0.1) => {
           { threshold }
         );
 
-        if (target && document.body.contains(target)) {
+        if (target instanceof Element && document.body.contains(target)) {
           observer.observe(target);
         }
       } catch (error) {

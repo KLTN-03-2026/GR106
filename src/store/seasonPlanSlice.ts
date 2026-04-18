@@ -42,6 +42,29 @@ export const createPlan = createAsyncThunk(
   }
 );
 
+export const updatePlan = createAsyncThunk(
+  'seasonPlan/updatePlan',
+  async ({ planId, data }: { planId: string; data: Partial<SeasonPlan> }, { rejectWithValue }) => {
+    try {
+      return await seasonPlanService.updatePlan(planId, data);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const removePlan = createAsyncThunk(
+  'seasonPlan/deletePlan',
+  async (planId: string, { rejectWithValue }) => {
+    try {
+      await seasonPlanService.deletePlan(planId);
+      return planId;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 // --- STAGE THUNKS ---
 
 export const fetchStages = createAsyncThunk(
@@ -141,13 +164,6 @@ const seasonPlanSlice = createSlice({
     addPlan: (state, action: PayloadAction<SeasonPlan>) => {
       state.plans.push(action.payload);
     },
-    updatePlan: (state, action: PayloadAction<SeasonPlan>) => {
-      const index = state.plans.findIndex(p => p.id === action.payload.id);
-      if (index !== -1) state.plans[index] = action.payload;
-    },
-    deletePlan: (state, action: PayloadAction<string>) => {
-      state.plans = state.plans.filter(p => p.id !== action.payload);
-    },
   },
   extraReducers: (builder) => {
     builder
@@ -156,6 +172,17 @@ const seasonPlanSlice = createSlice({
       .addCase(fetchPlans.fulfilled, (state, action) => { state.loading = false; state.plans = action.payload; })
       .addCase(fetchPlans.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
       .addCase(createPlan.fulfilled, (state, action) => { state.plans.push(action.payload); })
+      .addCase(updatePlan.fulfilled, (state, action) => {
+        const index = state.plans.findIndex(p => p.id === action.payload.id);
+        if (index !== -1) {
+          // Bảo vệ phases hiện tại không bị ghi đè bởi response (vốn thường không kèm phases)
+          const existingPhases = state.plans[index].phases;
+          state.plans[index] = { ...action.payload, phases: existingPhases };
+        }
+      })
+      .addCase(removePlan.fulfilled, (state, action) => {
+        state.plans = state.plans.filter(p => p.id !== action.payload);
+      })
       
       // Stages
       .addCase(fetchStages.fulfilled, (state, action) => {
@@ -212,6 +239,6 @@ const seasonPlanSlice = createSlice({
   }
 });
 
-export const { setPlans, addPlan, updatePlan, deletePlan } = seasonPlanSlice.actions;
+export const { setPlans, addPlan } = seasonPlanSlice.actions;
 export default seasonPlanSlice.reducer;
 

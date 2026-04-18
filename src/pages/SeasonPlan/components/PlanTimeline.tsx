@@ -1,6 +1,6 @@
 import React, { useMemo, useState, Fragment, useRef, useEffect } from 'react';
 import { SeasonPlan, Phase } from '../../../types/seasonPlan';
-import { ChevronRight, ChevronDown, Zap, CheckSquare, Plus } from 'lucide-react';
+import { ChevronRight, ChevronDown, Zap, CheckSquare, Plus, Trash2 } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import { cn } from '../../../utils/cn';
 import { rippleUpdatePhases, hasPlanOverlap, syncPlanDatesWithPhases, addDays } from '../../../utils/seasonPlanUtils';
@@ -11,7 +11,8 @@ interface PlanTimelineProps {
   selectedId?: string;
   onSelect: (selection: SelectionState) => void;
   onUpdatePlan: (plan: SeasonPlan) => void;
-  onAddPhase: (planId: string, name: string) => void;
+  onDeletePlan?: (planId: string) => void;
+  onAddPhase: (planId: string) => void;
   preExpandedPlanId?: string;
   canEdit?: boolean;
 }
@@ -21,6 +22,7 @@ export function PlanTimeline({
   selectedId,
   onSelect,
   onUpdatePlan,
+  onDeletePlan,
   onAddPhase,
   preExpandedPlanId,
   canEdit = false,
@@ -28,8 +30,6 @@ export function PlanTimeline({
   const [expandedPlans, setExpandedPlans] = useState<Set<string>>(new Set());
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set());
   const [timeScale, setTimeScale] = useState<'weeks' | 'months' | 'quarters'>('months');
-  const [isAddingPhaseTo, setIsAddingPhaseTo] = useState<string | null>(null);
-  const addPhaseInputRef = useRef<HTMLInputElement>(null);
   const ganttBodyRef = useRef<HTMLDivElement>(null);
   const ganttHeaderRef = useRef<HTMLDivElement>(null);
   const scrollBarRef = useRef<HTMLDivElement>(null);
@@ -151,16 +151,7 @@ export function PlanTimeline({
     setExpandedPhases(newExpanded);
   };
 
-  const handleAddPhaseSubmit = (planId: string) => {
-    const name = addPhaseInputRef.current?.value;
-    console.log('[PlanTimeline] handleAddPhaseSubmit:', { planId, name });
-    if (name && name.trim()) {
-      onAddPhase(planId, name.trim());
-    } else {
-      console.warn('[PlanTimeline] Invalid phase name:', name);
-    }
-    setIsAddingPhaseTo(null);
-  };
+
 
   // Timeline bounds calculation
   const { minDate, maxDate, totalDays } = useMemo(() => {
@@ -310,6 +301,18 @@ export function PlanTimeline({
                     <div className="truncate flex-1 text-[13px] font-bold text-slate-700">
                        {plan.name}
                     </div>
+                    {canEdit && onDeletePlan && (
+                       <button
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           onDeletePlan(plan.id);
+                         }}
+                         className="p-1 px-2 opacity-0 group-hover:opacity-100 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                         title="Xóa kế hoạch"
+                       >
+                         <Trash2 size={14} />
+                       </button>
+                     )}
                   </div>
 
                   {isExpanded && (
@@ -359,35 +362,10 @@ export function PlanTimeline({
                       })}
                       
                       {/* Add Phase Input/Button */}
-                      {isAddingPhaseTo === plan.id ? (
-                        <div className="p-3 pl-12 border-b border-slate-50 bg-indigo-50/20">
-                          <input
-                            ref={addPhaseInputRef}
-                            autoFocus
-                            placeholder="Tên giai đoạn mới..."
-                            className="w-full px-3 py-1.5 text-xs font-bold bg-white border border-indigo-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleAddPhaseSubmit(plan.id);
-                              }
-                              if (e.key === 'Escape') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setIsAddingPhaseTo(null);
-                              }
-                            }}
-                            onBlur={() => {
-                              // Small delay to allow Enter key to be processed before blur unmounts
-                              setTimeout(() => setIsAddingPhaseTo(null), 100);
-                            }}
-                          />
-                        </div>
-                      ) : canEdit ? (
+                      {canEdit ? (
                         <button 
                           className="flex h-11 items-center pl-12 pr-4 text-[11px] font-black text-slate-400 hover:text-indigo-600 uppercase tracking-widest transition-colors"
-                          onClick={() => setIsAddingPhaseTo(plan.id)}
+                          onClick={() => onAddPhase(plan.id)}
                         >
                           <Plus size={14} className="mr-2" />
                           Thêm giai đoạn
