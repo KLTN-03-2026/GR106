@@ -17,10 +17,10 @@ export const CropCatalogPage: React.FC = () => {
   const { farmId } = useParams<{ farmId: string }>();
   const dispatch = useDispatch<AppDispatch>();
   const { crops, loading, error } = useSelector((state: RootState) => state.crop);
-  const { userToken } = useSelector((state: RootState) => state.auth);
+  const { accessToken } = useSelector((state: RootState) => state.auth);
   
   // Giải mã token để lấy quyền thực tế
-  const roles = userToken ? getRolesFromToken(userToken) : [];
+  const roles = accessToken ? getRolesFromToken(accessToken) : [];
   const isAdmin = roles.includes('ROLE_ADMIN');
   
   const [view, setView] = useState<'list' | 'form'>('list');

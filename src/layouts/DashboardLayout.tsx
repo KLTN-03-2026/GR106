@@ -12,8 +12,8 @@ export default function DashboardLayout() {
   const location = useLocation();
   const dispatch = useDispatch();
   const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
-  const userToken = useSelector((state: RootState) => state.auth.userToken);
-  const isAdmin = userToken ? getRolesFromToken(userToken).includes('ROLE_ADMIN') : false;
+  const accessToken = useSelector((state: RootState) => state.auth.accessToken);
+  const isAdmin = accessToken ? getRolesFromToken(accessToken).includes('ROLE_ADMIN') : false;
 
   // Redirect admin away from /dashboard immediately
   if (isAdmin && location.pathname === "/dashboard") {
