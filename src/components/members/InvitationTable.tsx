@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import { Mail, Loader2 } from 'lucide-react'
+import { memberService } from '../../services/members/memberService'
 import { StatusBadge } from './StatusBadge'
 import { CancelInviteModal } from './CancelInviteModal'
 import { toast } from 'sonner'
 import { Invitation, MemberRole } from '../../types/member'
 
 export function InvitationTable() {
-  // const { farmId } = useParams<{ farmId: string }>()
+  const { farmId } = useParams<{ farmId: string }>()
   const [invitations, setInvitations] = useState<Invitation[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedInvitation, setSelectedInvitation] =
@@ -17,9 +19,18 @@ export function InvitationTable() {
   )
 
   const fetchInvitations = async () => {
-    // Member API is currently not available, disabling to prevent 404 errors
-    setLoading(false);
-    setInvitations([]);
+    if (!farmId) return
+    try {
+      setLoading(true)
+      const res = await memberService.getInvitations(farmId)
+      if (res.success) {
+        setInvitations(res.data)
+      }
+    } catch (err: any) {
+      console.error('Error fetching invitations:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {

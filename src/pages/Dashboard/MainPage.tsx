@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { fetchPlots, clearPlots, setAggregateStats, setPlots } from '../../store/plotSlice';
 import { fetchCrops, fetchCropTypes } from '../../store/cropSlice';
-import { dashboardService } from '../../services/dashboardService';
+import { dashboardService } from '../../services/dashboard/dashboardService';
 import {
   StatCard,
   WeatherCard,

@@ -1,6 +1,6 @@
-import { axiosInstance } from '../config/axios';
-import { ApiResponse } from '../types/auth';
-import { Crop, CropType, CreateCropRequest, CreateCropTypeRequest } from '../types/crop';
+import { axiosInstance } from '../../config/axios';
+import { ApiResponse } from '../../types/auth';
+import { Crop, CropType, CreateCropRequest, CreateCropTypeRequest } from '../../types/crop';
 
 /**
  * Service Quản lý danh mục cây trồng (Admin - PB10)

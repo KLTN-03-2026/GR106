@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { Loader2, Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
-import { authService } from '../../../services/authService';
+import { authService } from '../../../services/auth/authService';
 import { loginSuccess } from '../../../store/authSlice';
 import { getRolesFromToken } from '../../../utils/jwt';
 import { loginSchema } from '../../../schemas/authSchemas';

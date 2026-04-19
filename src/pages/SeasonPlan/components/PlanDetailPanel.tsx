@@ -75,9 +75,14 @@ export function PlanDetailPanel({
   useEffect(() => {
     if (selection) {
       setActiveSelection(selection);
-      setNewTaskPlotId(selection.plan.plotId || '');
+      // Default to the first assigned plot of the plan for new tasks
+      const defaultPlotId = (selection.plan.plots && selection.plan.plots.length > 0) 
+        ? selection.plan.plots[0].plotId 
+        : '';
+      setNewTaskPlotId(defaultPlotId);
     }
   }, [selection]);
+
 
   // If no selection and not open, we can safely return null
   // But during exit animation, selection might be null but isOpen transition is still happening
@@ -354,22 +359,59 @@ export function PlanDetailPanel({
                 )}
 
                 {currentSelection.type === 'PLAN' && canEdit && (
-                  <div className="flex gap-2 w-full">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 text-[11px] font-bold text-indigo-600 border-indigo-200 hover:bg-indigo-50"
-                      onClick={() => currentSelection.type === 'PLAN' && onClone?.(currentSelection.plan)}
-                    >
-                      <Layout size={14} className="mr-2" /> Nhân bản
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-8 text-[11px] font-bold text-slate-500 hover:bg-slate-100">
-                      <Plus size={14} className="mr-2" /> Ghép nối
-                    </Button>
+                  <div className="flex flex-col gap-4 w-full mt-2">
+                    <div className="flex gap-2 w-full">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-[11px] font-bold text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                        onClick={() => currentSelection.type === 'PLAN' && onClone?.(currentSelection.plan)}
+                      >
+                        <Layout size={14} className="mr-2" /> Nhân bản
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 text-[11px] font-bold text-slate-500 hover:bg-slate-100">
+                        <Plus size={14} className="mr-2" /> Ghép nối
+                      </Button>
+                    </div>
+
+                    {/* Plot Management Section */}
+                    <div className="space-y-3 pt-4 border-t border-slate-100">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Lô đất canh tác</h3>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 px-2 text-[9px] font-black uppercase text-indigo-600 bg-indigo-50 hover:bg-indigo-100"
+                        >
+                          <Plus size={12} className="mr-1" /> Thêm lô
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        {plan.plots && plan.plots.length > 0 ? (
+                          plan.plots.map((pp) => (
+                            <div key={pp.plotId} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                              <div className="flex items-center gap-2">
+                                <Package size={14} className="text-slate-400" />
+                                <span className="text-[11px] font-bold text-slate-700">{pp.plotName}</span>
+                              </div>
+                              <button className="p-1 text-slate-400 hover:text-rose-500 transition-all">
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="py-4 text-center border-2 border-dashed border-slate-100 rounded-xl">
+                             <p className="text-[10px] font-bold text-slate-400">Chưa có lô đất nào được gán</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
+
 
             <div className="mb-10">
               <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Mô tả chi tiết</h3>
@@ -494,10 +536,18 @@ export function PlanDetailPanel({
                           className="w-full px-3 py-2 text-[12px] font-bold bg-white border border-slate-200 rounded-lg outline-none shadow-sm"
                         >
                           <option value="">Chọn lô đất...</option>
-                          {plots.map(p => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                          ))}
+                          {/* Only allow selecting plots that are part of this plan */}
+                          {plan.plots && plan.plots.length > 0 ? (
+                            plan.plots.map(p => (
+                              <option key={p.plotId} value={p.plotId}>{p.plotName}</option>
+                            ))
+                          ) : (
+                            plots.map(p => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))
+                          )}
                         </select>
+
                       </div>
 
                       <div className="flex gap-2 pt-2">

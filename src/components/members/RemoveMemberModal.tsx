@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { X, AlertTriangle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Modal } from '../ui/Modal'
-import { memberService } from '../../services/memberService'
+import { memberService } from '../../services/members/memberService'
 import { Member } from '../../types/member'
 
 interface RemoveMemberModalProps {

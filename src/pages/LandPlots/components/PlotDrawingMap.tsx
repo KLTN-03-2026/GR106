@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, useMemo, useEffect } from 'react'
-import { GoogleMap, DrawingManager, InfoWindow } from '@react-google-maps/api'
+import { GoogleMap, DrawingManager, InfoWindow, Polygon } from '@react-google-maps/api'
 import { Geometry, Plot } from '../../../types/plot'
 import { useGoogleMaps } from '../../../providers/GoogleMapsProvider'
 import { PlotInfoPopup } from '../../../pages/Map/components/PlotInfoPopup'
@@ -8,6 +8,7 @@ interface PlotDrawingMapProps {
   onGeometryChange: (geometry: Geometry | null, areaHa: number) => void;
   initialGeometry?: Geometry | null;
   tempPlotData?: Partial<Plot>; // Dữ liệu tạm thời để hiển thị trong Popup
+  existingPlots?: Plot[];      // Các lô đất hiện có để hiển thị làm tham chiếu
 }
 
 const MAP_OPTIONS: google.maps.MapOptions = {
@@ -19,7 +20,7 @@ const MAP_OPTIONS: google.maps.MapOptions = {
   fullscreenControl: false,
 }
 
-export function PlotDrawingMap({ onGeometryChange, initialGeometry, tempPlotData }: PlotDrawingMapProps) {
+export function PlotDrawingMap({ onGeometryChange, initialGeometry, tempPlotData, existingPlots = [] }: PlotDrawingMapProps) {
   const { isLoaded } = useGoogleMaps()
 
   const [pointCount, setPointCount] = useState(0)
@@ -195,6 +196,22 @@ export function PlotDrawingMap({ onGeometryChange, initialGeometry, tempPlotData
           onLoad={onLoad}
           options={MAP_OPTIONS}
         >
+          {/* Hiển thị các lô đất hiện có dưới dạng tham chiếu (Reference Layer) */}
+          {existingPlots.map(plot => (
+            <Polygon
+              key={plot.id}
+              paths={plot.geometry?.coordinates[0].map(coord => ({ lng: coord[0], lat: coord[1] }))}
+              options={{
+                fillColor: '#10b981',
+                fillOpacity: 0.1,
+                strokeColor: '#34d399',
+                strokeWeight: 1,
+                clickable: false,
+                zIndex: 0
+              }}
+            />
+          ))}
+
           {isDrawingApiReady && (
             <DrawingManager
               onPolygonComplete={onPolygonComplete}

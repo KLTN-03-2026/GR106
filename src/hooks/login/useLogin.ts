@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { loginSchema } from '../../schemas/authSchemas';
-import { authService } from '../../services/authService';
+import { authService } from '../../services/auth/authService';
 import { loginSuccess } from '../../store/authSlice';
 import { LoginInput } from '../../types/auth';
 

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
 import { MoreVertical, Users, UserPlus, Loader2 } from 'lucide-react'
+import { memberService } from '../../services/members/memberService'
 import { StatusBadge } from './StatusBadge'
 import { ChangeRoleModal } from './ChangeRoleModal'
 import { RemoveMemberModal } from './RemoveMemberModal'
@@ -8,7 +10,7 @@ import { InviteModal } from './InviteModal'
 import { Member, MemberStatus, MemberRole } from '../../types/member'
 
 export function MemberTable() {
-  // const { farmId } = useParams<{ farmId: string }>()
+  const { farmId } = useParams<{ farmId: string }>()
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
@@ -18,9 +20,18 @@ export function MemberTable() {
   const [activeFilter, setActiveFilter] = useState<MemberStatus | 'all'>('all')
 
   const fetchMembers = async () => {
-    // Member API is currently not available, disabling to prevent 404 errors
-    setLoading(false);
-    setMembers([]);
+    if (!farmId) return
+    try {
+      setLoading(true)
+      const res = await memberService.getMembers(farmId)
+      if (res.success) {
+        setMembers(res.data)
+      }
+    } catch (err: any) {
+      console.error('Error fetching members:', err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {

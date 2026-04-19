@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Crop, CropType, CreateCropRequest, CreateCropTypeRequest } from '../types/crop';
-import { cropService } from '../services/cropService';
+import { cropService } from '../services/crop/cropService';
 
 interface CropState {
   crops: Crop[];

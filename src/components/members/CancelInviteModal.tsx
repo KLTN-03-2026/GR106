@@ -1,5 +1,9 @@
+import React, { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { memberService } from '../../services/memberService'
+import { X, AlertCircle, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { Modal } from '../ui/Modal'
+import { memberService } from '../../services/members/memberService'
 
 interface Invitation {
   id: string
@@ -20,7 +24,7 @@ export function CancelInviteModal({
   invitation,
 }: CancelInviteModalProps) {
   const { farmId } = useParams<{ farmId: string }>()
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,9 +82,17 @@ export function CancelInviteModal({
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-70"
             >
-              Hủy lời mời
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Đang xử lý...</span>
+                </>
+              ) : (
+                'Hủy lời mời'
+              )}
             </button>
           </div>
         </form>

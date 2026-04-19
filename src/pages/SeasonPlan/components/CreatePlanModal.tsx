@@ -1,51 +1,46 @@
 import React, { useEffect, useState } from 'react';
-import { X, Calendar, MapPin, Sprout, Info, Loader2 } from 'lucide-react';
+import { X, Calendar, Sprout, Info, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
-import { SeasonPlan } from '../../../types/seasonPlan';
-import { generatePhasesFromCrop, hasPlanOverlap } from '../../../utils/seasonPlanUtils';
+import { CreateSeasonPlanRequest } from '../../../types/seasonPlan';
+import { generatePhasesFromCrop } from '../../../utils/seasonPlanUtils';
 import { Button } from '../../../components/ui/button';
 
 interface CreatePlanModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (plan: Omit<SeasonPlan, 'id' | 'farmId'>) => void;
-  existingPlans: SeasonPlan[];
+  onSave: (plan: CreateSeasonPlanRequest) => void;
 }
 
 export function CreatePlanModal({
   isOpen,
   onClose,
   onSave,
-  existingPlans,
 }: CreatePlanModalProps) {
-  const { plots, loading: plotsLoading } = useSelector((state: RootState) => state.plot);
   const { crops, loading: cropsLoading } = useSelector((state: RootState) => state.crop);
   const { loading: planLoading } = useSelector((state: RootState) => state.seasonPlan);
 
-  const [plotId, setPlotId] = useState('');
   const [cropId, setCropId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
 
-  // Auto-generate name
+  // Auto-generate name based on crop and current date
   useEffect(() => {
-    if (plotId && cropId) {
-      const plot = plots.find((p) => p.id === plotId);
+    if (cropId) {
       const crop = crops.find((c) => c.id === cropId);
-      if (plot && crop) {
-        setName(`${crop.name} - ${plot.name} - ${new Date().getFullYear()}`);
+      if (crop) {
+        setName(`${crop.name} - Vụ mùa ${new Date().getFullYear()}`);
       }
     }
-  }, [plotId, cropId, plots, crops]);
+  }, [cropId, crops]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!plotId || !cropId || !startDate || !name) {
+    if (!cropId || !startDate || !name) {
       setError('Vui lòng điền đầy đủ các thông tin bắt buộc');
       return;
     }
@@ -56,25 +51,18 @@ export function CreatePlanModal({
     const phases = generatePhasesFromCrop(crop, startDate);
     const endDate = phases[phases.length - 1].endDate;
 
-    // Validation logic
-    if (hasPlanOverlap(plotId, startDate, endDate, existingPlans)) {
-      setError('Lô đất này đã có kế hoạch khác trong khoảng thời gian được chọn');
-      return;
-    }
+    // Initial creation doesn't require overlap check as no plot is assigned yet
+    // Overlap will be checked when assigning plots to this plan later
 
     onSave({
       name,
-      plotId,
       cropId,
       startDate,
       endDate,
-      status: 'DRAFT',
-      phases,
-      note: '', // Thêm trường note cho API
+      note: '', 
     });
 
     // Reset
-    setPlotId('');
     setCropId('');
     setStartDate('');
     setName('');
@@ -115,49 +103,25 @@ export function CreatePlanModal({
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Lô đất mục tiêu</label>
-                <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors">
-                    <MapPin size={18} />
-                  </div>
-                  <select
-                    value={plotId}
-                    onChange={(e) => setPlotId(e.target.value)}
-                    className="w-full bg-slate-50 border-2 border-transparent focus:border-emerald-500/20 focus:bg-white rounded-2xl py-3 pl-12 pr-4 outline-none transition-all font-bold text-slate-700 appearance-none disabled:opacity-50"
-                    disabled={plotsLoading}
-                  >
-                    <option value="">{plotsLoading ? 'Đang tải lô đất...' : 'Chọn lô đất'}</option>
-                    {plots.map((plot) => (
-                      <option key={plot.id} value={plot.id}>
-                        {plot.name} ({plot.areaHa} ha)
-                      </option>
-                    ))}
-                  </select>
+            <div className="space-y-2">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Cây trồng mục tiêu</label>
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors">
+                  <Sprout size={18} />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Cây trồng</label>
-                <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors">
-                    <Sprout size={18} />
-                  </div>
-                  <select
-                    value={cropId}
-                    onChange={(e) => setCropId(e.target.value)}
-                    className="w-full bg-slate-50 border-2 border-transparent focus:border-emerald-500/20 focus:bg-white rounded-2xl py-3 pl-12 pr-4 outline-none transition-all font-bold text-slate-700 appearance-none disabled:opacity-50"
-                    disabled={cropsLoading}
-                  >
-                    <option value="">{cropsLoading ? 'Đang tải cây trồng...' : 'Chọn cây trồng'}</option>
-                    {crops.map((crop) => (
-                      <option key={crop.id} value={crop.id}>
-                        {crop.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <select
+                  value={cropId}
+                  onChange={(e) => setCropId(e.target.value)}
+                  className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl py-3 pl-12 pr-4 outline-none transition-all font-bold text-slate-700 appearance-none disabled:opacity-50"
+                  disabled={cropsLoading}
+                >
+                  <option value="">{cropsLoading ? 'Đang tải cây trồng...' : 'Chọn cây trồng muốn canh tác'}</option>
+                  {crops.map((crop) => (
+                    <option key={crop.id} value={crop.id}>
+                      {crop.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 

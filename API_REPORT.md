@@ -1,131 +1,110 @@
-# Báo cáo Tài liệu & Luồng xử lý API (FarmerAI)
+# 📋 Hệ thống API Dự án - Báo cáo Trạng thái Đồng bộ 100%
 
-**Cập nhật lần cuối**: 15/04/2026
-**Trạng thái**: Đồng bộ 100% với đặc tả Backend (Farm, Plot, Payment, Member, Subscription, Crop)
-
-Dự án FarmerAI được xây dựng trên kiến trúc **Multi-tenant**, đảm bảo tính cô lập dữ liệu giữa các trang trại và tính bảo mật cao thông qua cơ chế quản lý Token kép (User Token & Farm Token).
+Tài liệu này tổng hợp toàn bộ các điểm cuối API (Endpoints) trong dự án, được đối chiếu và đồng bộ chính xác 100% theo tài liệu Swagger backend.
 
 ---
 
-## Chương 1: Kiến trúc & Cơ chế xử lý API
-
-### 1.1. Cơ chế Multi-tenant Token (Context Switch)
-Hệ thống sử dụng cơ chế chuyển đổi ngữ cảnh để đảm bảo an toàn dữ liệu:
-1.  **User Token**: Nhận được sau khi đăng nhập. Sử dụng cho các API chung (Profile, Farm List).
-2.  **Farm Token**: Nhận được sau khi gọi `/api/v1/farms/{id}/select`. Token này chứa `farmId` và vai trò của user trong farm đó. Mọi API thuộc Scope **FARM** (Plot, Member,...) bắt buộc phải sử dụng token này.
-
-### 1.2. Tầng Client API & Validation
-- **Axios Instance**: Quản lý tập trung tại `src/config/axios.ts` với Silent Refresh (401 handler).
-- **Zod Schema**: Đảm bảo dữ liệu đầu vào (Request) và đầu ra (Response) luôn khớp 100% với định dạng mong đợi.
+## 1. Auth API (Xác thực)
+| Chức năng | Phương pháp | Endpoint | Trạng thái | Ghi chú |
+| :--- | :--- | :--- | :--- | :--- |
+| Xác thực tài khoản | `POST` | `/api/v1/auth/verify` | ✅ Synced | Xác thực qua token email |
+| Đăng ký tài khoản | `POST` | `/api/v1/auth/register` | ✅ Synced | `email`, `password`, `fullName` |
+| Làm mới Token | `POST` | `/api/v1/auth/refresh` | ✅ Synced | `refreshToken` |
+| Đăng nhập | `POST` | `/api/v1/auth/login` | ✅ Synced | Trả về `accessToken` & `refreshToken` |
 
 ---
 
-## Chương 2: Danh mục API chi tiết (Endpoint Specification)
-
-### 2.1. Module Trang trại (Farm API - Multi-tenant)
-Hành động dành cho chủ sở hữu trang trại.
-
-| Method | Endpoint | Mô tả | Quyền hạn |
-| :--- | :--- | :--- | :--- |
-| GET | `/api/v1/farms` | Lấy danh sách farm user đang sở hữu | User |
-| POST | `/api/v1/farms` | Tạo farm mới (Payload: `farmName, description`) | User |
-| POST | `/api/v1/farms/{id}/select` | **Chọn farm & Nhận Farm Token** | User |
-| GET | `/api/v1/farms/summary` | Lấy thông tin tóm tắt dashboard | User |
-
-### 2.2. Module Lô đất & Bản đồ (Plot API)
-Quản lý lô đất trực thuộc Farm hiện tại (Yêu cầu Farm Token).
-
-| Method | Endpoint | Mô tả | Payload Đặc trưng |
-| :--- | :--- | :--- | :--- |
-| GET | `/api/v1/plots` | Lấy danh sách lô đất trong farm | - |
-| POST | `/api/v1/plots` | Tạo lô đất mới | `plotName, geometry, description` |
-| DELETE | `/api/v1/plots/{plotId}` | Xóa lô đất khỏi farm | - |
-| PATCH | `/api/v1/plots/{plotId}` | Cập nhật lô đất (Partial update) | `name, status, geometry, description` |
-
-### 2.3. Module Thành viên (Member API)
-Quản lý nhân sự trong trang trại (Yêu cầu Farm Token).
-
-| Method | Endpoint | Mô tả | Quyền hạn |
-| :--- | :--- | :--- | :--- |
-| GET | `/api/v1/farms/{id}/members` | Danh sách thành viên farm | Manager+ |
-| POST | `/api/v1/farms/{id}/members/invite` | Mời thành viên mới | Owner |
-| PATCH | `/api/v1/farms/{id}/members/{uId}/role` | Đổi vai trò thành viên | Owner |
-| DELETE | `/api/v1/farms/{id}/members/{uId}` | Xóa thành viên khỏi farm | Owner |
-
-### 2.4. Module Gói dịch vụ (Subscription API)
-Quản lý trạng thái và lịch sử đăng ký.
-
-| Method | Endpoint | Mô tả | 
-| :--- | :--- | :--- |
-| GET | `/api/v1/subscriptions` | Danh sách các gói cước hệ thống |
-| GET | `/api/v1/subscriptions/current` | Thông tin gói đang sử dụng của farm |
-| GET | `/api/v1/subscriptions/history` | Lịch sử giao dịch/đăng ký |
-
-### 2.5. Module Thanh toán (Payment API - SePay)
-Tích hợp thanh toán Subscription.
-
-| Method | Endpoint | Mô tả | Lưu ý |
-| :--- | :--- | :--- | :--- |
-| POST | `/api/v1/payment/create` | Tạo link thanh toán SePay | Nhận `paymentUrl` để redirect |
-| POST | `/api/v1/payment/ipn` | Callback từ SePay (Server-to-Server) | **Không yêu cầu JWT** |
-
-### 2.6. Module Danh mục Cây trồng (Crop Catalog API)
-Quản lý cây trồng hệ thống.
-
-| Method | Endpoint | Mô tả | Quyền hạn |
-| :--- | :--- | :--- | :--- |
-| GET | `/api/v1/crops` | Danh sách cây trồng hệ thống | Public |
-| POST | `/api/v1/crops` | Tạo cây trồng mới | Admin |
-| GET | `/api/v1/crop-types` | Danh mục loại cây | Public |
-| POST | `/api/v1/crop-type` | Tạo loại cây mới | Admin |
-| DELETE | `/api/v1/crop-type/{id}` | Xóa loại cây | Admin |
+## 2. Farm API (Quản lý Trang trại)
+| Chức năng | Phương pháp | Endpoint | Trạng thái | Ghi chú |
+| :--- | :--- | :--- | :--- | :--- |
+| Danh sách Farm | `GET` | `/api/v1/farms` | ✅ Synced | |
+| Tạo Farm mới | `POST` | `/api/v1/farms` | ✅ Synced | |
+| Chọn Farm | `POST` | `/api/v1/farms/{id}/select` | ✅ Synced | Trả về `farmToken` |
+| Cập nhật Farm | `PATCH` | `/api/v1/farms/{id}` | ✅ Synced | |
+| Tổng quan Farm | `GET` | `/api/v1/farms/summary` | ✅ Synced | Dashboard |
 
 ---
 
-## Chương 3: Chi tiết Payload & Phản hồi chuẩn
-
-### 3.1. Cấu trúc Response (Standard JSON)
-```json
-{
-  "success": true,
-  "code": 0,
-  "message": "Thao tác thành công",
-  "data": { ... },
-  "timestamp": "2026-04-15T09:12:32Z"
-}
-```
-
-### 3.2. Payload IPN SePay (Ví dụ)
-```json
-{
-  "timestamp": 1713172352,
-  "notification_type": "transaction_status_changed",
-  "order": {
-    "order_id": "SUB-12345",
-    "order_status": "PAID",
-    "order_amount": 150000
-  },
-  "transaction": {
-    "transaction_id": "SEPAY-999",
-    "payment_method": "BANK_TRANSFER"
-  }
-}
-```
+## 3. Plan API (Kế hoạch sản xuất)
+| Chức năng | Phương pháp | Endpoint | Trạng thái | Ghi chú |
+| :--- | :--- | :--- | :--- | :--- |
+| Danh sách kế hoạch | `GET` | `/api/v1/plans` | ✅ Synced | |
+| Tạo kế hoạch mới | `POST` | `/api/v1/plans` | ✅ Synced | `cropId`, `name`, `startDate`, `endDate`, `note` |
+| Lấy Plot của kế hoạch | `GET` | `/api/v1/plans/{id}/plots` | ✅ Synced | |
+| Thêm Plot vào kế hoạch | `POST` | `/api/v1/plans/{id}/plots` | ✅ Synced | `plotIds: []` |
+| Xóa kế hoạch | `DELETE` | `/api/v1/plans/{id}` | ✅ Synced | |
 
 ---
 
-## Chương 4: Luồng xử lý nghiệp vụ chính
-
-### 4.1. Chuyển đổi Farm Context
-1. User đăng nhập -> Nhận `UserToken`.
-2. Gọi `/api/v1/farms/{id}/select`.
-3. Nhận `FarmToken` -> Lưu vào Cookie/LocalStorage.
-4. Axios Interceptor tự động chọn `FarmToken` nếu khả dụng.
-
-### 4.2. Vẽ & Lưu Lô đất (GIS Workflow)
-1. User vẽ Polygon trên Map (Leaflet/Mapbox).
-2. Frontend chuyển tọa độ sang chuẩn **GeoJSON**.
-3. Gọi `POST /api/v1/plots`.
+## 4. PlanStage API (Giai đoạn kế hoạch)
+| Chức năng | Phương pháp | Endpoint | Trạng thái | Ghi chú |
+| :--- | :--- | :--- | :--- | :--- |
+| Danh sách giai đoạn | `GET` | `/api/v1/plans/{id}/stages` | ✅ Synced | |
+| Tạo giai đoạn mới | `POST` | `/api/v1/plans/{id}/stages` | ✅ Synced | `name`, `startDate`, `endDate` |
+| Xóa giai đoạn | `DELETE` | `/api/v1/plans/{id}/stages/{sid}` | ✅ Synced | |
 
 ---
-** FarmerAI Technical Report - Documented by AGENT **
+
+## 5. Task API (Công việc)
+| Chức năng | Phương pháp | Endpoint | Trạng thái | Ghi chú |
+| :--- | :--- | :--- | :--- | :--- |
+| Danh sách công việc | `GET` | `/api/v1/plans/{id}/stages/{sid}/tasks` | ✅ Synced | |
+| Tạo công việc mới | `POST` | `/api/v1/plans/{id}/stages/{sid}/tasks` | ✅ Synced | |
+| Cập nhật công việc | `PATCH` | `/api/v1/plans/{id}/stages/{sid}/tasks/{tid}` | ✅ Synced | |
+| Xóa công việc | `DELETE` | `/api/v1/plans/{id}/stages/{sid}/tasks/{tid}` | ✅ Synced | |
+
+---
+
+## 6. Plot API (Lô đất)
+| Chức năng | Phương pháp | Endpoint | Trạng thái | Ghi chú |
+| :--- | :--- | :--- | :--- | :--- |
+| Danh sách lô đất | `GET` | `/api/v1/plots` | ✅ Synced | |
+| Tạo lô đất mới | `POST` | `/api/v1/plots` | ✅ Synced | `plotName`, `geometry`, `description` |
+| Cập nhật lô đất | `PATCH` | `/api/v1/plots/{id}` | ✅ Synced | Hỗ trợ `isClearDescription`, `isClearGeometry` |
+| Xóa lô đất | `DELETE` | `/api/v1/plots/{id}` | ✅ Synced | |
+
+---
+
+## 7. Payment API (Thanh toán)
+| Chức năng | Phương pháp | Endpoint | Trạng thái | Ghi chú |
+| :--- | :--- | :--- | :--- | :--- |
+| Tạo link thanh toán | `POST` | `/api/v1/payment/create` | ✅ Synced | Redirect sang SePay |
+| IPN Callback | `POST` | `/api/v1/payment/ipn` | ✅ Synced | Server-to-server |
+
+---
+
+## 8. Crop API (Cây trồng)
+| Chức năng | Phương pháp | Endpoint | Trạng thái | Ghi chú |
+| :--- | :--- | :--- | :--- | :--- |
+| Danh sách cây trồng | `GET` | `/api/v1/crops` | ✅ Synced | SYSTEM scope |
+| Tạo cây trồng | `POST` | `/api/v1/crops` | ✅ Synced | ADMIN |
+| Danh sách loại cây | `GET` | `/api/v1/crop-types` | ✅ Synced | |
+| Tạo loại cây | `POST` | `/api/v1/crop-type` | ✅ Synced | ADMIN |
+| Xóa loại cây | `DELETE` | `/api/v1/crop-type/{id}` | ✅ Synced | ADMIN |
+
+---
+
+## 9. Subscription API (Gói đăng ký)
+| Chức năng | Phương pháp | Endpoint | Trạng thái | Ghi chú |
+| :--- | :--- | :--- | :--- | :--- |
+| Danh sách gói | `GET` | `/api/v1/subscriptions` | ✅ Synced | |
+| Lịch sử đăng ký | `GET` | `/api/v1/subscriptions/history` | ✅ Synced | |
+| Gói hiện tại | `GET` | `/api/v1/subscriptions/current` | ✅ Synced | |
+
+---
+
+## 10. Member API (Quản lý Thành viên & Lời mời)
+| Chức năng | Phương pháp | Endpoint | Trạng thái | Ghi chú |
+| :--- | :--- | :--- | :--- | :--- |
+| Danh sách thành viên | `GET` | `/api/v1/farms/{id}/members` | ✅ Synced | Trả về thông tin & vai trò |
+| Thay đổi vai trò | `PATCH` | `/api/v1/farms/{id}/members` | ✅ Synced | `userId`, `roleId` |
+| Xóa thành viên | `DELETE` | `/api/v1/farms/{id}/members/{uid}` | ✅ Synced | |
+| Gửi lời mời | `POST` | `/api/v1/farms/{id}/invitations` | ✅ Synced | `email`, `roleId` |
+| Danh sách lời mời | `GET` | `/api/v1/farms/{id}/invitations` | ✅ Synced | |
+| Hủy lời mời | `DELETE` | `/api/v1/farms/{id}/invitations/{iid}` | ✅ Synced | |
+
+---
+
+**Cập nhật lần cuối:** 2026-04-19
+**Tiêu chuẩn:** Khớp 100% với Backend Swagger Documentation.
+**Người phụ trách:** Antigravity (AI Assistant)

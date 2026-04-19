@@ -1,19 +1,44 @@
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Outlet, useNavigate, useLocation, useParams, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import Sidebar from "../components/layout/Sidebar";
 import { useDispatch, useSelector } from "react-redux";
-import { clearFarmContext } from "../store/authSlice";
+import { selectFarm, clearFarmContext } from "../store/authSlice";
+import { farmService } from "../services/farm/farmService";
 import { RootState } from "../store";
 import { getRolesFromToken } from "../utils/jwt";
-import { Navigate } from "react-router-dom";
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { farmId: urlFarmId } = useParams<{ farmId: string }>();
   const dispatch = useDispatch();
   const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
   const isAdmin = accessToken ? getRolesFromToken(accessToken).includes('ROLE_ADMIN') : false;
+  
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Tự động đồng bộ Farm Context từ URL
+  useEffect(() => {
+    const syncFarmContext = async () => {
+      if (urlFarmId && urlFarmId !== currentFarmId) {
+        setIsSyncing(true);
+        try {
+          const res = await farmService.selectFarm(urlFarmId);
+          if (res.success && res.data.farmToken) {
+            dispatch(selectFarm({ token: res.data.farmToken, farmId: urlFarmId }));
+          }
+        } catch (err: any) {
+          console.error('[Sync] Farm selection failed', err);
+        } finally {
+          setIsSyncing(false);
+        }
+      }
+    };
+
+    syncFarmContext();
+  }, [urlFarmId, currentFarmId, dispatch]);
 
   // Redirect admin away from /dashboard immediately
   if (isAdmin && location.pathname === "/dashboard") {
@@ -56,6 +81,15 @@ export default function DashboardLayout() {
   // If admin on /dashboard, show nothing while redirecting to prevent flash
   if (isAdmin && location.pathname === "/dashboard") {
     return null;
+  }
+
+  if (isSyncing) {
+    return (
+      <div className="w-screen h-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
+        <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
+        <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Đang thiết lập kết nối trang trại...</p>
+      </div>
+    );
   }
 
   const handleNav = (key: string) => {

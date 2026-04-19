@@ -1,11 +1,11 @@
-import { axiosInstance } from '../config/axios';
-import { ApiResponse } from '../types/auth';
+import { axiosInstance } from '../../config/axios';
+import { ApiResponse } from '../../types/auth';
 import { 
   Member, 
   Invitation, 
   InviteMemberRequest, 
   ChangeRoleRequest 
-} from '../types/member';
+} from '../../types/member';
 
 export const memberService = {
   /**

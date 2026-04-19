@@ -6,7 +6,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { authService } from '../../../services/authService';
+import { authService } from '../../../services/auth/authService';
 
 const resetPasswordSchema = z
   .object({

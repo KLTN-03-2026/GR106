@@ -3,15 +3,16 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { SeasonPlan, PlanStatus, StatusObject } from '../../types/seasonPlan';
-import { fetchPlans, createPlan } from '../../store/seasonPlanSlice';
+import { fetchPlans, createPlan, removePlan } from '../../store/seasonPlanSlice';
 import { fetchPlots } from '../../store/plotSlice';
 import { fetchCrops } from '../../store/cropSlice';
 import { canEditPlan } from '../../utils/seasonPlanUtils';
-import { Search, Calendar, Loader2, Info, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Search, Calendar, Loader2, Info, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
 import { cn } from '../../utils/cn';
 import { Button } from '../../components/ui/button';
 import { CreatePlanModal } from './components/CreatePlanModal';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { useAuth } from '../../hooks/useAuth';
 
 export function SeasonPlanListPage() {
@@ -51,7 +52,16 @@ export function SeasonPlanListPage() {
     isOpen: false,
     type: 'success',
     title: '',
-    message: ''
+  });
+
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    planId: string | null;
+    isDeleting: boolean;
+  }>({
+    isOpen: false,
+    planId: null,
+    isDeleting: false
   });
 
   useEffect(() => {
@@ -93,6 +103,33 @@ export function SeasonPlanListPage() {
         title: 'Lỗi tạo kế hoạch',
         message: errorMsg,
         details: details.length > 0 ? details : undefined
+      });
+    }
+  };
+
+  const handleDeletePlan = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setDeleteConfirm({
+      isOpen: true,
+      planId: id,
+      isDeleting: false
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm.planId) return;
+    
+    setDeleteConfirm(prev => ({ ...prev, isDeleting: true }));
+    try {
+      await dispatch(removePlan(deleteConfirm.planId)).unwrap();
+      setDeleteConfirm({ isOpen: false, planId: null, isDeleting: false });
+    } catch (err: any) {
+      setDeleteConfirm(prev => ({ ...prev, isDeleting: false, isOpen: false }));
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi xóa kế hoạch',
+        message: typeof err === 'string' ? err : 'Không thể xóa kế hoạch này'
       });
     }
   };
@@ -226,12 +263,23 @@ export function SeasonPlanListPage() {
                   <h3 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
                     {plan.name}
                   </h3>
-                  <span className={cn(
-                    "px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full",
-                    getStatusColor(plan.status)
-                  )}>
-                    {getStatusLabel(plan.status)}
-                  </span>
+                  <div className="flex items-start gap-2">
+                    <span className={cn(
+                      "px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full",
+                      getStatusColor(plan.status)
+                    )}>
+                      {getStatusLabel(plan.status)}
+                    </span>
+                    {canEdit && (
+                      <button
+                        onClick={(e) => handleDeletePlan(e, plan.id)}
+                        className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                        title="Xóa kế hoạch"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -285,7 +333,6 @@ export function SeasonPlanListPage() {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSave={handleCreatePlan}
-        existingPlans={plans}
       />
 
       {/* Notification Modal */}
@@ -336,6 +383,17 @@ export function SeasonPlanListPage() {
           </div>
         </div>
       </Modal>
+
+      <ConfirmModal 
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDelete}
+        loading={deleteConfirm.isDeleting}
+        title="Xóa kế hoạch?"
+        message="Bạn có chắc chắn muốn xóa kế hoạch mùa vụ này? Mọi dữ liệu liên quan sẽ bị loại bỏ vĩnh viễn."
+        confirmLabel="Xóa ngay"
+        type="danger"
+      />
     </div>
   );
 }

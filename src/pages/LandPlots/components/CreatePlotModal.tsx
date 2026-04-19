@@ -130,6 +130,7 @@ export function CreatePlotModal({
                 </label>
                 <PlotDrawingMap 
                   onGeometryChange={handleGeometryChange} 
+                  existingPlots={existingPlots}
                   tempPlotData={{
                     name: name || 'Lô đất mới',
                     description: description,

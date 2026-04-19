@@ -24,9 +24,9 @@ export const apiPlanSchema = z.object({
   createdById: z.string().uuid().nullable().optional(),
   createdAt: z.string().optional(),
   deletedAt: z.string().nullable().optional(),
-  plotId: z.string().uuid().nullable().optional(),
-  cropId: z.string().uuid().nullable().optional(),
+  // cropId và plotId không trực tiếp trên Plan object trong Swagger mới
 });
+
 
 // Schema for Plan Stage (Phase)
 export const apiPlanStageSchema = z.object({
@@ -77,12 +77,25 @@ export const createStageResponseSchema = apiResponseSchema(apiPlanStageSchema);
 export const getTasksResponseSchema = apiResponseSchema(z.array(apiTaskSchema));
 export const createTaskResponseSchema = apiResponseSchema(apiTaskSchema);
 
+// Schema for Plan Plot assignments
+export const planPlotSchema = z.object({
+  plotId: z.string().uuid(),
+  plotName: z.string(),
+});
+
+export const getPlanPlotsResponseSchema = apiResponseSchema(z.array(planPlotSchema));
+export const addPlanPlotsResponseSchema = apiResponseSchema(z.object({
+  planId: z.string().uuid(),
+  addedPlots: z.array(planPlotSchema),
+}));
+
+
 // Schema cho Payload tạo Plan mới
 export const createPlanRequestSchema = z.object({
   cropId: z.string().uuid('Vui lòng chọn cây trồng'),
-  plotId: z.string().uuid('Vui lòng chọn lô đất').optional(),
   name: z.string().min(1, 'Tên kế hoạch không được để trống'),
   startDate: z.string().min(1, 'Vui lòng chọn ngày bắt đầu'),
   endDate: z.string().min(1, 'Vui lòng chọn ngày kết thúc'),
   note: z.string().optional(),
 });
+

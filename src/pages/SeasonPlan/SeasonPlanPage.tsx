@@ -14,11 +14,15 @@ import {
   removePhase,
   createSeasonTask,
   updateSeasonTask,
-  removeSeasonTask
+  removeSeasonTask,
+  addPlotsToPlan,
+  fetchPlanPlots
 } from '../../store/seasonPlanSlice';
 import { SeasonPlan, PlanStatus, Task } from '../../types/seasonPlan';
-import { Search, ArrowLeft, Loader2, Info, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Search, ArrowLeft, Loader2, Info, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
+
 import { Modal } from '../../components/ui/Modal';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { cn } from '../../utils/cn';
 import { Button } from '../../components/ui/button';
 import { useAuth } from '../../hooks/useAuth';
@@ -48,7 +52,6 @@ export function SeasonPlanPage() {
   
   const { plans, loading, error } = useSelector((state: RootState) => state.seasonPlan);
   const { plots } = useSelector((state: RootState) => state.plot);
-  const { crops } = useSelector((state: RootState) => state.crop);
   const { user, accessToken } = useAuth();
   const canEdit = canEditPlan(user?.role, accessToken);
 
@@ -117,12 +120,36 @@ export function SeasonPlanPage() {
 
   const handleCreatePlan = async (newPlanData: any) => {
     try {
-      await dispatch(createPlan(newPlanData)).unwrap();
+      const { plotId, ...planPayload } = newPlanData;
+      
+      // 1. Tạo kế hoạch
+      const plan = await dispatch(createPlan(planPayload)).unwrap();
+      
+      // 2. Nếu có chọn lô đất, thực hiện liên kết
+      if (plotId && plan.id) {
+        await dispatch(addPlotsToPlan({ planId: plan.id, plotIds: [plotId] })).unwrap();
+        // Cập nhật lại danh sách plots cho UI
+        dispatch(fetchPlanPlots(plan.id));
+      }
+      
       setIsCreateModalOpen(false);
-    } catch (err) {
+      setNotification({
+        isOpen: true,
+        type: 'success',
+        title: 'Thành công',
+        message: 'Kế hoạch mùa vụ đã được khởi tạo và liên kết lô đất'
+      });
+    } catch (err: any) {
       console.error('[SeasonPlanPage] createPlan failed:', err);
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi khởi tạo',
+        message: extractErrorMessage(err)
+      });
     }
   };
+
 
   const handleUpdatePlan = async (updatedPlan: SeasonPlan) => {
     try {
@@ -138,15 +165,37 @@ export function SeasonPlanPage() {
     }
   };
 
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    planId: string | null;
+    isDeleting: boolean;
+  }>({
+    isOpen: false,
+    planId: null,
+    isDeleting: false
+  });
+
   const handleDeletePlan = async (planId: string) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa kế hoạch này? Tất cả giai đoạn và công việc liên quan sẽ bị xóa.')) {
-      return;
-    }
+    setDeleteConfirm({
+      isOpen: true,
+      planId,
+      isDeleting: false
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm.planId) return;
     
+    setDeleteConfirm(prev => ({ ...prev, isDeleting: true }));
     try {
-      await dispatch(removePlan(planId)).unwrap();
+      await dispatch(removePlan(deleteConfirm.planId)).unwrap();
       setSelectedItem(null);
+      if (deleteConfirm.planId === currentPlan?.id) {
+        navigate(`/farms/${farmId}/season-plans`);
+      }
+      setDeleteConfirm({ isOpen: false, planId: null, isDeleting: false });
     } catch (err: any) {
+      setDeleteConfirm(prev => ({ ...prev, isDeleting: false, isOpen: false }));
       console.error('[SeasonPlanPage] deletePlan failed:', err);
       setNotification({
         isOpen: true,
@@ -159,12 +208,14 @@ export function SeasonPlanPage() {
 
   // --- API Workflow Orchestration ---
 
-  // Khi chọn một Plan, tự động load các Giai đoạn (Stages)
+  // Khi chọn một Plan, tự động load các Giai đoạn (Stages) và Lô đất (Plots)
   useEffect(() => {
     if (selectedItem?.planId) {
       dispatch(fetchStages(selectedItem.planId));
+      dispatch(fetchPlanPlots(selectedItem.planId));
     }
   }, [selectedItem?.planId, dispatch]);
+
 
   // Khi chọn một Phase, tự động load các Công việc (Tasks)
   useEffect(() => {
@@ -274,8 +325,13 @@ export function SeasonPlanPage() {
     }
 
     try {
-      // Ưu tiên plotId truyền lên từ form, sau đó mới lấy từ plan
-      const plotId = data.plotId || plan.plotId;
+      // Ưu tiên plotId truyền lên từ form, sau đó mới lấy từ các lô đất đã gán cho plan
+      let plotId = data.plotId;
+      
+      if (!plotId && plan.plots && plan.plots.length > 0) {
+        plotId = plan.plots[0].plotId;
+      }
+
 
       if (!plotId) {
         setNotification({
@@ -365,9 +421,10 @@ export function SeasonPlanPage() {
 
   const handleUpdateTask = async (planId: string, stageId: string, task: Task) => {
     try {
-      // Find the plan to get the real plotId
+      // Find the plan to get the plots
       const plan = plans.find(p => p.id === planId);
-      const plotId = task.plotId || plan?.plotId;
+      const plotId = task.plotId || (plan?.plots && plan.plots.length > 0 ? plan.plots[0].plotId : undefined);
+
 
       if (!plotId) {
         setNotification({
@@ -470,17 +527,13 @@ export function SeasonPlanPage() {
     });
   };
 
-const getPlotName = (id: string) => {
-      if (!id) return '';
-      const plot = plots.find(p => p.id === id);
-      return plot ? plot.name : '';
+    const getPlanPlotNames = (p: SeasonPlan) => {
+      if (p.plots && p.plots.length > 0) {
+        return p.plots.map(item => item.plotName).join(', ');
+      }
+      return '';
     };
-  
-    const getCropName = (id: string) => {
-      if (!id) return '';
-      const crop = crops.find(c => c.id === id);
-      return crop ? crop.name : '';
-    };
+
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-hidden">
@@ -510,22 +563,16 @@ const getPlotName = (id: string) => {
                     <span className="text-sm text-slate-500">
                       {formatDate(currentPlan.startDate)} - {formatDate(currentPlan.endDate)}
                     </span>
-                    {getCropName(currentPlan.cropId) && (
+                    {getPlanPlotNames(currentPlan) && (
                       <>
                         <div className="w-1 h-1 bg-slate-300 rounded-full" />
                         <span className="text-sm font-medium text-slate-700">
-                          {getCropName(currentPlan.cropId)}
+                          {getPlanPlotNames(currentPlan)}
                         </span>
                       </>
                     )}
-                    {getPlotName(currentPlan.plotId) && (
-                      <>
-                        <div className="w-1 h-1 bg-slate-300 rounded-full" />
-                        <span className="text-sm font-medium text-slate-700">
-                          {getPlotName(currentPlan.plotId)}
-                        </span>
-                      </>
-                    )}
+
+
                   </div>
                 </div>
               </>
@@ -536,7 +583,21 @@ const getPlotName = (id: string) => {
               </div>
             )}
           </div>
-          {!currentPlan && (
+          {currentPlan ? (
+            <div className="flex items-center gap-3">
+              {canEdit && (
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="text-rose-500 hover:bg-rose-50 hover:text-rose-600 font-bold px-4 gap-2 border border-rose-100"
+                  onClick={() => handleDeletePlan(currentPlan.id)}
+                >
+                  <Trash2 size={18} />
+                  Xóa kế hoạch
+                </Button>
+              )}
+            </div>
+          ) : (
             <div className="flex items-center gap-3">
               {canEdit ? (
                 <Button 
@@ -653,7 +714,6 @@ const getPlotName = (id: string) => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSave={handleCreatePlan}
-        existingPlans={plans}
       />
 
       <CreatePhaseModal 
@@ -721,6 +781,17 @@ const getPlotName = (id: string) => {
           </div>
         </div>
       </Modal>
+
+      <ConfirmModal 
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDelete}
+        loading={deleteConfirm.isDeleting}
+        title="Xóa kế hoạch?"
+        message="Bạn có chắc chắn muốn xóa kế hoạch mùa vụ này? Tất cả giai đoạn và công việc liên quan sẽ bị loại bỏ vĩnh viễn."
+        confirmLabel="Xóa ngay"
+        type="danger"
+      />
     </div>
   );
 }

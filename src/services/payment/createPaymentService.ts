@@ -11,6 +11,12 @@ class CreatePaymentService {
         const response = await axiosInstance.post('/api/v1/payment/create', data);
         return response.data;
     }
+
+    // IPN Callback from SePay (Mainly for reference/documentation sync)
+    async handleIPN(data: any): Promise<any> {
+        const response = await axiosInstance.post('/api/v1/payment/ipn', data);
+        return response.data;
+    }
 }
 
 export const createPaymentService = new CreatePaymentService();

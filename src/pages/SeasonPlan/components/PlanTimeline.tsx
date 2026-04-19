@@ -118,9 +118,14 @@ export function PlanTimeline({
         });
 
         // Conflict check
-        if (hasPlanOverlap(updatedPlan.plotId, updatedPlan.startDate, updatedPlan.endDate, plans, updatedPlan.id)) {
+        const hasOverlap = updatedPlan.plots?.some(p => 
+          hasPlanOverlap(p.plotId, updatedPlan.startDate, updatedPlan.endDate, plans, updatedPlan.id)
+        );
+
+        if (hasOverlap) {
           alert('Cảnh báo: Thay đổi này gây ra xung đột thời gian với kế hoạch khác trên cùng lô đất.');
         }
+
 
         onUpdatePlan(updatedPlan);
       }
@@ -285,37 +290,39 @@ export function PlanTimeline({
               
               return (
                 <Fragment key={plan.id}>
-                  <div
-                    className={cn(
-                      "flex h-12 items-center px-4 border-b border-slate-50 hover:bg-slate-50 cursor-pointer group transition-all",
-                      isPlanSelected && "bg-indigo-50/50 border-l-4 border-l-indigo-500 pl-3"
-                    )}
-                    onClick={() => onSelect({ type: 'PLAN', id: plan.id, planId: plan.id })}
-                  >
-                    <button
-                      onClick={(e) => toggleExpandPlan(plan.id, e)}
-                      className="p-1 mr-1 text-slate-400 hover:text-indigo-600 rounded transition-colors"
+                  {plans.length > 1 && (
+                    <div
+                      className={cn(
+                        "flex h-12 items-center px-4 border-b border-slate-50 hover:bg-slate-50 cursor-pointer group transition-all",
+                        isPlanSelected && "bg-indigo-50/50 border-l-4 border-l-indigo-500 pl-3"
+                      )}
+                      onClick={() => onSelect({ type: 'PLAN', id: plan.id, planId: plan.id })}
                     >
-                      {isExpanded ? <ChevronDown size={14} strokeWidth={3} /> : <ChevronRight size={14} strokeWidth={3} />}
-                    </button>
-                    <div className="truncate flex-1 text-[13px] font-bold text-slate-700">
-                       {plan.name}
+                      <button
+                        onClick={(e) => toggleExpandPlan(plan.id, e)}
+                        className="p-1 mr-1 text-slate-400 hover:text-indigo-600 rounded transition-colors"
+                      >
+                        {isExpanded ? <ChevronDown size={14} strokeWidth={3} /> : <ChevronRight size={14} strokeWidth={3} />}
+                      </button>
+                      <div className="truncate flex-1 text-[13px] font-bold text-slate-700">
+                         {plan.name}
+                      </div>
+                      {canEdit && onDeletePlan && (
+                         <button
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             onDeletePlan(plan.id);
+                           }}
+                           className="p-1 px-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                           title="Xóa kế hoạch"
+                         >
+                           <Trash2 size={14} />
+                         </button>
+                       )}
                     </div>
-                    {canEdit && onDeletePlan && (
-                       <button
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           onDeletePlan(plan.id);
-                         }}
-                         className="p-1 px-2 opacity-0 group-hover:opacity-100 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                         title="Xóa kế hoạch"
-                       >
-                         <Trash2 size={14} />
-                       </button>
-                     )}
-                  </div>
+                  )}
 
-                  {isExpanded && (
+                  {(isExpanded || plans.length === 1) && (
                     <>
                       {plan.phases.map((phase) => {
                         const isPhaseExpanded = expandedPhases.has(phase.id);
@@ -404,10 +411,12 @@ export function PlanTimeline({
                const isExpanded = expandedPlans.has(plan.id);
                return (
                  <Fragment key={plan.id}>
-                    <div className="h-12 border-b border-slate-100 relative flex items-center">
-                    </div>
+                    {plans.length > 1 && (
+                      <div className="h-12 border-b border-slate-100 relative flex items-center">
+                      </div>
+                    )}
 
-                    {isExpanded && plan.phases.map((phase) => {
+                    {(isExpanded || plans.length === 1) && plan.phases.map((phase) => {
                        const isPhaseExpanded = expandedPhases.has(phase.id);
                        return (
                          <Fragment key={phase.id}>

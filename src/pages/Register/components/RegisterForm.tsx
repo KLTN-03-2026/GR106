@@ -6,8 +6,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Loader2, Mail, Lock, User, Tractor } from 'lucide-react';
 import { toast } from 'sonner';
 import { useDispatch } from 'react-redux';
-import { authService } from '../../../services/authService';
-import { farmService } from '../../../services/farmService';
+import { authService } from '../../../services/auth/authService';
+import { farmService } from '../../../services/farm/farmService';
 import { setCredentials } from '../../../store/authSlice';
 const registerSchema = z.
 object({

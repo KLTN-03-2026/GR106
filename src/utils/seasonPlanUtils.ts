@@ -1,6 +1,9 @@
 import { Phase, SeasonPlan } from '../types/seasonPlan';
 import { Crop } from '../types/crop';
 
+const DRAFT_STATUS = { id: '00000000-0000-0000-0000-000000000000', code: 'DRAFT', name: 'Bản nháp', color: '#94a3b8' };
+
+
 /**
  * Thêm số ngày vào một chuỗi ngày (YYYY-MM-DD)
  */
@@ -14,6 +17,8 @@ export const addDays = (dateStr: string, days: number): string => {
  * Tự động sinh các giai đoạn dựa trên cấu hình cây trồng và ngày bắt đầu
  */
 export const generatePhasesFromCrop = (crop: Crop, startDate: string): Phase[] => {
+
+
   if (!crop.stages || crop.stages.length === 0) {
     // Nếu không có giai đoạn, sinh 1 giai đoạn mặc định
     return [{
@@ -22,11 +27,12 @@ export const generatePhasesFromCrop = (crop: Crop, startDate: string): Phase[] =
       startDate: startDate,
       endDate: addDays(startDate, 30),
       duration: 30,
-      status: 'DRAFT',
+      status: DRAFT_STATUS,
       color: 'bg-green-500',
       tasks: []
     }];
   }
+
 
   const phaseColors = [
     'bg-amber-600',
@@ -47,7 +53,7 @@ export const generatePhasesFromCrop = (crop: Crop, startDate: string): Phase[] =
       startDate: currentDate,
       endDate: endDate,
       duration: duration,
-      status: 'DRAFT',
+      status: DRAFT_STATUS,
       color: phaseColors[index % phaseColors.length],
       description: stage.description,
       tasks: []
@@ -68,6 +74,8 @@ export const isOverlapping = (start1: string, end1: string, start2: string, end2
 
 /**
  * Kiểm tra lỗi chồng lấn cho một lô đất
+ * Hỗ trợ kiến trúc đa lô đất: Kiểm tra xem plotId mục tiêu có nằm trong 
+ * danh sách plots của các kế hoạch hiện có hay không.
  */
 export const hasPlanOverlap = (
   plotId: string, 
@@ -76,13 +84,19 @@ export const hasPlanOverlap = (
   existingPlans: SeasonPlan[],
   excludePlanId?: string
 ): boolean => {
-  return existingPlans.some(p => 
-    p.plotId === plotId && 
-    p.id !== excludePlanId &&
-    p.status !== 'CANCELLED' && 
-    isOverlapping(startDate, endDate, p.startDate, p.endDate)
-  );
+  return existingPlans.some(p => {
+    // Nếu kế hoạch cũ có mảng plots, kiểm tra xem plotId có trong đó không
+    const hasPlot = p.plots 
+      ? p.plots.some(pp => pp.plotId === plotId)
+      : (p as any).plotId === plotId; // Fallback cho dữ liệu cũ nếu cần
+
+    return hasPlot && 
+      p.id !== excludePlanId &&
+      p.status !== 'CANCELLED' && 
+      isOverlapping(startDate, endDate, p.startDate, p.endDate);
+  });
 };
+
 /**
  * Đồng bộ toàn bộ các giai đoạn khi một giai đoạn thay đổi (thời lượng hoặc ngày bắt đầu)
  */
@@ -236,13 +250,13 @@ export const clonePlanLogic = (plan: SeasonPlan, newName: string, newStartDate: 
       id: `phase-${Date.now()}-${index}`,
       startDate: currentDate,
       endDate: endDate,
-      status: 'DRAFT',
+      status: DRAFT_STATUS,
       tasks: phase.tasks.map(task => ({
         ...task,
         id: `task-${Date.now()}-${Math.random()}`,
         startDate: addDays(task.startDate, offsetDays),
         endDate: addDays(task.endDate, offsetDays),
-        status: 'DRAFT'
+        status: DRAFT_STATUS
       }))
     });
     currentDate = endDate;
@@ -254,7 +268,7 @@ export const clonePlanLogic = (plan: SeasonPlan, newName: string, newStartDate: 
     name: newName,
     startDate: newStartDate,
     endDate: currentDate,
-    status: 'DRAFT',
+    status: DRAFT_STATUS,
     phases: newPhases
   };
 };

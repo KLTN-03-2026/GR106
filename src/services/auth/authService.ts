@@ -1,11 +1,12 @@
-import { axiosInstance } from '../config/axios';
+import { axiosInstance } from '../../config/axios';
 import {
   ApiResponse,
   AuthTokens,
   LoginRequest,
   RegisterRequest,
   VerifyRequest
-} from '../types/auth';
+} from '../../types/auth';
+
 
 export const authService = {
   async register(data: RegisterRequest): Promise<ApiResponse<string>> {

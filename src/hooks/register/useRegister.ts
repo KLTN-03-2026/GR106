@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
-import { authService } from '../../services/authService';
+import { authService } from '../../services/auth/authService';
 import { registerSchema } from '../../schemas/authSchemas';
 import { RegisterInput } from '../../types/auth';
 

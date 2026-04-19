@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { ENV } from '../config/env';
-import { WeatherData } from '../types/weather';
+import { ENV } from '../../config/env';
+import { WeatherData } from '../../types/weather';
 
 const API_KEY = ENV.WEATHER_KEY;
 const BASE_URL = 'https://api.openweathermap.org/data/2.5/weather';
@@ -36,7 +36,9 @@ export const fetchWeather = async (lat: number, lon: number): Promise<WeatherDat
       name: data.name,
       humidity: data.main.humidity,
       windSpeed: data.wind.speed,
-      condition
+      condition,
+      isRainy: condition === 'rain',
+      isHighHumidity: data.main.humidity > 80
     };
   } catch (error) {
     console.error('Error fetching weather:', error);

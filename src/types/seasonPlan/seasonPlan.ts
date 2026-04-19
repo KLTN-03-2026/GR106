@@ -42,41 +42,53 @@ export interface Phase {
   orderIndex: number;
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
-  status: StatusObject;
   aiSuggestionCache?: string;
+  status: StatusObject;
+  duration: number; // in days, added for utility compatibility
+  color?: string; // UI color
   description?: string; // Not in API snippet but useful
   tasks: Task[]; // Usually fetched separately but managed together in UI
 }
+
+
 
 export interface SeasonPlan {
   id: string;
   farmId: string;
   clonedFromId?: string | null;
   name: string;
-  plotId: string;
-  cropId: string;
   startDate: string;
   endDate: string;
-  status: PlanStatus | StatusObject; // Handle both legacy and new API
-  phases: Phase[];
-  description?: string;
+  status: PlanStatus | StatusObject;
   note?: string;
+  description?: string; // Local alias for note
   createdById?: string;
   createdAt?: string;
   deletedAt?: string | null;
+  // Relationships
+  phases: Phase[];
+  plots?: PlanPlot[]; // Plots are sub-resources
+}
+
+export interface PlanPlot {
+  plotId: string;
+  plotName: string;
 }
 
 export interface CreateSeasonPlanRequest {
   name: string;
-  plotId: string;
   cropId: string;
   startDate: string;
+  endDate?: string;
+  note?: string;
 }
 
 export interface UpdateSeasonPlanRequest {
   name?: string;
-  status?: PlanStatus;
-  phases?: Phase[];
+  cropId?: string;
   startDate?: string;
   endDate?: string;
+  note?: string;
+  status?: PlanStatus;
 }
+

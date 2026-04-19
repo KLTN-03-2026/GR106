@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { SeasonPlan, Task, CreateSeasonPlanRequest } from '../types/seasonPlan';
-import { seasonPlanService } from '../services/seasonPlanService';
+import { seasonPlanService } from '../services/seasonplan/seasonPlanService';
 import { RootState } from '../store';
 
 interface SeasonPlanState {
@@ -65,6 +65,33 @@ export const removePlan = createAsyncThunk(
   }
 );
 
+// --- PLAN PLOT THUNKS ---
+
+export const fetchPlanPlots = createAsyncThunk(
+  'seasonPlan/fetchPlanPlots',
+  async (planId: string, { rejectWithValue }) => {
+    try {
+      const plots = await seasonPlanService.getPlanPlots(planId);
+      return { planId, plots };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const addPlotsToPlan = createAsyncThunk(
+  'seasonPlan/addPlotsToPlan',
+  async ({ planId, plotIds }: { planId: string; plotIds: string[] }, { rejectWithValue }) => {
+    try {
+      const result = await seasonPlanService.addPlotsToPlan(planId, plotIds);
+      return { planId, addedPlots: result.addedPlots };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+
 // --- STAGE THUNKS ---
 
 export const fetchStages = createAsyncThunk(
@@ -117,7 +144,7 @@ export const fetchTasks = createAsyncThunk(
 export const createSeasonTask = createAsyncThunk(
   'seasonPlan/createTask',
   async (
-    { planId, stageId, data }: { planId: string; stageId: string; data: { name: string; description: string; startDate: string; endDate: string; plotId: string } }, 
+    { planId, stageId, data }: { planId: string; stageId: string; data: { name: string; description: string; startDate: string; endDate: string; plotId: string } },
     { rejectWithValue }
   ) => {
     try {
@@ -131,7 +158,7 @@ export const createSeasonTask = createAsyncThunk(
 export const updateSeasonTask = createAsyncThunk(
   'seasonPlan/updateTask',
   async (
-    { planId, stageId, taskId, data }: { planId: string; stageId: string; taskId: string; data: Partial<Task> }, 
+    { planId, stageId, taskId, data }: { planId: string; stageId: string; taskId: string; data: Partial<Task> },
     { rejectWithValue }
   ) => {
     try {
@@ -183,7 +210,26 @@ const seasonPlanSlice = createSlice({
       .addCase(removePlan.fulfilled, (state, action) => {
         state.plans = state.plans.filter(p => p.id !== action.payload);
       })
-      
+
+      // Plan Plots
+      .addCase(fetchPlanPlots.fulfilled, (state, action) => {
+        const plan = state.plans.find(p => p.id === action.payload.planId);
+        if (plan) plan.plots = action.payload.plots;
+      })
+      .addCase(addPlotsToPlan.fulfilled, (state, action) => {
+        const plan = state.plans.find(p => p.id === action.payload.planId);
+        if (plan) {
+          if (!plan.plots) plan.plots = [];
+          // Add new plots if not already there
+          action.payload.addedPlots.forEach(newP => {
+            if (!plan.plots?.some(p => p.plotId === newP.plotId)) {
+              plan.plots?.push(newP);
+            }
+          });
+        }
+      })
+
+
       // Stages
       .addCase(fetchStages.fulfilled, (state, action) => {
         const plan = state.plans.find(p => p.id === action.payload.planId);
@@ -200,7 +246,7 @@ const seasonPlanSlice = createSlice({
         const plan = state.plans.find(p => p.id === action.payload.planId);
         if (plan) plan.phases = plan.phases.filter(ph => ph.id !== action.payload.stageId);
       })
-      
+
       // Tasks
       .addCase(fetchTasks.fulfilled, (state, action) => {
         const plan = state.plans.find(p => p.id === action.payload.planId);

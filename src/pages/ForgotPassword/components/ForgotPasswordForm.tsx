@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
 import { Loader2, Mail, ArrowLeft, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { authService } from '../../../services/authService';
+import { authService } from '../../../services/auth/authService';
 import { forgotPasswordSchema } from '../../../schemas/authSchemas';
 import { ForgotPasswordInput } from '../../../types/auth';
 

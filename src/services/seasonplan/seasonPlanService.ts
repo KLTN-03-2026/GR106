@@ -1,13 +1,15 @@
-import { axiosInstance } from '../config/axios';
-import { SeasonPlan, CreateSeasonPlanRequest, Phase, Task } from '../types/seasonPlan';
-import { 
-  getPlansResponseSchema, 
+import { axiosInstance } from '../../config/axios';
+import { SeasonPlan, CreateSeasonPlanRequest } from '../../types/seasonPlan';
+import {
+  getPlansResponseSchema,
   createPlanResponseSchema,
   getStagesResponseSchema,
   createStageResponseSchema,
   getTasksResponseSchema,
-  createTaskResponseSchema
-} from '../schemas/seasonPlanSchemas';
+  createTaskResponseSchema,
+  getPlanPlotsResponseSchema,
+  addPlanPlotsResponseSchema
+} from '../../schemas/seasonPlanSchemas';
 
 /**
  * Service Quản lý kế hoạch sản xuất (Season Plan) & Công việc (Task)
@@ -20,12 +22,10 @@ export const seasonPlanService = {
   async getPlans(): Promise<SeasonPlan[]> {
     const response = await axiosInstance.get('/api/v1/plans');
     const validated = getPlansResponseSchema.parse(response.data);
-    
+
     return validated.data.map(plan => ({
       ...plan,
-      plotId: plan.plotId || '',
-      cropId: plan.cropId || '',
-      phases: [], 
+      phases: [],
       description: plan.note || '',
     })) as SeasonPlan[];
   },
@@ -38,38 +38,47 @@ export const seasonPlanService = {
       name: data.name,
       cropId: data.cropId,
       startDate: data.startDate,
-      endDate: (data as any).endDate || data.startDate,
-      note: (data as any).note || '',
-      plotId: data.plotId, 
+      endDate: data.endDate || data.startDate,
+      note: data.note || '',
     };
 
     const response = await axiosInstance.post('/api/v1/plans', payload);
     const validated = createPlanResponseSchema.parse(response.data);
-    
+
     return {
       ...validated.data,
-      plotId: validated.data.plotId || payload.plotId,
-      cropId: validated.data.cropId || payload.cropId,
       phases: [],
       description: validated.data.note || '',
     } as SeasonPlan;
   },
 
-  // --- STAGE APIs ---
-
-  async getStages(planId: string): Promise<Phase[]> {
-    const response = await axiosInstance.get(`/api/v1/plans/${planId}/stages`);
-    const validated = getStagesResponseSchema.parse(response.data);
-    return validated.data.map(stage => ({
-      ...stage,
-      tasks: [], // Tasks are fetched separately
-    })) as Phase[];
+  /**
+   * Lấy danh sách lô đất của kế hoạch
+   */
+  async getPlanPlots(planId: string): Promise<{ plotId: string; plotName: string }[]> {
+    const response = await axiosInstance.get(`/api/v1/plans/${planId}/plots`);
+    const validated = getPlanPlotsResponseSchema.parse(response.data);
+    return validated.data;
   },
 
-  async createStage(planId: string, data: { name: string; startDate: string; endDate: string }): Promise<Phase> {
+  /**
+   * Thêm lô đất vào kế hoạch
+   */
+  async addPlotsToPlan(planId: string, plotIds: string[]): Promise<any> {
+    const response = await axiosInstance.post(`/api/v1/plans/${planId}/plots`, { plotIds });
+    return addPlanPlotsResponseSchema.parse(response.data).data;
+  },
+
+  // --- STAGE APIs ---
+
+  async getStages(planId: string): Promise<any[]> {
+    const response = await axiosInstance.get(`/api/v1/plans/${planId}/stages`);
+    return getStagesResponseSchema.parse(response.data).data;
+  },
+
+  async createStage(planId: string, data: { name: string; startDate: string; endDate: string }): Promise<any> {
     const response = await axiosInstance.post(`/api/v1/plans/${planId}/stages`, data);
-    const validated = createStageResponseSchema.parse(response.data);
-    return { ...validated.data, tasks: [] } as Phase;
+    return createStageResponseSchema.parse(response.data).data;
   },
 
   async deleteStage(planId: string, stageId: string): Promise<void> {
@@ -78,22 +87,19 @@ export const seasonPlanService = {
 
   // --- TASK APIs ---
 
-  async getTasks(planId: string, stageId: string): Promise<Task[]> {
+  async getTasks(planId: string, stageId: string): Promise<any[]> {
     const response = await axiosInstance.get(`/api/v1/plans/${planId}/stages/${stageId}/tasks`);
-    const validated = getTasksResponseSchema.parse(response.data);
-    return validated.data as Task[];
+    return getTasksResponseSchema.parse(response.data).data;
   },
 
-  async createTask(planId: string, stageId: string, data: { name: string; description: string; startDate: string; endDate: string; plotId: string }): Promise<Task> {
+  async createTask(planId: string, stageId: string, data: any): Promise<any> {
     const response = await axiosInstance.post(`/api/v1/plans/${planId}/stages/${stageId}/tasks`, data);
-    const validated = createTaskResponseSchema.parse(response.data);
-    return validated.data as Task;
+    return createTaskResponseSchema.parse(response.data).data;
   },
 
-  async updateTask(planId: string, stageId: string, taskId: string, data: Partial<Task>): Promise<Task> {
+  async updateTask(planId: string, stageId: string, taskId: string, data: any): Promise<any> {
     const response = await axiosInstance.patch(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}`, data);
-    const validated = createTaskResponseSchema.parse(response.data); // Reuse same schema
-    return validated.data as Task;
+    return createTaskResponseSchema.parse(response.data).data;
   },
 
   async deleteTask(planId: string, stageId: string, taskId: string): Promise<void> {
@@ -107,11 +113,9 @@ export const seasonPlanService = {
     // Chỉ gửi các trường hợp lệ theo Swagger
     const payload = {
       name: data.name,
-      cropId: data.cropId,
       startDate: data.startDate,
       endDate: data.endDate,
       note: data.note || (data as any).description || '',
-      plotId: data.plotId,
     };
     const response = await axiosInstance.patch(`/api/v1/plans/${planId}`, payload);
     const validated = createPlanResponseSchema.parse(response.data);
@@ -121,6 +125,7 @@ export const seasonPlanService = {
       description: validated.data.note || '',
     } as SeasonPlan;
   },
+
 
   /**
    * Xóa kế hoạch

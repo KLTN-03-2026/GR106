@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { X, AlertCircle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Modal } from '../ui/Modal'
-import { memberService } from '../../services/memberService'
+import { memberService } from '../../services/members/memberService'
 import { Member, MemberRole } from '../../types/member'
 
 interface ChangeRoleModalProps {
@@ -39,7 +39,7 @@ export function ChangeRoleModal({
 
     try {
       setIsSubmitting(true)
-      const res = await memberService.changeRole(farmId, member.id, { role: newRole })
+      const res = await memberService.changeRole(farmId, member.id, { roleId: newRole })
       if (res.success) {
         toast.success('Đã thay đổi vai trò thành công')
         onClose()

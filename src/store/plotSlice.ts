@@ -1,13 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { axiosInstance } from '../config/axios';
-import { 
-  getPlotsResponseSchema, 
-  createPlotResponseSchema,
-  createPlotSchema,
-  updatePlotSchema,
-  updatePlotResponseSchema
-} from '../schemas/plotSchemas';
-import { Plot, CreatePlotInput, UpdatePlotInput } from '../types/plot';
+import { plotService } from '../services/plots/plotService';
+import { Plot, CreatePlotInput, UpdatePlotInput } from '../types/plot/plot';
 
 interface PlotStats {
   totalPlots: number;
@@ -36,14 +29,8 @@ export const fetchPlots = createAsyncThunk(
   'plot/fetchPlots',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get('/api/v1/plots');
-      // Validate và parse kết quả bằng Zod
-      return getPlotsResponseSchema.parse(response.data).data;
+      return await plotService.getPlots();
     } catch (error: any) {
-      if (error.name === 'ZodError') {
-        const firstError = error.errors[0];
-        return rejectWithValue(`${firstError.path.join('.')}: ${firstError.message}`);
-      }
       return rejectWithValue(error.response?.data?.message || error.message || 'Không thể tải danh sách lô đất');
     }
   }
@@ -54,16 +41,8 @@ export const createPlot = createAsyncThunk(
   'plot/createPlot',
   async ({ plotData }: { farmId: string; plotData: CreatePlotInput }, { rejectWithValue }) => {
     try {
-      // Validate dữ liệu đầu vào trước khi gửi
-      createPlotSchema.parse(plotData);
-      const response = await axiosInstance.post('/api/v1/plots', plotData);
-      // Validate response
-      return createPlotResponseSchema.parse(response.data).data;
+      return await plotService.createPlot(plotData);
     } catch (error: any) {
-      if (error.name === 'ZodError') {
-        const firstError = error.errors[0];
-        return rejectWithValue(`${firstError.path.join('.')}: ${firstError.message}`);
-      }
       return rejectWithValue(error.response?.data?.message || error.message || 'Không thể tạo lô đất');
     }
   }
@@ -74,14 +53,8 @@ export const updatePlot = createAsyncThunk(
   'plot/updatePlot',
   async ({ plotId, plotData }: { farmId: string; plotId: string; plotData: UpdatePlotInput }, { rejectWithValue }) => {
     try {
-      updatePlotSchema.parse(plotData);
-      const response = await axiosInstance.patch(`/api/v1/plots/${plotId}`, plotData);
-      return updatePlotResponseSchema.parse(response.data).data;
+      return await plotService.updatePlot(plotId, plotData);
     } catch (error: any) {
-      if (error.name === 'ZodError') {
-        const firstError = error.errors[0];
-        return rejectWithValue(`${firstError.path.join('.')}: ${firstError.message}`);
-      }
       return rejectWithValue(error.response?.data?.message || error.message || 'Lỗi cập nhật lô đất');
     }
   }
@@ -92,13 +65,14 @@ export const deletePlot = createAsyncThunk(
   'plot/deletePlot',
   async ({ plotId }: { farmId: string; plotId: string }, { rejectWithValue }) => {
     try {
-      await axiosInstance.delete(`/api/v1/plots/${plotId}`);
+      await plotService.deletePlot(plotId);
       return plotId;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || error.message || 'Lỗi khi xóa lô đất');
     }
   }
 );
+
 
 const plotSlice = createSlice({
   name: 'plot',

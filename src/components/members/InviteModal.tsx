@@ -4,7 +4,7 @@ import { X, UserPlus, Mail, Users, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Modal } from '../ui/Modal'
 import { cn } from '../../utils/cn'
-import { memberService } from '../../services/memberService'
+import { memberService } from '../../services/members/memberService'
 
 interface InviteModalProps {
   isOpen: boolean
@@ -167,9 +167,17 @@ export function InviteModal({ isOpen, onClose }: InviteModalProps) {
             </button>
             <button
               type="submit"
-              className="flex-[2] py-2 text-xs border border-gray-900 rounded-lg bg-gray-900 text-white hover:bg-gray-800 transition-colors font-medium"
+              disabled={isSubmitting}
+              className="flex-[2] py-2 text-xs border border-gray-900 rounded-lg bg-gray-900 text-white hover:bg-gray-800 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-70"
             >
-              Gửi lời mời
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Đang mời...</span>
+                </>
+              ) : (
+                'Gửi lời mời'
+              )}
             </button>
           </div>
         </form>

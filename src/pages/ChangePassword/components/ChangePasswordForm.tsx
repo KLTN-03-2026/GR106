@@ -5,7 +5,7 @@ import * as z from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
-import { authService } from '../../../services/authService';
+import { authService } from '../../../services/auth/authService';
 import { useAuth } from '../../../hooks/useAuth';
 const changePasswordSchema = z.
 object({
