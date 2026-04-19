@@ -15,6 +15,7 @@ import com.farmapp.farmsmartmanagement.modules.plan.mapper.PlanStageMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -50,10 +52,7 @@ public class PlanStageService {
     public List<PlanStageResponse> findAllByPlanId(UUID planId){
         UUID farmId = securityUtils.getCurrentFarmId();
 
-        FarmEntity farm = farmRepository.findById(farmId)
-                .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
-
-        if(planRepository.existsByFarm_Id(farm.getId()))
+        if(!planRepository.existsByIdAndFarm_Id(planId, farmId))
             throw new AppException(ErrorCode.FARM_NOT_FOUND);
 
         PlanEntity plan = planRepository.findById(planId)
@@ -71,10 +70,7 @@ public class PlanStageService {
 
         UUID farmId = securityUtils.getCurrentFarmId();
 
-        FarmEntity farm = farmRepository.findById(farmId)
-                .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
-
-        if(planRepository.existsByFarm_Id(farm.getId()))
+        if(!planRepository.existsByIdAndFarm_Id(planId, farmId))
             throw new AppException(ErrorCode.FARM_NOT_FOUND);
 
         PlanEntity plan = planRepository.findById(planId)
