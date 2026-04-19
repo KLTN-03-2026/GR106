@@ -52,6 +52,7 @@ export function SeasonPlanListPage() {
     isOpen: false,
     type: 'success',
     title: '',
+    message: '',
   });
 
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -213,7 +214,7 @@ export function SeasonPlanListPage() {
                 key={status}
                 onClick={() => setStatusFilter(status)}
                 className={cn(
-                  "px-4 py-1.5 text-xs font-bold rounded-lg transition-all uppercase tracking-wider",
+                  "px-4 py-1.5 text-xs font-bold rounded-lg transition-all uppercase tracking-wider whitespace-nowrap",
                   statusFilter === status 
                     ? "bg-white text-indigo-600 shadow-sm" 
                     : "text-slate-500 hover:text-slate-900 font-medium"
@@ -265,7 +266,7 @@ export function SeasonPlanListPage() {
                   </h3>
                   <div className="flex items-start gap-2">
                     <span className={cn(
-                      "px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full",
+                      "px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full whitespace-nowrap",
                       getStatusColor(plan.status)
                     )}>
                       {getStatusLabel(plan.status)}

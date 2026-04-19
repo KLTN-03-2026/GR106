@@ -459,6 +459,20 @@ export function SeasonPlanPage() {
     }
   };
 
+  const handleAssignPlots = async (planId: string, plotIds: string[]) => {
+    try {
+      await dispatch(addPlotsToPlan({ planId, plotIds })).unwrap();
+    } catch (err: any) {
+      console.error('[SeasonPlanPage] assignPlots failed:', err);
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        title: 'Lỗi gán lô đất',
+        message: extractErrorMessage(err)
+      });
+    }
+  };
+
   const getSelectedData = () => {
     if (!selectedItem) return null;
     const plan = plans.find(p => p.id === selectedItem.planId);
@@ -527,13 +541,12 @@ export function SeasonPlanPage() {
     });
   };
 
-    const getPlanPlotNames = (p: SeasonPlan) => {
-      if (p.plots && p.plots.length > 0) {
-        return p.plots.map(item => item.plotName).join(', ');
-      }
-      return '';
-    };
-
+  const getPlanPlotNames = (p: SeasonPlan) => {
+    if (p.plots && p.plots.length > 0) {
+      return p.plots.map(item => item.plotName).join(', ');
+    }
+    return '';
+  };
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-hidden">
@@ -555,7 +568,7 @@ export function SeasonPlanPage() {
                   <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{currentPlan.name}</h1>
                   <div className="flex items-center gap-3 mt-1">
                     <span className={cn(
-                      "px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full",
+                      "px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full whitespace-nowrap",
                       getStatusColor(currentPlan.status)
                     )}>
                       {getStatusLabel(currentPlan.status)}
@@ -635,7 +648,7 @@ export function SeasonPlanPage() {
                   key={status}
                   onClick={() => setStatusFilter(status)}
                   className={cn(
-                    "px-4 py-1.5 text-xs font-bold rounded-lg transition-all uppercase tracking-wider",
+                    "px-4 py-1.5 text-xs font-bold rounded-lg transition-all uppercase tracking-wider whitespace-nowrap",
                     statusFilter === status 
                       ? "bg-white text-indigo-600 shadow-sm" 
                       : "text-slate-500 hover:text-slate-900 font-medium"
@@ -677,6 +690,8 @@ export function SeasonPlanPage() {
               selectedId={selectedItem?.id}
               onUpdatePlan={handleUpdatePlan}
               onDeletePlan={handleDeletePlan}
+              onDeletePhase={handleDeletePhase}
+              onDeleteTask={handleDeleteTask}
               onAddPhase={handleAddPhase}
               preExpandedPlanId={planId}
               canEdit={canEdit}
@@ -705,6 +720,7 @@ export function SeasonPlanPage() {
           onSelectPhase={(_id, phaseId) => setSelectedItem({ type: 'PHASE', id: phaseId, planId: planId! })}
           onSelectTask={(_pid, stageId, taskId) => setSelectedItem({ type: 'TASK', id: taskId, phaseId: stageId, planId: planId! })}
           onDeletePlan={handleDeletePlan}
+          onAssignPlots={handleAssignPlots}
           onClone={(p) => setCloneSourcePlan(p)}
           canEdit={canEdit}
         />

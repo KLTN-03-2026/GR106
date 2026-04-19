@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import {
   X,
   Zap,
@@ -20,6 +19,7 @@ import { SeasonPlan, PlanStatus, Phase, Task, StatusObject } from '../../../type
 import { Plot } from '../../../types/plot/plot';
 import { cn } from '../../../utils/cn';
 import { Button } from '../../../components/ui/button';
+import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 
 interface PlanDetailPanelProps {
   selection: null |
@@ -38,6 +38,7 @@ interface PlanDetailPanelProps {
   onDeletePlan?: (planId: string) => void;
   onDeletePhase?: (planId: string, phaseId: string) => void;
   onDeleteTask?: (planId: string, phaseId: string, taskId: string) => void;
+  onAssignPlots?: (planId: string, plotIds: string[]) => void;
   onClone?: (plan: SeasonPlan) => void;
   canEdit?: boolean;
 }
@@ -56,6 +57,7 @@ export function PlanDetailPanel({
   onDeletePlan,
   onDeletePhase,
   onDeleteTask,
+  onAssignPlots,
   onClone,
   canEdit = false,
 }: PlanDetailPanelProps) {
@@ -64,6 +66,10 @@ export function PlanDetailPanel({
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [activeSelection, setActiveSelection] = useState(selection);
   const [activeTab, setActiveTab] = useState<'INFO' | 'MEMBERS' | 'MATERIALS'>('INFO');
+
+  // Plot selection state
+  const [isAddingPlot, setIsAddingPlot] = useState(false);
+  const [selectedPlotId, setSelectedPlotId] = useState('');
 
   // New task form state
   const [newTaskName, setNewTaskName] = useState('');
@@ -92,6 +98,14 @@ export function PlanDetailPanel({
   const currentSelection = activeSelection;
 
   if (!currentSelection || !plan) return null;
+
+  const handleAssignPlotSubmit = () => {
+    if (plan.id && selectedPlotId && onAssignPlots) {
+      onAssignPlots(plan.id, [selectedPlotId]);
+      setIsAddingPlot(false);
+      setSelectedPlotId('');
+    }
+  };
 
   const handleDelete = () => {
     setShowDeleteConfirm(false);
@@ -155,25 +169,23 @@ export function PlanDetailPanel({
   const renderBreadcrumbs = () => {
     return (
       <div className="flex items-center gap-1 text-[11px] font-bold text-slate-400 mb-4 px-1">
-        <span className="hover:text-slate-900 cursor-pointer transition-colors truncate max-w-[100px]">{plan.name}</span>
         {currentSelection.type !== 'PLAN' && (
           <>
-            <ChevronRight size={12} className="shrink-0" />
             <span
               className={cn(
-                "hover:text-slate-900 cursor-pointer transition-colors truncate max-w-[100px]",
+                "hover:text-slate-900 cursor-pointer transition-colors truncate max-w-[150px]",
                 currentSelection.type === 'PHASE' && "text-slate-900"
               )}
-              onClick={() => onSelectPhase(plan.id, currentSelection.type === 'PHASE' ? currentSelection.phase.id : currentSelection.phase.id)}
+              onClick={() => onSelectPhase(plan.id, currentSelection.phase.id)}
             >
-              {currentSelection.type === 'PHASE' ? currentSelection.phase.name : currentSelection.phase.name}
+              Giai đoạn: {currentSelection.phase.name}
             </span>
           </>
         )}
         {currentSelection.type === 'TASK' && (
           <>
             <ChevronRight size={12} className="shrink-0" />
-            <span className="text-slate-900 truncate max-w-[100px]">{currentSelection.task.name}</span>
+            <span className="text-slate-900 truncate max-w-[150px]">{currentSelection.task.name}</span>
           </>
         )}
       </div>
@@ -202,7 +214,7 @@ export function PlanDetailPanel({
     if (!canEdit) {
       return (
         <div 
-          className="h-8 px-3 rounded flex items-center font-black text-[10px] uppercase tracking-widest shadow-sm text-white"
+          className="h-8 px-3 rounded flex items-center font-black text-[10px] uppercase tracking-widest shadow-sm text-white whitespace-nowrap"
           style={{ backgroundColor: statusColor || '#64748b' }}
         >
           {statusName}
@@ -233,7 +245,7 @@ export function PlanDetailPanel({
         value={statusCode}
         onChange={(e) => onStatusChange(e.target.value)}
         className={cn(
-          "h-8 px-3 rounded font-black text-[10px] uppercase tracking-widest outline-none border-none shadow-sm cursor-pointer transition-all text-white",
+          "h-8 px-3 rounded font-black text-[10px] uppercase tracking-widest outline-none border-none shadow-sm cursor-pointer transition-all text-white whitespace-nowrap",
           !statusColor && getColorClass(statusCode)
         )}
         style={statusColor ? { backgroundColor: statusColor } : {}}
@@ -375,38 +387,83 @@ export function PlanDetailPanel({
                     </div>
 
                     {/* Plot Management Section */}
-                    <div className="space-y-3 pt-4 border-t border-slate-100">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Lô đất canh tác</h3>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-6 px-2 text-[9px] font-black uppercase text-indigo-600 bg-indigo-50 hover:bg-indigo-100"
-                        >
-                          <Plus size={12} className="mr-1" /> Thêm lô
-                        </Button>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        {plan.plots && plan.plots.length > 0 ? (
-                          plan.plots.map((pp) => (
-                            <div key={pp.plotId} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
-                              <div className="flex items-center gap-2">
-                                <Package size={14} className="text-slate-400" />
-                                <span className="text-[11px] font-bold text-slate-700">{pp.plotName}</span>
-                              </div>
-                              <button className="p-1 text-slate-400 hover:text-rose-500 transition-all">
-                                <Trash2 size={12} />
-                              </button>
+                      <div className="space-y-3 pt-4 border-t border-slate-100">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Lô đất canh tác</h3>
+                          {!isAddingPlot && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 px-2 text-[9px] font-black uppercase text-indigo-600 bg-indigo-50 hover:bg-indigo-100"
+                              onClick={() => setIsAddingPlot(true)}
+                            >
+                              <Plus size={12} className="mr-1" /> Thêm lô
+                            </Button>
+                          )}
+                        </div>
+                        
+                        {isAddingPlot && (
+                          <div className="bg-slate-50 p-3 rounded-xl border border-indigo-100 space-y-2 animate-in fade-in slide-in-from-top-1">
+                            <select
+                              value={selectedPlotId}
+                              onChange={(e) => setSelectedPlotId(e.target.value)}
+                              className="w-full h-8 px-2 text-[11px] font-bold bg-white border border-slate-200 rounded-lg outline-none"
+                            >
+                              <option value="">Chọn lô đất...</option>
+                              {plots
+                                .filter(p => !plan.plots?.some(pp => pp.plotId === p.id))
+                                .map(p => (
+                                  <option key={p.id} value={p.id}>{p.name}</option>
+                                ))
+                              }
+                            </select>
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="flex-1 h-7 text-[10px] font-black uppercase text-slate-400"
+                                onClick={() => {
+                                  setIsAddingPlot(false);
+                                  setSelectedPlotId('');
+                                }}
+                              >
+                                Hủy
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                className="flex-1 h-7 text-[10px] font-black uppercase bg-indigo-600 text-white"
+                                disabled={!selectedPlotId}
+                                onClick={handleAssignPlotSubmit}
+                              >
+                                Thêm
+                              </Button>
                             </div>
-                          ))
-                        ) : (
-                          <div className="py-4 text-center border-2 border-dashed border-slate-100 rounded-xl">
-                             <p className="text-[10px] font-bold text-slate-400">Chưa có lô đất nào được gán</p>
                           </div>
                         )}
+
+                        <div className="space-y-2">
+                          {plan.plots && plan.plots.length > 0 ? (
+                            plan.plots.map((pp) => (
+                              <div key={pp.plotId} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
+                                <div className="flex items-center gap-2">
+                                  <Package size={14} className="text-slate-400" />
+                                  <span className="text-[11px] font-bold text-slate-700">{pp.plotName}</span>
+                                </div>
+                                <button 
+                                  className="p-1 text-slate-400 hover:text-rose-500 transition-all opacity-100"
+                                  onClick={() => console.log('Remove plot not implemented yet')}
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="py-4 text-center border-2 border-dashed border-slate-100 rounded-xl">
+                               <p className="text-[10px] font-bold text-slate-400">Chưa có lô đất nào được gán</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
                   </div>
                 )}
               </div>
@@ -744,50 +801,19 @@ export function PlanDetailPanel({
             )}
           </div>
 
-          {/* Delete Confirmation Modal */}
-          {createPortal(
-            <AnimatePresence>
-              {showDeleteConfirm && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-slate-100"
-                  >
-                    <div className="w-16 h-16 bg-rose-100 rounded-2xl flex items-center justify-center text-rose-600 mb-6">
-                      <Trash2 size={32} />
-                    </div>
-                    <h3 className="text-xl font-black text-slate-800 mb-2">
-                      {currentSelection.type === 'PHASE' ? 'Xóa giai đoạn?' : 'Xóa công việc?'}
-                    </h3>
-                    <p className="text-sm text-slate-500 mb-8 leading-relaxed">
-                      {currentSelection.type === 'PHASE'
-                        ? 'Bạn có chắc chắn muốn xóa giai đoạn này? Tất cả công việc bên trong cũng sẽ bị xóa.'
-                        : 'Dữ liệu này sẽ được gỡ bỏ khỏi hệ thống. Hành động này không thể hoàn tác.'
-                      }
-                    </p>
-                    <div className="flex gap-3">
-                      <Button
-                        variant="ghost"
-                        className="flex-1 py-6 font-black uppercase tracking-widest text-slate-400"
-                        onClick={() => setShowDeleteConfirm(false)}
-                      >
-                        Hủy
-                      </Button>
-                      <Button
-                        className="flex-1 py-6 font-black uppercase tracking-widest bg-rose-600 hover:bg-rose-700 text-white"
-                        onClick={handleDelete}
-                      >
-                        Xác nhận
-                      </Button>
-                    </div>
-                  </motion.div>
-                </div>
-              )}
-            </AnimatePresence>,
-            document.body
-          )}
+          {/* Standardized Delete Confirmation */}
+          <ConfirmModal
+            isOpen={showDeleteConfirm}
+            onClose={() => setShowDeleteConfirm(false)}
+            onConfirm={handleDelete}
+            title={currentSelection.type === 'PHASE' ? "Xóa giai đoạn?" : "Xóa công việc?"}
+            message={currentSelection.type === 'PHASE'
+              ? "Bạn có chắc chắn muốn xóa giai đoạn này? Tất cả công việc bên trong cũng sẽ bị xóa vĩnh viễn."
+              : "Bạn có chắc chắn muốn xóa công việc này? Hành động này không thể hoàn tác."
+            }
+            confirmLabel="Xóa ngay"
+            type="danger"
+          />
         </motion.div>
       )}
     </AnimatePresence>

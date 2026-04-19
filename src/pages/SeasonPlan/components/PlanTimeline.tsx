@@ -12,6 +12,8 @@ interface PlanTimelineProps {
   onSelect: (selection: SelectionState) => void;
   onUpdatePlan: (plan: SeasonPlan) => void;
   onDeletePlan?: (planId: string) => void;
+  onDeletePhase?: (planId: string, phaseId: string) => void;
+  onDeleteTask?: (planId: string, phaseId: string, taskId: string) => void;
   onAddPhase: (planId: string) => void;
   preExpandedPlanId?: string;
   canEdit?: boolean;
@@ -23,6 +25,8 @@ export function PlanTimeline({
   onSelect,
   onUpdatePlan,
   onDeletePlan,
+  onDeletePhase,
+  onDeleteTask,
   onAddPhase,
   preExpandedPlanId,
   canEdit = false,
@@ -332,36 +336,60 @@ export function PlanTimeline({
                           <Fragment key={phase.id}>
                             <div
                               className={cn(
-                                "flex h-11 items-center pl-8 pr-4 border-b border-slate-50 hover:bg-slate-50 cursor-pointer transition-all",
+                                "flex h-11 items-center pl-8 pr-4 border-b border-slate-50 hover:bg-slate-50 cursor-pointer transition-all gap-1",
                                 isPhaseSelected && "bg-indigo-50/50 border-l-4 border-l-indigo-400 pl-7"
                               )}
                               onClick={() => onSelect({ type: 'PHASE', id: phase.id, planId: plan.id })}
                             >
                               <button
                                  onClick={(e) => toggleExpandPhase(phase.id, e)}
-                                 className="p-1 mr-1 text-slate-300 hover:text-indigo-500 transition-colors"
+                                 className="p-1 text-slate-300 hover:text-indigo-500 transition-colors"
                                >
                                  {isPhaseExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                                </button>
-                               <Zap size={14} className="text-purple-600 mr-2 shrink-0" fill="currentColor" />
+                               <Zap size={14} className="text-purple-600 shrink-0" fill="currentColor" />
                                <div className="truncate text-[13px] font-bold text-slate-600 flex-1">
                                  {phase.name}
                                </div>
+                               {canEdit && onDeletePhase && (
+                                 <button
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     onDeletePhase(plan.id, phase.id);
+                                   }}
+                                   className="p-1 px-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                                   title="Xóa giai đoạn"
+                                 >
+                                   <Trash2 size={13} />
+                                 </button>
+                               )}
                             </div>
 
                              {isPhaseExpanded && phase.tasks && phase.tasks.map((task) => (
                                 <div
                                   key={task.id}
                                   className={cn(
-                                    "flex h-11 items-center pl-16 pr-4 border-b border-slate-50 hover:bg-slate-50 cursor-pointer",
+                                    "flex h-11 items-center pl-16 pr-4 border-b border-slate-50 hover:bg-slate-50 cursor-pointer gap-1",
                                     selectedId === task.id && "bg-indigo-50/50 border-l-4 border-l-indigo-300 pl-15"
                                   )}
                                   onClick={() => onSelect({ type: 'TASK', id: task.id, planId: plan.id, phaseId: phase.id })}
                                 >
-                                  <CheckSquare size={13} className="text-blue-500 mr-2 shrink-0" />
+                                  <CheckSquare size={13} className="text-blue-500 shrink-0" />
                                   <div className="truncate text-[13px] font-medium text-slate-500 flex-1">
                                     {task.name}
                                   </div>
+                                  {canEdit && onDeleteTask && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDeleteTask(plan.id, phase.id, task.id);
+                                      }}
+                                      className="p-1 px-2 text-rose-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                                      title="Xóa công việc"
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  )}
                                 </div>
                              ))}
                           </Fragment>
