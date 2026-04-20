@@ -1,6 +1,6 @@
 import {
   LayoutGrid,
-  LogOut,
+
   LayoutDashboard,
   Activity,
   Map as MapIcon,
@@ -9,7 +9,7 @@ import {
   CreditCard,
   Settings,
   Trees,
-  Key,
+
   Zap,
   Wallet,
   GitFork,
@@ -72,7 +72,7 @@ export default function Sidebar({
   setActive,
   variant = "compact",
 }: SidebarProps) {
-  const { logout, user, currentFarmId } = useAuth();
+  const {user, currentFarmId } = useAuth();
   const { farmSummary } = useSelector((state: RootState) => state.farm);
   const { data: currentSubscription, isLoading: loadingSub } = useCurrentSubscription();
 
