@@ -7,6 +7,7 @@ import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreateTaskRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdateTaskRequest;
+import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdateTaskTimeRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.TaskResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.mapper.TaskMapper;
 import lombok.AccessLevel;
@@ -41,9 +42,6 @@ public class TaskService {
 
     @Transactional
     public TaskResponse createTask(UUID planId, UUID planStageId, CreateTaskRequest request){
-
-        if(!planStageRepository.existsByIdAndPlan_Id(planStageId,planId))
-            throw new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND);
 
         UUID farmId = securityUtils.getCurrentFarmId();
         UUID userId = securityUtils.getCurrentUserId();
@@ -103,8 +101,6 @@ public class TaskService {
     @Transactional
     public TaskResponse updateTask(UUID planId, UUID planStageId, UUID taskId, UpdateTaskRequest request){
 
-        if(!planStageRepository.existsByIdAndPlan_Id(planStageId, planId))
-            throw new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND);
 
         UUID farmId = securityUtils.getCurrentFarmId();
         UUID userId = securityUtils.getCurrentUserId();
@@ -151,6 +147,46 @@ public class TaskService {
 
         return taskMapper.toResponse(updateTask);
     }
+
+
+    @Transactional
+    public TaskResponse updateTaskTime(UUID planId, UUID planStageId, UUID taskId, UpdateTaskTimeRequest request){
+
+
+        UUID farmId = securityUtils.getCurrentFarmId();
+        UUID userId = securityUtils.getCurrentUserId();
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        // check farm
+        FarmEntity farm = farmRepository.findById(farmId)
+                .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
+
+        // check planStage
+        PlanStageEntity planStage = planStageRepository.findByIdAndPlanId(planStageId,planId)
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
+
+        // check ownership
+        if (!planStage.getPlan().getFarm().getId().equals(farmId)) {
+            throw new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND);
+        }
+
+        // validate date
+        if (request.getStartDate().isBefore(planStage.getStartDate()) ||
+                request.getEndDate().isAfter(planStage.getEndDate())) {
+            throw new AppException(ErrorCode.TASK_OUT_OF_TIME_PLAN_STAGE);
+        }
+
+        TaskEntity updateTask = taskRepository.findById(taskId)
+                .orElseThrow(()-> new AppException(ErrorCode.TASK_NOT_FOUND));
+
+        updateTask.setStartDate(request.getStartDate());
+        updateTask.setEndDate(request.getEndDate());
+
+        return taskMapper.toResponse(updateTask);
+    }
+
     @Transactional
     public List<TaskResponse> findAllByPlanStageId(UUID planStageId) {
         return taskMapper.toResponses(

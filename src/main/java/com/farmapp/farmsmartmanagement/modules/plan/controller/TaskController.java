@@ -5,6 +5,7 @@ import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
 import com.farmapp.farmsmartmanagement.common.response.ResponseUtil;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreateTaskRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdateTaskRequest;
+import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdateTaskTimeRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.TaskResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -62,6 +63,24 @@ public class TaskController {
     ){
         return ResponseUtil.success(
                 taskService.updateTask(planId, stageId, taskId, request)
+        );
+    }
+
+    @Operation(
+            summary = "Cập nhật TASK ",
+            description = "API cho phép cập nhật công việc công việc trong một giai đoạn kế hoạch",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @PutMapping("/api/v1/plans/{planId}/stages/{stageId}/tasks/{taskId}/time")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<TaskResponse>> updateTaskTime(
+            @PathVariable("planId") UUID planId,
+            @PathVariable("stageId") UUID stageId,
+            @PathVariable("taskId") UUID taskId,
+            @RequestBody @Valid UpdateTaskTimeRequest request
+    ){
+        return ResponseUtil.success(
+                taskService.updateTaskTime(planId, stageId, taskId, request)
         );
     }
 
