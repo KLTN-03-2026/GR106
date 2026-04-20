@@ -8,6 +8,7 @@ import com.farmapp.farmsmartmanagement.domain.enums.PlanStatus;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanRequest;
+import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdatePlanTimeRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.AddPlotToPlanResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlanResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlotSnapshotResponse;
@@ -87,6 +88,22 @@ public class PlanService {
         return planMapper.toResponse(planRepository.save(newPlan));
     }
 
+    @Transactional
+    public PlanResponse updatePlanTime( UUID planId, UpdatePlanTimeRequest request){
+
+        UUID farmId = securityUtils.getCurrentFarmId();
+
+        PlanEntity plan = planRepository.findByIdAndFarm_Id(planId, farmId)
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
+
+        if(!planRepository.isPlanCoverAllStages(planId, request.getStartDate(), request.getEndDate()))
+            throw new AppException(ErrorCode.PLAN_TIME_CANNOT_LESS_STAGE);
+
+        plan.setStartDate(request.getStartDate());
+        plan.setEndDate(request.getEndDate());
+
+        return planMapper.toResponse(planRepository.save(plan));
+    }
 
     @Transactional
     @PreAuthorize("hasAuthority('plan:delete')")
@@ -100,56 +117,6 @@ public class PlanService {
         plan.setDeletedAt(Instant.now());
         plan.setDeletedBy(userRepository.getReferenceById(securityUtils.getCurrentUserId()));
     }
-
-//    @Transactional
-//    @PreAuthorize("hasAuthority('plan:update')")
-//    public AddPlotToPlanResponse addPlotToPlan(UUID planId, List<UUID> plotIds) {
-//        UUID farmId = securityUtils.getCurrentFarmId();
-//
-//        PlanEntity plan = planRepository
-//                .findByIdAndFarm_Id(planId, farmId)
-//                .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
-//
-//        List<PlotEntity> plots = plotRepository
-//                .findAllByIdInAndFarmId(plotIds, farmId);
-//
-//        if (plots.size() != plotIds.size()) {
-//            throw new AppException(ErrorCode.PLOT_NOT_FOUND);
-//        }
-//
-//        List<UUID> existingPlotIds = planPlotRepository.findPlotIdsByPlanId(planId);
-//        if (plotIds.stream().anyMatch(existingPlotIds::contains)) {
-//            throw new AppException(ErrorCode.PLOT_ALREADY_IN_PLAN);
-//        }
-//
-//        FarmEntity farm = farmRepository.getReferenceById(farmId);
-//
-//        List<PlanPlotEntity> planPlots = plots.stream()
-//                .map(plot -> {
-//                    PlanPlotEntity planPlot = new PlanPlotEntity();
-//                    planPlot.setPlan(plan);
-//                    planPlot.setPlot(plot);
-//                    planPlot.setFarm(farm);
-//                    planPlot.setPlotNameSnapshot(plot.getName());
-//                    planPlot.setCreatedAt(Instant.now());
-//                    return planPlot;
-//                }).toList();
-//
-//        planPlotRepository.saveAll(planPlots);
-//
-//        List<AddPlotToPlanResponse.PlotSnapshotResponse> addedPlots = planPlots.stream()
-//                .map(pp -> AddPlotToPlanResponse.PlotSnapshotResponse.builder()
-//                        .plotId(pp.getPlot().getId())
-//                        .plotName(pp.getPlotNameSnapshot())
-//                        .build())
-//                .toList();
-//
-//        return AddPlotToPlanResponse.builder()
-//                .planId(planId)
-//                .addedPlots(addedPlots)
-//                .build();
-//    }
-
     @Transactional
     @PreAuthorize("hasAuthority('plan:update')")
     public AddPlotToPlanResponse addPlotToPlan(UUID planId, List<UUID> plotIds) {

@@ -6,6 +6,7 @@ import com.farmapp.farmsmartmanagement.common.response.ResponseUtil;
 import com.farmapp.farmsmartmanagement.infrastructure.security.UserPrincipal;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.AddPlotToPlanRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanRequest;
+import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdatePlanTimeRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.AddPlotToPlanResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlanResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlotSnapshotResponse;
@@ -67,6 +68,18 @@ public class PlanController {
                 )
         );
     }
+
+    @PutMapping("/api/v1/plans/{planId}/time")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<PlanResponse>> updatePlan(
+            @PathVariable("planId") UUID planId,
+            @RequestBody @Valid UpdatePlanTimeRequest request
+    ){
+        return ResponseUtil.success(
+                planService.updatePlanTime(planId, request)
+        );
+    }
+
 
     @DeleteMapping("/api/v1/plans/{planId}")
     @RequiresFarmToken
