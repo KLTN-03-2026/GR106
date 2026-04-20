@@ -396,28 +396,28 @@ export function PlanTimeline({
 
   const onGlobalMouseMove = useCallback((e: MouseEvent) => {
     if (!barDrag) return;
-    
+
     if (rafRef.current) return;
-    
+
     rafRef.current = requestAnimationFrame(() => {
       if (!barDrag) { rafRef.current = null; return; }
-      
+
       const delta = Math.round((e.clientX - barDrag.startX) / PPD);
       lastMousePos.current = { x: e.clientX, y: e.clientY, delta };
-      
+
       setDragDeltaDays(delta);
-      
+
       let s = barDrag.origStart, en = barDrag.origEnd;
       if (barDrag.mode === 'MOVE') { s = addDaysToStr(s, delta); en = addDaysToStr(en, delta); }
       else if (barDrag.mode === 'RESIZE_LEFT') s = addDaysToStr(s, delta);
       else en = addDaysToStr(en, delta);
-      
+
       const fmt = (d: string) => {
         const date = new Date(d);
         return `${date.getDate()}/${date.getMonth() + 1}`;
       };
       setDragTooltip({ x: e.clientX, y: e.clientY - 44, label: `${fmt(s)} → ${fmt(en)}` });
-      
+
       rafRef.current = null;
     });
   }, [barDrag, PPD]);
@@ -511,12 +511,12 @@ export function PlanTimeline({
     if (!barDrag || barDrag.target.planId !== planId) {
       return { left: `${getLeft(start)}px`, width: `${getWidth(start, end)}px` };
     }
-    
+
     const isHit = (kind === 'phase' && barDrag.target.kind === 'phase' && (barDrag.target as any).phaseId === itemId) ||
       (kind === 'task' && barDrag.target.kind === 'task' && (barDrag.target as any).taskId === itemId);
-    
+
     if (!isHit) return { left: `${getLeft(start)}px`, width: `${getWidth(start, end)}px` };
-    
+
     const d = dragDeltaDays;
     let ns = start, ne = end;
     if (barDrag.mode === 'MOVE') { ns = addDaysToStr(barDrag.origStart, d); ne = addDaysToStr(barDrag.origEnd, d); }
@@ -649,15 +649,21 @@ export function PlanTimeline({
             {timeScale === 'weeks' ? (
               <>
                 {/* ── Top portion: month name spans ── */}
-                {monthSpans.map((ms, i) => (
-                  <div
-                    key={i}
-                    className="absolute flex items-center border-r border-slate-200"
-                    style={{ left: ms.leftPx, width: ms.widthPx, top: 0, height: HEADER_TOP_H, paddingLeft: 10 }}
-                  >
-                    <span className="text-[11px] font-semibold text-slate-700 whitespace-nowrap">{ms.label}</span>
-                  </div>
-                ))}
+                {monthSpans.map((ms, i) => {
+                  return (
+                    <div
+                      key={i}
+                      className="absolute border-r border-slate-200"
+                      style={{ left: ms.leftPx, width: ms.widthPx, top: 0, height: HEADER_TOP_H }}
+                    >
+                      <div className="sticky left-0 h-full flex items-center overflow-hidden">
+                        <span className="text-[10px] font-semibold text-slate-700 whitespace-nowrap">
+                          {ms.label}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
 
                 {/* ── Bottom portion: individual day cells ── */}
                 {dayCells.map((cell, i) => (
@@ -694,10 +700,14 @@ export function PlanTimeline({
                     return (
                       <div
                         key={i}
-                        className="absolute flex items-center border-r border-b border-slate-200 px-3"
+                        className="absolute border-r border-b border-slate-200"
                         style={{ left, width: col.widthPx, top: 0, height: HEADER_TOP_H }}
                       >
-                        <span className="text-[11px] font-semibold text-slate-700 whitespace-nowrap truncate">{col.label}</span>
+                        <div className="sticky left-0 h-full flex items-center overflow-hidden">
+                          <span className="text-[10px] font-semibold text-slate-700 whitespace-nowrap">
+                            {col.label}
+                          </span>
+                        </div>
                       </div>
                     );
                   });
@@ -939,10 +949,10 @@ export function PlanTimeline({
                         isDragging ? 'opacity-90 ring-2 ring-indigo-300' : '',
                         canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
                       )}
-                      style={{ 
-                        ...ps, 
-                        top: '50%', 
-                        height: 24, 
+                      style={{
+                        ...ps,
+                        top: '50%',
+                        height: 24,
                         willChange: 'left, width',
                         transition: isDragging ? 'none' : 'left .15s ease-out, width .15s ease-out',
                       }}
@@ -979,11 +989,11 @@ export function PlanTimeline({
                 >
                   <div
                     className={cn('absolute rounded overflow-hidden z-10', taskBarCls(tk.status), isDragging ? 'opacity-90 ring-2 ring-indigo-300' : '', canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer')}
-                    style={{ 
-                      ...ps, 
-                      top: '50%', 
-                      height: 14, 
-                      minWidth: 20, 
+                    style={{
+                      ...ps,
+                      top: '50%',
+                      height: 14,
+                      minWidth: 20,
                       willChange: 'left, width',
                       transition: isDragging ? 'none' : 'left .15s ease-out, width .15s ease-out',
                     }}

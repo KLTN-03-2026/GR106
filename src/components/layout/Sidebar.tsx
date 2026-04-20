@@ -1,12 +1,12 @@
-import { 
-  LayoutGrid, 
-  LogOut, 
-  LayoutDashboard, 
-  Activity, 
-  Map as MapIcon, 
-  Grid3X3, 
-  Users, 
-  CreditCard, 
+import {
+  LayoutGrid,
+  LogOut,
+  LayoutDashboard,
+  Activity,
+  Map as MapIcon,
+  Grid3X3,
+  Users,
+  CreditCard,
   Settings,
   Trees,
   Key,
@@ -75,7 +75,7 @@ export default function Sidebar({
   const { logout, user, currentFarmId } = useAuth();
   const { farmSummary } = useSelector((state: RootState) => state.farm);
   const { data: currentSubscription, isLoading: loadingSub } = useCurrentSubscription();
-  
+
   const currentFarm = currentFarmId ? farmSummary.find((f: any) => f.farmId === currentFarmId) : null;
 
   if (variant === "compact") {
@@ -110,29 +110,6 @@ export default function Sidebar({
                 <Icon size={22} color={active === key ? "#fff" : "#374151"} strokeWidth={2} />
               </Button>
             ))}
-        </div>
-
-        <div className="flex flex-col items-center gap-4 w-full">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setActive("change-password")}
-            className={cn(
-              "w-10 h-10 rounded-xl p-0 transition-all duration-200",
-              active === "change-password" ? "bg-slate-900 text-white shadow-md" : "hover:bg-gray-100 text-slate-500"
-            )}
-          >
-            <Key size={22} color={active === "change-password" ? "#fff" : "#374151"} strokeWidth={2} />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={logout}
-            className="w-10 h-10 rounded-xl p-0 hover:bg-red-50 hover:text-red-500 transition-colors"
-          >
-            <LogOut size={22} color="#374151" strokeWidth={2} />
-          </Button>
         </div>
       </aside>
     );
@@ -211,25 +188,6 @@ export default function Sidebar({
                 : user.fullName}
             </h4>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setActive("change-password")}
-            className={cn(
-              "w-8 h-8 rounded-xl p-0 transition-all duration-200 shrink-0",
-              active === "change-password" ? "bg-slate-900 text-white" : "hover:bg-gray-100 text-slate-500"
-            )}
-          >
-            <Key size={16} color={active === "change-password" ? "#fff" : "#374151"} strokeWidth={2} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={logout}
-            className="w-8 h-8 rounded-xl p-0 hover:bg-red-50 hover:text-red-500 transition-colors shrink-0"
-          >
-            <LogOut size={16} color="#374151" strokeWidth={2} />
-          </Button>
         </div>
       </div>
     </aside>
