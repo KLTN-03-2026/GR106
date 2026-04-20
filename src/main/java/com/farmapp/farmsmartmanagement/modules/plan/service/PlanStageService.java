@@ -72,10 +72,7 @@ public class PlanStageService {
 
         UUID farmId = securityUtils.getCurrentFarmId();
 
-        if(!planRepository.existsByIdAndFarm_Id(planId, farmId))
-            throw new AppException(ErrorCode.FARM_NOT_FOUND);
-
-        PlanEntity plan = planRepository.findById(planId)
+        PlanEntity plan = planRepository.findByIdAndFarm_Id(planId,farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
 
         if (!plan.getFarm().getId().equals(farmId)) {
@@ -84,6 +81,10 @@ public class PlanStageService {
 
         if(planStageRepository.existsByPlanIdAndName(planId, request.getName()))
             throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_EXISTS);
+
+        if(plan.getStartDate().isAfter(request.getStartDate())
+                || plan.getEndDate().isBefore(request.getEndDate()))
+            throw new AppException(ErrorCode.PLAN_STAGE_TIME_MUST_BE_IN_PLAN_TIME);
 
         if(planStageRepository.existsOverlapping(planId, request.getStartDate(), request.getEndDate()))
             throw new AppException(ErrorCode.PLAN_STAGE_OVERLAP);
@@ -118,11 +119,15 @@ public class PlanStageService {
     public PlanStageResponse updatePlanStageCustom(UUID planId, UUID planStageId, UpdatePlanStageRequest request){
         UUID farmId = securityUtils.getCurrentFarmId();
 
-        if(!planRepository.existsByIdAndFarm_Id(planId, farmId))
-            throw new AppException(ErrorCode.PLAN_NOT_FOUND);
+        PlanEntity plan = planRepository.findByIdAndFarm_Id(planId, farmId)
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
 
         PlanStageEntity planStage = planStageRepository.findByIdAndPlanId(planStageId, planId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
+
+        if(plan.getStartDate().isAfter(request.getStartDate())
+                || plan.getEndDate().isBefore(request.getEndDate()))
+            throw new AppException(ErrorCode.PLAN_STAGE_TIME_MUST_BE_IN_PLAN_TIME);
 
         if(request.getStartDate()!=null && request.getEndDate()!=null &&
                 planStageRepository.existsOverlappingWithoutId(
@@ -136,12 +141,22 @@ public class PlanStageService {
         return planStageMapper.toResponse(planStageRepository.save(planStage));
     }
 
+    //
     @Transactional
     public PlanStageResponse updatePlanStageTime(UUID planId, UUID planStageId, UpdatePlanStageTimeRequest request){
+
+        UUID farmId = securityUtils.getCurrentFarmId();
+
+        PlanEntity plan = planRepository.findByIdAndFarm_Id(planId,farmId)
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
 
         PlanStageEntity planStage = planStageRepository
                 .findByIdAndPlanId(planStageId, planId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
+
+        if(plan.getStartDate().isAfter(request.getStartDate())
+                || plan.getEndDate().isBefore(request.getEndDate()))
+            throw new AppException(ErrorCode.PLAN_STAGE_TIME_MUST_BE_IN_PLAN_TIME);
 
         if(planStageRepository.existsOverlappingWithoutId(
                 planId, planStageId, request.getStartDate(), request.getEndDate()))
