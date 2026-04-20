@@ -47,4 +47,10 @@ public class CreateTaskRequest {
         return !endDate.isBefore(LocalDate.now());
     }
 
+    @JsonIgnore
+    @AssertTrue(message = "Thời gian bắt đầu và kết thúc phải cùng tồn tại")
+    private boolean isTimeHaveBothEndAndStart() {
+        return (startDate == null) == (endDate == null);
+    }
+
 }
