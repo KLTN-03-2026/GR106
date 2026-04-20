@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.lang.ScopedValue;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -68,4 +69,6 @@ public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID
     boolean existsByIdAndPlan_Id(UUID planStageId, UUID planId);
 
     Optional<PlanStageEntity> findByIdAndPlanId(UUID planStageId, UUID planId);
+
+    Optional<PlanStageEntity> findByIdAndPlanIdAndPlan_Farm_Id(UUID planStageId, UUID planId, UUID farmId);
 }

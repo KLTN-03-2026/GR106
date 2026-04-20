@@ -101,51 +101,34 @@ public class TaskService {
     @Transactional
     public TaskResponse updateTask(UUID planId, UUID planStageId, UUID taskId, UpdateTaskRequest request){
 
-
         UUID farmId = securityUtils.getCurrentFarmId();
-        UUID userId = securityUtils.getCurrentUserId();
 
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        // check farm
-        FarmEntity farm = farmRepository.findById(farmId)
-                .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
-
-        // check planStage
-        PlanStageEntity planStage = planStageRepository.findByIdAndPlanId(planStageId,planId)
+        PlanStageEntity planStage = planStageRepository
+                .findByIdAndPlanIdAndPlan_Farm_Id(planStageId, planId, farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
 
-        // check ownership
-        if (!planStage.getPlan().getFarm().getId().equals(farmId)) {
-            throw new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND);
-        }
-
-        // validate date
         if (request.getStartDate().isBefore(planStage.getStartDate()) ||
                 request.getEndDate().isAfter(planStage.getEndDate())) {
             throw new AppException(ErrorCode.TASK_OUT_OF_TIME_PLAN_STAGE);
         }
 
-        TaskEntity updateTask = taskRepository.findById(taskId)
-                .orElseThrow(()-> new AppException(ErrorCode.TASK_NOT_FOUND));
+        TaskEntity task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));
 
         if(request.getPlotId() != null){
             PlotEntity plot = planPlotRepository
                     .findPlotByPlanIdAndPlotId(planId, request.getPlotId())
                     .orElseThrow(() -> new AppException(ErrorCode.PLOT_NOT_FOUND));
-            updateTask.setPlot(plot);
+            task.setPlot(plot);
         }
 
-
-        // nếu không có thay đổi thì return luôn
-        if (!hasChanges(updateTask, request)) {
-            return taskMapper.toResponse(updateTask);
+        if (!hasChanges(task, request)) {
+            return taskMapper.toResponse(task);
         }
 
-        taskMapper.updateEntityFromRequest(request, updateTask);
+        taskMapper.updateEntityFromRequest(request, task);
 
-        return taskMapper.toResponse(updateTask);
+        return taskMapper.toResponse(task);
     }
 
 
