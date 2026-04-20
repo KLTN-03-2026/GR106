@@ -19,19 +19,19 @@ export function SeasonPlanListPage() {
   const { farmId } = useParams<{ farmId: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  
+
   const { plans, loading, error } = useSelector((state: RootState) => state.seasonPlan);
   const { user, accessToken } = useAuth();
-  
+
   // Kiểm tra quyền: Ưu tiên role trong user object, fallback kiểm tra trực tiếp trong token
   const canEdit = canEditPlan(user?.role, accessToken);
 
   useEffect(() => {
- 
+
     if (!farmId || !accessToken) {
       return;
     }
-    
+
     dispatch(fetchPlans());
   }, [dispatch, accessToken, farmId]);
 
@@ -52,7 +52,6 @@ export function SeasonPlanListPage() {
     isOpen: false,
     type: 'success',
     title: '',
-    message: '',
   });
 
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -88,7 +87,7 @@ export function SeasonPlanListPage() {
       console.error('[SeasonPlanListPage] createPlan failed:', err);
       let errorMsg = 'Dữ liệu không hợp lệ. Hãy kiểm tra lại thời gian bắt đầu/kết thúc.';
       let details: string[] = [];
-      
+
       if (err && typeof err === 'object') {
         if (err.message) errorMsg = err.message;
         if (err.data && typeof err.data === 'object') {
@@ -119,7 +118,7 @@ export function SeasonPlanListPage() {
 
   const confirmDelete = async () => {
     if (!deleteConfirm.planId) return;
-    
+
     setDeleteConfirm(prev => ({ ...prev, isDeleting: true }));
     try {
       await dispatch(removePlan(deleteConfirm.planId)).unwrap();
@@ -181,7 +180,7 @@ export function SeasonPlanListPage() {
           </div>
           <div className="flex items-center gap-3">
             {canEdit ? (
-              <Button 
+              <Button
                 className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 transition-all font-bold px-6"
                 onClick={() => setIsCreateModalOpen(true)}
               >
@@ -199,7 +198,7 @@ export function SeasonPlanListPage() {
         <div className="flex items-center gap-4">
           <div className="relative group flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input 
+            <input
               type="text"
               placeholder="Tìm kiếm mùa vụ..."
               className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all shadow-inner"
@@ -207,16 +206,16 @@ export function SeasonPlanListPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          
+
           <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl shrink-0 overflow-x-auto max-w-full no-scrollbar">
             {(['ALL', 'DRAFT', 'ACTIVE', 'READY_TO_HARVEST', 'HARVESTING', 'COMPLETED', 'CANCELLED'] as const).map((status) => (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
                 className={cn(
-                  "px-4 py-1.5 text-xs font-bold rounded-lg transition-all uppercase tracking-wider whitespace-nowrap",
-                  statusFilter === status 
-                    ? "bg-white text-indigo-600 shadow-sm" 
+                  "px-4 py-1.5 text-xs font-bold rounded-lg transition-all uppercase tracking-wider",
+                  statusFilter === status
+                    ? "bg-white text-indigo-600 shadow-sm"
                     : "text-slate-500 hover:text-slate-900 font-medium"
                 )}
               >
@@ -238,10 +237,10 @@ export function SeasonPlanListPage() {
           <div className="flex flex-col items-center justify-center h-full text-red-500">
             <p className="text-lg font-medium">Lỗi khi tải dữ liệu</p>
             <p className="text-sm">{typeof error === 'string' ? error : JSON.stringify(error)}</p>
-            <Button 
-               variant="outline" 
-               className="mt-4 border-red-200 text-red-600 hover:bg-red-50"
-               onClick={() => dispatch(fetchPlans())}
+            <Button
+              variant="outline"
+              className="mt-4 border-red-200 text-red-600 hover:bg-red-50"
+              onClick={() => dispatch(fetchPlans())}
             >
               Thử lại
             </Button>
@@ -266,7 +265,7 @@ export function SeasonPlanListPage() {
                   </h3>
                   <div className="flex items-start gap-2">
                     <span className={cn(
-                      "px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full whitespace-nowrap",
+                      "px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full",
                       getStatusColor(plan.status)
                     )}>
                       {getStatusLabel(plan.status)}
@@ -330,15 +329,15 @@ export function SeasonPlanListPage() {
         )}
       </div>
 
-      <CreatePlanModal 
+      <CreatePlanModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSave={handleCreatePlan}
       />
 
       {/* Notification Modal */}
-      <Modal 
-        isOpen={notification.isOpen} 
+      <Modal
+        isOpen={notification.isOpen}
         onClose={() => setNotification(prev => ({ ...prev, isOpen: false }))}
       >
         <div className="bg-white rounded-[32px] p-8 w-full max-w-sm overflow-hidden border border-slate-100 shadow-2xl">
@@ -349,11 +348,11 @@ export function SeasonPlanListPage() {
             )}>
               {notification.type === 'success' ? <CheckCircle2 size={40} /> : <AlertCircle size={40} />}
             </div>
-            
+
             <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2">
               {notification.title}
             </h3>
-            
+
             <p className="text-sm font-medium text-slate-500 mb-6 leading-relaxed">
               {notification.message}
             </p>
@@ -385,7 +384,7 @@ export function SeasonPlanListPage() {
         </div>
       </Modal>
 
-      <ConfirmModal 
+      <ConfirmModal
         isOpen={deleteConfirm.isOpen}
         onClose={() => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))}
         onConfirm={confirmDelete}

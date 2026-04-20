@@ -39,7 +39,7 @@ export function PlanList({
             {plans.map((plan) => {
               const plot = plots.find((p) => p.id === plan.plotId);
               const crop = crops.find((c) => c.id === plan.cropId);
-              
+
               return (
                 <tr
                   key={plan.id}
@@ -108,7 +108,7 @@ export function PlanList({
         {plans.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 bg-white">
             <div className="w-16 h-16 bg-slate-50 rounded-3xl flex items-center justify-center text-slate-200 mb-4">
-               <MoreVertical size={24} />
+              <MoreVertical size={24} />
             </div>
             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Không tìm thấy kế hoạch nào</p>
           </div>

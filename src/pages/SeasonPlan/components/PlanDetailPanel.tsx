@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Zap,
@@ -6,26 +7,42 @@ import {
   Plus,
   Trash2,
   CheckSquare,
-  Layout,
   Clock,
   Users,
   Package,
   Activity,
   AlertCircle,
   CheckCircle2,
+  Layout,
+  MoreHorizontal,
+  Link2,
+  Copy,
+  ExternalLink,
+  Edit3,
+  ChevronDown,
+  Flag,
+  Tag,
+  Calendar,
+  User,
+  FileText,
+  BarChart2,
+  Paperclip,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SeasonPlan, PlanStatus, Phase, Task, StatusObject } from '../../../types/seasonPlan';
 import { Plot } from '../../../types/plot/plot';
 import { cn } from '../../../utils/cn';
 import { Button } from '../../../components/ui/button';
-import { ConfirmModal } from '../../../components/ui/ConfirmModal';
+import { seasonPlanService } from '@/services/seasonplan/seasonPlanService';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface PlanDetailPanelProps {
-  selection: null |
-  { type: 'PLAN'; plan: SeasonPlan } |
-  { type: 'PHASE'; plan: SeasonPlan; phase: Phase } |
-  { type: 'TASK'; plan: SeasonPlan; phase: Phase; task: Task };
+  selection:
+  | null
+  | { type: 'PLAN'; plan: SeasonPlan }
+  | { type: 'PHASE'; plan: SeasonPlan; phase: Phase }
+  | { type: 'TASK'; plan: SeasonPlan; phase: Phase; task: Task };
   isOpen: boolean;
   onClose: () => void;
   onUpdatePlan: (plan: SeasonPlan) => void;
@@ -38,10 +55,155 @@ interface PlanDetailPanelProps {
   onDeletePlan?: (planId: string) => void;
   onDeletePhase?: (planId: string, phaseId: string) => void;
   onDeleteTask?: (planId: string, phaseId: string, taskId: string) => void;
-  onAssignPlots?: (planId: string, plotIds: string[]) => void;
   onClone?: (plan: SeasonPlan) => void;
   canEdit?: boolean;
 }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function statusCodeOf(s: any): string {
+  return typeof s === 'string' ? s : (s?.code ?? '');
+}
+
+function statusNameOf(s: any): string {
+  return typeof s === 'string' ? s : (s?.name ?? s?.code ?? '');
+}
+
+function fmtDate(d: string) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('vi-VN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// Jira-style status chip colours
+function statusChipClass(code: string): string {
+  switch (code) {
+    case 'ACTIVE': case 'IN_PROGRESS': return 'bg-blue-600 text-white';
+    case 'READY_TO_HARVEST': return 'bg-lime-600 text-white';
+    case 'HARVESTING': return 'bg-emerald-600 text-white';
+    case 'COMPLETED': return 'bg-slate-500 text-white';
+    case 'CANCELLED': return 'bg-rose-600 text-white';
+    case 'OVERDUE': return 'bg-red-600 text-white';
+    case 'ASSIGNED': return 'bg-violet-600 text-white';
+    case 'DRAFT': default: return 'bg-slate-200 text-slate-700';
+  }
+}
+
+function statusViLabel(code: string): string {
+  switch (code) {
+    case 'DRAFT': return 'Bản nháp';
+    case 'ACTIVE': return 'Đang thực hiện';
+    case 'IN_PROGRESS': return 'Đang thực hiện';
+    case 'READY_TO_HARVEST': return 'Sẵn sàng thu hoạch';
+    case 'HARVESTING': return 'Đang thu hoạch';
+    case 'COMPLETED': return 'Hoàn thành';
+    case 'CANCELLED': return 'Đã hủy';
+    case 'OVERDUE': return 'Trễ hạn';
+    case 'ASSIGNED': return 'Đã giao việc';
+    case 'UNASSIGNED': return 'Chưa giao';
+    default: return code;
+  }
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+/** Jira-style detail row: label on left, value/control on right */
+function DetailRow({ icon: Icon, label, children }: {
+  icon: React.ElementType;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b border-slate-100 last:border-0 group">
+      <div className="flex items-center gap-2 w-[120px] shrink-0 pt-0.5">
+        <Icon size={13} className="text-slate-400 shrink-0" />
+        <span className="text-[11px] text-slate-500 font-medium truncate">{label}</span>
+      </div>
+      <div className="flex-1 min-w-0">{children}</div>
+    </div>
+  );
+}
+
+/** Inline editable text */
+function InlineText({
+  value, onChange, placeholder, canEdit, multiline = false,
+}: { value: string; onChange: (v: string) => void; placeholder?: string; canEdit: boolean; multiline?: boolean }) {
+  if (!canEdit) {
+    return (
+      <p className={cn('text-[12px] text-slate-700 font-medium break-words', !value && 'text-slate-400 italic')}>
+        {value || placeholder}
+      </p>
+    );
+  }
+  const cls = 'w-full text-[12px] text-slate-800 font-medium bg-transparent outline-none border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-white rounded px-1.5 py-0.5 transition-all resize-none';
+  return multiline
+    ? <textarea className={cls} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} />
+    : <input className={cls} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} />;
+}
+
+/** Status select that looks like a Jira status lozenge */
+function StatusSelect({ value, options, onChange, canEdit }: {
+  value: string;
+  options: { code: string; label: string }[];
+  onChange: (code: string) => void;
+  canEdit: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const chip = (
+    <button
+      disabled={!canEdit}
+      onClick={() => canEdit && setOpen(o => !o)}
+      className={cn(
+        'flex items-center gap-1.5 h-6 px-2.5 rounded text-[10px] font-bold uppercase tracking-wider',
+        statusChipClass(value),
+        canEdit && 'cursor-pointer hover:opacity-90',
+        !canEdit && 'cursor-default',
+      )}
+    >
+      {statusViLabel(value)}
+      {canEdit && <ChevronDown size={10} />}
+    </button>
+  );
+
+  if (!canEdit) return chip;
+
+  return (
+    <div className="relative inline-block">
+      {chip}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: .97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: .97 }}
+            transition={{ duration: .12 }}
+            className="absolute top-8 left-0 z-50 bg-white border border-slate-200 rounded-lg shadow-xl py-1 min-w-[160px]"
+          >
+            {options.map(opt => (
+              <button
+                key={opt.code}
+                onClick={() => { onChange(opt.code); setOpen(false); }}
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-2 text-left transition-colors',
+                  opt.code === value ? 'bg-slate-50' : 'hover:bg-slate-50',
+                )}
+              >
+                <span className={cn(
+                  'w-2 h-2 rounded-sm flex-shrink-0',
+                  statusChipClass(opt.code).split(' ')[0],
+                )} />
+                <span className="text-[12px] text-slate-700 font-medium">{opt.label}</span>
+                {opt.code === value && <CheckCircle2 size={12} className="text-indigo-500 ml-auto" />}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {open && <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />}
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export function PlanDetailPanel({
   selection,
@@ -57,605 +219,567 @@ export function PlanDetailPanel({
   onDeletePlan,
   onDeletePhase,
   onDeleteTask,
-  onAssignPlots,
   onClone,
   canEdit = false,
 }: PlanDetailPanelProps) {
-  const canDelete = canEdit;
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
-  const [activeSelection, setActiveSelection] = useState(selection);
   const [activeTab, setActiveTab] = useState<'INFO' | 'MEMBERS' | 'MATERIALS'>('INFO');
+  const [activeSelection, setActiveSelection] = useState(selection);
 
-  // Plot selection state
-  const [isAddingPlot, setIsAddingPlot] = useState(false);
-  const [selectedPlotId, setSelectedPlotId] = useState('');
-
-  // New task form state
+  // New task form
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskDesc, setNewTaskDesc] = useState('');
   const [newTaskStart, setNewTaskStart] = useState('');
   const [newTaskEnd, setNewTaskEnd] = useState('');
   const [newTaskPlotId, setNewTaskPlotId] = useState('');
 
+
+  const [showAddPlot, setShowAddPlot] = useState(false);
+  const [selectedPlotIds, setSelectedPlotIds] = useState<string[]>([]);
+  const [loadingAddPlot, setLoadingAddPlot] = useState(false);
+
+
+  const [showDetailFields, setShowDetailFields] = useState(true);
+  // SAU (đã sửa)
   useEffect(() => {
+    setActiveSelection(selection);
     if (selection) {
-      setActiveSelection(selection);
-      // Default to the first assigned plot of the plan for new tasks
-      const defaultPlotId = (selection.plan.plots && selection.plan.plots.length > 0) 
-        ? selection.plan.plots[0].plotId 
-        : '';
-      setNewTaskPlotId(defaultPlotId);
+      const defaultPlot = selection.plan.plots?.[0]?.plotId ?? '';
+      setNewTaskPlotId(defaultPlot);
     }
   }, [selection]);
 
-
-  // If no selection and not open, we can safely return null
-  // But during exit animation, selection might be null but isOpen transition is still happening
   if (!activeSelection && !isOpen) return null;
+  if (!activeSelection) return null;
 
-  const plan = activeSelection?.plan;
-  const currentSelection = activeSelection;
+  const { plan } = activeSelection;
+  const sel = activeSelection;
 
-  if (!currentSelection || !plan) return null;
+  // ── Status options ──
+  const phaseStatusOptions = [
+    { code: 'DRAFT', label: 'Bản nháp' },
+    { code: 'ACTIVE', label: 'Đang thực hiện' },
+    { code: 'READY_TO_HARVEST', label: 'Sẵn sàng thu hoạch' },
+    { code: 'HARVESTING', label: 'Đang thu hoạch' },
+    { code: 'COMPLETED', label: 'Hoàn thành' },
+    { code: 'CANCELLED', label: 'Đã hủy' },
+  ];
+  const taskStatusOptions = [
+    { code: 'UNASSIGNED', label: 'Chưa giao' },
+    { code: 'ASSIGNED', label: 'Đã giao việc' },
+    { code: 'IN_PROGRESS', label: 'Đang thực hiện' },
+    { code: 'COMPLETED', label: 'Hoàn thành' },
+    { code: 'OVERDUE', label: 'Trễ hạn' },
+    { code: 'CANCELLED', label: 'Đã hủy' },
+  ];
 
-  const handleAssignPlotSubmit = () => {
-    if (plan.id && selectedPlotId && onAssignPlots) {
-      onAssignPlots(plan.id, [selectedPlotId]);
-      setIsAddingPlot(false);
-      setSelectedPlotId('');
-    }
-  };
 
-  const handleDelete = () => {
-    setShowDeleteConfirm(false);
-    if (currentSelection.type === 'PLAN') {
-      const statusCode = typeof plan.status === 'string' ? plan.status : plan.status.code;
-      const isOngoing = ['ACTIVE', 'READY_TO_HARVEST', 'HARVESTING'].includes(statusCode);
-      if (isOngoing) {
-        const updatedPhases = plan.phases.map((p: Phase) => {
-          const pStatusCode = typeof p.status === 'string' ? p.status : p.status.code;
-          if (pStatusCode === 'DRAFT') {
-            return {
-              ...p,
-              status: { ...p.status, code: 'CANCELLED' as PlanStatus },
-              tasks: p.tasks.map(t => ({
-                ...t,
-                status: { ...t.status, code: 'CANCELLED' as PlanStatus }
-              }))
-            };
-          }
-          return p;
-        });
-        onUpdatePlan({ ...plan, status: 'CANCELLED', phases: updatedPhases });
-      } else if (onDeletePlan) {
-        onDeletePlan(plan.id);
-      }
-      onClose();
-    } else if (currentSelection.type === 'PHASE') {
-      if (onDeletePhase) {
-        onDeletePhase(plan.id, currentSelection.phase.id);
-        onClose();
-      }
-    } else if (currentSelection.type === 'TASK') {
-      if (onDeleteTask) {
-        onDeleteTask(plan.id, currentSelection.phase.id, currentSelection.task.id);
-        onClose();
-      }
-    }
-  };
+  const handleAddPlots = async () => {
+    if (!plan.id || selectedPlotIds.length === 0) return;
 
-  const handleAddTaskSubmit = () => {
-    if (currentSelection.type === 'PHASE' && newTaskName.trim()) {
-      onAddTask(plan.id, currentSelection.phase.id, {
-        name: newTaskName.trim(),
-        description: newTaskDesc.trim(),
-        startDate: newTaskStart || new Date().toISOString().split('T')[0],
-        endDate: newTaskEnd || new Date().toISOString().split('T')[0],
-        plotId: newTaskPlotId
-      });
-      
-      // Reset form
-      setNewTaskName('');
-      setNewTaskDesc('');
-      setNewTaskStart('');
-      setNewTaskEnd('');
-      setIsAddingTask(false);
-    } else {
-      console.warn('[PlanDetailPanel] Cannot add task: invalid state or name', { type: currentSelection.type, name: newTaskName });
-    }
-  };
+    try {
+      setLoadingAddPlot(true);
 
-  const renderBreadcrumbs = () => {
-    return (
-      <div className="flex items-center gap-1 text-[11px] font-bold text-slate-400 mb-4 px-1">
-        {currentSelection.type !== 'PLAN' && (
-          <>
-            <span
-              className={cn(
-                "hover:text-slate-900 cursor-pointer transition-colors truncate max-w-[150px]",
-                currentSelection.type === 'PHASE' && "text-slate-900"
-              )}
-              onClick={() => onSelectPhase(plan.id, currentSelection.phase.id)}
-            >
-              Giai đoạn: {currentSelection.phase.name}
-            </span>
-          </>
-        )}
-        {currentSelection.type === 'TASK' && (
-          <>
-            <ChevronRight size={12} className="shrink-0" />
-            <span className="text-slate-900 truncate max-w-[150px]">{currentSelection.task.name}</span>
-          </>
-        )}
-      </div>
-    );
-  };
-
-  const renderStatusDropdown = (currentStatus: any, onStatusChange: (s: any) => void) => {
-    const statusCode = typeof currentStatus === 'string' ? currentStatus : (currentStatus as StatusObject).code;
-    const statusName = typeof currentStatus === 'string' ? currentStatus : (currentStatus as StatusObject).name;
-    const statusColor = typeof currentStatus === 'string' ? '' : (currentStatus as StatusObject).color;
-
-    const getColorClass = (code: string) => {
-      switch (code) {
-        case 'ACTIVE':
-        case 'IN_PROGRESS': return "bg-indigo-600 text-white";
-        case 'READY_TO_HARVEST':
-        case 'HARVESTING': return "bg-lime-600 text-white";
-        case 'COMPLETED': return "bg-emerald-600 text-white";
-        case 'CANCELLED': return "bg-rose-600 text-white";
-        case 'OVERDUE': return "bg-red-600 text-white";
-        case 'ASSIGNED': return "bg-blue-600 text-white";
-        default: return "bg-slate-200 text-slate-700";
-      }
-    };
-
-    if (!canEdit) {
-      return (
-        <div 
-          className="h-8 px-3 rounded flex items-center font-black text-[10px] uppercase tracking-widest shadow-sm text-white whitespace-nowrap"
-          style={{ backgroundColor: statusColor || '#64748b' }}
-        >
-          {statusName}
-        </div>
+      const addedPlots = await seasonPlanService.addPlotsToPlan(
+        plan.id,
+        selectedPlotIds
       );
-    }
 
-    const statuses = currentSelection?.type === 'TASK'
-      ? [
-        { code: 'UNASSIGNED', label: 'Chưa giao việc' },
-        { code: 'ASSIGNED', label: 'Đã giao việc' },
-        { code: 'IN_PROGRESS', label: 'Đang thực hiện' },
-        { code: 'COMPLETED', label: 'Hoàn thành' },
-        { code: 'OVERDUE', label: 'Trễ hạn' },
-        { code: 'CANCELLED', label: 'Đã hủy' }
-      ]
-      : [
-        { code: 'DRAFT', label: 'Bản nháp' },
-        { code: 'ACTIVE', label: 'Đang thực hiện' },
-        { code: 'READY_TO_HARVEST', label: 'Sẵn sàng thu hoạch' },
-        { code: 'HARVESTING', label: 'Đang thu hoạch' },
-        { code: 'COMPLETED', label: 'Hoàn thành' },
-        { code: 'CANCELLED', label: 'Đã hủy' }
+      // merge plots (tránh duplicate)
+      const existing = plan.plots || [];
+
+      const merged = [
+        ...existing,
+        ...addedPlots.filter(
+          p => !existing.some(e => e.plotId === p.plotId)
+        ),
       ];
 
-    return (
-      <select
-        value={statusCode}
-        onChange={(e) => onStatusChange(e.target.value)}
-        className={cn(
-          "h-8 px-3 rounded font-black text-[10px] uppercase tracking-widest outline-none border-none shadow-sm cursor-pointer transition-all text-white whitespace-nowrap",
-          !statusColor && getColorClass(statusCode)
-        )}
-        style={statusColor ? { backgroundColor: statusColor } : {}}
-      >
-        {statuses.map(s => (
-          <option key={s.code} value={s.code} className="bg-white text-slate-900">{s.label}</option>
-        ))}
-      </select>
-    );
+      onUpdatePlan({
+        ...plan,
+        plots: merged,
+      });
+
+      setShowAddPlot(false);
+      setSelectedPlotIds([]);
+    } finally {
+      setLoadingAddPlot(false);
+    }
   };
+
+  // ── Delete ──
+  const handleDelete = () => {
+    setShowDeleteConfirm(false);
+    if (sel.type === 'PLAN') {
+      const code = statusCodeOf(plan.status);
+      if (['ACTIVE', 'READY_TO_HARVEST', 'HARVESTING'].includes(code)) {
+        onUpdatePlan({ ...plan, status: 'CANCELLED' as any });
+      } else {
+        onDeletePlan?.(plan.id);
+      }
+      onClose();
+    } else if (sel.type === 'PHASE') {
+      onDeletePhase?.(plan.id, sel.phase.id);
+      onClose();
+    } else if (sel.type === 'TASK') {
+      onDeleteTask?.(plan.id, sel.phase.id, sel.task.id);
+    }
+  };
+
+  // ── Add task ──
+  const handleAddTaskSubmit = () => {
+    if (sel.type !== 'PHASE' || !newTaskName.trim()) return;
+    onAddTask(plan.id, sel.phase.id, {
+      name: newTaskName.trim(),
+      description: newTaskDesc.trim(),
+      startDate: newTaskStart || sel.phase.startDate,
+      endDate: newTaskEnd || sel.phase.endDate,
+      plotId: newTaskPlotId,
+    });
+    setNewTaskName(''); setNewTaskDesc('');
+    setNewTaskStart(''); setNewTaskEnd('');
+    setIsAddingTask(false);
+  };
+
+  // ── Type label & icon ──
+  const typeIcon =
+    sel.type === 'PLAN' ? <Layout size={14} className="text-indigo-500" /> :
+      sel.type === 'PHASE' ? <Zap size={14} className="text-violet-500 fill-violet-500" /> :
+        <CheckSquare size={14} className="text-blue-500" />;
+
+  const typeLabel =
+    sel.type === 'PLAN' ? 'Kế hoạch' : sel.type === 'PHASE' ? 'Giai đoạn' : 'Công việc';
+
+  const entityName =
+    sel.type === 'PLAN' ? plan.name :
+      sel.type === 'PHASE' ? sel.phase.name :
+        sel.task.name;
 
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          initial={{ x: '100%' }}
-          animate={{ x: 0 }}
-          exit={{ x: '100%' }}
-          className="w-[320px] bg-white border-l border-slate-200 z-40 relative shadow-xl flex flex-col"
+          initial={{ x: '100%', opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: '100%', opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 360, damping: 36 }}
+          className="w-[340px] flex-shrink-0 bg-white border-l border-slate-200 flex flex-col z-40 shadow-xl overflow-hidden"
         >
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {currentSelection.type === 'PLAN' ? <Layout size={18} className="text-indigo-600" /> :
-                currentSelection.type === 'PHASE' ? <Zap size={18} className="text-purple-600 fill-purple-600" /> :
-                  <CheckSquare size={18} className="text-blue-600" />}
-              <span className="text-[12px] font-black text-slate-400 tracking-widest uppercase">
-                {currentSelection.type === 'PLAN' ? 'Plan' : currentSelection.type === 'PHASE' ? 'Stage' : 'Task'}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              {canDelete && currentSelection.type !== 'PLAN' && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 text-rose-500 hover:bg-rose-50 rounded-xl"
-                  onClick={() => setShowDeleteConfirm(true)}
-                >
-                  <Trash2 size={18} />
-                </Button>
+          {/* ── Top bar (Jira issue header) ── */}
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-200 bg-slate-50 flex-shrink-0">
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-1 flex-1 min-w-0 text-[11px] text-slate-500 font-medium">
+              {typeIcon}
+              <span className="text-slate-400">{typeLabel}</span>
+              {sel.type !== 'PLAN' && (
+                <>
+                  <ChevronRight size={11} className="text-slate-300 shrink-0" />
+                  <button
+                    className="hover:text-indigo-600 truncate max-w-[80px] transition-colors"
+                    onClick={() => onSelectPhase(plan.id, sel.type === 'PHASE' ? sel.phase.id : sel.phase.id)}
+                  >
+                    {sel.type === 'PHASE' ? sel.phase.name : sel.phase.name}
+                  </button>
+                </>
               )}
-              <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-400 hover:bg-slate-50 rounded-xl" onClick={onClose}>
-                <X size={18} />
-              </Button>
+              {sel.type === 'TASK' && (
+                <>
+                  <ChevronRight size={11} className="text-slate-300 shrink-0" />
+                  <span className="text-slate-700 truncate max-w-[80px]">{sel.task.name}</span>
+                </>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-0.5 flex-shrink-0">
+              <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="Sao chép link">
+                <Link2 size={13} />
+              </button>
+              <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="Mở rộng">
+                <ExternalLink size={13} />
+              </button>
+              {canEdit && sel.type !== 'PLAN' && (
+                <button
+                  className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  title="Xóa"
+                >
+                  <Trash2 size={13} />
+                </button>
+              )}
+              <button
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors"
+                onClick={onClose}
+              >
+                <X size={13} />
+              </button>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 no-scrollbar">
-            {renderBreadcrumbs()}
+          {/* ── Scrollable body ── */}
+          <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
 
-            <div className="mb-8">
+            {/* Title section */}
+            <div className="px-4 pt-4 pb-3 border-b border-slate-100">
               {canEdit ? (
                 <input
-                  value={currentSelection.type === 'PLAN' ? currentSelection.plan.name :
-                    currentSelection.type === 'PHASE' ? currentSelection.phase.name :
-                      currentSelection.task.name}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (currentSelection.type === 'PLAN') onUpdatePlan({ ...currentSelection.plan, name: val });
-                    else if (currentSelection.type === 'PHASE') onUpdatePhase(plan.id, { ...currentSelection.phase, name: val });
-                    else if (currentSelection.type === 'TASK') onUpdateTask(plan.id, currentSelection.phase.id, { ...currentSelection.task, name: val });
-                  }}
-                  className="w-full text-2xl font-black text-slate-900 bg-transparent border-none outline-none focus:ring-0 p-0 mb-6 tracking-tight placeholder:text-slate-200"
+                  className="w-full text-[17px] font-bold text-slate-900 bg-transparent outline-none border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-slate-50/50 rounded px-1 -ml-1 transition-all placeholder:text-slate-300"
+                  value={entityName}
                   placeholder="Nhập tên..."
+                  onChange={e => {
+                    const v = e.target.value;
+                    if (sel.type === 'PLAN') onUpdatePlan({ ...plan, name: v });
+                    if (sel.type === 'PHASE') onUpdatePhase(plan.id, { ...sel.phase, name: v });
+                    if (sel.type === 'TASK') onUpdateTask(plan.id, sel.phase.id, { ...sel.task, name: v });
+                  }}
                 />
               ) : (
-                <h2 className="text-2xl font-black text-slate-900 mb-6 tracking-tight">
-                  {currentSelection.type === 'PLAN' ? currentSelection.plan.name :
-                    currentSelection.type === 'PHASE' ? currentSelection.phase.name :
-                      currentSelection.task.name}
-                </h2>
+                <h2 className="text-[17px] font-bold text-slate-900 leading-snug">{entityName}</h2>
               )}
 
-              <div className="flex flex-wrap gap-4 items-center">
-                {currentSelection.type === 'PLAN' && renderStatusDropdown(currentSelection.plan.status, (s) => onUpdatePlan({ ...currentSelection.plan, status: s as any }))}
-                {currentSelection.type === 'PHASE' && renderStatusDropdown(currentSelection.phase.status, (s) => onUpdatePhase(plan.id, { ...currentSelection.phase, status: s }))}
-                {currentSelection.type === 'TASK' && renderStatusDropdown(currentSelection.task.status, (s) => onUpdateTask(plan.id, currentSelection.phase.id, { ...currentSelection.task, status: s }))}
-
-                {(currentSelection.type === 'PLAN' || currentSelection.type === 'PHASE') && (
-                  <div className="grid grid-cols-2 gap-4 w-full mt-4">
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                      <div className="flex items-center gap-2 text-slate-400 mb-2">
-                        <Clock size={14} />
-                        <span className="text-[11px] font-black uppercase tracking-widest">Bắt đầu</span>
-                      </div>
-                      {canEdit ? (
-                        <input
-                          type="date"
-                          value={currentSelection.type === 'PLAN' ? currentSelection.plan.startDate : currentSelection.phase.startDate}
-                          onChange={(e) => {
-                            if (currentSelection.type === 'PLAN') onUpdatePlan({ ...currentSelection.plan, startDate: e.target.value });
-                            else if (currentSelection.type === 'PHASE') onUpdatePhase(plan.id, { ...currentSelection.phase, startDate: e.target.value });
-                          }}
-                          className="text-[12px] font-bold text-slate-800 bg-transparent border-none outline-none p-0 w-full"
-                        />
-                      ) : (
-                        <div className="text-[12px] font-bold text-slate-800">
-                          {currentSelection.type === 'PLAN' ? currentSelection.plan.startDate : currentSelection.phase.startDate}
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                      <div className="flex items-center gap-2 text-slate-400 mb-2">
-                        <Clock size={14} />
-                        <span className="text-[11px] font-black uppercase tracking-widest">Kết thúc</span>
-                      </div>
-                      {canEdit ? (
-                        <input
-                          type="date"
-                          value={currentSelection.type === 'PLAN' ? currentSelection.plan.endDate : currentSelection.phase.endDate}
-                          onChange={(e) => {
-                            if (currentSelection.type === 'PLAN') onUpdatePlan({ ...currentSelection.plan, endDate: e.target.value });
-                            else if (currentSelection.type === 'PHASE') onUpdatePhase(plan.id, { ...currentSelection.phase, endDate: e.target.value });
-                          }}
-                          className="text-[12px] font-bold text-slate-800 bg-transparent border-none outline-none p-0 w-full"
-                        />
-                      ) : (
-                        <div className="text-[12px] font-bold text-slate-800">
-                          {currentSelection.type === 'PLAN' ? currentSelection.plan.endDate : currentSelection.phase.endDate}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+              {/* Status lozenge + quick actions */}
+              <div className="flex items-center gap-2 mt-2.5">
+                {sel.type === 'PLAN' && (
+                  <StatusSelect
+                    value={statusCodeOf(plan.status)}
+                    options={phaseStatusOptions}
+                    onChange={s => onUpdatePlan({ ...plan, status: s as any })}
+                    canEdit={canEdit}
+                  />
+                )}
+                {sel.type === 'PHASE' && (
+                  <StatusSelect
+                    value={statusCodeOf(sel.phase.status)}
+                    options={phaseStatusOptions}
+                    onChange={s => onUpdatePhase(plan.id, { ...sel.phase, status: s })}
+                    canEdit={canEdit}
+                  />
+                )}
+                {sel.type === 'TASK' && (
+                  <StatusSelect
+                    value={statusCodeOf(sel.task.status)}
+                    options={taskStatusOptions}
+                    onChange={s => onUpdateTask(plan.id, sel.phase.id, { ...sel.task, status: s })}
+                    canEdit={canEdit}
+                  />
                 )}
 
-                {currentSelection.type === 'PLAN' && canEdit && (
-                  <div className="flex flex-col gap-4 w-full mt-2">
-                    <div className="flex gap-2 w-full">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 text-[11px] font-bold text-indigo-600 border-indigo-200 hover:bg-indigo-50"
-                        onClick={() => currentSelection.type === 'PLAN' && onClone?.(currentSelection.plan)}
-                      >
-                        <Layout size={14} className="mr-2" /> Nhân bản
-                      </Button>
-                      <Button variant="ghost" size="sm" className="h-8 text-[11px] font-bold text-slate-500 hover:bg-slate-100">
-                        <Plus size={14} className="mr-2" /> Ghép nối
-                      </Button>
-                    </div>
-
-                    {/* Plot Management Section */}
-                      <div className="space-y-3 pt-4 border-t border-slate-100">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Lô đất canh tác</h3>
-                          {!isAddingPlot && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-6 px-2 text-[9px] font-black uppercase text-indigo-600 bg-indigo-50 hover:bg-indigo-100"
-                              onClick={() => setIsAddingPlot(true)}
-                            >
-                              <Plus size={12} className="mr-1" /> Thêm lô
-                            </Button>
-                          )}
-                        </div>
-                        
-                        {isAddingPlot && (
-                          <div className="bg-slate-50 p-3 rounded-xl border border-indigo-100 space-y-2 animate-in fade-in slide-in-from-top-1">
-                            <select
-                              value={selectedPlotId}
-                              onChange={(e) => setSelectedPlotId(e.target.value)}
-                              className="w-full h-8 px-2 text-[11px] font-bold bg-white border border-slate-200 rounded-lg outline-none"
-                            >
-                              <option value="">Chọn lô đất...</option>
-                              {plots
-                                .filter(p => !plan.plots?.some(pp => pp.plotId === p.id))
-                                .map(p => (
-                                  <option key={p.id} value={p.id}>{p.name}</option>
-                                ))
-                              }
-                            </select>
-                            <div className="flex gap-2">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="flex-1 h-7 text-[10px] font-black uppercase text-slate-400"
-                                onClick={() => {
-                                  setIsAddingPlot(false);
-                                  setSelectedPlotId('');
-                                }}
-                              >
-                                Hủy
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                className="flex-1 h-7 text-[10px] font-black uppercase bg-indigo-600 text-white"
-                                disabled={!selectedPlotId}
-                                onClick={handleAssignPlotSubmit}
-                              >
-                                Thêm
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="space-y-2">
-                          {plan.plots && plan.plots.length > 0 ? (
-                            plan.plots.map((pp) => (
-                              <div key={pp.plotId} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 group">
-                                <div className="flex items-center gap-2">
-                                  <Package size={14} className="text-slate-400" />
-                                  <span className="text-[11px] font-bold text-slate-700">{pp.plotName}</span>
-                                </div>
-                                <button 
-                                  className="p-1 text-slate-400 hover:text-rose-500 transition-all opacity-100"
-                                  onClick={() => console.log('Remove plot not implemented yet')}
-                                >
-                                  <Trash2 size={12} />
-                                </button>
-                              </div>
-                            ))
-                          ) : (
-                            <div className="py-4 text-center border-2 border-dashed border-slate-100 rounded-xl">
-                               <p className="text-[10px] font-bold text-slate-400">Chưa có lô đất nào được gán</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                  </div>
+                {/* Pin / Clone quick actions for PLAN */}
+                {sel.type === 'PLAN' && canEdit && (
+                  <button
+                    className="flex items-center gap-1 h-6 px-2 text-[10px] font-semibold text-slate-500 border border-slate-200 rounded hover:border-indigo-300 hover:text-indigo-600 transition-colors"
+                    onClick={() => onClone?.(plan)}
+                  >
+                    <Copy size={10} /> Nhân bản
+                  </button>
                 )}
               </div>
             </div>
 
+            {/* ── Detail fields (Jira right-rail style) ── */}
+            <div className="px-4 py-1">
 
-            <div className="mb-10">
-              <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Mô tả chi tiết</h3>
-              {canEdit ? (
-                <textarea
-                  value={currentSelection.type === 'PLAN' ? (currentSelection.plan.description || "") :
-                    currentSelection.type === 'PHASE' ? (currentSelection.phase.description || "") :
-                      (currentSelection.task.description || "")}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (currentSelection.type === 'PLAN') onUpdatePlan({ ...currentSelection.plan, description: val });
-                    else if (currentSelection.type === 'PHASE') onUpdatePhase(plan.id, { ...currentSelection.phase, description: val });
-                    else if (currentSelection.type === 'TASK') onUpdateTask(plan.id, currentSelection.phase.id, { ...currentSelection.task, description: val });
-                  }}
-                  className="w-full text-[13px] text-slate-700 leading-relaxed font-medium bg-slate-50/50 border border-transparent hover:border-slate-200 focus:border-indigo-300 focus:bg-white p-3 rounded-xl outline-none transition-all min-h-[100px] resize-none"
-                  placeholder="Thêm mô tả chi tiết cho công việc này..."
-                />
-              ) : (
-                <p className="text-[13px] text-slate-700 leading-relaxed font-medium hover:bg-slate-50 p-2 -ml-2 rounded cursor-text capitalize">
-                  {(currentSelection.type === 'PLAN' ? currentSelection.plan.description :
-                    currentSelection.type === 'PHASE' ? currentSelection.phase.description :
-                      currentSelection.task.description) || "Chưa có mô tả..."}
-                </p>
+              {/* PLAN fields */}
+              {sel.type === 'PLAN' && (
+                <>
+                  <DetailRow icon={Calendar} label="Ngày bắt đầu">
+                    {canEdit ? (
+                      <input type="date" value={plan.startDate}
+                        onChange={e => onUpdatePlan({ ...plan, startDate: e.target.value })}
+                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-transparent hover:border-slate-300 focus:border-indigo-400 transition-colors w-full" />
+                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(plan.startDate)}</span>}
+                  </DetailRow>
+                  <DetailRow icon={Calendar} label="Ngày kết thúc">
+                    {canEdit ? (
+                      <input type="date" value={plan.endDate}
+                        onChange={e => onUpdatePlan({ ...plan, endDate: e.target.value })}
+                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-transparent hover:border-slate-300 focus:border-indigo-400 transition-colors w-full" />
+                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(plan.endDate)}</span>}
+                  </DetailRow>
+                  <DetailRow icon={Package} label="Lô đất">
+                    {plan.plots && plan.plots.length > 0
+                      ? <div className="flex flex-wrap gap-1">
+                        {plan.plots.map(pp => (
+                          <span key={pp.plotId} className="inline-flex items-center gap-1 text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
+                            {pp.plotName}
+                          </span>
+                        ))}
+                      </div>
+                      : <span className="text-[12px] text-slate-400 italic">Chưa gán lô đất</span>
+                    }
+                  </DetailRow>
+                  <DetailRow icon={Zap} label="Số giai đoạn">
+                    <span className="text-[12px] text-slate-700 font-medium">{plan.phases?.length ?? 0} giai đoạn</span>
+                  </DetailRow>
+                </>
+              )}
+
+              {/* PHASE fields */}
+              {sel.type === 'PHASE' && (
+                <>
+                  <DetailRow icon={Calendar} label="Ngày bắt đầu">
+                    {canEdit ? (
+                      <input type="date" value={sel.phase.startDate}
+                        onChange={e => onUpdatePhase(plan.id, { ...sel.phase, startDate: e.target.value })}
+                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-transparent hover:border-slate-300 focus:border-indigo-400 transition-colors w-full" />
+                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(sel.phase.startDate)}</span>}
+                  </DetailRow>
+                  <DetailRow icon={Calendar} label="Ngày kết thúc">
+                    {canEdit ? (
+                      <input type="date" value={sel.phase.endDate}
+                        onChange={e => onUpdatePhase(plan.id, { ...sel.phase, endDate: e.target.value })}
+                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-transparent hover:border-slate-300 focus:border-indigo-400 transition-colors w-full" />
+                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(sel.phase.endDate)}</span>}
+                  </DetailRow>
+                  <DetailRow icon={CheckSquare} label="Công việc">
+                    <span className="text-[12px] text-slate-700 font-medium">{sel.phase.tasks?.length ?? 0} công việc</span>
+                  </DetailRow>
+                  <DetailRow icon={Flag} label="Kế hoạch">
+                    <span className="text-[12px] font-medium text-indigo-600">{plan.name}</span>
+                  </DetailRow>
+                </>
+              )}
+
+              {/* TASK fields */}
+              {sel.type === 'TASK' && (
+                <>
+                  <DetailRow icon={Calendar} label="Ngày bắt đầu">
+                    {canEdit ? (
+                      <input type="date" value={sel.task.startDate}
+                        onChange={e => onUpdateTask(plan.id, sel.phase.id, { ...sel.task, startDate: e.target.value })}
+                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-transparent hover:border-slate-300 focus:border-indigo-400 transition-colors w-full" />
+                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(sel.task.startDate)}</span>}
+                  </DetailRow>
+                  <DetailRow icon={Calendar} label="Ngày kết thúc">
+                    {canEdit ? (
+                      <input type="date" value={sel.task.endDate}
+                        onChange={e => onUpdateTask(plan.id, sel.phase.id, { ...sel.task, endDate: e.target.value })}
+                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-transparent hover:border-slate-300 focus:border-indigo-400 transition-colors w-full" />
+                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(sel.task.endDate)}</span>}
+                  </DetailRow>
+                  <DetailRow icon={Zap} label="Giai đoạn">
+                    <button
+                      className="text-[12px] font-medium text-violet-600 hover:underline"
+                      onClick={() => onSelectPhase(plan.id, sel.phase.id)}
+                    >
+                      {sel.phase.name}
+                    </button>
+                  </DetailRow>
+                  <DetailRow icon={Flag} label="Kế hoạch">
+                    <span className="text-[12px] font-medium text-indigo-600">{plan.name}</span>
+                  </DetailRow>
+                  <DetailRow icon={Package} label="Lô đất">
+                    {plan.plots && plan.plots.length > 0
+                      ? <span className="text-[12px] font-medium text-emerald-700">{plan.plots[0].plotName}</span>
+                      : <span className="text-[12px] text-slate-400 italic">—</span>}
+                  </DetailRow>
+                </>
               )}
             </div>
 
-            {currentSelection.type === 'PHASE' && (
-              <div className="mb-10">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Danh sách công việc con</h3>
-                  <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded uppercase">{currentSelection.phase.tasks.length} công việc</span>
+
+            {/* ── Description ── */}
+            <div className="px-4 py-3 border-t border-slate-100">
+              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <FileText size={11} /> Mô tả
+              </p>
+              <InlineText
+                multiline
+                canEdit={canEdit}
+                placeholder="Thêm mô tả..."
+                value={
+                  sel.type === 'PLAN' ? (plan.description ?? '') :
+                    sel.type === 'PHASE' ? (sel.phase.description ?? '') :
+                      (sel.task.description ?? '')
+                }
+                onChange={v => {
+                  if (sel.type === 'PLAN') onUpdatePlan({ ...plan, description: v });
+                  if (sel.type === 'PHASE') onUpdatePhase(plan.id, { ...sel.phase, description: v });
+                  if (sel.type === 'TASK') onUpdateTask(plan.id, sel.phase.id, { ...sel.task, description: v });
+                }}
+              />
+            </div>
+
+            {/* ── TASK progress ── */}
+            {sel.type === 'TASK' && (
+              <div className="px-4 py-3 border-t border-slate-100">
+                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <BarChart2 size={11} /> Tiến độ
+                </p>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-indigo-500 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${sel.task.progressPercent ?? 0}%` }}
+                      transition={{ duration: .4, ease: 'easeOut' }}
+                    />
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-600 w-8 text-right tabular-nums">
+                    {sel.task.progressPercent ?? 0}%
+                  </span>
                 </div>
-
-                <div className="border border-slate-100 rounded-xl overflow-hidden shadow-sm">
-                  <table className="w-full border-collapse">
-                    <thead className="bg-slate-50/50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Task</th>
-                        <th className="px-4 py-3 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {currentSelection.phase.tasks.map((task) => (
-                        <tr
-                          key={task.id}
-                          className="hover:bg-slate-50/80 cursor-pointer group transition-colors"
-                          onClick={() => onSelectTask(plan.id, currentSelection.phase.id, task.id)}
-                        >
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <CheckSquare size={14} className="text-blue-500 shrink-0" />
-                              <span className="text-[12px] font-bold text-slate-700 truncate group-hover:text-indigo-600">
-                                {task.name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <span className={cn(
-                              "text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-tighter",
-                              (typeof task.status === 'string' ? task.status : task.status.code) === 'COMPLETED' ? "bg-slate-100 text-slate-400" :
-                                (typeof task.status === 'string' ? task.status : task.status.code) === 'ACTIVE' ? "bg-indigo-100 text-indigo-700" :
-                                  (typeof task.status === 'string' ? task.status : task.status.code) === 'HARVESTING' ? "bg-emerald-100 text-emerald-700" :
-                                    "bg-slate-100 text-slate-500"
-                            )}>
-                              {(typeof task.status === 'string' ? task.status : task.status.code) === 'COMPLETED' ? 'Hoàn thành' : (typeof task.status === 'string' ? task.status : task.status.code) === 'ACTIVE' ? 'Đang làm' : ((typeof task.status === 'string' ? task.status : task.status.code) === 'HARVESTING' ? 'Thu hoạch' : 'Bản nháp')}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                  {isAddingTask ? (
-                    <div className="p-4 bg-slate-50/50 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tên công việc</label>
-                        <input
-                          autoFocus
-                          placeholder="VD: Bón phân thúc lần 1..."
-                          value={newTaskName}
-                          onChange={(e) => setNewTaskName(e.target.value)}
-                          className="w-full px-3 py-2 text-[12px] font-bold bg-white border border-indigo-200 rounded-lg outline-none shadow-sm focus:ring-2 focus:ring-indigo-100"
-                        />
-                      </div>
-                      
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mô tả (tùy chọn)</label>
-                        <textarea
-                          placeholder="Chi tiết công việc..."
-                          value={newTaskDesc}
-                          onChange={(e) => setNewTaskDesc(e.target.value)}
-                          className="w-full px-3 py-2 text-[12px] font-medium bg-white border border-slate-200 rounded-lg outline-none shadow-sm min-h-[60px] resize-none"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Bắt đầu</label>
-                          <input
-                            type="date"
-                            value={newTaskStart || (currentSelection.type === 'PHASE' ? currentSelection.phase.startDate : '')}
-                            onChange={(e) => setNewTaskStart(e.target.value)}
-                            className="w-full px-2 py-1.5 text-[11px] font-bold bg-white border border-slate-200 rounded-lg outline-none"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Kết thúc</label>
-                          <input
-                            type="date"
-                            value={newTaskEnd || (currentSelection.type === 'PHASE' ? currentSelection.phase.endDate : '')}
-                            onChange={(e) => setNewTaskEnd(e.target.value)}
-                            className="w-full px-2 py-1.5 text-[11px] font-bold bg-white border border-slate-200 rounded-lg outline-none"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Lô đất thực hiện</label>
-                        <select
-                          value={newTaskPlotId}
-                          onChange={(e) => setNewTaskPlotId(e.target.value)}
-                          className="w-full px-3 py-2 text-[12px] font-bold bg-white border border-slate-200 rounded-lg outline-none shadow-sm"
-                        >
-                          <option value="">Chọn lô đất...</option>
-                          {/* Only allow selecting plots that are part of this plan */}
-                          {plan.plots && plan.plots.length > 0 ? (
-                            plan.plots.map(p => (
-                              <option key={p.plotId} value={p.plotId}>{p.plotName}</option>
-                            ))
-                          ) : (
-                            plots.map(p => (
-                              <option key={p.id} value={p.id}>{p.name}</option>
-                            ))
-                          )}
-                        </select>
-
-                      </div>
-
-                      <div className="flex gap-2 pt-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="flex-1 text-[11px] font-black uppercase text-slate-400"
-                          onClick={() => setIsAddingTask(false)}
-                        >
-                          Hủy
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          className="flex-1 text-[11px] font-black uppercase bg-indigo-600 text-white"
-                          disabled={!newTaskName.trim()}
-                          onClick={handleAddTaskSubmit}
-                        >
-                          Xác nhận
-                        </Button>
-                      </div>
-                    </div>
-                  ) : canEdit ? (
-                    <button
-                      onClick={() => {
-                        setIsAddingTask(true);
-                        // Pre-fill dates from phase
-                        if (currentSelection.type === 'PHASE') {
-                          setNewTaskStart(currentSelection.phase.startDate);
-                          setNewTaskEnd(currentSelection.phase.endDate);
-                        }
-                      }}
-                      className="w-full px-4 py-3 text-[11px] font-black text-slate-400 hover:text-indigo-600 hover:bg-slate-50 transition-all text-left flex items-center gap-2"
-                    >
-                      <Plus size={14} />
-                      THÊM CÔNG VIỆC CON
-                    </button>
-                  ) : null}
-                </div>
+                {canEdit && (
+                  <input
+                    type="range" min="0" max="100"
+                    value={sel.task.progressPercent ?? 0}
+                    onChange={e => onUpdateTask(plan.id, sel.phase.id, { ...sel.task, progressPercent: +e.target.value })}
+                    disabled={['COMPLETED', 'CANCELLED'].includes(statusCodeOf(sel.task.status))}
+                    className="w-full accent-indigo-600 disabled:opacity-40"
+                  />
+                )}
               </div>
             )}
 
-            {currentSelection.type === 'TASK' && (
-              <div className="space-y-6 animate-in slide-in-from-bottom-2">
-                <div className="flex bg-slate-100 p-1 rounded-xl">
+            {/* ── PHASE: task list ── */}
+            {sel.type === 'PHASE' && (
+              <div className="px-4 py-3 border-t border-slate-100">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <CheckSquare size={11} /> Công việc con
+                    <span className="ml-1 text-[10px] font-bold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
+                      {sel.phase.tasks?.length ?? 0}
+                    </span>
+                  </p>
+                  {canEdit && (
+                    <button
+                      onClick={() => {
+                        setIsAddingTask(true);
+                        setNewTaskStart(sel.phase.startDate);
+                        setNewTaskEnd(sel.phase.endDate);
+                      }}
+                      className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded transition-colors"
+                    >
+                      <Plus size={11} /> Thêm
+                    </button>
+                  )}
+                </div>
+
+                {/* Task rows */}
+                <div className="space-y-0.5">
+                  {sel.phase.tasks?.map(task => {
+                    const code = statusCodeOf(task.status);
+                    return (
+                      <button
+                        key={task.id}
+                        onClick={() => onSelectTask(plan.id, sel.phase.id, task.id)}
+                        className="w-full flex items-center gap-2.5 px-2 py-2 rounded-md hover:bg-slate-50 transition-colors group text-left"
+                      >
+                        {/* checkbox icon */}
+                        <div className={cn(
+                          'w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-colors',
+                          code === 'COMPLETED' ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300 group-hover:border-indigo-300',
+                        )}>
+                          {code === 'COMPLETED' && (
+                            <svg width="8" height="8" viewBox="0 0 8 8">
+                              <path d="M1 4l2 2 4-3" stroke="#fff" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className={cn(
+                          'flex-1 text-[12px] font-medium truncate',
+                          code === 'COMPLETED' ? 'text-slate-400 line-through' : 'text-slate-700 group-hover:text-indigo-600',
+                        )}>
+                          {task.name}
+                        </span>
+                        <span className={cn(
+                          'text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide flex-shrink-0',
+                          statusChipClass(code),
+                        )}>
+                          {statusViLabel(code)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Add task inline form */}
+                <AnimatePresence>
+                  {isAddingTask && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-2 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2.5">
+                        <input
+                          autoFocus
+                          placeholder="Tên công việc..."
+                          value={newTaskName}
+                          onChange={e => setNewTaskName(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && handleAddTaskSubmit()}
+                          className="w-full px-2.5 py-1.5 text-[12px] font-medium bg-white border border-slate-200 rounded-md outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 transition-all"
+                        />
+                        <textarea
+                          placeholder="Mô tả (tùy chọn)..."
+                          value={newTaskDesc}
+                          onChange={e => setNewTaskDesc(e.target.value)}
+                          rows={2}
+                          className="w-full px-2.5 py-1.5 text-[12px] text-slate-600 bg-white border border-slate-200 rounded-md outline-none focus:border-indigo-400 transition-all resize-none"
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wide ml-0.5">Bắt đầu</label>
+                            <input type="date" value={newTaskStart} onChange={e => setNewTaskStart(e.target.value)}
+                              className="w-full mt-0.5 px-2 py-1 text-[11px] font-medium bg-white border border-slate-200 rounded-md outline-none focus:border-indigo-400 transition-all" />
+                          </div>
+                          <div>
+                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wide ml-0.5">Kết thúc</label>
+                            <input type="date" value={newTaskEnd} onChange={e => setNewTaskEnd(e.target.value)}
+                              className="w-full mt-0.5 px-2 py-1 text-[11px] font-medium bg-white border border-slate-200 rounded-md outline-none focus:border-indigo-400 transition-all" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wide ml-0.5">Lô đất</label>
+                          <select
+                            value={newTaskPlotId}
+                            onChange={e => setNewTaskPlotId(e.target.value)}
+                            className="w-full mt-0.5 px-2 py-1.5 text-[12px] font-medium bg-white border border-slate-200 rounded-md outline-none focus:border-indigo-400 transition-all"
+                          >
+                            <option value="">Chọn lô đất...</option>
+                            {plan.plots?.map(p => (
+                              <option key={p.plotId} value={p.plotId}>{p.plotName}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={() => setIsAddingTask(false)}
+                            className="flex-1 py-1.5 text-[11px] font-bold text-slate-500 bg-white border border-slate-200 rounded-md hover:bg-slate-50 transition-colors"
+                          >
+                            Hủy
+                          </button>
+                          <button
+                            onClick={handleAddTaskSubmit}
+                            disabled={!newTaskName.trim()}
+                            className="flex-1 py-1.5 text-[11px] font-bold text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+                          >
+                            Lưu
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+
+            {/* ── TASK: tabs (Info / Members / Materials) ── */}
+            {sel.type === 'TASK' && (
+              <div className="border-t border-slate-100">
+                {/* Tab bar */}
+                <div className="flex border-b border-slate-100 px-4">
                   {(['INFO', 'MEMBERS', 'MATERIALS'] as const).map(tab => (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
                       className={cn(
-                        "flex-1 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all",
-                        activeTab === tab ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                        'px-3 py-2.5 text-[11px] font-semibold border-b-2 transition-all',
+                        activeTab === tab
+                          ? 'border-indigo-600 text-indigo-600'
+                          : 'border-transparent text-slate-500 hover:text-slate-800',
                       )}
                     >
                       {tab === 'INFO' ? 'Thông tin' : tab === 'MEMBERS' ? 'Nhân sự' : 'Vật tư'}
@@ -663,157 +787,206 @@ export function PlanDetailPanel({
                   ))}
                 </div>
 
-                {activeTab === 'INFO' && (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                        <div className="flex items-center gap-2 text-slate-400 mb-2">
-                          <Clock size={14} />
-                          <span className="text-[11px] font-black uppercase tracking-widest">Bắt đầu</span>
-                        </div>
-                        {canEdit ? (
-                          <input
-                            type="date"
-                            value={currentSelection.task.startDate}
-                            onChange={(e) => onUpdateTask(plan.id, currentSelection.phase.id, { ...currentSelection.task, startDate: e.target.value })}
-                            className="text-[12px] font-bold text-slate-800 bg-transparent border-none outline-none p-0 w-full"
-                          />
-                        ) : (
-                          <div className="text-[12px] font-bold text-slate-800">
-                            {currentSelection.task.startDate}
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                        <div className="flex items-center gap-2 text-slate-400 mb-2">
-                          <Clock size={14} />
-                          <span className="text-[11px] font-black uppercase tracking-widest">Kết thúc</span>
-                        </div>
-                        {canEdit ? (
-                          <input
-                            type="date"
-                            value={currentSelection.task.endDate}
-                            onChange={(e) => onUpdateTask(plan.id, currentSelection.phase.id, { ...currentSelection.task, endDate: e.target.value })}
-                            className="text-[12px] font-bold text-slate-800 bg-transparent border-none outline-none p-0 w-full"
-                          />
-                        ) : (
-                          <div className="text-[12px] font-bold text-slate-800">
-                            {currentSelection.task.endDate}
-                          </div>
-                        )}
+                <div className="px-4 py-3">
+                  {/* INFO tab — progress attachment */}
+                  {activeTab === 'INFO' && (
+                    <div className="space-y-3">
+                      {/* Attachment placeholder */}
+                      <div className="flex items-center gap-2 p-3 border-2 border-dashed border-slate-200 rounded-lg cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/30 transition-colors group">
+                        <Paperclip size={14} className="text-slate-400 group-hover:text-indigo-500" />
+                        <span className="text-[11px] font-medium text-slate-500 group-hover:text-indigo-600">
+                          Tải lên minh chứng hoàn thành...
+                        </span>
                       </div>
                     </div>
+                  )}
 
-                    <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2 text-indigo-600">
-                          <Activity size={14} />
-                          <span className="text-[11px] font-black uppercase tracking-widest">Tiến độ thực hiện</span>
-                        </div>
-                        <span className="text-[13px] font-black text-indigo-700">{currentSelection.task.progressPercent}%</span>
+                  {/* MEMBERS tab */}
+                  {activeTab === 'MEMBERS' && (
+                    <div className="space-y-3">
+                      <div className="py-8 flex flex-col items-center justify-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                        <Users size={22} className="text-slate-300 mb-2" />
+                        <p className="text-[11px] font-bold text-slate-400">Tính năng đang phát triển</p>
                       </div>
-                      <div className="h-2 bg-indigo-100 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${currentSelection.task.progressPercent}%` }}
-                          className="h-full bg-indigo-500"
-                        />
-                      </div>
-                      <input
-                        type="range"
-                        min="0" max="100"
-                        value={currentSelection.task.progressPercent}
-                        onChange={(e) => onUpdateTask(plan.id, currentSelection.phase.id, { ...currentSelection.task, progressPercent: parseInt(e.target.value) })}
-                        disabled={currentSelection.task.status.code === 'COMPLETED' || currentSelection.task.status.code === 'CANCELLED'}
-                        className="w-full mt-4 h-1 bg-indigo-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 disabled:opacity-50"
-                      />
-                    </div>
-
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                      <div className="flex items-center gap-2 text-slate-400 mb-3">
-                        <Plus size={14} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Minh chứng hoàn thành</span>
-                      </div>
-                      <div className="flex flex-col items-center justify-center py-4 border-2 border-dashed border-slate-200 rounded-xl bg-white hover:bg-slate-50 cursor-pointer transition-colors">
-                        <Activity size={20} className="text-slate-300 mb-2" />
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">Tải lên hình ảnh/video</span>
+                      <div className="flex gap-2 p-2.5 bg-amber-50 border border-amber-100 rounded-lg">
+                        <AlertCircle size={13} className="text-amber-500 shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-amber-800 leading-relaxed">
+                          Phân công nhân sự sẽ ra mắt khi module quản lý nhân sự hoàn tất.
+                        </p>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {activeTab === 'MEMBERS' && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Danh sách nhân sự</h4>
-                      <button className="text-slate-300 cursor-not-allowed"><Plus size={16} /></button>
-                    </div>
-
-                    <div className="py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                      <Users size={24} className="mx-auto text-slate-300 mb-2" />
-                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Tính năng phân công đang phát triển</p>
-                    </div>
-
-                    <div className="p-3 bg-amber-50 rounded-xl border border-amber-100 flex gap-2">
-                      <AlertCircle size={16} className="text-amber-600 shrink-0" />
-                      <p className="text-[10px] text-amber-900 font-medium leading-relaxed">
-                        Tính năng gán nhân sự trực tiếp từ kế hoạch sẽ sớm được ra mắt khi hệ thống quản lý nhân sự hoàn tất.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'MATERIALS' && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Vật tư dự kiến</h4>
-                    </div>
-
+                  {/* MATERIALS tab */}
+                  {activeTab === 'MATERIALS' && (
                     <div className="space-y-2">
-                      {currentSelection.task.materials && currentSelection.task.materials.length > 0 ? (
-                        currentSelection.task.materials.map((mat: any) => (
-                          <div key={mat.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 group">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Package size={14} className="text-slate-400" />
-                                <span className="text-[12px] font-bold text-slate-800">{mat.name}</span>
-                              </div>
-                              <span className="text-[10px] font-black text-indigo-600">{mat.quantity} {mat.unit || 'đơn vị'}</span>
+                      {sel.task.materials?.length ? (
+                        sel.task.materials.map((mat: any) => (
+                          <div key={mat.id} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                            <div className="flex items-center gap-2">
+                              <Package size={13} className="text-slate-400" />
+                              <span className="text-[12px] font-medium text-slate-700">{mat.name}</span>
                             </div>
+                            <span className="text-[11px] font-bold text-indigo-600">
+                              {mat.quantity} {mat.unit ?? 'đơn vị'}
+                            </span>
                           </div>
                         ))
                       ) : (
-                        <div className="py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                          <Package size={24} className="mx-auto text-slate-300 mb-2" />
-                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Chưa có vật tư dự kiến</p>
+                        <div className="py-8 flex flex-col items-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                          <Package size={22} className="text-slate-300 mb-2" />
+                          <p className="text-[11px] font-bold text-slate-400">Chưa có vật tư</p>
                         </div>
                       )}
+                      <div className="flex gap-2 p-2.5 bg-indigo-50 border border-indigo-100 rounded-lg mt-2">
+                        <CheckCircle2 size={13} className="text-indigo-500 shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-indigo-800 leading-relaxed">
+                          Tự động trừ tồn kho khi xuất vật tư từ module kho.
+                        </p>
+                      </div>
                     </div>
-                    <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-100 flex gap-2">
-                      <CheckCircle2 size={16} className="text-indigo-600 shrink-0" />
-                      <p className="text-[10px] text-indigo-900 font-medium leading-relaxed">
-                        Liên kết tự động với module kho để trừ tồn kho khi xuất vật tư.
-                      </p>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
+
+            {/* ── PLAN: plot management ── */}
+            {sel.type === 'PLAN' && canEdit && (
+              <div className="px-4 py-3 border-t border-slate-100">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Package size={11} /> Lô đất canh tác
+                  </p>
+                  <button
+                    onClick={() => setShowAddPlot(true)}
+                    className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded transition-colors"
+                  >
+                    <Plus size={11} /> Thêm lô
+                  </button>
+                </div>
+                <div className="space-y-1.5">
+                  {plan.plots?.length ? plan.plots.map(pp => (
+                    <div key={pp.plotId} className="flex items-center justify-between px-2.5 py-2 bg-slate-50 rounded-lg border border-slate-100 group">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                        <span className="text-[12px] font-medium text-slate-700">{pp.plotName}</span>
+                      </div>
+                      <button className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 transition-all">
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  )) : (
+                    <div className="py-4 text-center border-2 border-dashed border-slate-200 rounded-lg">
+                      <p className="text-[11px] text-slate-400">Chưa gán lô đất nào</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            <AnimatePresence>
+              {showAddPlot && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40">
+                  <motion.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.95, opacity: 0 }}
+                    className="bg-white rounded-xl p-4 w-[320px] shadow-xl"
+                  >
+                    <h3 className="text-[14px] font-bold mb-3">Thêm lô đất</h3>
+
+                    <div className="max-h-[200px] overflow-y-auto space-y-1">
+                      {plots.map(p => {
+                        const checked = selectedPlotIds.includes(p.id);
+
+                        return (
+                          <label
+                            key={p.id}
+                            className="flex items-center gap-2 p-2 rounded hover:bg-slate-50 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => {
+                                setSelectedPlotIds(prev =>
+                                  checked
+                                    ? prev.filter(id => id !== p.id)
+                                    : [...prev, p.id]
+                                );
+                              }}
+                            />
+                            <span className="text-[12px]">{p.name}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex gap-2 mt-4">
+                      <button
+                        onClick={() => setShowAddPlot(false)}
+                        className="flex-1 py-1.5 text-[12px] bg-slate-100 rounded"
+                      >
+                        Hủy
+                      </button>
+
+                      <button
+                        onClick={handleAddPlots}
+                        disabled={loadingAddPlot || selectedPlotIds.length === 0}
+                        className="flex-1 py-1.5 text-[12px] bg-indigo-600 text-white rounded disabled:opacity-40"
+                      >
+                        {loadingAddPlot ? 'Đang thêm...' : 'Thêm'}
+                      </button>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
+
+            {/* Bottom padding */}
+            <div className="h-6" />
           </div>
 
-          {/* Standardized Delete Confirmation */}
-          <ConfirmModal
-            isOpen={showDeleteConfirm}
-            onClose={() => setShowDeleteConfirm(false)}
-            onConfirm={handleDelete}
-            title={currentSelection.type === 'PHASE' ? "Xóa giai đoạn?" : "Xóa công việc?"}
-            message={currentSelection.type === 'PHASE'
-              ? "Bạn có chắc chắn muốn xóa giai đoạn này? Tất cả công việc bên trong cũng sẽ bị xóa vĩnh viễn."
-              : "Bạn có chắc chắn muốn xóa công việc này? Hành động này không thể hoàn tác."
-            }
-            confirmLabel="Xóa ngay"
-            type="danger"
-          />
+          {/* ── Delete confirm modal ── */}
+          {createPortal(
+            <AnimatePresence>
+              {showDeleteConfirm && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                  <motion.div
+                    initial={{ opacity: 0, scale: .96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: .96 }}
+                    className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-slate-100"
+                  >
+                    <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500 mb-4">
+                      <Trash2 size={22} />
+                    </div>
+                    <h3 className="text-[15px] font-bold text-slate-900 mb-1.5">
+                      {sel.type === 'PHASE' ? 'Xóa giai đoạn?' : 'Xóa công việc?'}
+                    </h3>
+                    <p className="text-[12px] text-slate-500 mb-5 leading-relaxed">
+                      {sel.type === 'PHASE'
+                        ? 'Tất cả công việc trong giai đoạn này cũng sẽ bị xóa. Hành động không thể hoàn tác.'
+                        : 'Dữ liệu công việc sẽ bị xóa vĩnh viễn.'}
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowDeleteConfirm(false)}
+                        className="flex-1 py-2 text-[12px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        onClick={handleDelete}
+                        className="flex-1 py-2 text-[12px] font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors"
+                      >
+                        Xóa
+                      </button>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>,
+            document.body,
+          )}
         </motion.div>
       )}
     </AnimatePresence>
