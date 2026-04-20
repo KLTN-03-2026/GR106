@@ -705,7 +705,7 @@ export function SeasonPlanPage() {
         {/* ── Tab: Timeline ── */}
         {activeTab === 'timeline' && (
           <>
-            <div className="flex-1 flex flex-col min-w-0 min-h-0">
+            <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-slate-50">
               {loading ? (
                 <div className="flex-1 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm">
                   <Loader2 className="animate-spin text-indigo-500 mb-3" size={36} />
@@ -725,17 +725,19 @@ export function SeasonPlanPage() {
                   </Button>
                 </div>
               ) : (
-                <PlanTimeline
-                  plans={filteredPlans}
-                  onSelect={selection => setSelectedItem(selection)}
-                  selectedId={selectedItem?.id}
-                  onUpdatePlan={handleUpdatePlan}
-                  onDeletePlan={handleDeletePlan}
-                  onAddPhase={handleAddPhase}
-                  onExpandPhase={handleExpandPhase}
-                  preExpandedPlanId={planId}
-                  canEdit={canEdit}
-                />
+                <div className="flex-1 h-full min-h-0">
+                  <PlanTimeline
+                    plans={filteredPlans}
+                    onSelect={selection => setSelectedItem(selection)}
+                    selectedId={selectedItem?.id}
+                    onUpdatePlan={handleUpdatePlan}
+                    onDeletePlan={handleDeletePlan}
+                    onAddPhase={handleAddPhase}
+                    onExpandPhase={handleExpandPhase}
+                    preExpandedPlanId={planId}
+                    canEdit={canEdit}
+                  />
+                </div>
               )}
             </div>
 

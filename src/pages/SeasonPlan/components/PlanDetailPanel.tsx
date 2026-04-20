@@ -51,6 +51,7 @@ interface PlanDetailPanelProps {
   onDeletePhase?: (planId: string, phaseId: string) => void;
   onDeleteTask?: (planId: string, phaseId: string, taskId: string) => void;
   onClone?: (plan: SeasonPlan) => void;
+  onAddPlots?: (planId: string, plotIds: string[]) => void;
   canEdit?: boolean;
 }
 

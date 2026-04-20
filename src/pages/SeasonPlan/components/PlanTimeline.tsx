@@ -225,7 +225,7 @@ export function PlanTimeline({
       cells.push({
         date: new Date(cur),
         dayLabel: String(cur.getDate()),
-        monthShort: cur.toLocaleString('en-US', { month: 'short' }),
+        monthShort: cur.toLocaleString('vi-VN', { month: 'short' }),
         isFirstOfMonth: cur.getDate() === 1,
         isWeekend: dow === 0 || dow === 6,
         isToday: cur.getTime() === todayDate.getTime(),
@@ -272,7 +272,7 @@ export function PlanTimeline({
         const s = cur < minDate ? minDate : cur;
         const e = nxt > maxDate ? maxDate : nxt;
         const days = Math.ceil((e.getTime() - s.getTime()) / 86_400_000);
-        if (days > 0) top.push({ label: cur.toLocaleString('en-US', { month: 'long' }), widthPx: days * PPD });
+        if (days > 0) top.push({ label: cur.toLocaleString('vi-VN', { month: 'long' }), widthPx: days * PPD });
         cur = nxt;
       }
       // sub = week starts
@@ -294,7 +294,7 @@ export function PlanTimeline({
       }
     } else {
       // quarters
-      const Q = [['January', 'March'], ['April', 'June'], ['July', 'September'], ['October', 'December']];
+      const Q = [['Tháng 1', 'Tháng 3'], ['Tháng 4', 'Tháng 6'], ['Tháng 7', 'Tháng 9'], ['Tháng 10', 'Tháng 12']];
       const qStart = Math.floor(minDate.getMonth() / 3) * 3;
       let cur = new Date(minDate.getFullYear(), qStart, 1);
       while (cur <= maxDate) {
@@ -315,7 +315,7 @@ export function PlanTimeline({
         const s = mcur < minDate ? minDate : mcur;
         const e = nxt > maxDate ? maxDate : nxt;
         const days = Math.ceil((e.getTime() - s.getTime()) / 86_400_000);
-        if (days > 0) sub.push({ label: mcur.toLocaleString('en-US', { month: 'short' }), widthPx: days * PPD });
+        if (days > 0) sub.push({ label: mcur.toLocaleString('vi-VN', { month: 'short' }), widthPx: days * PPD });
         mcur = nxt;
       }
     }
@@ -529,27 +529,28 @@ export function PlanTimeline({
   const statusCode = (s: any) => typeof s === 'string' ? s : (s?.code ?? '');
   const statusLabel = (s: any) => {
     switch (statusCode(s)) {
-      case 'COMPLETED': return 'DONE';
-      case 'IN_PROGRESS': case 'ACTIVE': return 'IN PROGRESS';
-      case 'OVERDUE': return 'OVERDUE';
-      case 'ASSIGNED': return 'ASSIGNED';
-      default: return 'TO DO';
+      case 'COMPLETED': return 'HOÀN THÀNH';
+      case 'IN_PROGRESS': case 'ACTIVE': return 'ĐANG TIÊN HÀNH';
+      case 'OVERDUE': return 'QUÁ HẠN';
+      case 'ASSIGNED': return 'PHÂN CÔNG';
+      default: return 'CẦN LÀM';
     }
   };
   const statusBadgeCls = (s: any) => {
     const l = statusLabel(s);
-    if (l === 'DONE') return 'bg-emerald-100 text-emerald-700';
-    if (l === 'IN PROGRESS') return 'bg-blue-100 text-blue-700';
-    if (l === 'OVERDUE') return 'bg-rose-100 text-rose-700';
-    if (l === 'ASSIGNED') return 'bg-violet-100 text-violet-700';
+    if (l === 'HOÀN THÀNH') return 'bg-emerald-100 text-emerald-700';
+    if (l === 'ĐANG TIÊN HÀNH') return 'bg-blue-100 text-blue-700';
+    if (l === 'QUÁ HẠN') return 'bg-rose-100 text-rose-700';
+    if (l === 'PHÂN CÔNG') return 'bg-violet-100 text-violet-700';
     return 'bg-slate-100 text-slate-500';
   };
   const taskBarCls = (s: any) => {
     const l = statusLabel(s);
-    if (l === 'DONE') return 'bg-emerald-500';
-    if (l === 'IN PROGRESS') return 'bg-blue-500';
-    if (l === 'OVERDUE') return 'bg-rose-500';
-    return 'bg-violet-500';
+    if (l === 'HOÀN THÀNH') return 'bg-emerald-500';
+    if (l === 'ĐANG TIÊN HÀNH') return 'bg-blue-500';
+    if (l === 'QUÁ HẠN') return 'bg-rose-500';
+    if (l === 'PHÂN CÔNG') return 'bg-violet-500';
+    return 'bg-slate-400';
   };
 
   // ── Row list ──────────────────────────────────────────────────────────────
@@ -592,7 +593,7 @@ export function PlanTimeline({
   return (
     <div
       className={cn(
-        'flex-1 flex flex-col h-full min-h-0 relative border border-slate-200 rounded-xl m-4 shadow-sm overflow-hidden bg-white',
+        'flex-1 flex flex-col h-full min-h-0 relative border border-slate-200 rounded-none shadow-sm overflow-hidden bg-white',
         barDrag ? 'select-none' : '',
       )}
     >
@@ -808,8 +809,8 @@ export function PlanTimeline({
                 )}
                 onClick={() => onSelect({ type: 'TASK', id: r.id, planId: r.planId, phaseId: r.phaseId })}
               >
-                <div className={cn('w-3 h-3 rounded-sm border mr-2 flex items-center justify-center flex-shrink-0', sc === 'COMPLETED' ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300')}>
-                  {sc === 'COMPLETED' && (
+                <div className={cn('w-3 h-3 rounded-sm border mr-2 flex items-center justify-center flex-shrink-0', sc === 'HOÀN THÀNH' ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300')}>
+                  {sc === 'HOÀN THÀNH' && (
                     <svg width="7" height="7" viewBox="0 0 8 8">
                       <path d="M1 4l2 2 4-3" stroke="white" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
@@ -858,7 +859,7 @@ export function PlanTimeline({
           style={{ scrollbarWidth: 'none' }}
           onScroll={onBodyScroll}
         >
-          <div style={{ width: totalWidth, height: Math.max(rows.length * ROW_H + ROW_H, 300), position: 'relative' }}>
+          <div style={{ width: totalWidth, height: '100%', minHeight: Math.max(rows.length * ROW_H + ROW_H, 300), position: 'relative' }}>
 
             {/* Weekend shading */}
             {timeScale === 'weeks' && dayCells
@@ -990,7 +991,7 @@ export function PlanTimeline({
                     onClick={e => { e.stopPropagation(); onSelect({ type: 'TASK', id: tk.id, planId: r.planId, phaseId: r.phaseId }); }}
                   >
                     <div className="absolute inset-0 bg-black/20 pointer-events-none"
-                      style={{ width: sc === 'COMPLETED' ? '100%' : sc === 'IN_PROGRESS' || sc === 'ACTIVE' ? '45%' : '0%' }} />
+                      style={{ width: sc === 'HOÀN THÀNH' ? '100%' : sc === 'ĐANG TIÊN HÀNH' ? '45%' : '0%' }} />
                     {canEdit && (
                       <>
                         <div className="absolute left-0 top-0 bottom-0 w-2 cursor-w-resize z-10"
@@ -1022,13 +1023,13 @@ export function PlanTimeline({
       {/* ════════ Toolbar ════════ */}
       <div className="absolute bottom-5 right-5 z-30 flex items-center gap-2">
         <button onClick={scrollToToday} className="h-8 px-3 text-[11px] font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg shadow-sm hover:border-slate-500 transition-all">
-          Today
+          Hôm nay
         </button>
         <div className="flex bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
           {(['weeks', 'months', 'quarters'] as const).map((s, idx) => (
             <button key={s} onClick={() => setTimeScale(s)}
               className={cn('h-8 px-3 text-[10px] font-bold uppercase tracking-wider transition-all', idx > 0 && 'border-l border-slate-200', timeScale === s ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50')}>
-              {s === 'weeks' ? 'Weeks' : s === 'months' ? 'Months' : 'Quarters'}
+              {s === 'weeks' ? 'Tuần' : s === 'months' ? 'Tháng' : 'Quý'}
             </button>
           ))}
         </div>
