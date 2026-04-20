@@ -18,6 +18,7 @@ public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID
 
     boolean existsByPlanIdAndName(UUID planId, String name);
 
+    // Sử dụng khi tạo mới
     @Query("""
         SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END
         FROM PlanStageEntity p
@@ -33,6 +34,7 @@ public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID
             @Param("endDate") LocalDate endDate
     );
 
+    // Sử dụng khi cập nhật
     @Query("""
         SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END
         FROM PlanStageEntity p

@@ -7,6 +7,7 @@ import com.farmapp.farmsmartmanagement.infrastructure.security.UserPrincipal;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanStageRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdatePlanStageRequest;
+import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdatePlanStageTimeRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlanResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlanStageResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.service.PlanStageService;
@@ -73,6 +74,19 @@ public class PlanStageController {
                 planStageService.updatePlanStageCustom(planId, stageId, request)
         );
     }
+
+    @PutMapping("/api/v1/plans/{planId}/stages/{stageId}/time")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<PlanStageResponse>> updatePlanStageTime(
+            @PathVariable("planId") UUID planId,
+            @PathVariable("stageId") UUID stageId,
+            @RequestBody @Valid UpdatePlanStageTimeRequest request
+    ){
+        return ResponseUtil.success(
+                planStageService.updatePlanStageTime(planId, stageId, request)
+        );
+    }
+
 
     @DeleteMapping("/api/v1/plans/{planId}/stages/{stageId}")
     @RequiresFarmToken

@@ -75,6 +75,7 @@ public enum ErrorCode {
     INVALID_DATE_RANGE(400, "Thời gian bắt đầu phải trước thời gian kết thúc" , HttpStatus.BAD_REQUEST ),
     INVALID_DATE_NOW(400,"Thời gian kết thúc không được ở quá khứ", HttpStatus.BAD_REQUEST ),
     TASK_OUT_OF_TIME_PLAN_STAGE(400,"Thơi gian công việc phải nằm trong thời gian giai đoạn" ,HttpStatus.BAD_REQUEST ),
+    PLAN_TIME_CANNOT_LESS_STAGE(409, "Thời gian kế hoạch phải bao phủ toàn bộ giai đoạn", HttpStatus.CONFLICT),
 ;
 
     private final int code;

@@ -2,7 +2,10 @@ package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,4 +21,20 @@ public interface PlanRepository extends JpaRepository<PlanEntity, UUID> {
     Optional<PlanEntity> findByIdAndFarm_Id(UUID planId, UUID farmId);
 
     boolean existsByIdAndFarm_Id(UUID planId, UUID farmId);
+
+    @Query("""
+    SELECT CASE WHEN COUNT(p) = 0 THEN true
+        ELSE (
+            :startDate <= MIN(p.startDate)
+            AND :endDate >= MAX(p.endDate)
+        )
+    END
+    FROM PlanStageEntity p
+    WHERE p.plan.id = :planId
+""")
+    boolean isPlanCoverAllStages(
+            @Param("planId") UUID planId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
 }
