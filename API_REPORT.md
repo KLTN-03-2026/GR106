@@ -32,6 +32,8 @@ Tài liệu này tổng hợp toàn bộ các điểm cuối API (Endpoints) tro
 | Tạo kế hoạch mới | `POST` | `/api/v1/plans` | ✅ Synced | `cropId`, `name`, `startDate`, `endDate`, `note` |
 | Lấy Plot của kế hoạch | `GET` | `/api/v1/plans/{id}/plots` | ✅ Synced | |
 | Thêm Plot vào kế hoạch | `POST` | `/api/v1/plans/{id}/plots` | ✅ Synced | `plotIds: []` |
+| Cập nhật thông tin | `PATCH` | `/api/v1/plans/{id}` | ✅ Synced | `name`, `note` |
+| Cập nhật thời gian | `PUT` | `/api/v1/plans/{id}/time` | ✅ Synced | `startDate`, `endDate` |
 | Xóa kế hoạch | `DELETE` | `/api/v1/plans/{id}` | ✅ Synced | |
 
 ---
@@ -41,6 +43,8 @@ Tài liệu này tổng hợp toàn bộ các điểm cuối API (Endpoints) tro
 | :--- | :--- | :--- | :--- | :--- |
 | Danh sách giai đoạn | `GET` | `/api/v1/plans/{id}/stages` | ✅ Synced | |
 | Tạo giai đoạn mới | `POST` | `/api/v1/plans/{id}/stages` | ✅ Synced | `name`, `startDate`, `endDate` |
+| Cập nhật giai đoạn | `PATCH` | `/api/v1/plans/{id}/stages/{sid}` | ✅ Synced | `name`, `startDate`, `endDate` |
+| Cập nhật TG giai đoạn| `PUT` | `/api/v1/plans/{id}/stages/{sid}/time` | ✅ Synced | `startDate`, `endDate` |
 | Xóa giai đoạn | `DELETE` | `/api/v1/plans/{id}/stages/{sid}` | ✅ Synced | |
 
 ---
@@ -68,7 +72,7 @@ Tài liệu này tổng hợp toàn bộ các điểm cuối API (Endpoints) tro
 ## 7. Payment API (Thanh toán)
 | Chức năng | Phương pháp | Endpoint | Trạng thái | Ghi chú |
 | :--- | :--- | :--- | :--- | :--- |
-| Tạo link thanh toán | `POST` | `/api/v1/payment/create` | ✅ Synced | Redirect sang SePay |
+| Tạo link thanh toán | `POST` | `/api/v1/payment/create` | ✅ Synced | Redirect sang SePay. **Yêu cầu Farm Token** |
 | IPN Callback | `POST` | `/api/v1/payment/ipn` | ✅ Synced | Server-to-server |
 
 ---
@@ -97,14 +101,14 @@ Tài liệu này tổng hợp toàn bộ các điểm cuối API (Endpoints) tro
 | Chức năng | Phương pháp | Endpoint | Trạng thái | Ghi chú |
 | :--- | :--- | :--- | :--- | :--- |
 | Danh sách thành viên | `GET` | `/api/v1/farms/{id}/members` | ✅ Synced | Trả về thông tin & vai trò |
-| Thay đổi vai trò | `PATCH` | `/api/v1/farms/{id}/members` | ✅ Synced | `userId`, `roleId` |
+| Thay đổi vai trò | `PATCH` | `/api/v1/farms/{id}/members/{uid}/role` | ✅ Synced | `roleId` |
 | Xóa thành viên | `DELETE` | `/api/v1/farms/{id}/members/{uid}` | ✅ Synced | |
 | Gửi lời mời | `POST` | `/api/v1/farms/{id}/invitations` | ✅ Synced | `email`, `roleId` |
 | Danh sách lời mời | `GET` | `/api/v1/farms/{id}/invitations` | ✅ Synced | |
-| Hủy lời mời | `DELETE` | `/api/v1/farms/{id}/invitations/{iid}` | ✅ Synced | |
+| Hủy lời mời | `PATCH` | `/api/v1/farms/{id}/invitations/{iid}/cancel` | ✅ Synced | |
 
 ---
 
-**Cập nhật lần cuối:** 2026-04-19
+**Cập nhật lần cuối:** 2026-04-20
 **Tiêu chuẩn:** Khớp 100% với Backend Swagger Documentation.
 **Người phụ trách:** Antigravity (AI Assistant)

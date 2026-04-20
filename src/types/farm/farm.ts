@@ -1,19 +1,14 @@
 export interface Farm {
   id: string;
-  name: string;
-  address?: string;
-  totalArea?: number;
-  description?: string;
   ownerId: string;
-  status: 'ACTIVE' | 'INACTIVE';
-  memberCount: number;
-  plotCount: number;
+  name: string;
+  description?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface CreateFarmRequest {
   farmName: string;
-  address?: string;
-  totalArea?: number;
   description?: string;
 }
 

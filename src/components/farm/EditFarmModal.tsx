@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trees, 
-  MapPin, 
   FileText, 
   Loader2, 
   X,
@@ -13,6 +12,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '../../store';
+import { updateFarm } from '../../store/farmSlice';
 
 import { farmEditSchema, FarmEditInput } from '../../schemas/farmSchemas';
 
@@ -24,6 +26,8 @@ interface EditFarmModalProps {
 }
 
 export function EditFarmModal({ isOpen, onClose, farm, onSuccess }: EditFarmModalProps) {
+  const dispatch = useDispatch<AppDispatch>();
+
 
   const {
     register,
@@ -34,7 +38,6 @@ export function EditFarmModal({ isOpen, onClose, farm, onSuccess }: EditFarmModa
     resolver: zodResolver(farmEditSchema),
     defaultValues: {
       name: '',
-      address: '',
       description: '',
     }
   });
@@ -42,19 +45,33 @@ export function EditFarmModal({ isOpen, onClose, farm, onSuccess }: EditFarmModa
   useEffect(() => {
     if (farm && isOpen) {
       reset({
-        name: farm.name || '',
-        address: farm.address || '',
+        name: farm.name || farm.farmName || '',
         description: farm.description || '',
       });
     }
   }, [farm, isOpen, reset]);
 
-  const onSubmit = async (_data: FarmEditInput) => {
+  const onSubmit = async (data: FarmEditInput) => {
     try {
-      toast.info('Tính năng cập nhật trang trại đang được phát triển theo tài liệu API mới nhất.');
+      const targetFarmId = farm.id || farm.farmId;
+      if (!targetFarmId) {
+        toast.error('Không tìm thấy ID trang trại');
+        return;
+      }
+
+      await dispatch(updateFarm({ 
+        farmId: targetFarmId, 
+        data: {
+          name: data.name,
+          description: data.description || ''
+        }
+      })).unwrap();
+      
+      toast.success('Cập nhật trang trại thành công');
+      onSuccess?.();
       onClose();
     } catch (error: any) {
-      toast.error('Đã xảy ra lỗi hệ thống');
+      toast.error(error.message || 'Đã xảy ra lỗi hệ thống');
     }
   };
 
@@ -122,19 +139,7 @@ export function EditFarmModal({ isOpen, onClose, farm, onSuccess }: EditFarmModa
                     )}
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
-                      Địa chỉ
-                    </label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                      <Input
-                        {...register('address')}
-                        placeholder="Nhập địa chỉ trang trại"
-                        className="h-12 pl-10 bg-gray-50 border-gray-100 focus:bg-white transition-all text-base font-medium rounded-xl"
-                      />
-                    </div>
-                  </div>
+
 
                   <div className="space-y-1.5">
                     <label className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">

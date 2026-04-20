@@ -50,7 +50,7 @@ export const createCropSchema = z.object({
   description: z.string().optional(),
   imageUrl: z.string().url('URL ảnh không hợp lệ').or(z.string().length(0)).optional(),
   // Các trường mở rộng (chờ API từ BE, không gửi lên server lúc này)
-  stages: z.array(growthStageSchema).optional(),
+  stages: z.array(growthStageSchema).default([]).optional(),
   soil: soilConditionSchema.optional(),
   diseases: z.array(diseaseSchema).optional(),
 });

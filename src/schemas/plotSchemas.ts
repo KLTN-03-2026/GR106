@@ -26,7 +26,7 @@ export const createPlotSchema = z.object({
 });
 
 // Base Response Schema
-export const apiResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) => 
+export const apiResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
   z.object({
     success: z.boolean(),
     code: z.number(),

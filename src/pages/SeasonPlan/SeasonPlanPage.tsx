@@ -5,15 +5,19 @@ import { RootState, AppDispatch } from '../../store';
 import {
   addPlan,
   updatePlan,
+  updatePlanTime,
   fetchPlans,
   createPlan,
   removePlan,
   fetchStages,
-  fetchTasks,
   createPhase,
   removePhase,
+  fetchTasks,
+  updatePhase,
+  updatePhaseTime,
   createSeasonTask,
   updateSeasonTask,
+  updateTaskTime,
   removeSeasonTask,
   addPlotsToPlan,
   fetchPlanPlots,
@@ -28,7 +32,6 @@ import {
   AlertCircle,
   Trash2,
   Settings2,
-  Users,
   LayoutGrid,
   List,
   CalendarDays,
@@ -150,7 +153,6 @@ export function SeasonPlanPage() {
   const [activeTab, setActiveTab] = useState<NavTab>('timeline');
   const [statusFilter, setStatusFilter] = useState<PlanStatus | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [panelDismissed, setPanelDismissed] = useState(false);
 
   // ── Modal state ───────────────────────────────────────────────────────────
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -213,7 +215,6 @@ export function SeasonPlanPage() {
     if (currentPlan) {
       setActiveTab('timeline');
       setSelectedItem({ type: 'PLAN', id: currentPlan.id, planId: currentPlan.id });
-      setPanelDismissed(false);
     }
   }, [currentPlan?.id]); // chỉ chạy khi ID plan thay đổi, không phụ thuộc selectedItem
 
@@ -237,11 +238,23 @@ export function SeasonPlanPage() {
   const extractErrorMessage = (err: any): string => {
     if (typeof err === 'string') return err;
     if (Array.isArray(err)) return err.map(e => e.message || JSON.stringify(e)).join(', ');
+    
+    // Handle error object from standard ApiResponse
+    if (err.message && typeof err.message === 'string') {
+      if (err.data && typeof err.data === 'object' && !Array.isArray(err.data)) {
+        // If there are detailed validation errors in data
+        const details = Object.values(err.data).join('; ');
+        if (details) return `${err.message}: ${details}`;
+      }
+      return err.message;
+    }
+
     if (err.data && typeof err.data === 'object') {
       if (Array.isArray(err.data))
         return err.data.map((e: any) => e.message || e.code || JSON.stringify(e)).join('; ');
       return err.message || err.code || JSON.stringify(err.data);
     }
+    
     return err.message || 'Có lỗi xảy ra';
   };
 
@@ -270,11 +283,53 @@ export function SeasonPlanPage() {
 
   const handleUpdatePlan = async (updatedPlan: SeasonPlan) => {
     try {
-      await dispatch(updatePlan({ planId: updatedPlan.id, data: updatedPlan })).unwrap();
+      const original = plans.find(p => p.id === updatedPlan.id);
+      if (!original) return;
+
+      const isDateChanged = 
+        original.startDate !== updatedPlan.startDate || 
+        original.endDate !== updatedPlan.endDate;
+
+      // Cập nhật ngày bắt đầu và kết thúc → PUT /api/v1/plans/{planId}/time
+      if (isDateChanged) {
+        await dispatch(updatePlanTime({
+          planId: updatedPlan.id,
+          startDate: updatedPlan.startDate,
+          endDate: updatedPlan.endDate
+        })).unwrap();
+      }
     } catch (err: any) {
       showError('Lỗi cập nhật kế hoạch', err);
     }
   };
+
+  const handleExpandPhase = (planId: string, phaseId: string) => {
+    dispatch(fetchTasks({ planId, stageId: phaseId }));
+  };
+
+  const handleUpdatePhase = async (planId: string, stageId: string, data: { name: string; startDate: string; endDate: string }, originalPhase?: any) => {
+    try {
+      if (!originalPhase) {
+        await dispatch(updatePhase({ planId, stageId, data })).unwrap();
+        return;
+      }
+
+      const isDateChanged = originalPhase.startDate !== data.startDate || originalPhase.endDate !== data.endDate;
+      const isNameChanged = originalPhase.name !== data.name;
+
+      if (isDateChanged) {
+        await dispatch(updatePhaseTime({ planId, stageId, data: { startDate: data.startDate, endDate: data.endDate } })).unwrap();
+      }
+
+      if (isNameChanged) {
+        await dispatch(updatePhase({ planId, stageId, data })).unwrap();
+      }
+    } catch (err: any) {
+      showError('Lỗi cập nhật giai đoạn', err);
+    }
+  };
+
+  // handleUpdatePhaseTime removed to clear warning
 
   const handleDeletePlan = (planId: string) =>
     setDeleteConfirm({ isOpen: true, planId, isDeleting: false });
@@ -297,7 +352,7 @@ export function SeasonPlanPage() {
   const handleAddPhase = (planId: string) => {
     const plan = plans.find(p => p.id === planId);
     if (!plan) return;
-    const lastPhase = plan.phases?.at(-1) ?? null;
+    const lastPhase = plan.phases && plan.phases.length > 0 ? plan.phases[plan.phases.length - 1] : null;
     const todayStr = new Date().toISOString().split('T')[0];
     let startDate: string;
     if (lastPhase) {
@@ -351,8 +406,14 @@ export function SeasonPlanPage() {
 
     let plotId = data.plotId;
     if (!plotId && plan.plots?.length) plotId = plan.plots[0].plotId;
+    
     if (!plotId) {
-      setNotification({ isOpen: true, type: 'error', title: 'Thiếu thông tin lô đất', message: 'Vui lòng chọn lô đất cho công việc này.' });
+      setNotification({ 
+        isOpen: true, 
+        type: 'error', 
+        title: 'Thiếu thông tin lô đất', 
+        message: 'Kế hoạch này chưa được gán lô đất nào. Vui lòng gán lô đất cho kế hoạch trước khi tạo công việc.' 
+      });
       return;
     }
     try {
@@ -390,18 +451,43 @@ export function SeasonPlanPage() {
     }
   };
 
-  const handleUpdateTask = async (planId: string, stageId: string, task: Task) => {
+  const handleUpdateTask = async (planId: string, stageId: string, task: Task, originalTask?: Task) => {
     const plan = plans.find(p => p.id === planId);
     const plotId = task.plotId || (plan?.plots?.length ? plan.plots[0].plotId : undefined);
     if (!plotId) {
-      setNotification({ isOpen: true, type: 'error', title: 'Thiếu thông tin lô đất', message: 'Công việc này thiếu thông tin lô đất.' });
+      setNotification({ 
+        isOpen: true, 
+        type: 'error', 
+        title: 'Thiếu thông tin lô đất', 
+        message: 'Công việc này thiếu thông tin lô đất và kế hoạch không có lô đất mặc định.' 
+      });
       return;
     }
     try {
-      await dispatch(updateSeasonTask({
-        planId, stageId, taskId: task.id,
-        data: { name: task.name, description: task.description || '', startDate: task.startDate, endDate: task.endDate, plotId },
-      })).unwrap();
+      if (!originalTask) {
+        await dispatch(updateSeasonTask({
+          planId, stageId, taskId: task.id,
+          data: { name: task.name, description: task.description || '', startDate: task.startDate, endDate: task.endDate, plotId },
+        })).unwrap();
+        return;
+      }
+
+      const isDateChanged = originalTask.startDate !== task.startDate || originalTask.endDate !== task.endDate;
+      const isNameChanged = originalTask.name !== task.name || originalTask.description !== task.description;
+
+      if (isDateChanged) {
+        await dispatch(updateTaskTime({
+          planId, stageId, taskId: task.id,
+          data: { startDate: task.startDate, endDate: task.endDate },
+        })).unwrap();
+      }
+
+      if (isNameChanged) {
+        await dispatch(updateSeasonTask({
+          planId, stageId, taskId: task.id,
+          data: { name: task.name, description: task.description || '', startDate: task.startDate, endDate: task.endDate, plotId },
+        })).unwrap();
+      }
     } catch (err: any) {
       showError('Lỗi cập nhật', err);
     }
@@ -457,7 +543,7 @@ export function SeasonPlanPage() {
             {currentPlan && (
               <div className="flex items-center gap-2 mt-0.5">
                 <span className={cn(
-                  'px-2 py-0 text-[10px] font-bold uppercase tracking-wider rounded-full',
+                  'px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full whitespace-nowrap inline-flex items-center justify-center',
                   getStatusColor(currentPlan.status),
                 )}>
                   {getStatusLabel(currentPlan.status)}
@@ -636,6 +722,7 @@ export function SeasonPlanPage() {
                   onUpdatePlan={handleUpdatePlan}
                   onDeletePlan={handleDeletePlan}
                   onAddPhase={handleAddPhase}
+                  onExpandPhase={handleExpandPhase}
                   preExpandedPlanId={planId}
                   canEdit={canEdit}
                 />
@@ -652,9 +739,12 @@ export function SeasonPlanPage() {
               }}
               onUpdatePlan={handleUpdatePlan}
               onUpdatePhase={(id, phase) => {
-                const plan = plans.find(p => p.id === phase.planId);
-                if (!plan) return;
-                handleUpdatePlan({ ...plan, phases: plan.phases.map(ph => ph.id === id ? phase : ph) });
+                const originalPhase = selectedData?.type === 'PHASE' ? selectedData.phase : null;
+                handleUpdatePhase(id, phase.id, {
+                  name: phase.name,
+                  startDate: phase.startDate,
+                  endDate: phase.endDate
+                }, originalPhase);
               }}
               onDeletePhase={handleDeletePhase}
               onAddTask={handleAddTask}

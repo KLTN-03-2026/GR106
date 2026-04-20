@@ -85,6 +85,21 @@ export const seasonPlanService = {
     await axiosInstance.delete(`/api/v1/plans/${planId}/stages/${stageId}`);
   },
 
+  async getStage(planId: string, stageId: string): Promise<any> {
+    const response = await axiosInstance.patch(`/api/v1/plans/${planId}/stages/${stageId}`, {});
+    return createStageResponseSchema.parse(response.data).data;
+  },
+
+  async updateStage(planId: string, stageId: string, data: { name: string; startDate: string; endDate: string }): Promise<any> {
+    const response = await axiosInstance.patch(`/api/v1/plans/${planId}/stages/${stageId}`, data);
+    return createStageResponseSchema.parse(response.data).data;
+  },
+
+  async updateStageTime(planId: string, stageId: string, data: { startDate: string; endDate: string }): Promise<any> {
+    const response = await axiosInstance.put(`/api/v1/plans/${planId}/stages/${stageId}/time`, data);
+    return createStageResponseSchema.parse(response.data).data;
+  },
+
   // --- TASK APIs ---
 
   async getTasks(planId: string, stageId: string): Promise<any[]> {
@@ -102,6 +117,11 @@ export const seasonPlanService = {
     return createTaskResponseSchema.parse(response.data).data;
   },
 
+  async updateTaskTime(planId: string, stageId: string, taskId: string, data: { startDate: string; endDate: string }): Promise<any> {
+    const response = await axiosInstance.put(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}/time`, data);
+    return createTaskResponseSchema.parse(response.data).data;
+  },
+
   async deleteTask(planId: string, stageId: string, taskId: string): Promise<void> {
     await axiosInstance.delete(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}`);
   },
@@ -110,7 +130,7 @@ export const seasonPlanService = {
    * Cập nhật thông tin kế hoạch
    */
   async updatePlan(planId: string, data: Partial<SeasonPlan>): Promise<SeasonPlan> {
-    // Chỉ gửi các trường hợp lệ theo Swagger
+    // Chỉ gửi các trường hợp lệ theo Swagger (PATCH)
     const payload = {
       name: data.name,
       startDate: data.startDate,
@@ -126,6 +146,18 @@ export const seasonPlanService = {
     } as SeasonPlan;
   },
 
+  /**
+   * Cập nhật thời gian kế hoạch (PUT /api/v1/plans/{planId}/time)
+   */
+  async updatePlanTime(planId: string, data: { startDate: string; endDate: string }): Promise<SeasonPlan> {
+    const response = await axiosInstance.put(`/api/v1/plans/${planId}/time`, data);
+    const validated = createPlanResponseSchema.parse(response.data);
+    return {
+      ...validated.data,
+      phases: [], // Response usually doesn't have phases
+      description: validated.data.note || '',
+    } as SeasonPlan;
+  },
 
   /**
    * Xóa kế hoạch

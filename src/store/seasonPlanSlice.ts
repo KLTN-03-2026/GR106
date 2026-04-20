@@ -65,6 +65,17 @@ export const removePlan = createAsyncThunk(
   }
 );
 
+export const updatePlanTime = createAsyncThunk(
+  'seasonPlan/updatePlanTime',
+  async ({ planId, startDate, endDate }: { planId: string; startDate: string; endDate: string }, { rejectWithValue }) => {
+    try {
+      return await seasonPlanService.updatePlanTime(planId, { startDate, endDate });
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 // --- PLAN PLOT THUNKS ---
 
 export const fetchPlanPlots = createAsyncThunk(
@@ -128,6 +139,28 @@ export const removePhase = createAsyncThunk(
   }
 );
 
+export const updatePhase = createAsyncThunk(
+  'seasonPlan/updatePhase',
+  async ({ planId, stageId, data }: { planId: string; stageId: string; data: { name: string; startDate: string; endDate: string } }, { rejectWithValue }) => {
+    try {
+      return await seasonPlanService.updateStage(planId, stageId, data);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const updatePhaseTime = createAsyncThunk(
+  'seasonPlan/updatePhaseTime',
+  async ({ planId, stageId, data }: { planId: string; stageId: string; data: { startDate: string; endDate: string } }, { rejectWithValue }) => {
+    try {
+      return await seasonPlanService.updateStageTime(planId, stageId, data);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 // --- TASK THUNKS ---
 
 export const fetchTasks = createAsyncThunk(
@@ -163,6 +196,20 @@ export const updateSeasonTask = createAsyncThunk(
   ) => {
     try {
       return { planId, stageId, task: await seasonPlanService.updateTask(planId, stageId, taskId, data) };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const updateTaskTime = createAsyncThunk(
+  'seasonPlan/updateTaskTime',
+  async (
+    { planId, stageId, taskId, data }: { planId: string; stageId: string; taskId: string; data: { startDate: string; endDate: string } },
+    { rejectWithValue }
+  ) => {
+    try {
+      return { planId, stageId, task: await seasonPlanService.updateTaskTime(planId, stageId, taskId, data) };
     } catch (error: any) {
       return rejectWithValue(error.response?.data || error.message);
     }
@@ -207,6 +254,13 @@ const seasonPlanSlice = createSlice({
           state.plans[index] = { ...action.payload, phases: existingPhases };
         }
       })
+      .addCase(updatePlanTime.fulfilled, (state, action) => {
+        const index = state.plans.findIndex(p => p.id === action.payload.id);
+        if (index !== -1) {
+          const existingPhases = state.plans[index].phases;
+          state.plans[index] = { ...action.payload, phases: existingPhases };
+        }
+      })
       .addCase(removePlan.fulfilled, (state, action) => {
         state.plans = state.plans.filter(p => p.id !== action.payload);
       })
@@ -221,7 +275,7 @@ const seasonPlanSlice = createSlice({
         if (plan) {
           if (!plan.plots) plan.plots = [];
           // Add new plots if not already there
-          action.payload.addedPlots.forEach(newP => {
+          action.payload.addedPlots.forEach((newP: { plotId: string; plotName: string }) => {
             if (!plan.plots?.some(p => p.plotId === newP.plotId)) {
               plan.plots?.push(newP);
             }
@@ -245,6 +299,24 @@ const seasonPlanSlice = createSlice({
       .addCase(removePhase.fulfilled, (state, action) => {
         const plan = state.plans.find(p => p.id === action.payload.planId);
         if (plan) plan.phases = plan.phases.filter(ph => ph.id !== action.payload.stageId);
+      })
+      .addCase(updatePhase.fulfilled, (state, action) => {
+        const plan = state.plans.find(p => p.id === action.meta.arg.planId);
+        if (plan) {
+          const index = plan.phases.findIndex(ph => ph.id === action.payload.id);
+          if (index !== -1) {
+            plan.phases[index] = { ...plan.phases[index], ...action.payload };
+          }
+        }
+      })
+      .addCase(updatePhaseTime.fulfilled, (state, action) => {
+        const plan = state.plans.find(p => p.id === action.meta.arg.planId);
+        if (plan) {
+          const index = plan.phases.findIndex(ph => ph.id === action.payload.id);
+          if (index !== -1) {
+            plan.phases[index] = { ...plan.phases[index], ...action.payload };
+          }
+        }
       })
 
       // Tasks

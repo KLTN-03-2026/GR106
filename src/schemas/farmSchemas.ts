@@ -55,6 +55,7 @@ export const createFarmResponseSchema = z.object({
 
 export const farmEditSchema = z.object({
   name: z.string().min(1, 'Tên trang trại là bắt buộc').max(100, 'Tên không quá 100 ký tự'),
-  address: z.string().optional(),
   description: z.string().optional(),
 });
+
+export type FarmEditInput = z.infer<typeof farmEditSchema>;

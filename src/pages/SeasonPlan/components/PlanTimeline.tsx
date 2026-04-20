@@ -40,6 +40,7 @@ interface PlanTimelineProps {
   onUpdatePlan: (plan: SeasonPlan) => void;
   onDeletePlan?: (planId: string) => void;
   onAddPhase: (planId: string) => void;
+  onExpandPhase?: (planId: string, phaseId: string) => void;
   preExpandedPlanId?: string;
   canEdit?: boolean;
 }
@@ -80,6 +81,7 @@ export function PlanTimeline({
   onUpdatePlan,
   onDeletePlan,
   onAddPhase,
+  onExpandPhase,
   preExpandedPlanId,
   canEdit = false,
 }: PlanTimelineProps) {
@@ -366,12 +368,24 @@ export function PlanTimeline({
     e.stopPropagation();
     setExpandedPlans(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
-  const togglePhase = (id: string, e: React.MouseEvent) => {
+  const togglePhase = (id: string, planId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setExpandedPhases(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setExpandedPhases(p => {
+      const n = new Set(p);
+      if (n.has(id)) {
+        n.delete(id);
+      } else {
+        n.add(id);
+        if (onExpandPhase) onExpandPhase(planId, id);
+      }
+      return n;
+    });
   };
 
   // ── Bar drag ──────────────────────────────────────────────────────────────
+  const rafRef = useRef<number | null>(null);
+  const lastMousePos = useRef({ x: 0, y: 0, delta: 0 });
+
   const startBarDrag = (e: React.MouseEvent, target: DragTarget, mode: DragMode, origStart: string, origEnd: string) => {
     if (!canEdit) return;
     e.preventDefault(); e.stopPropagation();
@@ -382,17 +396,37 @@ export function PlanTimeline({
 
   const onGlobalMouseMove = useCallback((e: MouseEvent) => {
     if (!barDrag) return;
-    const delta = Math.round((e.clientX - barDrag.startX) / PPD);
-    setDragDeltaDays(delta);
-    let s = barDrag.origStart, en = barDrag.origEnd;
-    if (barDrag.mode === 'MOVE') { s = addDaysToStr(s, delta); en = addDaysToStr(en, delta); }
-    else if (barDrag.mode === 'RESIZE_LEFT') s = addDaysToStr(s, delta);
-    else en = addDaysToStr(en, delta);
-    const fmt = (d: string) => new Date(d).toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' });
-    setDragTooltip({ x: e.clientX, y: e.clientY - 44, label: `${fmt(s)} → ${fmt(en)}` });
+    
+    if (rafRef.current) return;
+    
+    rafRef.current = requestAnimationFrame(() => {
+      if (!barDrag) { rafRef.current = null; return; }
+      
+      const delta = Math.round((e.clientX - barDrag.startX) / PPD);
+      lastMousePos.current = { x: e.clientX, y: e.clientY, delta };
+      
+      setDragDeltaDays(delta);
+      
+      let s = barDrag.origStart, en = barDrag.origEnd;
+      if (barDrag.mode === 'MOVE') { s = addDaysToStr(s, delta); en = addDaysToStr(en, delta); }
+      else if (barDrag.mode === 'RESIZE_LEFT') s = addDaysToStr(s, delta);
+      else en = addDaysToStr(en, delta);
+      
+      const fmt = (d: string) => {
+        const date = new Date(d);
+        return `${date.getDate()}/${date.getMonth() + 1}`;
+      };
+      setDragTooltip({ x: e.clientX, y: e.clientY - 44, label: `${fmt(s)} → ${fmt(en)}` });
+      
+      rafRef.current = null;
+    });
   }, [barDrag, PPD]);
 
   const onGlobalMouseUp = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
     if (!barDrag || dragDeltaDays === 0) {
       setBarDrag(null); setDragDeltaDays(0); setDragTooltip(null);
       document.body.style.cursor = ''; return;
@@ -450,27 +484,46 @@ export function PlanTimeline({
     window.addEventListener('mousemove', onGlobalMouseMove);
     window.addEventListener('mouseup', onGlobalMouseUp);
     return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
       window.removeEventListener('mousemove', onGlobalMouseMove);
       window.removeEventListener('mouseup', onGlobalMouseUp);
     };
   }, [barDrag, onGlobalMouseMove, onGlobalMouseUp]);
 
   // ── Bar preview style ─────────────────────────────────────────────────────
-  const getLeft = useCallback((d: string) => diffDays(minDate, new Date(d)) * PPD, [minDate, PPD]);
-  const getWidth = useCallback((s: string, e: string) => Math.max(PPD * 0.5, diffDays(s, e) * PPD), [PPD]);
+  const minDateTime = useMemo(() => minDate.getTime(), [minDate]);
+  const ppdValue = PPD;
 
-  const previewStyle = (planId: string, itemId: string, kind: 'phase' | 'task', start: string, end: string) => {
-    const hit = barDrag && barDrag.target.planId === planId &&
-      ((kind === 'phase' && barDrag.target.kind === 'phase' && (barDrag.target as any).phaseId === itemId) ||
-        (kind === 'task' && barDrag.target.kind === 'task' && (barDrag.target as any).taskId === itemId));
-    if (!hit) return { left: `${getLeft(start)}px`, width: `${getWidth(start, end)}px` };
+  const getLeft = useCallback((d: string) => {
+    const days = Math.round((new Date(d).getTime() - minDateTime) / 86400000);
+    return days * ppdValue;
+  }, [minDateTime, ppdValue]);
+
+  const getWidth = useCallback((s: string, e: string) => {
+    const days = Math.round((new Date(e).getTime() - new Date(s).getTime()) / 86400000);
+    return Math.max(ppdValue * 0.5, days * ppdValue);
+  }, [ppdValue]);
+
+  const previewStyle = useCallback((planId: string, itemId: string, kind: 'phase' | 'task', start: string, end: string) => {
+    if (!barDrag || barDrag.target.planId !== planId) {
+      return { left: `${getLeft(start)}px`, width: `${getWidth(start, end)}px` };
+    }
+    
+    const isHit = (kind === 'phase' && barDrag.target.kind === 'phase' && (barDrag.target as any).phaseId === itemId) ||
+      (kind === 'task' && barDrag.target.kind === 'task' && (barDrag.target as any).taskId === itemId);
+    
+    if (!isHit) return { left: `${getLeft(start)}px`, width: `${getWidth(start, end)}px` };
+    
     const d = dragDeltaDays;
     let ns = start, ne = end;
-    if (barDrag!.mode === 'MOVE') { ns = addDaysToStr(barDrag!.origStart, d); ne = addDaysToStr(barDrag!.origEnd, d); }
-    else if (barDrag!.mode === 'RESIZE_LEFT') { const dur = Math.max(1, diffDays(barDrag!.origStart, barDrag!.origEnd) - d); ns = addDaysToStr(barDrag!.origEnd, -dur); }
-    else { ne = addDaysToStr(barDrag!.origStart, Math.max(1, diffDays(barDrag!.origStart, barDrag!.origEnd) + d)); }
+    if (barDrag.mode === 'MOVE') { ns = addDaysToStr(barDrag.origStart, d); ne = addDaysToStr(barDrag.origEnd, d); }
+    else if (barDrag.mode === 'RESIZE_LEFT') { const dur = Math.max(1, diffDays(barDrag.origStart, barDrag.origEnd) - d); ns = addDaysToStr(barDrag.origEnd, -dur); }
+    else { ne = addDaysToStr(barDrag.origStart, Math.max(1, diffDays(barDrag.origStart, barDrag.origEnd) + d)); }
     return { left: `${getLeft(ns)}px`, width: `${getWidth(ns, ne)}px` };
-  };
+  }, [barDrag, dragDeltaDays, getLeft, getWidth]);
 
   // ── Status helpers ────────────────────────────────────────────────────────
   const statusCode = (s: any) => typeof s === 'string' ? s : (s?.code ?? '');
@@ -730,7 +783,7 @@ export function PlanTimeline({
                   )}
                   onClick={() => onSelect({ type: 'PHASE', id: r.id, planId: r.planId })}
                 >
-                  <button className="p-0.5 mr-1.5 text-slate-300 hover:text-indigo-500 flex-shrink-0" onClick={e => togglePhase(r.id, e)}>
+                  <button className="p-0.5 mr-1.5 text-slate-300 hover:text-indigo-500 flex-shrink-0" onClick={e => togglePhase(r.id, r.planId, e)}>
                     {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                   </button>
                   <div className="w-3.5 h-3.5 rounded-sm bg-indigo-500 flex items-center justify-center mr-2 flex-shrink-0">
@@ -885,7 +938,13 @@ export function PlanTimeline({
                         isDragging ? 'opacity-90 ring-2 ring-indigo-300' : '',
                         canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
                       )}
-                      style={{ ...ps, top: '50%', transform: 'translateY(-50%)', height: 24, transition: isDragging ? 'none' : 'left .1s, width .1s' }}
+                      style={{ 
+                        ...ps, 
+                        top: '50%', 
+                        height: 24, 
+                        willChange: 'left, width',
+                        transition: isDragging ? 'none' : 'left .15s ease-out, width .15s ease-out',
+                      }}
                       onMouseDown={canEdit ? e => startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: ph.id }, 'MOVE', ph.startDate, ph.endDate) : undefined}
                       onClick={e => { e.stopPropagation(); onSelect({ type: 'PHASE', id: ph.id, planId: r.planId }); }}
                     >
@@ -919,7 +978,14 @@ export function PlanTimeline({
                 >
                   <div
                     className={cn('absolute rounded overflow-hidden z-10', taskBarCls(tk.status), isDragging ? 'opacity-90 ring-2 ring-indigo-300' : '', canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer')}
-                    style={{ ...ps, top: '50%', transform: 'translateY(-50%)', height: 14, minWidth: 20, transition: isDragging ? 'none' : 'left .1s, width .1s' }}
+                    style={{ 
+                      ...ps, 
+                      top: '50%', 
+                      height: 14, 
+                      minWidth: 20, 
+                      willChange: 'left, width',
+                      transition: isDragging ? 'none' : 'left .15s ease-out, width .15s ease-out',
+                    }}
                     onMouseDown={canEdit ? e => startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tk.id }, 'MOVE', tk.startDate, tk.endDate) : undefined}
                     onClick={e => { e.stopPropagation(); onSelect({ type: 'TASK', id: tk.id, planId: r.planId, phaseId: r.phaseId }); }}
                   >

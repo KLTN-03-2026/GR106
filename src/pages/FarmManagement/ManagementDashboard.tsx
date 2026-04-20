@@ -13,7 +13,8 @@ import {
   Loader2,
   AlertCircle,
   ArrowRight,
-  Trash2
+  Trash2,
+  Pencil
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
@@ -202,6 +203,23 @@ export function ManagementDashboardPage() {
                     <ArrowRight size={10} />
                   </div>
                 </div>
+                
+                {(farm.owner || farm.myRole?.toLowerCase() === 'owner') && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingFarm({
+                        id: farm.farmId,
+                        name: farm.farmName,
+                        description: farm.description
+                      });
+                    }}
+                    className="w-8 h-8 rounded-[12px] flex items-center justify-center bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition-all shadow-sm border border-blue-100 shrink-0"
+                    title="Chỉnh sửa trang trại"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                )}
                 
                 <button
                   onClick={(e) => {

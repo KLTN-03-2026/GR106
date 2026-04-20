@@ -19,7 +19,7 @@ export const dashboardService = {
 
       // 2. Chạy quét nền cho từng farm
       // Sử dụng Promise.all để tối ưu tốc độ nếu danh sách farm không quá lớn
-      const scanPromises = farms.map(async (farm: any) => {
+      const scanPromises = farms.filter((f: any) => f.id).map(async (farm: any) => {
         try {
           // Lấy Farm Token tạm thời
           const selectResponse = await axios.post(

@@ -22,7 +22,7 @@ export default function DashboardLayout() {
   // Tự động đồng bộ Farm Context từ URL
   useEffect(() => {
     const syncFarmContext = async () => {
-      if (urlFarmId && urlFarmId !== currentFarmId) {
+      if (urlFarmId && urlFarmId !== 'undefined' && urlFarmId !== currentFarmId) {
         setIsSyncing(true);
         try {
           const res = await farmService.selectFarm(urlFarmId);

@@ -69,6 +69,19 @@ export const fetchFarmsSummary = createAsyncThunk(
   }
 );
 
+// Async Thunk để cập nhật thông tin Farm
+export const updateFarm = createAsyncThunk(
+  'farm/updateFarm',
+  async ({ farmId, data }: { farmId: string; data: { name: string; description: string } }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.patch(`/api/v1/farms/${farmId}`, data);
+      return createFarmResponseSchema.parse(response.data).data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 const farmSlice = createSlice({
   name: 'farm',
   initialState,
@@ -113,6 +126,27 @@ const farmSlice = createSlice({
         state.farmSummary = action.payload ?? [];
       })
       .addCase(fetchFarmsSummary.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // updateFarm
+      .addCase(updateFarm.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateFarm.fulfilled, (state, action) => {
+        state.loading = false;
+        // Cập nhật farm trong danh sách tóm tắt nếu cần
+        state.farmSummary = state.farmSummary.map(f =>
+          f.farmId === action.payload.id
+            ? { ...f, farmName: action.payload.name, description: action.payload.description }
+            : f
+        );
+        if (state.currentFarm && state.currentFarm.id === action.payload.id) {
+          state.currentFarm = action.payload;
+        }
+      })
+      .addCase(updateFarm.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

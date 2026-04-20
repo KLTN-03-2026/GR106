@@ -12,7 +12,7 @@ export interface SubscriptionPlan {
 }
 
 export type SubscriptionStatus = 'TRIAL' | 'ACTIVE' | 'EXPIRED' | 'CANCELLED' | 'GRACE_PERIOD';
-export type BillingCycle = 'MONTHLY' | 'YEARLY';
+export type BillingCycle = 'MONTHLY' | 'ANNUAL';
 
 export interface FarmSubscription {
     id: string;

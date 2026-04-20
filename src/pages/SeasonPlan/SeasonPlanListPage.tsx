@@ -52,6 +52,7 @@ export function SeasonPlanListPage() {
     isOpen: false,
     type: 'success',
     title: '',
+    message: '',
   });
 
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -263,9 +264,9 @@ export function SeasonPlanListPage() {
                   <h3 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
                     {plan.name}
                   </h3>
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-center gap-2">
                     <span className={cn(
-                      "px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full",
+                      "px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full whitespace-nowrap",
                       getStatusColor(plan.status)
                     )}>
                       {getStatusLabel(plan.status)}

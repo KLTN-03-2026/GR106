@@ -60,7 +60,7 @@ export const CropForm: React.FC<CropFormProps> = ({
       cropTypeId: '',
       description: '',
       imageUrl: '',
-      stages: [{ name: '', durationDays: 1, description: '' }],
+      stages: [],
       soil: { phMin: 5.5, phMax: 7.0, nMin: 100, nMax: 200, pMin: 50, pMax: 100, kMin: 100, kMax: 200 },
       diseases: [],
     },
@@ -277,12 +277,14 @@ export const CropForm: React.FC<CropFormProps> = ({
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-800">Các giai đoạn sinh trưởng</h3>
-                  <p className="text-xs text-slate-500">Thiết lập lộ trình từ khi gieo hạt đến lúc thu hoạch.</p>
-                  <p className="text-[10px] text-amber-600 font-bold mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    Lưu ý: Dữ liệu giai đoạn hiện chỉ phục vụ huấn luyện AI, chưa lưu lên máy chủ chính.
-                  </p>
+                  <h3 className="text-xl font-bold text-slate-800">Các giai đoạn sinh trưởng</h3>
+                  <p className="text-sm text-slate-500 mt-1">Thiết lập lộ trình từ khi gieo hạt đến lúc thu hoạch.</p>
+                  <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 rounded-lg border border-amber-100">
+                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                    <p className="text-[11px] text-amber-700 font-bold leading-none">
+                      Lưu ý: Dữ liệu giai đoạn hiện chỉ phục vụ huấn luyện AI, chưa lưu lên máy chủ chính.
+                    </p>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -295,8 +297,8 @@ export const CropForm: React.FC<CropFormProps> = ({
               </div>
 
               {stageFields.map((field: any, index: number) => (
-                <div key={field.id} className="relative p-8 bg-slate-50/50 border border-slate-100 rounded-[28px] group">
-                  <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-lg ring-4 ring-white">
+                <div key={field.id} className="relative p-10 bg-slate-50/50 border border-slate-100 rounded-[32px] group hover:bg-slate-50 hover:border-green-100 transition-all">
+                  <div className="absolute -left-4 top-10 w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-lg ring-8 ring-white z-10">
                     {index + 1}
                   </div>
 
@@ -310,26 +312,27 @@ export const CropForm: React.FC<CropFormProps> = ({
 
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                     <div className="md:col-span-8">
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Tên giai đoạn *</label>
+                      <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Tên giai đoạn *</label>
                       <input
                         {...register(`stages.${index}.name`)}
-                        className={`w-full px-5 py-3 bg-white border ${errors.stages?.[index]?.name ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all`}
+                        placeholder="Ví dụ: Nảy mầm"
+                        className={`w-full px-6 py-4 bg-white border ${errors.stages?.[index]?.name ? 'border-red-300 shadow-[0_0_0_4px_rgba(239,68,68,0.05)]' : 'border-slate-200'} rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all font-semibold`}
                       />
                     </div>
                     <div className="md:col-span-4">
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Độ dài (Ngày) *</label>
+                      <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Độ dài (Ngày) *</label>
                       <input
                         type="number"
                         {...register(`stages.${index}.durationDays`, { valueAsNumber: true })}
-                        className={`w-full px-5 py-3 bg-white border ${errors.stages?.[index]?.durationDays ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all`}
+                        className={`w-full px-6 py-4 bg-white border ${errors.stages?.[index]?.durationDays ? 'border-red-300 shadow-[0_0_0_4px_rgba(239,68,68,0.05)]' : 'border-slate-200'} rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all font-bold text-center`}
                       />
                     </div>
-                    <div className="md:col-span-12">
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Mô tả công việc chăm sóc</label>
+                    <div className="md:col-span-12 mt-2">
+                      <label className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Mô tả công việc chăm sóc</label>
                       <textarea
                         {...register(`stages.${index}.description`)}
-                        className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all resize-none"
-                        rows={1}
+                        placeholder="Ví dụ: Tưới nước 2 lần/ngày, bón phân vi lượng..."
+                        className="w-full px-6 py-4 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-500/10 focus:border-green-500 transition-all resize-none font-medium h-32"
                       />
                     </div>
                   </div>

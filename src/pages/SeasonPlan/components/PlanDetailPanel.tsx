@@ -7,32 +7,27 @@ import {
   Plus,
   Trash2,
   CheckSquare,
-  Clock,
-  Users,
-  Package,
-  Activity,
-  AlertCircle,
   CheckCircle2,
+  AlertCircle,
   Layout,
-  MoreHorizontal,
   Link2,
   Copy,
   ExternalLink,
-  Edit3,
   ChevronDown,
   Flag,
-  Tag,
   Calendar,
-  User,
+  Users,
+  Package,
   FileText,
   BarChart2,
   Paperclip,
+  Edit2,
+  Save,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SeasonPlan, PlanStatus, Phase, Task, StatusObject } from '../../../types/seasonPlan';
+import { SeasonPlan, Phase, Task, PlanPlot, StatusObject } from '../../../types/seasonPlan';
 import { Plot } from '../../../types/plot/plot';
 import { cn } from '../../../utils/cn';
-import { Button } from '../../../components/ui/button';
 import { seasonPlanService } from '@/services/seasonplan/seasonPlanService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -46,9 +41,9 @@ interface PlanDetailPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdatePlan: (plan: SeasonPlan) => void;
-  onUpdatePhase: (planId: string, phase: Phase) => void;
+  onUpdatePhase: (planId: string, phase: Phase, originalPhase?: Phase) => void;
   onAddTask: (planId: string, phaseId: string, data: { name: string; description: string; startDate: string; endDate: string; plotId: string }) => void;
-  onUpdateTask: (planId: string, phaseId: string, task: Task) => void;
+  onUpdateTask: (planId: string, phaseId: string, task: Task, originalTask?: Task) => void;
   onSelectPhase: (planId: string, phaseId: string) => void;
   onSelectTask: (planId: string, phaseId: string, taskId: string) => void;
   plots: Plot[];
@@ -59,14 +54,17 @@ interface PlanDetailPanelProps {
   canEdit?: boolean;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function statusCodeOf(s: any): string {
-  return typeof s === 'string' ? s : (s?.code ?? '');
+interface Material {
+  id: string;
+  name: string;
+  quantity: number;
+  unit?: string;
 }
 
-function statusNameOf(s: any): string {
-  return typeof s === 'string' ? s : (s?.name ?? s?.code ?? '');
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function statusCodeOf(s: string | StatusObject | null | undefined): string {
+  return typeof s === 'string' ? s : (s?.code ?? '');
 }
 
 function fmtDate(d: string) {
@@ -144,7 +142,7 @@ function InlineText({
 function StatusSelect({ value, options, onChange, canEdit }: {
   value: string;
   options: { code: string; label: string }[];
-  onChange: (code: string) => void;
+  onChange?: (code: string) => void;
   canEdit: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -153,7 +151,7 @@ function StatusSelect({ value, options, onChange, canEdit }: {
       disabled={!canEdit}
       onClick={() => canEdit && setOpen(o => !o)}
       className={cn(
-        'flex items-center gap-1.5 h-6 px-2.5 rounded text-[10px] font-bold uppercase tracking-wider',
+        'flex items-center justify-center gap-1.5 h-6 px-2.5 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap',
         statusChipClass(value),
         canEdit && 'cursor-pointer hover:opacity-90',
         !canEdit && 'cursor-default',
@@ -179,10 +177,10 @@ function StatusSelect({ value, options, onChange, canEdit }: {
             className="absolute top-8 left-0 z-50 bg-white border border-slate-200 rounded-lg shadow-xl py-1 min-w-[160px]"
           >
             {options.map(opt => (
-              <button
-                key={opt.code}
-                onClick={() => { onChange(opt.code); setOpen(false); }}
-                className={cn(
+                <button
+                  key={opt.code}
+                  onClick={() => { onChange?.(opt.code); setOpen(false); }}
+                  className={cn(
                   'w-full flex items-center gap-2 px-3 py-2 text-left transition-colors',
                   opt.code === value ? 'bg-slate-50' : 'hover:bg-slate-50',
                 )}
@@ -226,6 +224,10 @@ export function PlanDetailPanel({
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [activeTab, setActiveTab] = useState<'INFO' | 'MEMBERS' | 'MATERIALS'>('INFO');
   const [activeSelection, setActiveSelection] = useState(selection);
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempPlan, setTempPlan] = useState<SeasonPlan | null>(null);
+  const [tempPhase, setTempPhase] = useState<Phase | null>(null);
+  const [tempTask, setTempTask] = useState<Task | null>(null);
 
   // New task form
   const [newTaskName, setNewTaskName] = useState('');
@@ -238,17 +240,69 @@ export function PlanDetailPanel({
   const [showAddPlot, setShowAddPlot] = useState(false);
   const [selectedPlotIds, setSelectedPlotIds] = useState<string[]>([]);
   const [loadingAddPlot, setLoadingAddPlot] = useState(false);
-
-
-  const [showDetailFields, setShowDetailFields] = useState(true);
   // SAU (đã sửa)
   useEffect(() => {
     setActiveSelection(selection);
+    setIsEditing(false); // Reset edit mode on selection change
     if (selection) {
       const defaultPlot = selection.plan.plots?.[0]?.plotId ?? '';
       setNewTaskPlotId(defaultPlot);
+      
+      // Initialize temp data
+      setTempPlan(selection.plan);
+      if (selection.type === 'PHASE') setTempPhase(selection.phase);
+      if (selection.type === 'TASK') {
+        setTempPhase(selection.phase);
+        setTempTask(selection.task);
+      }
     }
   }, [selection]);
+
+  const handleStartEdit = () => {
+    if (!selection) return;
+    setTempPlan({ ...selection.plan });
+    if (selection.type === 'PHASE') setTempPhase({ ...selection.phase });
+    if (selection.type === 'TASK') {
+      setTempPhase({ ...selection.phase });
+      setTempTask({ ...selection.task });
+    }
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    // Reset temp data to original
+    if (selection) {
+      setTempPlan(selection.plan);
+      if (selection.type === 'PHASE') setTempPhase(selection.phase);
+      if (selection.type === 'TASK') {
+        setTempPhase(selection.phase);
+        setTempTask(selection.task);
+      }
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selection || !tempPlan) return;
+
+    try {
+      if (selection.type === 'PLAN') {
+        // Chỉ cập nhật ngày bắt đầu và kết thúc theo API PUT /api/v1/plans/{planId}/time
+        await onUpdatePlan({
+          ...tempPlan,
+          name: selection.plan.name,
+          description: selection.plan.description,
+        });
+      } else if (selection.type === 'PHASE' && tempPhase) {
+        await onUpdatePhase(tempPlan.id, tempPhase, selection.phase);
+      } else if (selection.type === 'TASK' && tempPhase && tempTask) {
+        await onUpdateTask(tempPlan.id, tempPhase.id, tempTask, selection.task);
+      }
+      setIsEditing(false);
+    } catch (err) {
+      console.error('Lỗi khi lưu:', err);
+    }
+  };
 
   if (!activeSelection && !isOpen) return null;
   if (!activeSelection) return null;
@@ -281,19 +335,17 @@ export function PlanDetailPanel({
     try {
       setLoadingAddPlot(true);
 
-      const addedPlots = await seasonPlanService.addPlotsToPlan(
+      const { addedPlots } = await seasonPlanService.addPlotsToPlan(
         plan.id,
         selectedPlotIds
-      );
+      ) as { addedPlots: PlanPlot[] };
 
       // merge plots (tránh duplicate)
       const existing = plan.plots || [];
 
       const merged = [
         ...existing,
-        ...addedPlots.filter(
-          p => !existing.some(e => e.plotId === p.plotId)
-        ),
+        ...addedPlots.filter(p => !existing.some(e => e.plotId === p.plotId)),
       ];
 
       onUpdatePlan({
@@ -314,7 +366,7 @@ export function PlanDetailPanel({
     if (sel.type === 'PLAN') {
       const code = statusCodeOf(plan.status);
       if (['ACTIVE', 'READY_TO_HARVEST', 'HARVESTING'].includes(code)) {
-        onUpdatePlan({ ...plan, status: 'CANCELLED' as any });
+        onUpdatePlan({ ...plan, status: 'CANCELLED' });
       } else {
         onDeletePlan?.(plan.id);
       }
@@ -393,27 +445,58 @@ export function PlanDetailPanel({
 
             {/* Actions */}
             <div className="flex items-center gap-0.5 flex-shrink-0">
-              <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="Sao chép link">
-                <Link2 size={13} />
-              </button>
-              <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="Mở rộng">
-                <ExternalLink size={13} />
-              </button>
-              {canEdit && sel.type !== 'PLAN' && (
+              {canEdit && !isEditing && (
                 <button
-                  className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  title="Xóa"
+                  className="p-1.5 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded transition-colors"
+                  onClick={handleStartEdit}
+                  title="Chỉnh sửa"
                 >
-                  <Trash2 size={13} />
+                  <Edit2 size={13} />
                 </button>
               )}
-              <button
-                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors"
-                onClick={onClose}
-              >
-                <X size={13} />
-              </button>
+              {isEditing && (
+                <>
+                  <button
+                    className="p-1.5 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50 rounded transition-colors"
+                    onClick={handleSaveEdit}
+                    title="Lưu"
+                  >
+                    <Save size={13} />
+                  </button>
+                  <button
+                    className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors"
+                    onClick={handleCancelEdit}
+                    title="Hủy"
+                  >
+                    <X size={13} />
+                  </button>
+                </>
+              )}
+              {!isEditing && (
+                <>
+                  <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="Sao chép link">
+                    <Link2 size={13} />
+                  </button>
+                  <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="Mở rộng">
+                    <ExternalLink size={13} />
+                  </button>
+                  {canEdit && sel.type !== 'PLAN' && (
+                    <button
+                      className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      title="Xóa"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                  <button
+                    className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors"
+                    onClick={onClose}
+                  >
+                    <X size={13} />
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -422,21 +505,7 @@ export function PlanDetailPanel({
 
             {/* Title section */}
             <div className="px-4 pt-4 pb-3 border-b border-slate-100">
-              {canEdit ? (
-                <input
-                  className="w-full text-[17px] font-bold text-slate-900 bg-transparent outline-none border border-transparent hover:border-slate-200 focus:border-indigo-400 focus:bg-slate-50/50 rounded px-1 -ml-1 transition-all placeholder:text-slate-300"
-                  value={entityName}
-                  placeholder="Nhập tên..."
-                  onChange={e => {
-                    const v = e.target.value;
-                    if (sel.type === 'PLAN') onUpdatePlan({ ...plan, name: v });
-                    if (sel.type === 'PHASE') onUpdatePhase(plan.id, { ...sel.phase, name: v });
-                    if (sel.type === 'TASK') onUpdateTask(plan.id, sel.phase.id, { ...sel.task, name: v });
-                  }}
-                />
-              ) : (
-                <h2 className="text-[17px] font-bold text-slate-900 leading-snug">{entityName}</h2>
-              )}
+              <h2 className="text-[17px] font-bold text-slate-900 leading-snug">{entityName}</h2>
 
               {/* Status lozenge + quick actions */}
               <div className="flex items-center gap-2 mt-2.5">
@@ -444,24 +513,23 @@ export function PlanDetailPanel({
                   <StatusSelect
                     value={statusCodeOf(plan.status)}
                     options={phaseStatusOptions}
-                    onChange={s => onUpdatePlan({ ...plan, status: s as any })}
-                    canEdit={canEdit}
+                    canEdit={false}
                   />
                 )}
                 {sel.type === 'PHASE' && (
                   <StatusSelect
-                    value={statusCodeOf(sel.phase.status)}
+                    value={statusCodeOf(tempPhase?.status ?? sel.phase.status)}
                     options={phaseStatusOptions}
-                    onChange={s => onUpdatePhase(plan.id, { ...sel.phase, status: s })}
-                    canEdit={canEdit}
+                    onChange={s => tempPhase && setTempPhase({ ...tempPhase, status: { ...tempPhase.status, code: s } })}
+                    canEdit={isEditing}
                   />
                 )}
                 {sel.type === 'TASK' && (
                   <StatusSelect
-                    value={statusCodeOf(sel.task.status)}
+                    value={statusCodeOf(tempTask?.status ?? sel.task.status)}
                     options={taskStatusOptions}
-                    onChange={s => onUpdateTask(plan.id, sel.phase.id, { ...sel.task, status: s })}
-                    canEdit={canEdit}
+                    onChange={s => tempTask && setTempTask({ ...tempTask, status: { ...tempTask.status, code: s } })}
+                    canEdit={isEditing}
                   />
                 )}
 
@@ -484,23 +552,23 @@ export function PlanDetailPanel({
               {sel.type === 'PLAN' && (
                 <>
                   <DetailRow icon={Calendar} label="Ngày bắt đầu">
-                    {canEdit ? (
-                      <input type="date" value={plan.startDate}
-                        onChange={e => onUpdatePlan({ ...plan, startDate: e.target.value })}
-                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-transparent hover:border-slate-300 focus:border-indigo-400 transition-colors w-full" />
-                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(plan.startDate)}</span>}
+                    {isEditing ? (
+                      <input type="date" value={tempPlan?.startDate ?? ''}
+                        onChange={e => tempPlan && setTempPlan({ ...tempPlan, startDate: e.target.value })}
+                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-slate-300 focus:border-indigo-400 transition-colors w-full px-1" />
+                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempPlan?.startDate ?? plan.startDate)}</span>}
                   </DetailRow>
                   <DetailRow icon={Calendar} label="Ngày kết thúc">
-                    {canEdit ? (
-                      <input type="date" value={plan.endDate}
-                        onChange={e => onUpdatePlan({ ...plan, endDate: e.target.value })}
-                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-transparent hover:border-slate-300 focus:border-indigo-400 transition-colors w-full" />
-                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(plan.endDate)}</span>}
+                    {isEditing ? (
+                      <input type="date" value={tempPlan?.endDate ?? ''}
+                        onChange={e => tempPlan && setTempPlan({ ...tempPlan, endDate: e.target.value })}
+                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-slate-300 focus:border-indigo-400 transition-colors w-full px-1" />
+                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempPlan?.endDate ?? plan.endDate)}</span>}
                   </DetailRow>
                   <DetailRow icon={Package} label="Lô đất">
-                    {plan.plots && plan.plots.length > 0
+                    {(tempPlan?.plots ?? plan.plots ?? []).length > 0
                       ? <div className="flex flex-wrap gap-1">
-                        {plan.plots.map(pp => (
+                        {(tempPlan?.plots ?? plan.plots ?? []).map(pp => (
                           <span key={pp.plotId} className="inline-flex items-center gap-1 text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
                             {pp.plotName}
                           </span>
@@ -510,7 +578,7 @@ export function PlanDetailPanel({
                     }
                   </DetailRow>
                   <DetailRow icon={Zap} label="Số giai đoạn">
-                    <span className="text-[12px] text-slate-700 font-medium">{plan.phases?.length ?? 0} giai đoạn</span>
+                    <span className="text-[12px] text-slate-700 font-medium">{(tempPlan?.phases ?? plan.phases)?.length ?? 0} giai đoạn</span>
                   </DetailRow>
                 </>
               )}
@@ -519,21 +587,21 @@ export function PlanDetailPanel({
               {sel.type === 'PHASE' && (
                 <>
                   <DetailRow icon={Calendar} label="Ngày bắt đầu">
-                    {canEdit ? (
-                      <input type="date" value={sel.phase.startDate}
-                        onChange={e => onUpdatePhase(plan.id, { ...sel.phase, startDate: e.target.value })}
-                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-transparent hover:border-slate-300 focus:border-indigo-400 transition-colors w-full" />
-                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(sel.phase.startDate)}</span>}
+                    {isEditing ? (
+                      <input type="date" value={tempPhase?.startDate ?? ''}
+                        onChange={e => tempPhase && setTempPhase({ ...tempPhase, startDate: e.target.value })}
+                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-slate-300 focus:border-indigo-400 transition-colors w-full px-1" />
+                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempPhase?.startDate ?? sel.phase.startDate)}</span>}
                   </DetailRow>
                   <DetailRow icon={Calendar} label="Ngày kết thúc">
-                    {canEdit ? (
-                      <input type="date" value={sel.phase.endDate}
-                        onChange={e => onUpdatePhase(plan.id, { ...sel.phase, endDate: e.target.value })}
-                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-transparent hover:border-slate-300 focus:border-indigo-400 transition-colors w-full" />
-                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(sel.phase.endDate)}</span>}
+                    {isEditing ? (
+                      <input type="date" value={tempPhase?.endDate ?? ''}
+                        onChange={e => tempPhase && setTempPhase({ ...tempPhase, endDate: e.target.value })}
+                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-slate-300 focus:border-indigo-400 transition-colors w-full px-1" />
+                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempPhase?.endDate ?? sel.phase.endDate)}</span>}
                   </DetailRow>
                   <DetailRow icon={CheckSquare} label="Công việc">
-                    <span className="text-[12px] text-slate-700 font-medium">{sel.phase.tasks?.length ?? 0} công việc</span>
+                    <span className="text-[12px] text-slate-700 font-medium">{(tempPhase?.tasks ?? sel.phase.tasks)?.length ?? 0} công việc</span>
                   </DetailRow>
                   <DetailRow icon={Flag} label="Kế hoạch">
                     <span className="text-[12px] font-medium text-indigo-600">{plan.name}</span>
@@ -545,18 +613,18 @@ export function PlanDetailPanel({
               {sel.type === 'TASK' && (
                 <>
                   <DetailRow icon={Calendar} label="Ngày bắt đầu">
-                    {canEdit ? (
-                      <input type="date" value={sel.task.startDate}
-                        onChange={e => onUpdateTask(plan.id, sel.phase.id, { ...sel.task, startDate: e.target.value })}
-                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-transparent hover:border-slate-300 focus:border-indigo-400 transition-colors w-full" />
-                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(sel.task.startDate)}</span>}
+                    {isEditing ? (
+                      <input type="date" value={tempTask?.startDate ?? ''}
+                        onChange={e => tempTask && setTempTask({ ...tempTask, startDate: e.target.value })}
+                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-slate-300 focus:border-indigo-400 transition-colors w-full px-1" />
+                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempTask?.startDate ?? sel.task.startDate)}</span>}
                   </DetailRow>
                   <DetailRow icon={Calendar} label="Ngày kết thúc">
-                    {canEdit ? (
-                      <input type="date" value={sel.task.endDate}
-                        onChange={e => onUpdateTask(plan.id, sel.phase.id, { ...sel.task, endDate: e.target.value })}
-                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-transparent hover:border-slate-300 focus:border-indigo-400 transition-colors w-full" />
-                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(sel.task.endDate)}</span>}
+                    {isEditing ? (
+                      <input type="date" value={tempTask?.endDate ?? ''}
+                        onChange={e => tempTask && setTempTask({ ...tempTask, endDate: e.target.value })}
+                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-slate-300 focus:border-indigo-400 transition-colors w-full px-1" />
+                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempTask?.endDate ?? sel.task.endDate)}</span>}
                   </DetailRow>
                   <DetailRow icon={Zap} label="Giai đoạn">
                     <button
@@ -570,9 +638,22 @@ export function PlanDetailPanel({
                     <span className="text-[12px] font-medium text-indigo-600">{plan.name}</span>
                   </DetailRow>
                   <DetailRow icon={Package} label="Lô đất">
-                    {plan.plots && plan.plots.length > 0
-                      ? <span className="text-[12px] font-medium text-emerald-700">{plan.plots[0].plotName}</span>
-                      : <span className="text-[12px] text-slate-400 italic">—</span>}
+                    {isEditing ? (
+                      <select
+                        value={tempTask?.plotId ?? ''}
+                        onChange={e => tempTask && setTempTask({ ...tempTask, plotId: e.target.value })}
+                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-slate-300 focus:border-indigo-400 transition-colors w-full px-1"
+                      >
+                        <option value="">Chọn lô đất...</option>
+                        {plan.plots?.map(p => (
+                          <option key={p.plotId} value={p.plotId}>{p.plotName}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      plan.plots && plan.plots.length > 0
+                        ? <span className="text-[12px] font-medium text-emerald-700">{plan.plots.find(p => p.plotId === (tempTask?.plotId ?? sel.task.plotId))?.plotName || plan.plots[0].plotName}</span>
+                        : <span className="text-[12px] text-slate-400 italic">—</span>
+                    )}
                   </DetailRow>
                 </>
               )}
@@ -586,17 +667,16 @@ export function PlanDetailPanel({
               </p>
               <InlineText
                 multiline
-                canEdit={canEdit}
+                canEdit={isEditing && sel.type !== 'PLAN'}
                 placeholder="Thêm mô tả..."
                 value={
                   sel.type === 'PLAN' ? (plan.description ?? '') :
-                    sel.type === 'PHASE' ? (sel.phase.description ?? '') :
-                      (sel.task.description ?? '')
+                    sel.type === 'PHASE' ? (tempPhase?.description ?? sel.phase.description ?? '') :
+                      (tempTask?.description ?? sel.task.description ?? '')
                 }
                 onChange={v => {
-                  if (sel.type === 'PLAN') onUpdatePlan({ ...plan, description: v });
-                  if (sel.type === 'PHASE') onUpdatePhase(plan.id, { ...sel.phase, description: v });
-                  if (sel.type === 'TASK') onUpdateTask(plan.id, sel.phase.id, { ...sel.task, description: v });
+                  if (sel.type === 'PHASE' && tempPhase) setTempPhase({ ...tempPhase, description: v });
+                  if (sel.type === 'TASK' && tempTask) setTempTask({ ...tempTask, description: v });
                 }}
               />
             </div>
@@ -648,6 +728,9 @@ export function PlanDetailPanel({
                         setIsAddingTask(true);
                         setNewTaskStart(sel.phase.startDate);
                         setNewTaskEnd(sel.phase.endDate);
+                        if (plan.plots?.length) {
+                          setNewTaskPlotId(plan.plots[0].plotId);
+                        }
                       }}
                       className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded transition-colors"
                     >
@@ -821,7 +904,7 @@ export function PlanDetailPanel({
                   {activeTab === 'MATERIALS' && (
                     <div className="space-y-2">
                       {sel.task.materials?.length ? (
-                        sel.task.materials.map((mat: any) => (
+                        sel.task.materials.map((mat: Material) => (
                           <div key={mat.id} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100">
                             <div className="flex items-center gap-2">
                               <Package size={13} className="text-slate-400" />
@@ -907,9 +990,9 @@ export function PlanDetailPanel({
                               type="checkbox"
                               checked={checked}
                               onChange={() => {
-                                setSelectedPlotIds(prev =>
+                                setSelectedPlotIds((prev: string[]) =>
                                   checked
-                                    ? prev.filter(id => id !== p.id)
+                                    ? prev.filter((id: string) => id !== p.id)
                                     : [...prev, p.id]
                                 );
                               }}

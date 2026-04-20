@@ -60,13 +60,15 @@ const FarmActionsPage: React.FC = () => {
                 </button>
 
                 <div className="flex items-center gap-3">
-                    <button 
-                        onClick={() => setIsEditModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 font-black text-xs uppercase tracking-wider hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm"
-                    >
-                        <Edit2 size={14} />
-                        Chỉnh sửa
-                    </button>
+                    {(farm?.owner || farm?.myRole?.toLowerCase() === 'owner') && (
+                        <button 
+                            onClick={() => setIsEditModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 font-black text-xs uppercase tracking-wider hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm"
+                        >
+                            <Edit2 size={14} />
+                            Chỉnh sửa
+                        </button>
+                    )}
                     
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full border border-emerald-100">
                         <div className="w-2 h-2 rounded-full bg-emerald-500" />
