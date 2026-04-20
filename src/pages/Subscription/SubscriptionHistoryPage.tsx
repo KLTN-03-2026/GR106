@@ -7,8 +7,11 @@ import {
 } from 'lucide-react';
 import { useCurrentSubscription, useSubscriptionHistory } from '@/hooks/subscription/useSubscription';
 import { motion } from 'framer-motion';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/utils/cn';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
+import { Navigate } from 'react-router-dom';
 
 const StatusBadge = ({ status }: { status: string }) => {
   const configs: Record<string, { label: string, color: string }> = {
@@ -30,7 +33,13 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 export default function SubscriptionHistoryPage() {
   const navigate = useNavigate();
-  const { farmId } = useParams<{ farmId: string }>();
+  const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
+  
+  // Redirect if no farm context
+  if (!currentFarmId) {
+    return <Navigate to="/farms" replace />;
+  }
+
   const { data: current, isLoading: loadingCurrent } = useCurrentSubscription();
   const { data: history, isLoading: loadingHistory } = useSubscriptionHistory();
 

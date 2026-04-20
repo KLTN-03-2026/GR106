@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { fetchCropTypes, createCrop, deleteCropType, fetchCrops } from '../../store/cropSlice';
@@ -7,6 +7,7 @@ import { Crop, CreateCropRequest } from '../../types/crop';
 import { getRolesFromToken } from '../../utils/jwt';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Navigate } from 'react-router-dom';
 import { CropList } from './components/CropList';
 import { CropForm } from './components/CropForm';
 import { QuickAddCropTypeModal } from './components/QuickAddCropTypeModal';
@@ -14,8 +15,11 @@ import { CreateCropTypeRequest } from '../../types/crop';
 import { createCropType } from '../../store/cropSlice';
 
 export const CropCatalogPage: React.FC = () => {
-  const { farmId } = useParams<{ farmId: string }>();
+  const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  
+  // Redux State — get currentFarmId instead of URL param
+  const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
   const { crops, loading, error } = useSelector((state: RootState) => state.crop);
   const { accessToken } = useSelector((state: RootState) => state.auth);
   
@@ -23,18 +27,23 @@ export const CropCatalogPage: React.FC = () => {
   const roles = accessToken ? getRolesFromToken(accessToken) : [];
   const isAdmin = roles.includes('ROLE_ADMIN');
   
+  // Redirect non-admin users without farm context to farm selection
+  if (!isAdmin && !currentFarmId) {
+    return <Navigate to="/farms" replace />;
+  }
+  
   const [view, setView] = useState<'list' | 'form'>('list');
   const [activeTab, setActiveTab] = useState<'crops' | 'types'>('crops');
   const [editingCrop, setEditingCrop] = useState<Crop | undefined>(undefined);
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
 
   useEffect(() => {
-    if (farmId || isAdmin) {
+    if (currentFarmId || isAdmin) {
       // Tải cả danh mục cây trồng và loại cây trồng
       dispatch(fetchCropTypes());
       dispatch(fetchCrops());
     }
-  }, [dispatch, farmId, isAdmin]);
+  }, [dispatch, currentFarmId, isAdmin]);
 
   useEffect(() => {
     if (error) {
@@ -74,7 +83,7 @@ export const CropCatalogPage: React.FC = () => {
         toast.error('API xóa cây trồng hiện chưa được hỗ trợ');
       }
     } catch (err: any) {
-      toast.error(err || 'Thao tác thất bại');
+      toast.error(err.message || 'Thao tác thất bại');
     }
   };
 
@@ -91,7 +100,7 @@ export const CropCatalogPage: React.FC = () => {
       }
       setView('list');
     } catch (err: any) {
-      toast.error(err || 'Thao tác thất bại');
+      toast.error(err.message || 'Thao tác thất bại');
     }
   };
 
@@ -103,7 +112,7 @@ export const CropCatalogPage: React.FC = () => {
       // Tải lại danh sách
       dispatch(fetchCropTypes());
     } catch (err: any) {
-      toast.error(err || 'Thao tác thất bại');
+      toast.error(err.message || 'Thao tác thất bại');
     }
   };
 

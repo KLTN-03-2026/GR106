@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
 import { Plot } from '../../types/plot';
 import { fetchPlots, createPlot, updatePlot, deletePlot } from '../../store/plotSlice';
 import { toast } from 'sonner';
-import { LayoutGridIcon, PlusIcon } from 'lucide-react';
+import { LayoutGridIcon, PlusIcon, ArrowLeft } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
 import { PlotTable } from './components/PlotTable';
 import { PlotCard } from './components/PlotCard';
 import { PlotFilters } from './components/PlotFilters';
@@ -14,115 +15,131 @@ import { EditPlotModal } from './components/EditPlotModal';
 import { DeletePlotDialog } from './components/DeletePlotDialog';
 
 export function LandPlotsPage() {
-  const navigate = useNavigate()
-  const dispatch = useDispatch<AppDispatch>()
+  const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
 
-  const { farmId } = useParams<{ farmId: string }>();
+  // Redux State — get currentFarmId instead of URL param
+  const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
+  const { plots } = useSelector((state: RootState) => state.plot);
 
-  const { plots } = useSelector((state: RootState) => state.plot)
+  // Redirect to farm selection if no farmId
+  if (!currentFarmId) {
+    return <Navigate to="/farms" replace />;
+  }
 
   // Local UI State
-  const [viewMode, setViewMode] = useState<'table' | 'card'>('table')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string | 'all'>('all')
+  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string | 'all'>('all');
 
   // State quản lý các Modal
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [editingPlot, setEditingPlot] = useState<Plot | null>(null)
-  const [deletingPlot, setDeletingPlot] = useState<Plot | null>(null)
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingPlot, setEditingPlot] = useState<Plot | null>(null);
+  const [deletingPlot, setDeletingPlot] = useState<Plot | null>(null);
 
   useEffect(() => {
-    if (farmId) {
-      dispatch(fetchPlots(farmId));
-    }
-  }, [dispatch, farmId]);
+    dispatch(fetchPlots(currentFarmId));
+  }, [dispatch, currentFarmId]);
 
   // Xử lý lọc dữ liệu
   const filteredPlots = useMemo(() => {
     return plots.filter((plot) => {
       const matchesSearch = plot.name
         .toLowerCase()
-        .includes(searchTerm.toLowerCase())
+        .includes(searchTerm.toLowerCase());
       const matchesStatus =
-        statusFilter === 'all' || plot.status === statusFilter
-      return matchesSearch && matchesStatus
+        statusFilter === 'all' || plot.status === statusFilter;
+      return matchesSearch && matchesStatus;
     })
-  }, [plots, searchTerm, statusFilter])
+  }, [plots, searchTerm, statusFilter]);
 
   // Handlers cho CRUD
   const handleCreatePlot = async (plotData: any) => {
-    if (!farmId) return;
+    if (!currentFarmId) return;
     try {
-      await dispatch(createPlot({ farmId, plotData })).unwrap()
-      setIsCreateModalOpen(false)
-      toast.success('Tạo lô đất mới thành công')
-      dispatch(fetchPlots(farmId))
+      await dispatch(createPlot({ farmId: currentFarmId, plotData })).unwrap();
+      setIsCreateModalOpen(false);
+      toast.success('Tạo lô đất mới thành công');
+      dispatch(fetchPlots(currentFarmId));
     } catch (err: any) {
-      toast.error(err || 'Không thể tạo lô đất')
+      toast.error(err.message || 'Không thể tạo lô đất');
     }
-  }
+  };
 
   const handleUpdatePlot = async (updatedPlot: Plot) => {
-    if (!farmId) return;
+    if (!currentFarmId) return;
     try {
       await dispatch(updatePlot({ 
-        farmId,
+        farmId: currentFarmId,
         plotId: updatedPlot.id, 
         plotData: {
           name: updatedPlot.name,
-          areaHa: updatedPlot.areaHa,
           description: updatedPlot.description,
           status: updatedPlot.status
         }
-      })).unwrap()
-      setEditingPlot(null)
-      toast.success('Cập nhật thông tin lô đất thành công')
-      dispatch(fetchPlots(farmId))
+      })).unwrap();
+      setEditingPlot(null);
+      toast.success('Cập nhật thông tin lô đất thành công');
+      dispatch(fetchPlots(currentFarmId));
     } catch (err: any) {
-      toast.error(err || 'Không thể cập nhật lô đất')
+      toast.error(err.message || 'Không thể cập nhật lô đất');
     }
-  }
+  };
 
   const handleDeletePlot = async () => {
-    if (deletingPlot && farmId) {
+    if (deletingPlot && currentFarmId) {
       try {
-        await dispatch(deletePlot({ farmId, plotId: deletingPlot.id })).unwrap()
-        toast.success('Đã xóa lô đất thành công')
-        setDeletingPlot(null)
-        dispatch(fetchPlots(farmId))
+        await dispatch(deletePlot({ farmId: currentFarmId, plotId: deletingPlot.id })).unwrap();
+        toast.success('Đã xóa lô đất thành công');
+        setDeletingPlot(null);
+        dispatch(fetchPlots(currentFarmId));
       } catch (err: any) {
-        toast.error(err || 'Không thể xóa lô đất')
+        toast.error(err.message || 'Không thể xóa lô đất');
       }
     }
-  }
+  };
 
   const handleViewMap = (plot: Plot) => {
-    navigate(farmId ? `/farms/${farmId}/map` : '/map', {
+    navigate('/map', {
       state: {
         selectedPlotId: plot.id,
       },
-    })
-  }
+    });
+  };
 
   return (
     <div className="w-full flex-1 space-y-6 font-sans py-4 animate-in fade-in duration-500 text-left">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4 bg-white p-6 transition-all duration-300">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-emerald-100/50 rounded-2xl text-emerald-600">
-            <LayoutGridIcon className="w-8 h-8" />
-          </div>
-          <div className="text-left">
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Quản lý lô đất</h1>
-            <p className="text-gray-500 mt-0.5 font-medium text-sm">
-              Quản lý danh sách và thông tin các khu vực canh tác
-            </p>
+        <div className="flex items-center gap-6 w-full">
+          <button 
+            onClick={() => navigate(`/farms/${currentFarmId}/actions`)}
+            className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-all font-bold text-xs shrink-0"
+          >
+            <div className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center bg-white shadow-sm hover:shadow-md transition-all">
+              <ArrowLeft size={14} />
+            </div>
+            Quay lại
+          </button>
+          
+          <div className="h-10 w-px bg-slate-200 mx-1 hidden sm:block" />
+
+          <div className="flex items-center gap-4 flex-1">
+            <div className="p-3 bg-emerald-100/50 rounded-2xl text-emerald-600">
+              <LayoutGridIcon className="w-8 h-8" />
+            </div>
+            <div className="text-left">
+              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Quản lý lô đất</h1>
+              <p className="text-gray-500 mt-0.5 font-medium text-sm">
+                Quản lý danh sách và thông tin các khu vực canh tác
+              </p>
+            </div>
           </div>
         </div>
         <div>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all active:scale-95 group"
+            className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all active:scale-95 group whitespace-nowrap"
           >
             <PlusIcon className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
             Tạo lô đất mới
@@ -196,7 +213,7 @@ export function LandPlotsPage() {
         hasActiveTasks={false}
       />
     </div>
-  )
+  );
 }
 
 export default LandPlotsPage;

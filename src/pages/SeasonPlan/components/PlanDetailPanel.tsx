@@ -177,10 +177,10 @@ function StatusSelect({ value, options, onChange, canEdit }: {
             className="absolute top-8 left-0 z-50 bg-white border border-slate-200 rounded-lg shadow-xl py-1 min-w-[160px]"
           >
             {options.map(opt => (
-                <button
-                  key={opt.code}
-                  onClick={() => { onChange?.(opt.code); setOpen(false); }}
-                  className={cn(
+              <button
+                key={opt.code}
+                onClick={() => { onChange?.(opt.code); setOpen(false); }}
+                className={cn(
                   'w-full flex items-center gap-2 px-3 py-2 text-left transition-colors',
                   opt.code === value ? 'bg-slate-50' : 'hover:bg-slate-50',
                 )}
@@ -247,7 +247,7 @@ export function PlanDetailPanel({
     if (selection) {
       const defaultPlot = selection.plan.plots?.[0]?.plotId ?? '';
       setNewTaskPlotId(defaultPlot);
-      
+
       // Initialize temp data
       setTempPlan(selection.plan);
       if (selection.type === 'PHASE') setTempPhase(selection.phase);
@@ -287,15 +287,13 @@ export function PlanDetailPanel({
 
     try {
       if (selection.type === 'PLAN') {
-        // Chỉ cập nhật ngày bắt đầu và kết thúc theo API PUT /api/v1/plans/{planId}/time
-        await onUpdatePlan({
-          ...tempPlan,
-          name: selection.plan.name,
-          description: selection.plan.description,
-        });
+        // Cập nhật Plan (chủ yếu là ngày tháng theo API PUT /time)
+        await onUpdatePlan(tempPlan);
       } else if (selection.type === 'PHASE' && tempPhase) {
+        // Cập nhật Phase (bao gồm Tên qua API PATCH /stages/{id})
         await onUpdatePhase(tempPlan.id, tempPhase, selection.phase);
       } else if (selection.type === 'TASK' && tempPhase && tempTask) {
+        // Cập nhật Task
         await onUpdateTask(tempPlan.id, tempPhase.id, tempTask, selection.task);
       }
       setIsEditing(false);
@@ -403,10 +401,6 @@ export function PlanDetailPanel({
   const typeLabel =
     sel.type === 'PLAN' ? 'Kế hoạch' : sel.type === 'PHASE' ? 'Giai đoạn' : 'Công việc';
 
-  const entityName =
-    sel.type === 'PLAN' ? plan.name :
-      sel.type === 'PHASE' ? sel.phase.name :
-        sel.task.name;
 
   return (
     <AnimatePresence>
@@ -505,7 +499,23 @@ export function PlanDetailPanel({
 
             {/* Title section */}
             <div className="px-4 pt-4 pb-3 border-b border-slate-100">
-              <h2 className="text-[17px] font-bold text-slate-900 leading-snug">{entityName}</h2>
+              <div className="flex items-start gap-2">
+                <div className="flex-1 min-w-0">
+                  <InlineText
+                    canEdit={isEditing}
+                    value={
+                      sel.type === 'PLAN' ? tempPlan?.name ?? '' :
+                      sel.type === 'PHASE' ? tempPhase?.name ?? '' :
+                      tempTask?.name ?? ''
+                    }
+                    onChange={v => {
+                      if (sel.type === 'PLAN' && tempPlan) setTempPlan({ ...tempPlan, name: v });
+                      if (sel.type === 'PHASE' && tempPhase) setTempPhase({ ...tempPhase, name: v });
+                      if (sel.type === 'TASK' && tempTask) setTempTask({ ...tempTask, name: v });
+                    }}
+                  />
+                </div>
+              </div>
 
               {/* Status lozenge + quick actions */}
               <div className="flex items-center gap-2 mt-2.5">

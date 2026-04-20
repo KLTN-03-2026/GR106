@@ -23,24 +23,34 @@ export function CreatePlanModal({
 
   const [cropId, setCropId] = useState('');
   const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
 
-  // Auto-generate name based on crop and current date
+  // Auto-generate name and suggest end date
   useEffect(() => {
     if (cropId) {
       const crop = crops.find((c) => c.id === cropId);
       if (crop) {
-        setName(`${crop.name} - Vụ mùa ${new Date().getFullYear()}`);
+        // Auto name - only if current name is empty or matched previous auto-name
+        setName(prev => (!prev || prev.includes(' - Vụ mùa ')) ? `${crop.name} - Vụ mùa ${new Date().getFullYear()}` : prev);
+        
+        // Suggest end date if start date is present and end date is empty
+        if (startDate && !endDate) {
+          const phases = generatePhasesFromCrop(crop, startDate);
+          if (phases.length > 0) {
+            setEndDate(phases[phases.length - 1].endDate);
+          }
+        }
       }
     }
-  }, [cropId, crops]);
+  }, [cropId, startDate, crops, endDate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!cropId || !startDate || !name) {
+    if (!cropId || !startDate || !name || !endDate) {
       setError('Vui lòng điền đầy đủ các thông tin bắt buộc');
       return;
     }
@@ -48,23 +58,25 @@ export function CreatePlanModal({
     const crop = crops.find(c => c.id === cropId);
     if (!crop) return;
 
-    const phases = generatePhasesFromCrop(crop, startDate);
-    const endDate = phases[phases.length - 1].endDate;
-
-    // Initial creation doesn't require overlap check as no plot is assigned yet
-    // Overlap will be checked when assigning plots to this plan later
+    // Use current calculated endDate or fallback to calculation
+    let finalEndDate = endDate;
+    if (!finalEndDate) {
+      const phases = generatePhasesFromCrop(crop, startDate);
+      finalEndDate = phases[phases.length - 1].endDate;
+    }
 
     onSave({
       name,
       cropId,
       startDate,
-      endDate,
+      endDate: finalEndDate,
       note: '', 
     });
 
     // Reset
     setCropId('');
     setStartDate('');
+    setEndDate('');
     setName('');
     onClose();
   };
@@ -125,14 +137,36 @@ export function CreatePlanModal({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Ngày bắt đầu dự kiến</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full bg-slate-50 border-2 border-transparent focus:border-emerald-500/20 focus:bg-white rounded-2xl py-3 px-4 outline-none transition-all font-bold text-slate-700"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Ngày bắt đầu</label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full bg-slate-50 border-2 border-transparent focus:border-emerald-500/20 focus:bg-white rounded-2xl py-3 px-4 outline-none transition-all font-bold text-slate-700"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Ngày kết thúc</label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full bg-slate-50 border-2 border-transparent focus:border-emerald-500/20 focus:bg-white rounded-2xl py-3 px-4 outline-none transition-all font-bold text-slate-700"
+                  />
+                  {endDate && (
+                    <div className="absolute -bottom-5 right-1">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter bg-slate-50 px-1.5 py-0.5 rounded-md">
+                        Gợi ý theo cây trồng
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">

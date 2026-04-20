@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Plus, Edit2, Trash2, Filter, Loader2, Sprout, ChevronDown, Check } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, Filter, Loader2, Sprout, ChevronDown, Check, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { Crop } from '../../../types/crop';
 import { RootState } from '../../../store';
 
@@ -26,6 +27,8 @@ export const CropList: React.FC<CropListProps> = ({
   loading, 
   isAdmin 
 }) => {
+  const navigate = useNavigate();
+  const { currentFarmId } = useSelector((state: RootState) => state.auth);
   const { cropTypes } = useSelector((state: RootState) => state.crop);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTypeId, setFilterTypeId] = useState<string>('All');
@@ -76,18 +79,32 @@ export const CropList: React.FC<CropListProps> = ({
       <div className="p-8 pr-12 sticky top-0 z-10 bg-white">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:gap-8">
-            <div className="flex items-center gap-3">
-               <div className="p-2 bg-green-50 rounded-xl text-green-600 flex-shrink-0">
-                  <Sprout className="w-5 h-5" />
-               </div>
-               <div className="whitespace-nowrap">
-                <h1 className="text-lg font-bold text-slate-800 tracking-tight leading-none">
-                  Cây trồng
-                </h1>
-                <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase tracking-widest">
-                  {mode === 'crops' ? 'Hệ thống' : 'Phân loại'}
-                </p>
-               </div>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => navigate(`/farms/${currentFarmId}/actions`)}
+                className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-all font-bold text-xs shrink-0"
+              >
+                <div className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center bg-white shadow-sm hover:shadow-md transition-all">
+                  <ArrowLeft size={14} />
+                </div>
+                Quay lại
+              </button>
+
+              <div className="h-8 w-px bg-slate-200 mx-1 hidden sm:block" />
+
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-50 rounded-xl text-green-600 flex-shrink-0">
+                    <Sprout className="w-5 h-5" />
+                </div>
+                <div className="whitespace-nowrap">
+                  <h1 className="text-lg font-bold text-slate-800 tracking-tight leading-none">
+                    Cây trồng
+                  </h1>
+                  <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase tracking-widest">
+                    {mode === 'crops' ? 'Hệ thống' : 'Phân loại'}
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Tab Switcher - "Nằm ngang với tiêu đề" */}

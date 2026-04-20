@@ -27,7 +27,7 @@ const initialState: PlotState = {
 // Async Thunk để lấy danh sách Lô đất
 export const fetchPlots = createAsyncThunk(
   'plot/fetchPlots',
-  async (_, { rejectWithValue }) => {
+  async (_farmId: string, { rejectWithValue }) => {
     try {
       return await plotService.getPlots();
     } catch (error: any) {

@@ -190,32 +190,53 @@ export function Navbar({
 
           {/* Nav Links */}
           <div className="flex-none flex items-center gap-[40px] xl:gap-[60px]">
-            {navItems.map((item, i) => (
-              <a
-                key={item}
-                href="#"
-                className={`flex items-center gap-1.5 group transition-all duration-[600ms] ease-out
-                  ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"}`}
-                style={{
-                  transitionDelay: mounted ? `${150 + i * 80}ms` : "0ms",
-                }}
-              >
-                <span
-                  className={`font-roboto text-[16px] whitespace-nowrap font-medium transition-all duration-500 ${scrolled
-                    ? "text-[#1F4418] group-hover:text-green-800"
-                    : "text-light-yellow-1 group-hover:text-white"
-                    }`}
+            {navItems.map((item, i) => {
+              const handleClick = (e: React.MouseEvent) => {
+                e.preventDefault();
+                if (item === "Trang Chủ") {
+                  navigate("/");
+                } else if (item === "Dịch vụ") {
+                  const el = document.getElementById("section-3");
+                  el?.scrollIntoView({ behavior: "smooth" });
+                } else if (item === "Tin tức") {
+                  // TODO: navigate to news page when available
+                  console.log("Tin tức clicked");
+                } else if (item === "Triển khai") {
+                  navigate("/dashboard");
+                } else if (item === "Kế Hoạch") {
+                  // TODO: navigate to season plans when available
+                  console.log("Kế Hoạch clicked");
+                }
+              };
+
+              return (
+                <a
+                  key={item}
+                  href="#"
+                  onClick={handleClick}
+                  className={`flex items-center gap-1.5 group transition-all duration-[600ms] ease-out
+                    ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"}`}
+                  style={{
+                    transitionDelay: mounted ? `${150 + i * 80}ms` : "0ms",
+                  }}
                 >
-                  {item}
-                </span>
-                <ChevronDownIcon
-                  className={`w-4 h-4 transition-all duration-500 ${scrolled
-                    ? "text-[#1F4418] group-hover:text-green-800"
-                    : "text-light-yellow-1 group-hover:text-white"
-                    }`}
-                />
-              </a>
-            ))}
+                  <span
+                    className={`font-roboto text-[16px] whitespace-nowrap font-medium transition-all duration-500 ${scrolled
+                      ? "text-[#1F4418] group-hover:text-green-800"
+                      : "text-light-yellow-1 group-hover:text-white"
+                      }`}
+                  >
+                    {item}
+                  </span>
+                  <ChevronDownIcon
+                    className={`w-4 h-4 transition-all duration-500 ${scrolled
+                      ? "text-[#1F4418] group-hover:text-green-800"
+                      : "text-light-yellow-1 group-hover:text-white"
+                      }`}
+                  />
+                </a>
+              );
+            })}
           </div>
 
           {/* Buttons */}

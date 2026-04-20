@@ -34,16 +34,23 @@ export function useLogin() {
         let redirectPath = '/dashboard';
         
         if (user) {
-          if (user.role === 'ADMIN' || user.role === 'ROLE_ADMIN') {
+          const role = (user.role || '').toUpperCase();
+          if (role === 'ADMIN' || role === 'ROLE_ADMIN') {
             redirectPath = '/admin/dashboard';
-          } else if (user.role === 'WORKER' || user.role === 'ROLE_WORKER' || user.role === 'employee') {
+          } else if (role === 'WORKER' || role === 'ROLE_WORKER' || role === 'EMPLOYEE') {
             redirectPath = '/tasks';
-          } else if (user.role === 'OWNER' || user.role === 'ROLE_OWNER' || user.role === 'manager') {
+          } else {
             redirectPath = '/dashboard';
           }
         }
 
-        const from = (location.state as any)?.from?.pathname || redirectPath;
+        let from = (location.state as any)?.from?.pathname || redirectPath;
+        
+        // Force Admin to their dashboard if they were redirected from farm dashboard
+        if (user && (user.role === 'ADMIN' || user.role === 'ROLE_ADMIN') && from === '/dashboard') {
+          from = '/admin/dashboard';
+        }
+
         navigate(from, { replace: true });
       } else {
         setServerError('Email hoặc mật khẩu không đúng');

@@ -4,7 +4,6 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import {
   addPlan,
-  updatePlan,
   updatePlanTime,
   fetchPlans,
   createPlan,
@@ -195,16 +194,18 @@ export function SeasonPlanPage() {
   // ── Effects ───────────────────────────────────────────────────────────────
   useEffect(() => {
     dispatch(fetchPlans());
-    dispatch(fetchPlots());
+    if (farmId) {
+      dispatch(fetchPlots(farmId));
+    }
     dispatch(fetchCrops());
   }, [dispatch, accessToken, farmId]);
 
   useEffect(() => {
-    if (isCreateModalOpen) {
-      dispatch(fetchPlots());
+    if (isCreateModalOpen && farmId) {
+      dispatch(fetchPlots(farmId));
       dispatch(fetchCrops());
     }
-  }, [isCreateModalOpen, dispatch]);
+  }, [isCreateModalOpen, dispatch, farmId]);
 
 
 
@@ -451,6 +452,15 @@ export function SeasonPlanPage() {
     }
   };
 
+  const handleAddPlotsToPlan = async (planId: string, plotIds: string[]) => {
+    try {
+      await dispatch(addPlotsToPlan({ planId, plotIds })).unwrap();
+    } catch (err: any) {
+      showError('Lỗi thêm lô đất', err);
+    }
+  };
+
+
   const handleUpdateTask = async (planId: string, stageId: string, task: Task, originalTask?: Task) => {
     const plan = plans.find(p => p.id === planId);
     const plotId = task.plotId || (plan?.plots?.length ? plan.plots[0].plotId : undefined);
@@ -695,7 +705,7 @@ export function SeasonPlanPage() {
         {/* ── Tab: Timeline ── */}
         {activeTab === 'timeline' && (
           <>
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 flex flex-col min-w-0 min-h-0">
               {loading ? (
                 <div className="flex-1 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm">
                   <Loader2 className="animate-spin text-indigo-500 mb-3" size={36} />
@@ -756,6 +766,7 @@ export function SeasonPlanPage() {
                 setSelectedItem({ type: 'TASK', id: taskId, phaseId: stageId, planId: planId! })}
               onDeletePlan={handleDeletePlan}
               onClone={p => setCloneSourcePlan(p)}
+              onAddPlots={handleAddPlotsToPlan}
               canEdit={canEdit}
             />
           </>

@@ -1,4 +1,4 @@
-import { Outlet, useNavigate, useLocation, useParams, Navigate } from "react-router-dom";
+import { Outlet, useNavigate, useLocation, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import Sidebar from "../components/layout/Sidebar";
@@ -19,8 +19,14 @@ export default function DashboardLayout() {
   
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Tự động đồng bộ Farm Context từ URL
+  // Tự động đồng bộ Farm Context từ URL (chỉ khi có farmId trong URL)
   useEffect(() => {
+    // Force Admin to their dashboard if they are lost in farm dashboard
+    if (isAdmin && location.pathname === "/dashboard") {
+      navigate("/admin/dashboard", { replace: true });
+      return;
+    }
+
     const syncFarmContext = async () => {
       if (urlFarmId && urlFarmId !== 'undefined' && urlFarmId !== currentFarmId) {
         setIsSyncing(true);
@@ -38,16 +44,13 @@ export default function DashboardLayout() {
     };
 
     syncFarmContext();
-  }, [urlFarmId, currentFarmId, dispatch]);
-
-  // Redirect admin away from /dashboard immediately
-  if (isAdmin && location.pathname === "/dashboard") {
-    return <Navigate to="/admin/dashboard" replace />;
-  }
+  }, [urlFarmId, currentFarmId, dispatch, isAdmin, location.pathname, navigate]);
 
   const getActive = () => {
     const p = location.pathname;
     if (p.includes("/dashboard")) return "dashboard";
+    // Check for farm list or any farm-scoped page to highlight the 'tree' icon if needed, 
+    // but specific farm pages usually have their own keys.
     if (p === "/farms") return "tree";
     if (p.includes("/members")) return "members";
     if (p.includes("/land-plots")) return "land-plots";
@@ -55,14 +58,15 @@ export default function DashboardLayout() {
     if (p.includes("/subscription")) return "subscription";
     if (p.includes("/activity")) return "activity";
     if (p.includes("/wallet")) return "wallet";
-    if (p.includes("/tasks")) return "task";
+    if (p.includes("/tasks") || p === "/task") return "task";
     if (p.includes("/gemini")) return "gemini";
     if (p.includes("/crop-catalog")) return "crop-catalog";
     if (p.includes("/season-plans")) return "season-plans";
     if (p.includes("/change-password")) return "settings";
-
-    // Default to 'tree' for any farm-specific action not matching above
-    if (p.startsWith("/farms/")) return "tree";
+    
+    // If URL is /farms/:id/actions, maybe highlight 'tree' or nothing?
+    // User seems to view 'tree' as the entry to farms.
+    if (p.includes("/farms/")) return "tree";
 
     return p.split("/").pop() || "dashboard";
   };
@@ -94,47 +98,64 @@ export default function DashboardLayout() {
 
   const handleNav = (key: string) => {
     setActive(key);
+    
+    // Handle special keys
     if (key === "dashboard") {
       dispatch(clearFarmContext());
       navigate("/dashboard");
-    } else if (key === "tree") {
-      if (isWideSidebarPage && currentFarmId) {
+      return;
+    }
+    
+    if (key === "tree") {
+      if (currentFarmId) {
         navigate(`/farms/${currentFarmId}/actions`);
       } else {
         dispatch(clearFarmContext());
         navigate("/farms");
       }
-    } else if (key === "activity") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/activity` : "/farms");
-    } else if (key === "map") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/map` : "/farms");
-    } else if (key === "land-plots") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/land-plots` : "/farms");
-    } else if (key === "members") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/members` : "/farms");
-    } else if (key === "wallet") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/wallet` : "/farms");
-    } else if (key === "task") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/tasks` : "/farms");
-    } else if (key === "gemini") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/gemini` : "/farms");
-    } else if (key === "subscription") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/subscription` : "/farms");
-    } else if (key === "crop-catalog") {
+      return;
+    }
+
+    if (key === "change-password") {
+      navigate("/change-password");
+      return;
+    }
+
+    if (key === "settings") {
+      // Handled by Sidebar internally for sub-menu
+      return;
+    }
+
+    // Context-dependent routes (Wallet, Activity, Task, Gemini, etc.)
+    const farmContextKeys = ["wallet", "activity", "task", "gemini", "season-plans", "map", "land-plots", "members", "subscription"];
+    
+    if (farmContextKeys.includes(key)) {
+      if (currentFarmId) {
+        // Navigate to farm-specific route
+        // Map 'task' key to 'tasks' route
+        const routePart = key === "task" ? "tasks" : key;
+        navigate(`/farms/${currentFarmId}/${routePart}`);
+      } else {
+        // Navigate to global route if no farm selected
+        const routePart = key === "task" ? "task" : key;
+        navigate(`/${routePart}`);
+      }
+      return;
+    }
+
+    if (key === "crop-catalog") {
       if (isAdmin) {
         navigate("/admin/crop-catalog");
+      } else if (currentFarmId) {
+        navigate(`/farms/${currentFarmId}/crop-catalog`);
       } else {
-        navigate(currentFarmId ? `/farms/${currentFarmId}/crop-catalog` : "/farms");
+        dispatch(clearFarmContext());
+        navigate("/farms");
       }
-    } else if (key === "change-password") {
-      navigate("/change-password");
-    } else if (key === "season-plans") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/season-plans` : "/farms");
-    } else if (key === "settings") {
-      // Handled by Sidebar internally for sub-menu or default to dashboard
-    } else {
-      navigate("/dashboard");
+      return;
     }
+
+    navigate("/dashboard");
   };
 
 

@@ -5,7 +5,9 @@ import { useReveal } from "@/hooks/useReveal";
 import { Button } from "@/components/ui/button";
 import CornIntro from "@/assets/Corn-intro.png";
 
-const IntroSection = forwardRef<HTMLDivElement>((_, ref) => {
+interface IntroSectionProps {}
+
+const IntroSection = forwardRef<HTMLDivElement, IntroSectionProps>((_, ref) => {
   const navigate = useNavigate();
   const { ref: revealRef, visible } = useReveal();
 
@@ -19,7 +21,7 @@ const IntroSection = forwardRef<HTMLDivElement>((_, ref) => {
         {/* Left: Text */}
         <div
           className={`flex-1 max-w-[520px] transition-all duration-[800ms] ease-out
-            ${visible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-12"}`}
+              ${visible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-12"}`}
         >
           <div className="flex items-center gap-2 mb-4">
             <LeafIcon className="w-5 h-5 text-green-600" />
@@ -60,8 +62,8 @@ const IntroSection = forwardRef<HTMLDivElement>((_, ref) => {
               <div
                 key={i}
                 className={`flex-1 bg-white rounded-2xl p-5 shadow-sm border border-[#E8E0D0]
-                  transition-all duration-[600ms] ease-out
-                  ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+                    transition-all duration-[600ms] ease-out
+                    ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
                 style={{ transitionDelay: visible ? `${400 + i * 150}ms` : "0ms" }}
               >
                 <div className={`w-12 h-12 rounded-full ${bg} flex items-center justify-center mb-3`}>
@@ -73,15 +75,27 @@ const IntroSection = forwardRef<HTMLDivElement>((_, ref) => {
           </div>
         </div>
 
-        {/* Right: Image */}
-        <div
-          className={`flex-1 max-w-[380px] rounded-3xl overflow-hidden shadow-xl h-[380px] bg-[#D4C9A8] flex items-center justify-center
-            transition-all duration-[900ms] ease-out delay-[200ms]
-            ${visible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-12"}`}
-        >
-          <img src={CornIntro} alt="Corn" className="w-full h-full object-cover" />
-        </div>
+        {/* Right: empty space — ảnh sẽ absolute ở ngoài div flex */}
+        <div className="flex-1" />
       </div>
+
+      {/* Corn Intro Image — positioned exactly like HeroSection */}
+      <img
+        src={CornIntro}
+        alt="Corn"
+        className="absolute pointer-events-none z-20"
+        style={{
+          bottom: "-5%",
+          left: "493px",
+          width: "313px",
+          height: "359px",
+          objectFit: "cover",
+          filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.25))",
+          transition: "opacity 0.9s ease-out 0.2s, transform 0.9s ease-out 0.2s",
+          opacity: visible ? 1 : 0,
+          transform: visible ? "translateY(0)" : "translateY(20px)",
+        }}
+      />
     </section>
   );
 });

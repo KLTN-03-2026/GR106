@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { SeasonPlan, PlanStatus, StatusObject } from '../../types/seasonPlan';
@@ -7,35 +7,40 @@ import { fetchPlans, createPlan, removePlan } from '../../store/seasonPlanSlice'
 import { fetchPlots } from '../../store/plotSlice';
 import { fetchCrops } from '../../store/cropSlice';
 import { canEditPlan } from '../../utils/seasonPlanUtils';
-import { Search, Calendar, Loader2, Info, CheckCircle2, AlertCircle, Trash2 } from 'lucide-react';
+import { Search, Calendar, Loader2, Info, CheckCircle2, AlertCircle, Trash2, ArrowLeft } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
 import { cn } from '../../utils/cn';
 import { Button } from '../../components/ui/button';
 import { CreatePlanModal } from './components/CreatePlanModal';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { useAuth } from '../../hooks/useAuth';
+import { Navigate } from 'react-router-dom';
+import { getRolesFromToken } from '../../utils/jwt';
 
 export function SeasonPlanListPage() {
-  const { farmId } = useParams<{ farmId: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
+  // Redux State — get currentFarmId instead of URL param
+  const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
   const { plans, loading, error } = useSelector((state: RootState) => state.seasonPlan);
   const { user, accessToken } = useAuth();
 
-  // Kiểm tra quyền: Ưu tiên role trong user object, fallback kiểm tra trực tiếp trong token
+  // Kiểm tra quyền
   const canEdit = canEditPlan(user?.role, accessToken);
 
+  // Redirect if no farm context (non-admin users)
+  if (!currentFarmId && !(accessToken && getRolesFromToken(accessToken).includes('ROLE_ADMIN'))) {
+    return <Navigate to="/farms" replace />;
+  }
+
   useEffect(() => {
-
-    if (!farmId || !accessToken) {
-      return;
+    if (accessToken) {
+      dispatch(fetchPlans());
     }
+  }, [dispatch, accessToken]);
 
-    dispatch(fetchPlans());
-  }, [dispatch, accessToken, farmId]);
-
-  const farmPlans = plans.filter((p: SeasonPlan) => p.farmId === farmId || p.farmId === '');
+  const farmPlans = plans.filter((p: SeasonPlan) => p.farmId === currentFarmId || p.farmId === '');
 
   const [statusFilter, setStatusFilter] = useState<PlanStatus | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,11 +71,11 @@ export function SeasonPlanListPage() {
   });
 
   useEffect(() => {
-    if (isCreateModalOpen) {
-      dispatch(fetchPlots());
+    if (isCreateModalOpen && currentFarmId) {
+      dispatch(fetchPlots(currentFarmId));
       dispatch(fetchCrops());
     }
-  }, [isCreateModalOpen, dispatch]);
+  }, [isCreateModalOpen, dispatch, currentFarmId]);
 
   const filteredPlans = farmPlans.filter((p: SeasonPlan) => {
     const matchesStatus = statusFilter === 'ALL' || p.status === statusFilter;
@@ -156,7 +161,7 @@ export function SeasonPlanListPage() {
       case 'READY_TO_HARVEST': return 'bg-lime-100 text-lime-700';
       case 'HARVESTING': return 'bg-emerald-100 text-emerald-700';
       case 'COMPLETED': return 'bg-slate-100 text-slate-400';
-      case 'CANCELLED': return 'bg-red-100 text-red-700';
+      case 'CANCELLED': return 'bg-red-100 text-red-700';onabort
       default: return 'bg-slate-100 text-slate-600';
     }
   };
@@ -174,25 +179,37 @@ export function SeasonPlanListPage() {
     <div className="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-hidden">
       {/* Header */}
       <div className="bg-white border-b border-slate-200 px-6 py-4 flex flex-col gap-4 shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Kế hoạch mùa vụ</h1>
-            <p className="text-sm text-slate-500 mt-0.5">Danh sách các mùa vụ của trang trại</p>
-          </div>
-          <div className="flex items-center gap-3">
-            {canEdit ? (
-              <Button
-                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 transition-all font-bold px-6"
-                onClick={() => setIsCreateModalOpen(true)}
-              >
-                + Tạo vụ mùa
-              </Button>
-            ) : (
-              <div className="px-4 py-2 bg-slate-100 rounded-xl flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                <Info size={14} />
-                Chế độ chỉ xem
-              </div>
-            )}
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => navigate(`/farms/${currentFarmId}/actions`)}
+            className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-all font-bold text-xs shrink-0"
+          >
+            <div className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center">
+              <ArrowLeft size={14} />
+            </div>
+            Quay lại
+          </button>
+          <div className="h-8 w-px bg-slate-200 mx-2" />
+          <div className="flex-1 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Kế hoạch mùa vụ</h1>
+              <p className="text-sm text-slate-500 mt-0.5">Danh sách các mùa vụ của trang trại</p>
+            </div>
+            <div className="flex items-center gap-3">
+              {canEdit ? (
+                <Button
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 transition-all font-bold px-6"
+                  onClick={() => setIsCreateModalOpen(true)}
+                >
+                  + Tạo vụ mùa
+                </Button>
+              ) : (
+                <div className="px-4 py-2 bg-slate-100 rounded-xl flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                  <Info size={14} />
+                  Chế độ chỉ xem
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -257,11 +274,11 @@ export function SeasonPlanListPage() {
             {filteredPlans.map((plan) => (
               <div
                 key={plan.id}
-                onClick={() => navigate(`/farms/${farmId}/season-plans/${plan.id}`)}
-                className="bg-white rounded-xl border border-slate-200 p-5 cursor-pointer hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-100/50 transition-all group"
+                onClick={() => navigate(`/farms/${currentFarmId}/season-plans/${plan.id}`)}
+                className="bg-white rounded-xl border border-slate-200 p-5 cursor-pointer hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-100/50 transition-all group flex flex-col h-full"
               >
                 <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                  <h3 className="text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2 min-h-[3.5rem]">
                     {plan.name}
                   </h3>
                   <div className="flex items-center gap-2">
@@ -292,7 +309,7 @@ export function SeasonPlanListPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+                <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="flex -space-x-2">
                       {plan.phases.slice(0, 3).map((phase, idx) => {

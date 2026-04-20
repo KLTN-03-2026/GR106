@@ -107,7 +107,7 @@ export function PlanTimeline({
     const onMove = (e: MouseEvent) => {
       if (!sidebarResizing.current) return;
       const delta = e.clientX - sidebarStartX.current;
-      setSidebarWidth(prev => Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, sidebarStartW.current + delta)));
+      setSidebarWidth(Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, sidebarStartW.current + delta)));
     };
     const onUp = () => {
       if (!sidebarResizing.current) return;
@@ -592,7 +592,7 @@ export function PlanTimeline({
   return (
     <div
       className={cn(
-        'bg-white flex flex-col h-full relative border border-slate-200 rounded-xl m-4 shadow-sm overflow-hidden',
+        'flex-1 flex flex-col h-full min-h-0 relative border border-slate-200 rounded-xl m-4 shadow-sm overflow-hidden bg-white',
         barDrag ? 'select-none' : '',
       )}
     >

@@ -15,7 +15,7 @@ export interface NavIconItem {
 export const NAV_ICONS: NavIconItem[] = [
   { icon: Wallet, key: "wallet" },
   { icon: Activity, key: "activity" },
-  { icon: Trees, key: "crop-catalog" },
+  { icon: Trees, key: "tree" },
   { icon: GitFork, key: "task" },
   { icon: Sparkles, key: "gemini" },
 ];

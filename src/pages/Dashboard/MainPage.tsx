@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
+import { useAuth } from '../../hooks/useAuth';
 import { fetchPlots, clearPlots, setAggregateStats, setPlots } from '../../store/plotSlice';
 import { fetchCrops, fetchCropTypes } from '../../store/cropSlice';
 import { dashboardService } from '../../services/dashboard/dashboardService';
@@ -34,7 +35,7 @@ function useDashboardData(farmId?: string) {
 
     if (farmId) {
       // 2a. CHẾ ĐỘ TRANG TRẠI: Load lô đất của farm này
-      dispatch(fetchPlots());
+      dispatch(fetchPlots(farmId));
       setIsSyncing(false);
     } else {
       // 2b. CHẾ ĐỘ HUB: Quét nền lấy dữ liệu tổng hợp
@@ -77,6 +78,17 @@ function useDashboardData(farmId?: string) {
 
 export default function MainPage() {
   const { farmId: routeFarmId } = useParams<{ farmId: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // Force Admin to system dashboard if they land here
+  useEffect(() => {
+    const role = (user?.role || '').toUpperCase();
+    if (role === 'ADMIN' || role === 'ROLE_ADMIN') {
+      navigate('/admin/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
+
   // Chỉ sử dụng farmId nếu nó tồn tại trên URL (Route Param)
   const farmId = routeFarmId || undefined;
 
