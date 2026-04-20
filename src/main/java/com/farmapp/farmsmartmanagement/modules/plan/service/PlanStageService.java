@@ -10,6 +10,7 @@ import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanSta
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanStageStatusEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanStageRequest;
+import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdatePlanStageRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlanStageResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.mapper.PlanStageMapper;
 import lombok.AccessLevel;
@@ -110,6 +111,28 @@ public class PlanStageService {
         newPlanStage.setStatus(statusEntityList.getFirst());
 
         return  planStageMapper.toResponse(planStageRepository.save(newPlanStage));
+    }
+
+    @Transactional
+    public PlanStageResponse updatePlanStageCustom(UUID planId, UUID planStageId, UpdatePlanStageRequest request){
+        UUID farmId = securityUtils.getCurrentFarmId();
+
+        if(!planRepository.existsByIdAndFarm_Id(planId, farmId))
+            throw new AppException(ErrorCode.PLAN_NOT_FOUND);
+
+        PlanStageEntity planStage = planStageRepository.findByIdAndPlanId(planStageId, planId)
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
+
+        if(request.getStartDate()!=null && request.getEndDate()!=null &&
+                planStageRepository.existsOverlappingWithoutId(
+                        planId, planStageId, request.getStartDate(), request.getEndDate()
+                ))
+            throw new AppException(ErrorCode.PLAN_STAGE_OVERLAP);
+
+
+        planStageMapper.updateEntityFromRequest(request, planStage);
+
+        return planStageMapper.toResponse(planStageRepository.save(planStage));
     }
 
     @Transactional

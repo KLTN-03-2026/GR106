@@ -6,6 +6,7 @@ import com.farmapp.farmsmartmanagement.common.response.ResponseUtil;
 import com.farmapp.farmsmartmanagement.infrastructure.security.UserPrincipal;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanStageRequest;
+import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdatePlanStageRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlanResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlanStageResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.service.PlanStageService;
@@ -58,6 +59,18 @@ public class PlanStageController {
     ){
         return ResponseUtil.success(
                 planStageService.findAllByPlanId(planId)
+        );
+    }
+
+    @PatchMapping("/api/v1/plans/{planId}/stages/{stageId}")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<PlanStageResponse>> updatePlanStageCustom(
+            @PathVariable("planId") UUID planId,
+            @PathVariable("stageId") UUID stageId,
+            @RequestBody @Valid UpdatePlanStageRequest request
+    ){
+        return ResponseUtil.success(
+                planStageService.updatePlanStageCustom(planId, stageId, request)
         );
     }
 

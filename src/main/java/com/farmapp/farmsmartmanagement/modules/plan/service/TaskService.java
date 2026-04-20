@@ -42,7 +42,7 @@ public class TaskService {
     @Transactional
     public TaskResponse createTask(UUID planId, UUID planStageId, CreateTaskRequest request){
 
-        if(!planStageRepository.existsByPlanId(planId))
+        if(!planStageRepository.existsByIdAndPlan_Id(planStageId,planId))
             throw new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND);
 
         UUID farmId = securityUtils.getCurrentFarmId();
@@ -56,12 +56,13 @@ public class TaskService {
                 .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
 
         // check planStage
-        PlanStageEntity planStage = planStageRepository.findById(planStageId)
-                .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
+        PlanStageEntity planStage = planStageRepository
+                .findByIdAndPlanId(planStageId,planId)
+                .orElseThrow(() -> new AppException(ErrorCode.FORBIDDEN));
 
         // check ownership
         if (!planStage.getPlan().getFarm().getId().equals(farmId)) {
-            throw new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND);
+            throw new AppException(ErrorCode.CROP_ALREADY_EXISTS);
         }
 
         // validate date
@@ -102,7 +103,7 @@ public class TaskService {
     @Transactional
     public TaskResponse updateTask(UUID planId, UUID planStageId, UUID taskId, UpdateTaskRequest request){
 
-        if(!planStageRepository.existsByPlanId(planId))
+        if(!planStageRepository.existsByIdAndPlan_Id(planStageId, planId))
             throw new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND);
 
         UUID farmId = securityUtils.getCurrentFarmId();
@@ -116,7 +117,7 @@ public class TaskService {
                 .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
 
         // check planStage
-        PlanStageEntity planStage = planStageRepository.findById(planStageId)
+        PlanStageEntity planStage = planStageRepository.findByIdAndPlanId(planStageId,planId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
 
         // check ownership

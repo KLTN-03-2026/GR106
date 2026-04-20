@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID> {
@@ -32,6 +33,23 @@ public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID
             @Param("endDate") LocalDate endDate
     );
 
+    @Query("""
+        SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END
+        FROM PlanStageEntity p
+        WHERE p.plan.id = :planId
+        AND p.id != :stageId
+        AND (
+            :startDate <= p.endDate
+            AND :endDate >= p.startDate
+        )
+    """)
+    boolean existsOverlappingWithoutId(
+            @Param("planId") UUID planId,
+            @Param("stageId") UUID stageId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
     PlanStageEntity findByPlan_IdAndOrderIndex(UUID planId, int orderIndex);
 
 
@@ -45,5 +63,7 @@ public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID
 
     List<PlanStageEntity> findAllByPlanId(UUID planId);
 
-    boolean existsByPlanId(UUID planId);
+    boolean existsByIdAndPlan_Id(UUID planStageId, UUID planId);
+
+    Optional<PlanStageEntity> findByIdAndPlanId(UUID planStageId, UUID planId);
 }

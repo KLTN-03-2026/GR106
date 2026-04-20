@@ -30,5 +30,9 @@ public interface PlanPlotRepository extends JpaRepository<PlanPlotEntity, UUID> 
     """)
     List<PlotEntity> findPlotsByPlanId(UUID planId);
 
+    @Query(value = """
+            SELECT DISTINCT pp.plot.id FROM PlanPlotEntity pp
+            WHERE pp.plan.id = :planId
+            """)
     List<UUID> findPlotIdsByPlanId(UUID planId);
 }
