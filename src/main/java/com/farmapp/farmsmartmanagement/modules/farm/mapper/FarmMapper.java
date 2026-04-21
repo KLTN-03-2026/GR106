@@ -20,12 +20,5 @@ public interface FarmMapper {
     // map từ request sang entity đã load từ DB
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromRequest(UpdateFarmRequest request, @MappingTarget FarmEntity entity);
-
-//    default FarmEntity toEntity(CreateFarmRequest request) {
-//
-//    }
-//
-//    default FarmEntity toEntity(UpdateFarmRequest request){
-//
-//    }
+    
 }
