@@ -127,9 +127,9 @@ public class SepayService {
         log.info("[PAYMENT] txn id={} orderCode={} amount={}", txn.getId(), orderCode, amount);
 
         String baseUrl    = sepayProperties.getReturnUrl();
-        String successUrl = baseUrl + "/success?order=" + orderCode;
-        String errorUrl   = baseUrl + "/error?order="   + orderCode;
-        String cancelUrl  = baseUrl + "/cancel?order="  + orderCode;
+        String successUrl = baseUrl + "?order=" + orderCode;
+        String errorUrl   = baseUrl + "?order="   + orderCode;
+        String cancelUrl  = baseUrl + "?order="  + orderCode;
         String amountStr  = amount.toBigInteger().toString();
         String description = "Thanh toan don hang " + orderCode;
 
