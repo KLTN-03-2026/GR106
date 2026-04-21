@@ -15,7 +15,7 @@ import java.util.UUID;
 @Table(name = "users")
 @Getter
 @Setter
-public class UserEntity {
+public class UserEntity extends BaseEntity {
 
     @Id
     @GeneratedValue
