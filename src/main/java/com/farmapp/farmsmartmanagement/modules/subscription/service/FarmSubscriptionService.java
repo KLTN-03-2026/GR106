@@ -3,14 +3,12 @@ package com.farmapp.farmsmartmanagement.modules.subscription.service;
 
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
+import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
 import com.farmapp.farmsmartmanagement.domain.enums.BillingCycle;
 import com.farmapp.farmsmartmanagement.domain.enums.SubscriptionStatus;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.FarmRepository;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.FarmSubscriptionRepository;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.SubscriptionHistoryRepository;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.SubscriptionPlanRepository;
-import com.farmapp.farmsmartmanagement.modules.subscription.dto.response.SubscriptionPlanResponse;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
+import com.farmapp.farmsmartmanagement.modules.subscription.dto.response.PaymentResultResponse;
 import com.farmapp.farmsmartmanagement.modules.subscription.dto.response.FarmSubscriptionResponse;
 import com.farmapp.farmsmartmanagement.modules.subscription.mapper.SubscriptionMapper;
 import jakarta.persistence.EntityManager;
@@ -25,10 +23,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -43,7 +37,13 @@ public class FarmSubscriptionService {
     FarmSubscriptionRepository farmSubscriptionRepository;
     FarmRepository farmRepository;
 
+    PaymentTransactionRepository paymentTransactionRepository;
+
     EntityManager entityManager;
+
+    SecurityUtils securityUtils;
+//
+//    public FarmSubscriptionResponse
 
     @Transactional
     public List<FarmSubscriptionResponse> getFarmSubscriptionHistory(UUID farmId){
@@ -157,5 +157,17 @@ public class FarmSubscriptionService {
 
         log.info("[Subscription] DONE eventType={} farm={} plan={} start={} expires={}",
                 eventType, txn.getFarm().getId(), newPlan.getName(), newStart, newExpires);
+    }
+
+    public PaymentResultResponse getPaymentResult(String orderCode){
+        UUID userId =  securityUtils.getCurrentUserId();
+
+        PaymentTransactionEntity paymentTransaction =
+                paymentTransactionRepository
+                        .findByOrderCodeAndUser_IdAndPaidAtIsNotNull(orderCode,userId)
+                        .orElseThrow(()->new AppException(ErrorCode.PAYMENT_NOT_FOUND));
+
+        return subscriptionMapper.toPaymentResultResponse(paymentTransaction);
+
     }
 }

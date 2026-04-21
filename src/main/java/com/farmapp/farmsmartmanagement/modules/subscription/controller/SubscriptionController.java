@@ -2,7 +2,9 @@ package com.farmapp.farmsmartmanagement.modules.subscription.controller;
 
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
 import com.farmapp.farmsmartmanagement.common.annotation.RequiresFarmToken;
+import com.farmapp.farmsmartmanagement.common.response.ResponseUtil;
 import com.farmapp.farmsmartmanagement.infrastructure.security.UserPrincipal;
+import com.farmapp.farmsmartmanagement.modules.subscription.dto.response.PaymentResultResponse;
 import com.farmapp.farmsmartmanagement.modules.subscription.dto.response.SubscriptionPlanResponse;
 import com.farmapp.farmsmartmanagement.modules.subscription.dto.response.FarmSubscriptionResponse;
 import com.farmapp.farmsmartmanagement.modules.subscription.service.FarmSubscriptionService;
@@ -14,8 +16,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -74,6 +78,16 @@ public class SubscriptionController {
 
         return ApiResponse.success(
                 farmSubscriptionService.getCurrentFarmSubscription(farmId)
+        );
+    }
+
+    @GetMapping("/api/v1/payment/result")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<PaymentResultResponse>> getPaymentResult(
+            @RequestParam("orderCode") String orderCode
+    ){
+        return ResponseUtil.success(
+                farmSubscriptionService.getPaymentResult(orderCode)
         );
     }
 }

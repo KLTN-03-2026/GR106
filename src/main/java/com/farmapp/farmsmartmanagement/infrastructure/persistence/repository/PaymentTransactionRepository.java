@@ -16,4 +16,6 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
             WHERE p.orderCode = :orderCode
             """)
     Optional<PaymentTransactionEntity> findByOrderCode(String orderCode);
+
+    Optional<PaymentTransactionEntity> findByOrderCodeAndUser_IdAndPaidAtIsNotNull(String orderCode, UUID userId);
 }
