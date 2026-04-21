@@ -27,7 +27,6 @@ const TasksPage = lazy(() => import('../pages/Tasks/TasksPage'));
 const GeminiPage = lazy(() => import('../pages/Gemini/GeminiPage'));
 const SubscriptionPage = lazy(() => import('../pages/Pricing/SubscriptionPage'));
 const PaymentResultPage = lazy(() => import('../pages/Pricing/PaymentResultPage'));
-const PaymentSuccessPage = lazy(() => import('../pages/Pricing/PaymentSuccessPage'));
 const FarmActionsPage = lazy(() => import('../pages/FarmManagement/FarmActionsPage'));
 const CropCatalogPage = lazy(() => import('../pages/CropCatalog/CropCatalogPage'));
 const SeasonPlanPage = lazy(() => import('../pages/SeasonPlan/SeasonPlanPage'));
@@ -59,7 +58,7 @@ export const AppRoutes: React.FC = () => {
         <Route element={<Suspense fallback={<LoadingPage />}><DashboardLayout /></Suspense>}>
           <Route path="/dashboard" element={<Suspense fallback={<LoadingPage />}><MainPage /></Suspense>} />
           <Route path="/change-password" element={<Suspense fallback={<LoadingPage />}><ChangePasswordPage /></Suspense>} />
-          
+
           {/* Global routes */}
           <Route path="/wallet" element={<Suspense fallback={<LoadingPage />}><WalletPage /></Suspense>} />
           <Route path="/activity" element={<Suspense fallback={<LoadingPage />}><ActivityPage /></Suspense>} />
@@ -68,7 +67,7 @@ export const AppRoutes: React.FC = () => {
 
           {/* Farm selection — no farmId */}
           <Route path="/farms" element={<Suspense fallback={<LoadingPage />}><ManagementDashboardPage /></Suspense>} />
-          
+
           {/* Farm-specific routes — require farmId in URL */}
           <Route path="/farms/:farmId">
             <Route path="actions" element={<Suspense fallback={<LoadingPage />}><FarmActionsPage /></Suspense>} />
@@ -80,13 +79,12 @@ export const AppRoutes: React.FC = () => {
             <Route path="map" element={<Suspense fallback={<LoadingPage />}><MapPage /></Suspense>} />
             <Route path="land-plots" element={<Suspense fallback={<LoadingPage />}><LandPlotsPage /></Suspense>} />
             <Route path="members" element={<Suspense fallback={<LoadingPage />}><MembersPage /></Suspense>} />
+            <Route path="subscription" element={<Navigate to="subscription/history" replace />} />
             <Route path="subscription/history" element={<Suspense fallback={<LoadingPage />}><SubscriptionHistoryPage /></Suspense>} />
             <Route path="subscription/pricing" element={<Suspense fallback={<LoadingPage />}><SubscriptionPage /></Suspense>} />
             <Route path="gemini" element={<Suspense fallback={<LoadingPage />}><GeminiPage /></Suspense>} />
             <Route path="crop-catalog" element={<Suspense fallback={<LoadingPage />}><CropCatalogPage /></Suspense>} />
           </Route>
-
-          <Route path="/payment-result" element={<Suspense fallback={<LoadingPage />}><PaymentResultPage /></Suspense>} />
         </Route>
 
         {/* Admin Routes */}
@@ -95,9 +93,8 @@ export const AppRoutes: React.FC = () => {
           <Route path="/admin/crop-catalog" element={<Suspense fallback={<LoadingPage />}><CropCatalogPage /></Suspense>} />
         </Route>
 
-        {/* Standalone payment pages */}
-        <Route path="/payment/success" element={<Suspense fallback={<LoadingPage />}><PaymentSuccessPage /></Suspense>} />
-        <Route path="/payment/result" element={<Suspense fallback={<LoadingPage />}><PaymentResultPage /></Suspense>} />
+        {/* Standalone payment result page */}
+        <Route path="/payment-result" element={<Suspense fallback={<LoadingPage />}><PaymentResultPage /></Suspense>} />
       </Route>
 
       {/* Unauthorized Page */}
