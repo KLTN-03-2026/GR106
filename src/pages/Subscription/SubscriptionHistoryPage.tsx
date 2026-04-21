@@ -85,7 +85,7 @@ export default function SubscriptionHistoryPage() {
 
                   <h2 className="text-xl font-black text-slate-900 mb-0.5">{current.subscriptionPlanName}</h2>
                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-4">
-                    {current.billingCycle === 'YEARLY' ? 'Thanh toán hàng năm' : 'Thanh toán hàng tháng'}
+                    {current.billingCycle === 'ANNUAL' ? 'Thanh toán hàng năm' : 'Thanh toán hàng tháng'}
                   </p>
 
                   <div className="space-y-2 mb-6">
@@ -110,7 +110,7 @@ export default function SubscriptionHistoryPage() {
                   </div>
 
                   <button 
-                    onClick={() => navigate(farmId ? `/farms/${farmId}/subscription/pricing` : '/farms')}
+                    onClick={() => navigate(currentFarmId ? `/farms/${currentFarmId}/subscription/pricing` : '/farms')}
                     className="w-full py-3 bg-transparent border-2 border-slate-900 text-slate-900 rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
                   >
                     Nâng cấp gói cước
@@ -128,7 +128,7 @@ export default function SubscriptionHistoryPage() {
                   <p className="text-xs text-slate-400 px-4">Hãy đăng ký gói dịch vụ để tận hưởng đầy đủ tính năng của FarmerAI</p>
                 </div>
                 <button 
-                  onClick={() => navigate(farmId ? `/farms/${farmId}/subscription/pricing` : '/farms')}
+                  onClick={() => navigate(currentFarmId ? `/farms/${currentFarmId}/subscription/pricing` : '/farms')}
                   className="bg-transparent text-slate-900 border-2 border-slate-900 px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all"
                 >
                   Đăng ký ngay
@@ -194,7 +194,7 @@ export default function SubscriptionHistoryPage() {
                         <td className="px-4 py-3 text-xs font-medium text-slate-500">{formatDate(item.startedAt)}</td>
                         <td className="px-4 py-3 text-xs font-medium text-slate-500">{formatDate(item.expiresAt)}</td>
                         <td className="px-4 py-3 text-[10px] font-black text-slate-800 text-right uppercase tracking-tighter">
-                          {item.billingCycle === 'YEARLY' ? 'Năm' : 'Tháng'}
+                          {item.billingCycle === 'ANNUAL' ? 'Năm' : 'Tháng'}
                         </td>
                       </motion.tr>
                     ))}

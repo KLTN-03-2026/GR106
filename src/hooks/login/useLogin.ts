@@ -53,10 +53,14 @@ export function useLogin() {
 
         navigate(from, { replace: true });
       } else {
-        setServerError('Email hoặc mật khẩu không đúng');
+        setServerError('Sai tên đăng nhập hoặc mật khẩu');
       }
     } catch (error: any) {
-      setServerError(error.response?.data?.message || 'Có lỗi xảy ra khi đăng nhập');
+      if (error.response?.status === 401) {
+        setServerError('Sai tên đăng nhập hoặc mật khẩu');
+      } else {
+        setServerError(error.response?.data?.message || 'Có lỗi xảy ra khi đăng nhập');
+      }
     }
   });
 

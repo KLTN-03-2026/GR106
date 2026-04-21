@@ -133,11 +133,15 @@ export default function DashboardLayout() {
       if (currentFarmId) {
         // Navigate to farm-specific route
         // Map 'task' key to 'tasks' route
-        const routePart = key === "task" ? "tasks" : key;
+        let routePart = key === "task" ? "tasks" : key;
+        if (key === "subscription") routePart = "subscription/history";
+        
         navigate(`/farms/${currentFarmId}/${routePart}`);
       } else {
         // Navigate to global route if no farm selected
-        const routePart = key === "task" ? "task" : key;
+        let routePart = key === "task" ? "task" : key;
+        if (key === "subscription") routePart = "subscription/history";
+        
         navigate(`/${routePart}`);
       }
       return;

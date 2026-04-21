@@ -39,9 +39,10 @@ export const LoginForm: React.FC = () => {
         }
       }
     } catch (error: any) {
-      toast.error(
-        error.response?.data?.message || 'Email hoặc mật khẩu không đúng'
-      );
+      const errorMessage = error.response?.status === 401 
+        ? 'Sai tên đăng nhập hoặc mật khẩu' 
+        : (error.response?.data?.message || 'Sai tên đăng nhập hoặc mật khẩu');
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
