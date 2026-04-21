@@ -81,7 +81,7 @@ public class SubscriptionController {
         );
     }
 
-    @GetMapping("/api/v1/payment/result")
+    @GetMapping("/api/v1/payments/result")
     @RequiresFarmToken
     public ResponseEntity<ApiResponse<PaymentResultResponse>> getPaymentResult(
             @RequestParam("orderCode") String orderCode
