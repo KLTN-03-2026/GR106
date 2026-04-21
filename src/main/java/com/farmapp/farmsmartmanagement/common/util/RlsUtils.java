@@ -1,6 +1,9 @@
 package com.farmapp.farmsmartmanagement.common.util;
 
 import com.farmapp.farmsmartmanagement.config.database.RlsContext;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -10,35 +13,45 @@ import java.util.function.Supplier;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class RlsUtils {
 
-    public <T> T runAsAdmin(Supplier<T> action) {
-        // Lưu context hiện tại
-        UUID currentFarmId = RlsContext.getFarmId();
-        UUID currentUserId = RlsContext.getUserId();
+    @PersistenceContext
+    private EntityManager em;
 
+    public <T> T runAsAdmin(Supplier<T> action) {
+        UUID prevFarm = RlsContext.getFarmId();
+        UUID prevUser = RlsContext.getUserId();
+
+        RlsContext.setBypass(true);
+        syncToDb(); // ← apply ngay vào connection đang dùng
         try {
-            // Clear context → wrapper sẽ set empty string → is_bypass không cần
-            // Hoặc thêm flag bypass vào RlsContext
-            RlsContext.setBypass(true);
             return action.get();
         } finally {
             RlsContext.setBypass(false);
-            // Restore context cũ
-            RlsContext.set(currentFarmId, currentUserId);
+            RlsContext.set(prevFarm, prevUser);
+            syncToDb(); // ← restore
         }
     }
 
     public void runAsAdmin(Runnable action) {
-        UUID currentFarmId = RlsContext.getFarmId();
-        UUID currentUserId = RlsContext.getUserId();
+        runAsAdmin(() -> { action.run(); return null; });
+    }
 
-        try {
-            RlsContext.setBypass(true);
-            action.run();
-        } finally {
-            RlsContext.setBypass(false);
-            RlsContext.set(currentFarmId, currentUserId);
-        }
+    private void syncToDb() {
+        String userId = RlsContext.hasUser()
+                ? RlsContext.getUserId().toString() : "";
+        String farmId = RlsContext.hasFarm()
+                ? RlsContext.getFarmId().toString() : "";
+        String bypass = RlsContext.isBypass() ? "true" : "false";
+
+        em.createNativeQuery(
+                        "SELECT set_config('app.current_user_id', :u, false)," +
+                                "       set_config('app.current_farm_id', :f, false)," +
+                                "       set_config('app.bypass_rls', :b, false)")
+                .setParameter("u", userId)
+                .setParameter("f", farmId)
+                .setParameter("b", bypass)
+                .getSingleResult();
     }
 }

@@ -1,18 +1,16 @@
 package com.farmapp.farmsmartmanagement.modules.auth.service;
 
 import com.farmapp.farmsmartmanagement.common.util.RlsUtils;
+import com.farmapp.farmsmartmanagement.config.app.JwtProperties;
 import com.farmapp.farmsmartmanagement.domain.enums.UserStatus;
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.common.util.HashUtils;
 import com.farmapp.farmsmartmanagement.config.app.AppProperties;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.modules.auth.dto.request.LoginRequest;
 import com.farmapp.farmsmartmanagement.modules.auth.dto.request.RegisterRequest;
 import com.farmapp.farmsmartmanagement.modules.auth.dto.response.TokenResponse;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.EmailVerificationTokenEntity;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.RoleEntity;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.UserEntity;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.UserRoleEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
 import com.farmapp.farmsmartmanagement.infrastructure.security.JwtProvider;
 import com.farmapp.farmsmartmanagement.infrastructure.service.EmailService;
@@ -27,7 +25,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,6 +49,8 @@ public class AuthService {
     EmailService emailService;
     EmailTemplateService emailTemplateService;
     AppProperties appProperties; // thêm config frontend url
+    JwtProperties jwtProperties;
+
 
     ApplicationEventPublisher eventPublisher;
     RlsUtils rlsUtils;
@@ -56,7 +58,6 @@ public class AuthService {
     // AuthService.java — register
     @Transactional
     public void register(RegisterRequest req) {
-
         rlsUtils.runAsAdmin(() ->{
             if (userRepository.findByEmail(req.email()).isPresent()) {
                 throw new AppException(ErrorCode.EMAIL_EXISTED);
@@ -117,10 +118,20 @@ public class AuthService {
                 List<String> systemRoles = permissionRepository.findSystemRoles(user.getId());
                 String access = jwtProvider.generateUserToken(user.getId(), systemRoles);
 
+                String raw = UUID.randomUUID().toString();
 
-                String refresh = refreshTokenService.create(user.getId(), userAgent, ip);
+                // set fields
+                var now = Instant.now();
 
-                return new TokenResponse(access, refresh);
+                RefreshTokenEntity entity = new RefreshTokenEntity();
+                entity.setUserId(user.getId());
+                entity.setTokenHash(hash(raw));
+                entity.setExpiresAt(now.plusSeconds(jwtProperties.getRefreshExpiration())); // 7 days
+                entity.setUserAgent(userAgent);
+                entity.setIpAddress(ip);
+
+                refreshTokenRepository.save(entity);
+                return new TokenResponse(access, raw);
             });
     }
 
@@ -155,5 +166,13 @@ public class AuthService {
             userRepository.save(user);
             emailVerificationTokenRepository.save(token);
         });
+    }
+    private String hash(String val) {
+        try {
+            var md = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(md.digest(val.getBytes()));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }
