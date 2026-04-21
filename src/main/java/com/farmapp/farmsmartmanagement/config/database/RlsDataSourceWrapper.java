@@ -36,16 +36,19 @@ public class RlsDataSourceWrapper implements DataSource {
                 ? RlsContext.getUserId().toString() : "";
         String farmId = RlsContext.hasFarm()
                 ? RlsContext.getFarmId().toString() : "";
+        String bypass = RlsContext.isBypass()
+                ? "true" : "false";
 
         log.debug("Applying RLS — userId={}, farmId={}", userId, farmId);
 
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT set_config('app.current_user_id', ?, false)," +
                         "       set_config('app.current_farm_id', ?, false)," +
-                        "       set_config('app.bypass_rls', 'false', false)" // reset bypass
+                        "       set_config('app.bypass_rls', ?, false)" // reset bypass
         )) {
             ps.setString(1, userId);
             ps.setString(2, farmId);
+            ps.setString(3, bypass);
             ps.execute();
         }
     }

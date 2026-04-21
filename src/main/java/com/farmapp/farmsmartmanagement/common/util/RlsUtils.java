@@ -1,40 +1,44 @@
 package com.farmapp.farmsmartmanagement.common.util;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import lombok.RequiredArgsConstructor;
+import com.farmapp.farmsmartmanagement.config.database.RlsContext;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 import java.util.function.Supplier;
 
+
+@Slf4j
 @Component
 public class RlsUtils {
 
-    @PersistenceContext
-    private EntityManager em;
-
     public <T> T runAsAdmin(Supplier<T> action) {
-        setBypass(true);
+        // Lưu context hiện tại
+        UUID currentFarmId = RlsContext.getFarmId();
+        UUID currentUserId = RlsContext.getUserId();
+
         try {
+            // Clear context → wrapper sẽ set empty string → is_bypass không cần
+            // Hoặc thêm flag bypass vào RlsContext
+            RlsContext.setBypass(true);
             return action.get();
         } finally {
-            setBypass(false);
+            RlsContext.setBypass(false);
+            // Restore context cũ
+            RlsContext.set(currentFarmId, currentUserId);
         }
     }
 
     public void runAsAdmin(Runnable action) {
-        setBypass(true);
+        UUID currentFarmId = RlsContext.getFarmId();
+        UUID currentUserId = RlsContext.getUserId();
+
         try {
+            RlsContext.setBypass(true);
             action.run();
         } finally {
-            setBypass(false);
+            RlsContext.setBypass(false);
+            RlsContext.set(currentFarmId, currentUserId);
         }
-    }
-
-    private void setBypass(boolean bypass) {
-        em.createNativeQuery("SELECT set_config('app.bypass_rls', :val, true)") // true = transaction-local
-                .setParameter("val", bypass ? "true" : "false")
-                .getSingleResult();
     }
 }
