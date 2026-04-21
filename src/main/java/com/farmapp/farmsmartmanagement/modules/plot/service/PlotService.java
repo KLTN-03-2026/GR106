@@ -53,7 +53,7 @@ public class PlotService {
         PlotEntity newPlot = new PlotEntity();
 
 
-        if(newPlot.getGeometry() != null){
+        if(request.getGeometry() != null){
 
             newPlot.setGeometry(geometryFormatToGeometry(request.getGeometry()));
 
