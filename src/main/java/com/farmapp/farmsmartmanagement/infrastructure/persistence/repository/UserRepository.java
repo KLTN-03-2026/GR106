@@ -1,5 +1,6 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.EmailVerificationTokenEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,10 +13,18 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     Optional<UserEntity> findByEmail(String email);
 
-    @Query(value = """
-        SELECT u FROM UserEntity u
-        JOIN EmailVerificationTokenEntity e ON e.user.id = u.id
-        WHERE e.usedAt IS NULL
-    """)
-    List<UserEntity> findAllNotYetVerified();
+    // Cách 3: nếu muốn biết token còn hạn hay không (để resend email)
+    @Query("""
+    SELECT u FROM UserEntity u
+    WHERE u.status = 'PENDING'
+      AND u.deletedAt IS NULL
+      AND NOT EXISTS (
+          SELECT 1 FROM EmailVerificationTokenEntity e
+          WHERE e.user.id = u.id
+            AND e.usedAt IS NULL
+            AND e.revokedAt IS NULL
+            AND e.expiresAt > CURRENT_TIMESTAMP
+      )
+""")
+    List<UserEntity> findUsersNeedingNewVerificationToken();
 }

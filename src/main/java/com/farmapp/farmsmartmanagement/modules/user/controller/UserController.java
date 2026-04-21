@@ -31,11 +31,11 @@ public class UserController {
         );
     }
 
-    @GetMapping("/api/v1/users/not-verified")
+    @GetMapping("/api/v1/users/need-new-verification")
     public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsersNotVerified()
     {
         return ResponseUtil.success(
-                userService.getUsersNotYetVerified()
+                userService.findUsersNeedingNewVerificationToken()
         );
     }
 
