@@ -176,7 +176,7 @@ public class FarmService {
     }
 
     @Transactional
-    @PreAuthorize("hasRole('farm:delete')")
+    @PreAuthorize("hasAuthority('farm:delete')")
     public void deleteFarm(UUID farmId) {
         UUID userId = securityUtils.getCurrentUserId();
 

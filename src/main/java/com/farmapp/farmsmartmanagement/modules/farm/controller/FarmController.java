@@ -91,6 +91,7 @@ public class FarmController {
     public ResponseEntity<ApiResponse<Void>> deleteFarm(
             @PathVariable("farmId") UUID farmId
     ){
+        farmService.deleteFarm(farmId);
         return ResponseUtil.noContent();
     }
 }
