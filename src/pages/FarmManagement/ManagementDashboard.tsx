@@ -32,8 +32,11 @@ export function ManagementDashboardPage() {
   }, [dispatch]);
 
   useEffect(() => {
-    dispatch(fetchFarmsSummary());
-  }, [dispatch]);
+    // Chỉ fetch nếu chưa có dữ liệu để tránh race-condition với việc xóa farm
+    if (farmSummary.length === 0) {
+      dispatch(fetchFarmsSummary());
+    }
+  }, [dispatch, farmSummary.length]);
 
 
   const handleSelectFarm = async (farm: any) => {

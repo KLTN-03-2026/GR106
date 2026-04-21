@@ -85,11 +85,6 @@ export const seasonPlanService = {
     await axiosInstance.delete(`/api/v1/plans/${planId}/stages/${stageId}`);
   },
 
-  async getStage(planId: string, stageId: string): Promise<any> {
-    const response = await axiosInstance.patch(`/api/v1/plans/${planId}/stages/${stageId}`, {});
-    return createStageResponseSchema.parse(response.data).data;
-  },
-
   async updateStage(planId: string, stageId: string, data: { name: string; startDate: string; endDate: string }): Promise<any> {
     const response = await axiosInstance.patch(`/api/v1/plans/${planId}/stages/${stageId}`, data);
     return createStageResponseSchema.parse(response.data).data;
@@ -129,21 +124,12 @@ export const seasonPlanService = {
   /**
    * Cập nhật thông tin kế hoạch
    */
-  async updatePlan(planId: string, data: Partial<SeasonPlan>): Promise<SeasonPlan> {
-    // Chỉ gửi các trường hợp lệ theo Swagger (PATCH)
-    const payload = {
-      name: data.name,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      note: data.note || (data as any).description || '',
-    };
-    const response = await axiosInstance.patch(`/api/v1/plans/${planId}`, payload);
-    const validated = createPlanResponseSchema.parse(response.data);
-    return {
-      ...validated.data,
-      phases: data.phases || [],
-      description: validated.data.note || '',
-    } as SeasonPlan;
+  async updatePlan(planId: string, _data: Partial<SeasonPlan>): Promise<SeasonPlan> {
+    // API hiện tại không có PATCH /plans/{planId}; chỉ hỗ trợ PUT /plans/{planId}/time cho timeline.
+    // Giữ method để tránh phá vỡ call-site cũ, nhưng chặn gọi endpoint sai theo tài liệu API.
+    throw new Error(
+      `Plan update for ${planId} is not supported by PATCH endpoint. Use updatePlanTime (PUT /api/v1/plans/{planId}/time).`
+    );
   },
 
   /**

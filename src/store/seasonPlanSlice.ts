@@ -240,6 +240,32 @@ const seasonPlanSlice = createSlice({
     addPlan: (state, action: PayloadAction<SeasonPlan>) => {
       state.plans.push(action.payload);
     },
+    optimisticallyUpdatePhaseTime: (
+      state,
+      action: PayloadAction<{ planId: string; stageId: string; startDate: string; endDate: string }>
+    ) => {
+      const { planId, stageId, startDate, endDate } = action.payload;
+      const plan = state.plans.find(p => p.id === planId);
+      if (!plan) return;
+      const phase = plan.phases.find(ph => ph.id === stageId);
+      if (!phase) return;
+      phase.startDate = startDate;
+      phase.endDate = endDate;
+    },
+    optimisticallyUpdateTaskTime: (
+      state,
+      action: PayloadAction<{ planId: string; stageId: string; taskId: string; startDate: string; endDate: string }>
+    ) => {
+      const { planId, stageId, taskId, startDate, endDate } = action.payload;
+      const plan = state.plans.find(p => p.id === planId);
+      if (!plan) return;
+      const phase = plan.phases.find(ph => ph.id === stageId);
+      if (!phase || !phase.tasks) return;
+      const task = phase.tasks.find(t => t.id === taskId);
+      if (!task) return;
+      task.startDate = startDate;
+      task.endDate = endDate;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -360,6 +386,18 @@ const seasonPlanSlice = createSlice({
           }
         }
       })
+      .addCase(updateTaskTime.fulfilled, (state, action) => {
+        const plan = state.plans.find(p => p.id === action.payload.planId);
+        if (plan) {
+          const phase = plan.phases.find(ph => ph.id === action.payload.stageId);
+          if (phase) {
+            const index = phase.tasks.findIndex(t => t.id === action.payload.task.id);
+            if (index !== -1) {
+              phase.tasks[index] = { ...phase.tasks[index], ...action.payload.task };
+            }
+          }
+        }
+      })
       .addCase(removeSeasonTask.fulfilled, (state, action) => {
         const plan = state.plans.find(p => p.id === action.payload.planId);
         if (plan) {
@@ -370,6 +408,6 @@ const seasonPlanSlice = createSlice({
   }
 });
 
-export const { setPlans, addPlan } = seasonPlanSlice.actions;
+export const { setPlans, addPlan, optimisticallyUpdatePhaseTime, optimisticallyUpdateTaskTime } = seasonPlanSlice.actions;
 export default seasonPlanSlice.reducer;
 

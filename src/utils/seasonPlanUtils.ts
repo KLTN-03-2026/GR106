@@ -10,7 +10,11 @@ const DRAFT_STATUS = { id: '00000000-0000-0000-0000-000000000000', code: 'DRAFT'
 export const addDays = (dateStr: string, days: number): string => {
   const date = new Date(dateStr);
   date.setDate(date.getDate() + days);
-  return date.toISOString().split('T')[0];
+  
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 /**

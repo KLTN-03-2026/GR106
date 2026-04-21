@@ -25,7 +25,7 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       state.accessToken = action.payload.accessToken;
       state.hubToken = action.payload.accessToken;
-      
+
       sessionStorage.setItem('accessToken', action.payload.accessToken);
       sessionStorage.setItem('hubToken', action.payload.accessToken);
       sessionStorage.setItem('refreshToken', action.payload.refreshToken);
@@ -35,7 +35,7 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       state.accessToken = action.payload.accessToken;
       state.hubToken = action.payload.accessToken;
-      
+
       sessionStorage.setItem('accessToken', action.payload.accessToken);
       sessionStorage.setItem('hubToken', action.payload.accessToken);
       sessionStorage.setItem('refreshToken', action.payload.refreshToken);
@@ -53,7 +53,7 @@ const authSlice = createSlice({
     selectFarm: (state, action: PayloadAction<{ token: string; farmId: string }>) => {
       state.currentFarmId = action.payload.farmId;
       state.accessToken = action.payload.token;
-      
+
       sessionStorage.setItem('currentFarmId', action.payload.farmId);
       sessionStorage.setItem('accessToken', action.payload.token);
     },
@@ -71,7 +71,7 @@ const authSlice = createSlice({
     setAccessToken: (state, action: PayloadAction<{ token: string; farmId?: string }>) => {
       state.accessToken = action.payload.token;
       sessionStorage.setItem('accessToken', action.payload.token);
-      
+
       if (action.payload.farmId) {
         state.currentFarmId = action.payload.farmId;
         sessionStorage.setItem('currentFarmId', action.payload.farmId);

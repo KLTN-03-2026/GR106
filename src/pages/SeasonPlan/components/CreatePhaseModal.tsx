@@ -26,6 +26,8 @@ export function CreatePhaseModal({
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [startStatus, setStartStatus] = useState<'empty' | 'valid' | 'invalid'>('empty');
+  const [endStatus, setEndStatus] = useState<'empty' | 'valid' | 'invalid'>('empty');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -33,6 +35,8 @@ export function CreatePhaseModal({
       setName(initialData?.name || '');
       setStartDate(initialData?.startDate || '');
       setEndDate(initialData?.endDate || '');
+      setStartStatus(initialData?.startDate ? 'valid' : 'empty');
+      setEndStatus(initialData?.endDate ? 'valid' : 'empty');
       setError('');
     }
   }, [isOpen, initialData]);
@@ -41,8 +45,26 @@ export function CreatePhaseModal({
     e.preventDefault();
     setError('');
 
-    if (!name.trim() || !startDate || !endDate) {
-      setError('Vui lòng điền đầy đủ các thông tin bắt buộc');
+    if (!name.trim()) {
+      setError('Vui lòng nhập tên giai đoạn');
+      return;
+    }
+
+    if (startStatus === 'invalid') {
+      setError('Ngày bắt đầu không đúng định dạng dd/mm/yyyy');
+      return;
+    }
+    if (!startDate) {
+      setError('Vui lòng nhập ngày bắt đầu');
+      return;
+    }
+
+    if (endStatus === 'invalid') {
+      setError('Ngày kết thúc không đúng định dạng dd/mm/yyyy');
+      return;
+    }
+    if (!endDate) {
+      setError('Vui lòng nhập ngày kết thúc');
       return;
     }
 
@@ -110,11 +132,13 @@ export function CreatePhaseModal({
                   label="Bắt đầu"
                   value={startDate}
                   onChange={setStartDate}
+                  onStatusChange={setStartStatus}
                 />
                 <DateInput
                   label="Kết thúc"
                   value={endDate}
                   onChange={setEndDate}
+                  onStatusChange={setEndStatus}
                 />
               </div>
             </div>

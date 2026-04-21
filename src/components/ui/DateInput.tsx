@@ -15,9 +15,11 @@ export function DateInput({
   onChange,
   label,
   className,
-  disabled
-}: DateInputProps) {
+  disabled,
+  onStatusChange
+}: DateInputProps & { onStatusChange?: (status: 'empty' | 'valid' | 'invalid') => void }) {
   const [displayValue, setDisplayValue] = useState('');
+  const [internalStatus, setInternalStatus] = useState<'empty' | 'valid' | 'invalid'>('empty');
   const nativeInputRef = useRef<HTMLInputElement>(null);
 
   // Sync internal display value when external value changes (YYYY-MM-DD -> DD/MM/YYYY)
@@ -26,43 +28,66 @@ export function DateInput({
       const [year, month, day] = value.split('-');
       if (year && month && day) {
         setDisplayValue(`${day}/${month}/${year}`);
+        setInternalStatus('valid');
+        onStatusChange?.('valid');
       }
     } else {
       setDisplayValue('');
+      setInternalStatus('empty');
+      onStatusChange?.('empty');
     }
   }, [value]);
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let input = e.target.value.replace(/\D/g, ''); // Only digits
-    if (input.length > 8) input = input.slice(0, 8);
+    const val = e.target.value;
+    // Lấy tất cả các chữ số từ input
+    let digits = val.replace(/\D/g, '');
+    if (digits.length > 8) digits = digits.slice(0, 8);
 
-    // Apply mask DD/MM/YYYY
+    // Xây dựng chuỗi hiển thị theo format dd/mm/yyyy
     let formatted = '';
-    if (input.length > 0) {
-      formatted += input.slice(0, 2);
-      if (input.length > 2) {
-        formatted += '/' + input.slice(2, 4);
-        if (input.length > 4) {
-          formatted += '/' + input.slice(4, 8);
+    if (digits.length > 0) {
+      formatted += digits.slice(0, 2);
+      if (digits.length >= 2) {
+        formatted += '/';
+        if (digits.length > 2) {
+          formatted += digits.slice(2, 4);
+          if (digits.length >= 4) {
+            formatted += '/';
+            if (digits.length > 4) {
+              formatted += digits.slice(4, 8);
+            }
+          }
         }
       }
     }
 
     setDisplayValue(formatted);
 
-    // If complete, notify parent (DD/MM/YYYY -> YYYY-MM-DD)
-    if (input.length === 8) {
-      const day = input.slice(0, 2);
-      const month = input.slice(2, 4);
-      const year = input.slice(4, 8);
-      
-      // Basic validation check before sending
+    // Xác định status
+    if (digits.length === 0) {
+      setInternalStatus('empty');
+      onStatusChange?.('empty');
+    } else if (digits.length < 8) {
+      setInternalStatus('empty'); // Hoặc 'partial' nếu muốn
+      onStatusChange?.('empty');
+    } else {
+      const day = digits.slice(0, 2);
+      const month = digits.slice(2, 4);
+      const year = digits.slice(4, 8);
+
       const d = parseInt(day);
       const m = parseInt(month);
       const y = parseInt(year);
-      
-      if (m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1900) {
+
+      const isValid = m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1900;
+      if (isValid) {
+        setInternalStatus('valid');
+        onStatusChange?.('valid');
         onChange(`${year}-${month}-${day}`);
+      } else {
+        setInternalStatus('invalid');
+        onStatusChange?.('invalid');
       }
     }
   };
@@ -91,16 +116,23 @@ export function DateInput({
           onChange={handleTextChange}
           placeholder="dd/mm/yyyy"
           disabled={disabled}
-          className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl py-3 px-4 outline-none transition-all font-bold text-slate-700 placeholder:text-slate-300 disabled:opacity-50"
+          inputMode="numeric"
+          className={cn(
+            "w-full bg-slate-50 border-2 transition-all font-semibold text-slate-700 outline-none text-[12px]",
+            internalStatus === 'invalid' ? "border-rose-500 bg-rose-50" : "border-transparent",
+            "focus:border-indigo-500/20 focus:bg-white focus:ring-4 focus:ring-indigo-500/5",
+            "rounded-xl py-2 pl-2 pr-8 placeholder:text-slate-400 disabled:opacity-50",
+            "relative z-10" // Đảm bảo nằm trên input ẩn
+          )}
         />
-        
+
         <button
           type="button"
           onClick={openPicker}
           disabled={disabled}
-          className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-indigo-500 transition-colors"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-indigo-500 transition-colors z-20"
         >
-          <CalendarIcon size={18} />
+          <CalendarIcon size={14} />
         </button>
 
         {/* Hidden native input for the calendar picker */}
@@ -109,7 +141,7 @@ export function DateInput({
           type="date"
           value={value}
           onChange={handleNativeChange}
-          className="absolute inset-0 opacity-0 pointer-events-none"
+          className="absolute inset-0 opacity-0 pointer-events-none z-0"
           tabIndex={-1}
         />
       </div>

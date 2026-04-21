@@ -20,6 +20,7 @@ export function ClonePlanModal({
   plan,
 }: ClonePlanModalProps) {
   const [newStartDate, setNewStartDate] = useState('');
+  const [startStatus, setStartStatus] = useState<'empty' | 'valid' | 'invalid'>('empty');
   const [newName, setNewName] = useState('');
   const [error, setError] = useState('');
 
@@ -28,6 +29,7 @@ export function ClonePlanModal({
     if (plan && isOpen) {
       setNewName(`Bản sao của ${plan.name}`);
       setNewStartDate(new Date().toISOString().split('T')[0]);
+      setStartStatus('valid');
     }
   }, [plan, isOpen]);
 
@@ -35,13 +37,23 @@ export function ClonePlanModal({
     e.preventDefault();
     setError('');
 
-    if (!newStartDate || !newName) {
-      setError('Vui lòng điền đầy đủ thông tin');
+    if (!newName.trim()) {
+      setError('Vui lòng nhập tên kế hoạch mới');
+      return;
+    }
+
+    if (startStatus === 'invalid') {
+      setError('Ngày bắt đầu không đúng định dạng dd/mm/yyyy');
+      return;
+    }
+
+    if (!newStartDate) {
+      setError('Vui lòng nhập ngày bắt đầu');
       return;
     }
 
     if (plan) {
-      const clonedPlan = clonePlanLogic(plan, newName, newStartDate);
+      const clonedPlan = clonePlanLogic(plan, newName.trim(), newStartDate);
       onClone(clonedPlan);
       onClose();
     }
@@ -96,6 +108,7 @@ export function ClonePlanModal({
                 label="Ngày bắt đầu mới"
                 value={newStartDate}
                 onChange={setNewStartDate}
+                onStatusChange={setStartStatus}
               />
               <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 px-1">Tất cả các giai đoạn sẽ tự động lùi theo ngày này</p>
             </div>

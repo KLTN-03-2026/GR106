@@ -59,6 +59,17 @@ export const farmService = {
     const response = await axiosInstance.delete<ApiResponse<any>>(
       `/api/v1/farms/${farmId}`
     );
+    // Nếu status là 204 (No Content), Axios response.data sẽ trống
+    // Chúng ta cần trả về cấu trúc success để các hàm gọi ở trên không bị lỗi
+    if (response.status === 204 || !response.data) {
+      return {
+        success: true,
+        code: 204,
+        message: 'Xóa thành công',
+        data: null,
+        timestamp: new Date().toISOString()
+      };
+    }
     return response.data;
   }
 };

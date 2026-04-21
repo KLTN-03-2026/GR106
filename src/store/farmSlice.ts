@@ -99,18 +99,17 @@ export const deleteFarm = createAsyncThunk(
   'farm/deleteFarm',
   async (farmId: string, { rejectWithValue }) => {
     try {
-      // 1. Silent select để lấy farmToken giúp vượt qua yêu cầu token của API delete
-      const selectRes = await farmService.selectFarm(farmId);
-      if (!selectRes.success || !selectRes.data.farmToken) {
-        throw new Error('Không thể lấy mã định danh trang trại (Farm Token)');
+      // 1. Gọi trực tiếp API xóa từ farmService
+      const response = await farmService.deleteFarm(farmId);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Không thể xóa trang trại');
       }
 
-      // 2. Thực hiện xóa với farmToken cụ thể trong headers
-      await axiosInstance.delete(`/api/v1/farms/${farmId}`, {
-        headers: {
-          Authorization: `Bearer ${selectRes.data.farmToken}`
-        }
-      });
+      // 2. Đợi 1.5 giây để đảm bảo backend đã xử lý xong hoàn toàn 
+      // giúp tránh lỗi "vẫn còn hiển thị" khi quay lại dashboard do độ trễ backend (eventual consistency)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       return farmId;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || error.message);

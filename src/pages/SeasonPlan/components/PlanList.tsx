@@ -18,7 +18,6 @@ export function PlanList({
   onDeletePlan,
   onClonePlan,
 }: PlanListProps) {
-  const { plots } = useSelector((state: RootState) => state.plot);
   const { crops } = useSelector((state: RootState) => state.crop);
 
   return (
@@ -37,8 +36,10 @@ export function PlanList({
           </thead>
           <tbody className="divide-y divide-slate-50 bg-white">
             {plans.map((plan) => {
-              const plot = plots.find((p) => p.id === plan.plotId);
               const crop = crops.find((c) => c.id === plan.cropId);
+              const plotNames = plan.plots && plan.plots.length > 0
+                ? plan.plots.map(p => p.plotName).join(', ')
+                : 'N/A';
 
               return (
                 <tr
@@ -52,8 +53,8 @@ export function PlanList({
                     </div>
                   </td>
                   <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="text-xs font-bold text-slate-600">
-                      {plot?.name || 'N/A'}
+                    <div className="text-xs font-bold text-slate-600 max-w-[200px] truncate" title={plotNames}>
+                      {plotNames}
                     </div>
                   </td>
                   <td className="px-8 py-6 whitespace-nowrap">

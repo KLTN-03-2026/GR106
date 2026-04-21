@@ -20,6 +20,8 @@ import {
   removeSeasonTask,
   addPlotsToPlan,
   fetchPlanPlots,
+  optimisticallyUpdatePhaseTime,
+  optimisticallyUpdateTaskTime,
 } from '../../store/seasonPlanSlice';
 import { SeasonPlan, PlanStatus, Task } from '../../types/seasonPlan';
 import {
@@ -308,6 +310,39 @@ export function SeasonPlanPage() {
     dispatch(fetchTasks({ planId, stageId: phaseId }));
   };
 
+  const handleUpdatePhaseTimeFromTimeline = async (
+    planId: string,
+    stageId: string,
+    data: { startDate: string; endDate: string }
+  ) => {
+    try {
+      // Optimistic UI update so bar does not snap back while waiting for PUT response
+      dispatch(optimisticallyUpdatePhaseTime({ planId, stageId, startDate: data.startDate, endDate: data.endDate }));
+      await dispatch(updatePhaseTime({ planId, stageId, data })).unwrap();
+      await dispatch(fetchStages(planId)).unwrap();
+    } catch (err: any) {
+      // Re-sync from server when PUT fails to rollback optimistic state
+      await dispatch(fetchStages(planId));
+      showError('Lỗi cập nhật timeline giai đoạn', err);
+    }
+  };
+
+  const handleUpdateTaskTimeFromTimeline = async (
+    planId: string,
+    stageId: string,
+    taskId: string,
+    data: { startDate: string; endDate: string }
+  ) => {
+    try {
+      dispatch(optimisticallyUpdateTaskTime({ planId, stageId, taskId, startDate: data.startDate, endDate: data.endDate }));
+      await dispatch(updateTaskTime({ planId, stageId, taskId, data })).unwrap();
+    } catch (err: any) {
+      // Re-sync from server when PUT fails to rollback optimistic state
+      await dispatch(fetchTasks({ planId, stageId }));
+      showError('Lỗi cập nhật timeline công việc', err);
+    }
+  };
+
   const handleUpdatePhase = async (planId: string, stageId: string, data: { name: string; startDate: string; endDate: string }, originalPhase?: any) => {
     try {
       if (!originalPhase) {
@@ -353,25 +388,14 @@ export function SeasonPlanPage() {
   const handleAddPhase = (planId: string) => {
     const plan = plans.find(p => p.id === planId);
     if (!plan) return;
-    const lastPhase = plan.phases && plan.phases.length > 0 ? plan.phases[plan.phases.length - 1] : null;
-    const todayStr = new Date().toISOString().split('T')[0];
-    let startDate: string;
-    if (lastPhase) {
-      const next = new Date(lastPhase.endDate);
-      next.setDate(next.getDate() + 1);
-      startDate = next.toISOString().split('T')[0];
-    } else {
-      startDate = plan.startDate;
-    }
-    if (startDate < todayStr) startDate = todayStr;
-    const nextEnd = new Date(startDate);
-    nextEnd.setDate(nextEnd.getDate() + 7);
-    let endDate = nextEnd.toISOString().split('T')[0];
-    if (plan.endDate && endDate > plan.endDate)
-      endDate = plan.endDate < startDate ? startDate : plan.endDate;
 
     setPhaseModalTargetPlanId(planId);
-    setPhaseModalInitialData({ name: '', startDate, endDate });
+    // Để trống để người dùng tự nhập ngày theo đúng yêu cầu
+    setPhaseModalInitialData({ 
+      name: '', 
+      startDate: '', 
+      endDate: '' 
+    });
     setIsCreatePhaseModalOpen(true);
   };
 
@@ -730,7 +754,8 @@ export function SeasonPlanPage() {
                     plans={filteredPlans}
                     onSelect={selection => setSelectedItem(selection)}
                     selectedId={selectedItem?.id}
-                    onUpdatePlan={handleUpdatePlan}
+                    onUpdatePhaseTime={handleUpdatePhaseTimeFromTimeline}
+                    onUpdateTaskTime={handleUpdateTaskTimeFromTimeline}
                     onDeletePlan={handleDeletePlan}
                     onAddPhase={handleAddPhase}
                     onExpandPhase={handleExpandPhase}

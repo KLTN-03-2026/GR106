@@ -9,9 +9,7 @@ import { SeasonPlan, Phase, Task } from '../../../types/seasonPlan';
 import { ChevronRight, ChevronDown, Plus, Trash2, GripVertical } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import {
-  rippleUpdatePhases,
-  hasPlanOverlap,
-  syncPlanDatesWithPhases,
+  addDays,
 } from '../../../utils/seasonPlanUtils';
 import { SelectionState } from '../SeasonPlanPage';
 
@@ -37,7 +35,8 @@ interface PlanTimelineProps {
   plans: SeasonPlan[];
   selectedId?: string;
   onSelect: (selection: SelectionState) => void;
-  onUpdatePlan: (plan: SeasonPlan) => void;
+  onUpdatePhaseTime?: (planId: string, phaseId: string, data: { startDate: string; endDate: string }) => Promise<void> | void;
+  onUpdateTaskTime?: (planId: string, phaseId: string, taskId: string, data: { startDate: string; endDate: string }) => Promise<void> | void;
   onDeletePlan?: (planId: string) => void;
   onAddPhase: (planId: string) => void;
   onExpandPhase?: (planId: string, phaseId: string) => void;
@@ -48,7 +47,10 @@ interface PlanTimelineProps {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function toDateStr(d: Date): string {
-  return d.toISOString().split('T')[0];
+  const year = d.getFullYear();
+  const month = (d.getMonth() + 1).toString().padStart(2, '0');
+  const day = d.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function addDaysToStr(dateStr: string, days: number): string {
@@ -78,7 +80,8 @@ export function PlanTimeline({
   plans,
   selectedId,
   onSelect,
-  onUpdatePlan,
+  onUpdatePhaseTime,
+  onUpdateTaskTime,
   onDeletePlan,
   onAddPhase,
   onExpandPhase,
@@ -130,6 +133,8 @@ export function PlanTimeline({
   const [barDrag, setBarDrag] = useState<BarDragState | null>(null);
   const [dragDeltaDays, setDragDeltaDays] = useState(0);
   const [dragTooltip, setDragTooltip] = useState<{ x: number; y: number; label: string } | null>(null);
+  const dragDeltaRef = useRef(0);
+  const finalizeBarDragRef = useRef<any>(null);
 
   const ganttBodyRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -382,130 +387,134 @@ export function PlanTimeline({
     });
   };
 
-  // ── Bar drag ──────────────────────────────────────────────────────────────
-  const rafRef = useRef<number | null>(null);
-  const lastMousePos = useRef({ x: 0, y: 0, delta: 0 });
 
-  const startBarDrag = (e: React.MouseEvent, target: DragTarget, mode: DragMode, origStart: string, origEnd: string) => {
-    if (!canEdit) return;
-    e.preventDefault(); e.stopPropagation();
-    setBarDrag({ mode, target, startX: e.clientX, origStart, origEnd });
-    setDragDeltaDays(0);
-    document.body.style.cursor = mode === 'MOVE' ? 'grabbing' : mode === 'RESIZE_LEFT' ? 'w-resize' : 'e-resize';
-  };
-
-  const onGlobalMouseMove = useCallback((e: MouseEvent) => {
-    if (!barDrag) return;
-
-    if (rafRef.current) return;
-
-    rafRef.current = requestAnimationFrame(() => {
-      if (!barDrag) { rafRef.current = null; return; }
-
-      const delta = Math.round((e.clientX - barDrag.startX) / PPD);
-      lastMousePos.current = { x: e.clientX, y: e.clientY, delta };
-
-      setDragDeltaDays(delta);
-
-      let s = barDrag.origStart, en = barDrag.origEnd;
-      if (barDrag.mode === 'MOVE') { s = addDaysToStr(s, delta); en = addDaysToStr(en, delta); }
-      else if (barDrag.mode === 'RESIZE_LEFT') s = addDaysToStr(s, delta);
-      else en = addDaysToStr(en, delta);
-
-      const fmt = (d: string) => {
-        const date = new Date(d);
-        return `${date.getDate()}/${date.getMonth() + 1}`;
-      };
-      setDragTooltip({ x: e.clientX, y: e.clientY - 44, label: `${fmt(s)} → ${fmt(en)}` });
-
-      rafRef.current = null;
-    });
-  }, [barDrag, PPD]);
-
-  const onGlobalMouseUp = useCallback(() => {
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-    if (!barDrag || dragDeltaDays === 0) {
+  const finalizeBarDrag = useCallback(async (drag: BarDragState, delta: number) => {
+    if (delta === 0) {
       setBarDrag(null); setDragDeltaDays(0); setDragTooltip(null);
-      document.body.style.cursor = ''; return;
+      dragDeltaRef.current = 0;
+      document.body.style.cursor = '';
+      return;
     }
-    const { target, mode, origStart, origEnd } = barDrag;
-    const d = dragDeltaDays;
 
-    const applyUpdate = (plan: SeasonPlan): SeasonPlan => {
-      if (target.kind === 'phase') {
-        const idx = plan.phases.findIndex(ph => ph.id === target.phaseId);
-        if (idx === -1) return plan;
-        let phases: Phase[];
-        if (mode === 'MOVE') {
-          phases = rippleUpdatePhases(plan.phases, idx, { newStartDate: addDaysToStr(origStart, d) });
-        } else if (mode === 'RESIZE_LEFT') {
-          phases = plan.phases.map((ph, i) => {
-            if (i !== idx) return ph;
-            const dur = Math.max(1, diffDays(origStart, origEnd) - d);
-            return { ...ph, startDate: addDaysToStr(origEnd, -dur) };
-          });
-        } else {
-          phases = rippleUpdatePhases(plan.phases, idx, { newDuration: Math.max(1, diffDays(origStart, origEnd) + d) });
-        }
-        const updated = syncPlanDatesWithPhases({ ...plan, phases });
-        if (updated.plots?.some(p => hasPlanOverlap(p.plotId, updated.startDate, updated.endDate, plans, updated.id)))
-          window.alert('Cảnh báo: Thay đổi này gây ra xung đột thời gian với kế hoạch khác trên cùng lô đất.');
-        return updated;
-      }
-      if (target.kind === 'task') {
+    const { target, mode, origStart, origEnd } = drag;
+
+    // Tính ngày mới cuối cùng dựa trên công thức yêu cầu
+    const nextDates = (() => {
+      if (mode === 'MOVE') {
         return {
-          ...plan, phases: plan.phases.map(ph => {
-            if (ph.id !== target.phaseId) return ph;
-            return {
-              ...ph, tasks: ph.tasks?.map(t => {
-                if (t.id !== target.taskId) return t;
-                if (mode === 'MOVE') return { ...t, startDate: addDaysToStr(origStart, d), endDate: addDaysToStr(origEnd, d) };
-                if (mode === 'RESIZE_LEFT') return { ...t, startDate: addDaysToStr(origEnd, -Math.max(1, diffDays(origStart, origEnd) - d)) };
-                return { ...t, endDate: addDaysToStr(origStart, Math.max(1, diffDays(origStart, origEnd) + d)) };
-              }) ?? [],
-            };
-          }),
+          startDate: addDays(origStart, delta),
+          endDate: addDays(origEnd, delta),
         };
       }
-      return plan;
-    };
+      if (mode === 'RESIZE_LEFT') {
+        const dur = Math.max(1, diffDays(origStart, origEnd) - delta);
+        return { startDate: addDays(origEnd, -dur), endDate: origEnd };
+      }
+      // RESIZE_RIGHT
+      const dur = Math.max(1, diffDays(origStart, origEnd) + delta);
+      return { startDate: origStart, endDate: addDays(origStart, dur) };
+    })();
 
-    const plan = plans.find(p => p.id === target.planId);
-    if (plan) onUpdatePlan(applyUpdate(plan));
-    setBarDrag(null); setDragDeltaDays(0); setDragTooltip(null);
-    document.body.style.cursor = '';
-  }, [barDrag, dragDeltaDays, plans, onUpdatePlan]);
+    try {
+      if (target.kind === 'phase') {
+        await onUpdatePhaseTime?.(target.planId, target.phaseId, nextDates);
+      } else {
+        await onUpdateTaskTime?.(target.planId, target.phaseId, (target as any).taskId, nextDates);
+      }
+    } catch (err) {
+      console.error('Timeline update error:', err);
+    } finally {
+      // Reset SAU KHI API hoàn thành → tránh bar nhảy về vị trí cũ rồi mới cập nhật
+      setBarDrag(null);
+      setDragDeltaDays(0);
+      setDragTooltip(null);
+      dragDeltaRef.current = 0;
+      document.body.style.cursor = '';
+    }
+  }, [onUpdatePhaseTime, onUpdateTaskTime]);
 
   useEffect(() => {
-    if (!barDrag) return;
-    window.addEventListener('mousemove', onGlobalMouseMove);
-    window.addEventListener('mouseup', onGlobalMouseUp);
-    return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-      window.removeEventListener('mousemove', onGlobalMouseMove);
-      window.removeEventListener('mouseup', onGlobalMouseUp);
+    finalizeBarDragRef.current = finalizeBarDrag;
+  }, [finalizeBarDrag]);
+
+  const startBarDrag = (
+    e: React.MouseEvent,
+    target: DragTarget,
+    mode: DragMode,
+    origStart: string,
+    origEnd: string
+  ) => {
+    if (!canEdit) return;
+    e.preventDefault(); e.stopPropagation();
+
+    const dragContext: BarDragState = { mode, target, startX: e.clientX, origStart, origEnd };
+    setBarDrag(dragContext);
+    setDragDeltaDays(0);
+    dragDeltaRef.current = 0;
+
+    // Đổi cursor toàn trang
+    document.body.style.cursor =
+      mode === 'MOVE' ? 'grabbing' :
+        mode === 'RESIZE_LEFT' ? 'w-resize' : 'e-resize';
+
+    const onMove = (ev: MouseEvent) => {
+      if (ev.buttons === 0) { onUp(); return; } // nút chuột đã thả
+
+      // Tính delta theo ngày (làm tròn theo PPD)
+      const delta = Math.round((ev.clientX - dragContext.startX) / PPD);
+      setDragDeltaDays(delta);
+      dragDeltaRef.current = delta;
+
+      // Tính ngày preview cho tooltip
+      let s = dragContext.origStart, en = dragContext.origEnd;
+      if (mode === 'MOVE') { s = addDays(s, delta); en = addDays(en, delta); }
+      else if (mode === 'RESIZE_LEFT') { s = addDays(s, delta); }
+      else { en = addDays(en, delta); }
+
+      const toDMY = (d: string) => {
+        const [y, m, day] = d.split('-');
+        return `${day}/${m}/${y}`;
+      };
+
+      setDragTooltip({
+        x: ev.clientX,
+        y: ev.clientY - 44,
+        label: `${toDMY(s)} → ${toDMY(en)}`
+      });
     };
-  }, [barDrag, onGlobalMouseMove, onGlobalMouseUp]);
+
+    const onUp = () => {
+      // Dọn dẹp listeners
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('blur', onUp);       // tab mất focus
+      window.removeEventListener('mouseleave', onUp as EventListener); // chuột ra ngoài cửa sổ
+
+      if (finalizeBarDragRef.current) {
+        finalizeBarDragRef.current(dragContext, dragDeltaRef.current);
+      }
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('blur', onUp);
+    window.addEventListener('mouseleave', onUp as EventListener);
+  };
 
   // ── Bar preview style ─────────────────────────────────────────────────────
   const minDateTime = useMemo(() => minDate.getTime(), [minDate]);
-  const ppdValue = PPD;
 
   const getLeft = useCallback((d: string) => {
     const days = Math.round((new Date(d).getTime() - minDateTime) / 86400000);
-    return days * ppdValue;
-  }, [minDateTime, ppdValue]);
+    return days * PPD;
+  }, [minDateTime, PPD]);
 
   const getWidth = useCallback((s: string, e: string) => {
     const days = Math.round((new Date(e).getTime() - new Date(s).getTime()) / 86400000);
-    return Math.max(ppdValue * 0.5, days * ppdValue);
-  }, [ppdValue]);
+    return Math.max(PPD * 0.5, days * PPD);
+  }, [PPD]);
 
   const previewStyle = useCallback((planId: string, itemId: string, kind: 'phase' | 'task', start: string, end: string) => {
     if (!barDrag || barDrag.target.planId !== planId) {
@@ -519,9 +528,16 @@ export function PlanTimeline({
 
     const d = dragDeltaDays;
     let ns = start, ne = end;
-    if (barDrag.mode === 'MOVE') { ns = addDaysToStr(barDrag.origStart, d); ne = addDaysToStr(barDrag.origEnd, d); }
-    else if (barDrag.mode === 'RESIZE_LEFT') { const dur = Math.max(1, diffDays(barDrag.origStart, barDrag.origEnd) - d); ns = addDaysToStr(barDrag.origEnd, -dur); }
-    else { ne = addDaysToStr(barDrag.origStart, Math.max(1, diffDays(barDrag.origStart, barDrag.origEnd) + d)); }
+    if (barDrag.mode === 'MOVE') {
+      ns = addDaysToStr(barDrag.origStart, d);
+      ne = addDaysToStr(barDrag.origEnd, d);
+    } else if (barDrag.mode === 'RESIZE_LEFT') {
+      const dur = Math.max(1, diffDays(barDrag.origStart, barDrag.origEnd) - d);
+      ns = addDaysToStr(barDrag.origEnd, -dur); // giữ nguyên end, dịch start
+    } else {
+      ne = addDaysToStr(barDrag.origStart, Math.max(1, diffDays(barDrag.origStart, barDrag.origEnd) + d));
+    }
+
     return { left: `${getLeft(ns)}px`, width: `${getWidth(ns, ne)}px` };
   }, [barDrag, dragDeltaDays, getLeft, getWidth]);
 

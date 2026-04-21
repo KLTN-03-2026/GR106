@@ -59,6 +59,7 @@ export interface SeasonPlan {
   name: string;
   startDate: string;
   endDate: string;
+  cropId?: string;
   status: PlanStatus | StatusObject;
   note?: string;
   description?: string; // Local alias for note

@@ -4,7 +4,7 @@ import { type ApiResponse } from '../../types/payment/payment';
 
 class GetPaymentResultService {
     async getPaymentResult(orderCode: string): Promise<ApiResponse<PaymentResult>> {
-        const response = await axiosInstance.get(`/api/v1/payments/payos-return/${orderCode}`);
+        const response = await axiosInstance.get(`/api/v1/payments/result?orderCode=${orderCode}`);
         return response.data;
     }
 }

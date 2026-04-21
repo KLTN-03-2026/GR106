@@ -25,10 +25,9 @@ import {
   Save,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SeasonPlan, Phase, Task, PlanPlot, StatusObject } from '../../../types/seasonPlan';
+import { SeasonPlan, Phase, Task, StatusObject } from '../../../types/seasonPlan';
 import { Plot } from '../../../types/plot/plot';
 import { cn } from '../../../utils/cn';
-import { seasonPlanService } from '@/services/seasonplan/seasonPlanService';
 import { DateInput } from '../../../components/ui/DateInput';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -70,8 +69,11 @@ function statusCodeOf(s: string | StatusObject | null | undefined): string {
 }
 
 function fmtDate(d: string) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('vi-VN', { day: 'numeric', month: 'short', year: 'numeric' });
+  if (!d || d === '—') return '—';
+  const parts = d.split('-');
+  if (parts.length !== 3) return d;
+  const [y, m, day] = parts;
+  return `${day}/${m}/${y}`;
 }
 
 // Jira-style status chip colours
@@ -113,12 +115,12 @@ function DetailRow({ icon: Icon, label, children }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start gap-3 py-2.5 border-b border-slate-100 last:border-0 group">
-      <div className="flex items-center gap-2 w-[120px] shrink-0 pt-0.5">
-        <Icon size={13} className="text-slate-400 shrink-0" />
+    <div className="flex items-center gap-3 py-2 border-b border-slate-100 last:border-0 group">
+      <div className="flex items-center gap-2 w-[110px] shrink-0">
+        <Icon size={14} className="text-slate-400 shrink-0" />
         <span className="text-[11px] text-slate-500 font-medium truncate">{label}</span>
       </div>
-      <div className="flex-1 min-w-0">{children}</div>
+      <div className="flex-1 min-w-0 flex items-center">{children}</div>
     </div>
   );
 }
@@ -220,6 +222,7 @@ export function PlanDetailPanel({
   onDeletePhase,
   onDeleteTask,
   onClone,
+  onAddPlots,
   canEdit = false,
 }: PlanDetailPanelProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -334,27 +337,13 @@ export function PlanDetailPanel({
 
     try {
       setLoadingAddPlot(true);
-
-      const { addedPlots } = await seasonPlanService.addPlotsToPlan(
-        plan.id,
-        selectedPlotIds
-      ) as { addedPlots: PlanPlot[] };
-
-      // merge plots (tránh duplicate)
-      const existing = plan.plots || [];
-
-      const merged = [
-        ...existing,
-        ...addedPlots.filter(p => !existing.some(e => e.plotId === p.plotId)),
-      ];
-
-      onUpdatePlan({
-        ...plan,
-        plots: merged,
-      });
-
+      if (onAddPlots) {
+        await onAddPlots(plan.id, selectedPlotIds);
+      }
       setShowAddPlot(false);
       setSelectedPlotIds([]);
+    } catch (err) {
+      console.error('Lỗi khi thêm lô đất:', err);
     } finally {
       setLoadingAddPlot(false);
     }
@@ -507,8 +496,8 @@ export function PlanDetailPanel({
                     canEdit={isEditing}
                     value={
                       sel.type === 'PLAN' ? tempPlan?.name ?? '' :
-                      sel.type === 'PHASE' ? tempPhase?.name ?? '' :
-                      tempTask?.name ?? ''
+                        sel.type === 'PHASE' ? tempPhase?.name ?? '' :
+                          tempTask?.name ?? ''
                     }
                     onChange={v => {
                       if (sel.type === 'PLAN' && tempPlan) setTempPlan({ ...tempPlan, name: v });
@@ -564,18 +553,20 @@ export function PlanDetailPanel({
               {sel.type === 'PLAN' && (
                 <>
                   <DetailRow icon={Calendar} label="Ngày bắt đầu">
-                    {isEditing ? (
-                      <DateInput value={tempPlan?.startDate ?? ''}
-                        onChange={(v: string) => tempPlan && setTempPlan({ ...tempPlan, startDate: v })}
-                        className="w-full" />
-                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempPlan?.startDate ?? plan.startDate)}</span>}
+                    <div className="flex-1">
+                      {isEditing ? (
+                        <DateInput value={tempPlan?.startDate ?? ''}
+                          onChange={(v: string) => tempPlan && setTempPlan({ ...tempPlan, startDate: v })} />
+                      ) : <span className="text-[12px] text-slate-700 font-bold tabular-nums">{fmtDate(tempPlan?.startDate ?? plan.startDate)}</span>}
+                    </div>
                   </DetailRow>
                   <DetailRow icon={Calendar} label="Ngày kết thúc">
-                    {isEditing ? (
-                      <DateInput value={tempPlan?.endDate ?? ''}
-                        onChange={(v: string) => tempPlan && setTempPlan({ ...tempPlan, endDate: v })}
-                        className="w-full" />
-                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempPlan?.endDate ?? plan.endDate)}</span>}
+                    <div className="flex-1">
+                      {isEditing ? (
+                        <DateInput value={tempPlan?.endDate ?? ''}
+                          onChange={(v: string) => tempPlan && setTempPlan({ ...tempPlan, endDate: v })} />
+                      ) : <span className="text-[12px] text-slate-700 font-bold tabular-nums">{fmtDate(tempPlan?.endDate ?? plan.endDate)}</span>}
+                    </div>
                   </DetailRow>
                   <DetailRow icon={Package} label="Lô đất">
                     {(tempPlan?.plots ?? plan.plots ?? []).length > 0
@@ -599,18 +590,20 @@ export function PlanDetailPanel({
               {sel.type === 'PHASE' && (
                 <>
                   <DetailRow icon={Calendar} label="Ngày bắt đầu">
-                    {isEditing ? (
-                      <DateInput value={tempPhase?.startDate ?? ''}
-                        onChange={(v: string) => tempPhase && setTempPhase({ ...tempPhase, startDate: v })}
-                        className="w-full" />
-                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempPhase?.startDate ?? sel.phase.startDate)}</span>}
+                    <div className="flex-1">
+                      {isEditing ? (
+                        <DateInput value={tempPhase?.startDate ?? ''}
+                          onChange={(v: string) => tempPhase && setTempPhase({ ...tempPhase, startDate: v })} />
+                      ) : <span className="text-[12px] text-slate-700 font-bold tabular-nums">{fmtDate(tempPhase?.startDate ?? sel.phase.startDate)}</span>}
+                    </div>
                   </DetailRow>
                   <DetailRow icon={Calendar} label="Ngày kết thúc">
-                    {isEditing ? (
-                      <DateInput value={tempPhase?.endDate ?? ''}
-                        onChange={(v: string) => tempPhase && setTempPhase({ ...tempPhase, endDate: v })}
-                        className="w-full" />
-                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempPhase?.endDate ?? sel.phase.endDate)}</span>}
+                    <div className="flex-1">
+                      {isEditing ? (
+                        <DateInput value={tempPhase?.endDate ?? ''}
+                          onChange={(v: string) => tempPhase && setTempPhase({ ...tempPhase, endDate: v })} />
+                      ) : <span className="text-[12px] text-slate-700 font-bold tabular-nums">{fmtDate(tempPhase?.endDate ?? sel.phase.endDate)}</span>}
+                    </div>
                   </DetailRow>
                   <DetailRow icon={CheckSquare} label="Công việc">
                     <span className="text-[12px] text-slate-700 font-medium">{(tempPhase?.tasks ?? sel.phase.tasks)?.length ?? 0} công việc</span>
@@ -625,18 +618,20 @@ export function PlanDetailPanel({
               {sel.type === 'TASK' && (
                 <>
                   <DetailRow icon={Calendar} label="Ngày bắt đầu">
-                    {isEditing ? (
-                      <DateInput value={tempTask?.startDate ?? ''}
-                        onChange={(v: string) => tempTask && setTempTask({ ...tempTask, startDate: v })}
-                        className="w-full" />
-                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempTask?.startDate ?? sel.task.startDate)}</span>}
+                    <div className="flex-1">
+                      {isEditing ? (
+                        <DateInput value={tempTask?.startDate ?? ''}
+                          onChange={(v: string) => tempTask && setTempTask({ ...tempTask, startDate: v })} />
+                      ) : <span className="text-[12px] text-slate-700 font-bold tabular-nums">{fmtDate(tempTask?.startDate ?? sel.task.startDate)}</span>}
+                    </div>
                   </DetailRow>
                   <DetailRow icon={Calendar} label="Ngày kết thúc">
-                    {isEditing ? (
-                      <DateInput value={tempTask?.endDate ?? ''}
-                        onChange={(v: string) => tempTask && setTempTask({ ...tempTask, endDate: v })}
-                        className="w-full" />
-                    ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempTask?.endDate ?? sel.task.endDate)}</span>}
+                    <div className="flex-1">
+                      {isEditing ? (
+                        <DateInput value={tempTask?.endDate ?? ''}
+                          onChange={(v: string) => tempTask && setTempTask({ ...tempTask, endDate: v })} />
+                      ) : <span className="text-[12px] text-slate-700 font-bold tabular-nums">{fmtDate(tempTask?.endDate ?? sel.task.endDate)}</span>}
+                    </div>
                   </DetailRow>
                   <DetailRow icon={Zap} label="Giai đoạn">
                     <button
@@ -815,15 +810,15 @@ export function PlanDetailPanel({
                           className="w-full px-2.5 py-1.5 text-[12px] text-slate-600 bg-white border border-slate-200 rounded-md outline-none focus:border-indigo-400 transition-all resize-none"
                         />
                         <div className="grid grid-cols-2 gap-2">
-                          <DateInput 
-                            label="Bắt đầu" 
-                            value={newTaskStart} 
+                          <DateInput
+                            label="Bắt đầu"
+                            value={newTaskStart}
                             onChange={setNewTaskStart}
                             className="space-y-1"
                           />
-                          <DateInput 
-                            label="Kết thúc" 
-                            value={newTaskEnd} 
+                          <DateInput
+                            label="Kết thúc"
+                            value={newTaskEnd}
                             onChange={setNewTaskEnd}
                             className="space-y-1"
                           />

@@ -43,9 +43,13 @@ const FarmActionsPage: React.FC = () => {
         try {
             await dispatch(deleteFarm(farmId)).unwrap();
             toast.success("Xóa trang trại thành công");
+            
             navigate('/farms');
         } catch (error: any) {
-            toast.error(error.message || "Không thể xóa trang trại. Vui lòng thử lại sau.");
+            console.error("Lỗi khi xóa farm:", error);
+            // Xử lý lỗi linh hoạt: ưu tiên error.message, sau đó đến bản thân error nếu là string
+            const errorMessage = error?.message || (typeof error === 'string' ? error : "Không thể xóa trang trại. Vui lòng thử lại sau.");
+            toast.error(errorMessage);
         } finally {
             setIsDeleting(false);
             setIsDeleteModalOpen(false);

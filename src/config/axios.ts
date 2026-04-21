@@ -14,12 +14,12 @@ axiosInstance.interceptors.request.use(
   (config) => {
     // Không gửi token cho các API Auth (login, register, forgot-password, v.v.)
     // Ngoại trừ API refresh nếu cần (ở đây refresh dùng custom axios hoặc payload)
-    const isPublicRoute = 
-      config.url?.includes('/auth/login') || 
+    const isPublicRoute =
+      config.url?.includes('/auth/login') ||
       config.url?.includes('/auth/register') ||
       config.url?.includes('/auth/refresh') ||
       config.url?.includes('/auth/verify');
-    
+
     const token = sessionStorage.getItem('accessToken');
 
     if (token && config.headers && !isPublicRoute && !config.headers.Authorization) {
@@ -38,8 +38,8 @@ axiosInstance.interceptors.response.use(
 
     // Nếu lỗi 401 (Unauthorized) và không phải là lỗi từ API Auth (để tránh loop vô tận)
     if (error.response?.status === 401 && !originalRequest._retry) {
-      const isAuthRoute = 
-        originalRequest.url?.includes('/auth/login') || 
+      const isAuthRoute =
+        originalRequest.url?.includes('/auth/login') ||
         originalRequest.url?.includes('/auth/refresh');
 
       if (!isAuthRoute) {
