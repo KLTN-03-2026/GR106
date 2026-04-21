@@ -12,9 +12,10 @@ Mỗi query chạy đều bị giới hạn đúng phạm vi farm/user — khôn
 | File | Vai trò |
 |------|---------|
 | `JwtAuthenticationFilter.java` | Parse JWT, ghi context vào ThreadLocal |
-| `RlsContext.java` | Lưu farmId/userId vào ThreadLocal per-thread |
+| `RlsContext.java` | Lưu farmId/userId/bypass vào ThreadLocal per-thread |
 | `RlsDataSourceWrapper.java` | Intercept `getConnection()`, set config lên PostgreSQL |
 | `DataSourceConfig.java` | Cấu hình wrapper vào datasource chính |
+| `RlsUtils.java` | Utility để chạy logic với quyền admin (bypass RLS) |
 | `V1__init.sql` (migration) | Định nghĩa RLS functions và policies |
 
 ---
@@ -40,8 +41,9 @@ HTTP Request (Authorization: Bearer <token>)
 **`RlsContext.java`**
 
 ```
-ThreadLocal<UUID> FARM_ID = farmId
-ThreadLocal<UUID> USER_ID = userId
+ThreadLocal<UUID>    FARM_ID = farmId
+ThreadLocal<UUID>    USER_ID = userId
+ThreadLocal<Boolean> BYPASS  = false   ← mặc định false
 
 Mỗi thread (= mỗi request) có vùng nhớ riêng
 → hoàn toàn isolated giữa các request đồng thời
@@ -71,10 +73,11 @@ getConnection() được gọi
     └─ applyRls(conn)
             ├─ đọc RlsContext.getUserId()   → từ ThreadLocal
             ├─ đọc RlsContext.getFarmId()   → từ ThreadLocal
+            ├─ đọc RlsContext.isBypass()    → từ ThreadLocal
             └─ PreparedStatement:
                 set_config('app.current_user_id', userId, false)
                 set_config('app.current_farm_id', farmId, false)
-                set_config('app.bypass_rls',     'false', false)
+                set_config('app.bypass_rls',      bypass, false)
                         │
                         ▼
                 PostgreSQL session nhận config
@@ -192,6 +195,45 @@ public FlywayConfigurationCustomizer flywayCustomizer(
 
 Với request không có JWT (public endpoint), `RlsContext` rỗng →
 wrapper set `userId=""`, `farmId=""` → RLS policy tự block hoặc trả về rỗng tùy policy định nghĩa.
+
+---
+
+## Bypass RLS — `RlsUtils.java`
+
+Dùng khi cần chạy logic với quyền admin, bỏ qua RLS policy (ví dụ: tạo notification, ghi audit log, seed data).
+
+```java
+// Có return value
+T result = rlsUtils.runAsAdmin(() -> {
+            return someRepository.findAll(); // không bị filter bởi RLS
+        });
+
+// Không có return value
+rlsUtils.runAsAdmin(() -> {
+        auditRepository.save(log);
+});
+```
+
+### Luồng bypass
+
+```
+rlsUtils.runAsAdmin()
+    ├─ lưu farmId, userId hiện tại
+    ├─ RlsContext.setBypass(true)    ← ghi vào ThreadLocal
+    ├─ action.run()
+    │       └─ getConnection()
+    │               └─ applyRls()
+    │                       └─ set_config('app.bypass_rls', 'true', false) ✅
+    └─ finally:
+            ├─ RlsContext.setBypass(false)
+            └─ RlsContext.set(currentFarmId, currentUserId)  ← restore
+```
+
+### An toàn vì
+
+- Bypass chỉ tồn tại trong scope của `runAsAdmin()` — không leak ra ngoài
+- `finally` đảm bảo restore dù có exception
+- Wrapper đọc từ ThreadLocal → đúng connection, đúng giá trị
 
 ---
 
