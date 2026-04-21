@@ -102,8 +102,9 @@ public class PlotService {
             Geometry newGeometry = geometryFormatToGeometry(request.getGeometry());
             plot.setGeometry(newGeometry);
 
-            double areaSquareMeters = newGeometry.getArea();
-            plot.setAreaHa(areaSquareMeters / 10_000);
+            if (newGeometry instanceof Polygon polygon) {
+                plot.setAreaHa(calcAreaHa(polygon));
+            }
         } else if (Boolean.TRUE.equals(request.getIsClearGeometry())) {
             plot.setGeometry(null);
             plot.setAreaHa((double) 0);
