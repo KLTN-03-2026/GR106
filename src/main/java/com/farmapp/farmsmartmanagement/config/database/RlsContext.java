@@ -6,7 +6,7 @@ public final class RlsContext {
 
     private static final ThreadLocal<UUID> FARM_ID = new ThreadLocal<>();
     private static final ThreadLocal<UUID> USER_ID = new ThreadLocal<>();
-    private static final ThreadLocal<Boolean> BYPASS = new ThreadLocal<>(); // ✅ thêm
+    private static final ThreadLocal<Boolean> BYPASS = new ThreadLocal<>(); //thêm
 
     private RlsContext() {}
 
