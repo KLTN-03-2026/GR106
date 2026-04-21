@@ -3,7 +3,9 @@ package com.farmapp.farmsmartmanagement.modules.auth.dto.request;
 import com.farmapp.farmsmartmanagement.common.annotation.Sanitize;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import lombok.Builder;
 
+@Builder
 public record RegisterRequest(
 
         @Sanitize

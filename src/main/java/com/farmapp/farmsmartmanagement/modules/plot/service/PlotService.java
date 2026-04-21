@@ -15,6 +15,7 @@ import com.farmapp.farmsmartmanagement.modules.plot.mapper.PlotMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.locationtech.jts.geom.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -47,29 +49,24 @@ public class PlotService {
         FarmEntity farm = farmRepository.findById(farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
 
-        if(plotRepository.existsByFarmAndName(farm, request.getPlotName()))
+        if (plotRepository.existsByFarmAndName(farm, request.getPlotName()))
             throw new AppException(ErrorCode.PLOT_ALREADY_EXISTS);
 
         PlotEntity newPlot = new PlotEntity();
-
-
-        if(request.getGeometry() != null){
-
-            newPlot.setGeometry(geometryFormatToGeometry(request.getGeometry()));
-
-            double areaSquareMeters = newPlot.getGeometry().getArea();
-            double areaHa = areaSquareMeters / 10_000; // 1 ha = 10,000 m²
-            newPlot.setAreaHa(areaHa);
-        }
-
-
         newPlot.setName(request.getPlotName());
         newPlot.setFarm(farm);
         newPlot.setStatus(PlotStatus.ACTIVE);
         newPlot.setDescription(request.getDescription());
 
-        plotRepository.save(newPlot);
+        if (request.getGeometry() != null) {
+            Geometry geometry = geometryFormatToGeometry(request.getGeometry());
+            newPlot.setGeometry(geometry);
+            if (geometry instanceof Polygon polygon) {
+                newPlot.setAreaHa(calcAreaHa(polygon));
+            }
+        }
 
+        plotRepository.save(newPlot);
         return plotMapper.toResponse(newPlot);
     }
 
@@ -172,5 +169,24 @@ public class PlotService {
         }
 
         return null;
+    }
+
+    private double calcAreaHa(Polygon polygon) {
+        Coordinate[] coords = polygon.getCoordinates();
+        double area = 0;
+        int n = coords.length;
+
+        for (int i = 0; i < n - 1; i++) {
+            double lat1 = Math.toRadians(coords[i].getY());
+            double lat2 = Math.toRadians(coords[i + 1].getY());
+            double dLon = Math.toRadians(coords[i + 1].getX() - coords[i].getX());
+
+            area += dLon * (2 + Math.sin(lat1) + Math.sin(lat2));
+        }
+
+        // R = bán kính trái đất (m)
+        double R = 6_378_137.0;
+        area = Math.abs(area * R * R / 2.0);  // m²
+        return area / 10_000;                 // → ha
     }
 }

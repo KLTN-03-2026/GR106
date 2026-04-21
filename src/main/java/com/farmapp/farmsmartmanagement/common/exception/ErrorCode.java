@@ -77,7 +77,7 @@ public enum ErrorCode {
     TASK_OUT_OF_TIME_PLAN_STAGE(400,"Thơi gian công việc phải nằm trong thời gian giai đoạn" ,HttpStatus.BAD_REQUEST ),
     PLAN_TIME_CANNOT_LESS_STAGE(409, "Thời gian kế hoạch phải bao phủ toàn bộ giai đoạn", HttpStatus.CONFLICT),
     PLAN_STAGE_TIME_MUST_BE_IN_PLAN_TIME(409, "Thời gian giai đoạn phải nằm trong thời gian kế hoạch", HttpStatus.CONFLICT),
-    ;
+    FARM_MEMBER_ALREADY_EXISTS(409,"Thành viên đã tồn tại trong trang trại" ,HttpStatus.CONFLICT ),;
 
     private final int code;
     private final String message;
