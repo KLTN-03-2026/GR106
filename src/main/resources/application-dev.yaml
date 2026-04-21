@@ -5,6 +5,7 @@ spring:
     password: ${DB_PASSWORD}
 
   flyway:
+    enable: false
     locations: classpath:db/migration_dev
 
   data:
