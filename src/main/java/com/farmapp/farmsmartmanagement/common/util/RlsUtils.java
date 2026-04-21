@@ -13,7 +13,6 @@ import java.util.function.Supplier;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class RlsUtils {
 
     @PersistenceContext
@@ -24,18 +23,26 @@ public class RlsUtils {
         UUID prevUser = RlsContext.getUserId();
 
         RlsContext.setBypass(true);
-        syncToDb(); // ← apply ngay vào connection đang dùng
+        syncToDb();
         try {
             return action.get();
         } finally {
             RlsContext.setBypass(false);
             RlsContext.set(prevFarm, prevUser);
-            syncToDb(); // ← restore
+            try {
+                syncToDb();
+            } catch (Exception e) {
+                log.warn("[RlsUtils] Failed to reset bypass_rls", e);
+            }
         }
     }
 
+    // Delegate — không duplicate logic
     public void runAsAdmin(Runnable action) {
-        runAsAdmin(() -> { action.run(); return null; });
+        runAsAdmin(() -> {
+            action.run();
+            return null;
+        });
     }
 
     private void syncToDb() {
