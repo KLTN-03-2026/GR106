@@ -138,7 +138,6 @@ export function PlanTimeline({
 
   const ganttBodyRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
-  const sprintRef = useRef<HTMLDivElement>(null);
   const scrollBarRef = useRef<HTMLDivElement>(null);
   const sidebarBodyRef = useRef<HTMLDivElement>(null);
 
@@ -327,20 +326,9 @@ export function PlanTimeline({
     return { topCells: top, subCells: sub };
   }, [timeScale, minDate, maxDate, PPD, todayDate]);
 
-  // ── Sprint bars ───────────────────────────────────────────────────────────
-  const sprintBars = useMemo(() => {
-    return plans.flatMap(plan =>
-      plan.phases.map(ph => ({
-        label: ph.name,
-        left: diffDays(minDate, new Date(ph.startDate)) * PPD,
-        width: Math.max(24, diffDays(ph.startDate, ph.endDate) * PPD),
-      }))
-    );
-  }, [plans, minDate, PPD]);
-
   // ── Scroll sync ───────────────────────────────────────────────────────────
   const syncRefs = useCallback((sl: number) => {
-    [headerRef, sprintRef, scrollBarRef].forEach(r => {
+    [headerRef, scrollBarRef].forEach(r => {
       if (r.current) r.current.scrollLeft = sl;
     });
   }, []);
@@ -600,7 +588,6 @@ export function PlanTimeline({
 
   // ── Dimensions ───────────────────────────────────────────────────────────
   const ROW_H = 40;
-  const SPRINT_H = 28;
   const HEADER_TOP_H = 28; // month / quarter row
   const HEADER_SUB_H = 28; // day / week / month row
   const HEADER_H = HEADER_TOP_H + HEADER_SUB_H;
@@ -613,40 +600,6 @@ export function PlanTimeline({
         barDrag ? 'select-none' : '',
       )}
     >
-      {/* ════════ Sprint row ════════ */}
-      <div className="flex flex-shrink-0 border-b border-slate-200 bg-slate-50/50" style={{ height: SPRINT_H }}>
-        <div
-          className="flex-shrink-0 border-r border-slate-200 flex items-center px-3"
-          style={{ width: sidebarWidth }}
-        >
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sprints</span>
-        </div>
-        <div style={{ width: 4, flexShrink: 0 }} />
-        <div ref={sprintRef} className="flex-1 overflow-hidden relative" style={{ scrollbarWidth: 'none' }}>
-          <div style={{ width: totalWidth, height: SPRINT_H, position: 'relative' }}>
-            {sprintBars.map((sp, i) => (
-              <div
-                key={i}
-                className="absolute flex items-center overflow-hidden"
-                style={{
-                  left: sp.left,
-                  width: Math.max(sp.width, 24),
-                  top: 4,
-                  height: 20,
-                  background: 'rgba(99,102,241,0.08)',
-                  borderLeft: '2px solid rgba(99,102,241,0.45)',
-                  border: '1px solid rgba(99,102,241,0.3)',
-                  borderRadius: 3,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <span className="truncate px-2 text-[10px] font-semibold text-indigo-500">{sp.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* ════════ HEADER ════════ */}
       <div className="flex flex-shrink-0 border-b-2 border-slate-300 bg-white" style={{ height: HEADER_H }}>
         {/* Sidebar label */}
