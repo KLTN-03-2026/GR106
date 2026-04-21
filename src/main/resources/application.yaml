@@ -26,18 +26,18 @@ spring:
     enabled: true
     baseline-on-migrate: true
 
-  mail:
-    host: ${SMTP_HOST:}
-    port: ${SMTP_PORT:587}
-    username: ${SMTP_MAIL}
-    password: ${SMTP_MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
+#  mail:
+#    host: ${SMTP_HOST:}
+#    port: ${SMTP_PORT:587}
+#    username: ${SMTP_MAIL}
+#    password: ${SMTP_MAIL_PASSWORD}
+#    properties:
+#      mail:
+#        smtp:
+#          auth: true
+#          starttls:
+#            enable: true
+#            required: true
 
 springdoc:
   api-docs:
@@ -69,3 +69,8 @@ payment:
     secret-key: ${SEPAY_SECRET_KEY}
     payment-url: ${SEPAY_PAYMENT_URL}
     return-url: ${SEPAY_RETURN_URL}
+
+sendgrid:
+  api-key: ${SENDGRID_API_KEY}
+  from-email: ${SENDGRID_FROM_EMAIL}
+  from-name: ${SENDGRID_FROM_NAME:Farm Smart}

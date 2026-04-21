@@ -1,12 +1,12 @@
 package com.farmapp.farmsmartmanagement.infrastructure.service;
 
-import jakarta.mail.internet.MimeMessage;
+import com.farmapp.farmsmartmanagement.config.app.MailProperties;
+import com.sendgrid.*;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.Content;
+import com.sendgrid.helpers.mail.objects.Email;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.env.Environment;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -14,33 +14,34 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class EmailServiceImpl implements EmailService {
 
-    private final JavaMailSender mailSender;
-    private final Environment environment;
+    private final MailProperties mailProperties;
+
     @Override
     public void send(String to, String subject, String content) {
-
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(to);
-        message.setSubject(subject);
-        message.setText(content);
-
-        mailSender.send(message);
+        sendHtml(to, subject, "<p>" + content + "</p>");
     }
 
     @Override
     public void sendHtml(String to, String subject, String html) {
         try {
-            log.info("Sending email to {} via {}:{}", to,
-                    environment.getProperty("spring.mail.host"),
-                    environment.getProperty("spring.mail.port"));
+            Email from    = new Email(mailProperties.getFromEmail(), mailProperties.getFromName());
+            Email toEmail = new Email(to);
+            Content content = new Content("text/html", html);
+            Mail mail = new Mail(from, subject, toEmail, content);
 
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("lxd0294@gmail.com");
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(html, true);
-            mailSender.send(message);
+            SendGrid sg = new SendGrid(mailProperties.getApiKey());
+            Request request = new Request();
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+
+            Response response = sg.api(request);
+            log.info("SendGrid status: {}", response.getStatusCode());
+
+            if (response.getStatusCode() >= 400) {
+                log.error("SendGrid error body: {}", response.getBody());
+                throw new RuntimeException("SendGrid failed with status: " + response.getStatusCode());
+            }
 
             log.info("Email sent successfully to {}", to);
         } catch (Exception e) {
@@ -48,5 +49,4 @@ public class EmailServiceImpl implements EmailService {
             throw new RuntimeException(e);
         }
     }
-
 }
