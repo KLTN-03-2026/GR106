@@ -29,6 +29,7 @@ import { SeasonPlan, Phase, Task, PlanPlot, StatusObject } from '../../../types/
 import { Plot } from '../../../types/plot/plot';
 import { cn } from '../../../utils/cn';
 import { seasonPlanService } from '@/services/seasonplan/seasonPlanService';
+import { DateInput } from '../../../components/ui/DateInput';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -564,16 +565,16 @@ export function PlanDetailPanel({
                 <>
                   <DetailRow icon={Calendar} label="Ngày bắt đầu">
                     {isEditing ? (
-                      <input type="date" value={tempPlan?.startDate ?? ''}
-                        onChange={e => tempPlan && setTempPlan({ ...tempPlan, startDate: e.target.value })}
-                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-slate-300 focus:border-indigo-400 transition-colors w-full px-1" />
+                      <DateInput value={tempPlan?.startDate ?? ''}
+                        onChange={(v: string) => tempPlan && setTempPlan({ ...tempPlan, startDate: v })}
+                        className="w-full" />
                     ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempPlan?.startDate ?? plan.startDate)}</span>}
                   </DetailRow>
                   <DetailRow icon={Calendar} label="Ngày kết thúc">
                     {isEditing ? (
-                      <input type="date" value={tempPlan?.endDate ?? ''}
-                        onChange={e => tempPlan && setTempPlan({ ...tempPlan, endDate: e.target.value })}
-                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-slate-300 focus:border-indigo-400 transition-colors w-full px-1" />
+                      <DateInput value={tempPlan?.endDate ?? ''}
+                        onChange={(v: string) => tempPlan && setTempPlan({ ...tempPlan, endDate: v })}
+                        className="w-full" />
                     ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempPlan?.endDate ?? plan.endDate)}</span>}
                   </DetailRow>
                   <DetailRow icon={Package} label="Lô đất">
@@ -599,16 +600,16 @@ export function PlanDetailPanel({
                 <>
                   <DetailRow icon={Calendar} label="Ngày bắt đầu">
                     {isEditing ? (
-                      <input type="date" value={tempPhase?.startDate ?? ''}
-                        onChange={e => tempPhase && setTempPhase({ ...tempPhase, startDate: e.target.value })}
-                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-slate-300 focus:border-indigo-400 transition-colors w-full px-1" />
+                      <DateInput value={tempPhase?.startDate ?? ''}
+                        onChange={(v: string) => tempPhase && setTempPhase({ ...tempPhase, startDate: v })}
+                        className="w-full" />
                     ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempPhase?.startDate ?? sel.phase.startDate)}</span>}
                   </DetailRow>
                   <DetailRow icon={Calendar} label="Ngày kết thúc">
                     {isEditing ? (
-                      <input type="date" value={tempPhase?.endDate ?? ''}
-                        onChange={e => tempPhase && setTempPhase({ ...tempPhase, endDate: e.target.value })}
-                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-slate-300 focus:border-indigo-400 transition-colors w-full px-1" />
+                      <DateInput value={tempPhase?.endDate ?? ''}
+                        onChange={(v: string) => tempPhase && setTempPhase({ ...tempPhase, endDate: v })}
+                        className="w-full" />
                     ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempPhase?.endDate ?? sel.phase.endDate)}</span>}
                   </DetailRow>
                   <DetailRow icon={CheckSquare} label="Công việc">
@@ -625,16 +626,16 @@ export function PlanDetailPanel({
                 <>
                   <DetailRow icon={Calendar} label="Ngày bắt đầu">
                     {isEditing ? (
-                      <input type="date" value={tempTask?.startDate ?? ''}
-                        onChange={e => tempTask && setTempTask({ ...tempTask, startDate: e.target.value })}
-                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-slate-300 focus:border-indigo-400 transition-colors w-full px-1" />
+                      <DateInput value={tempTask?.startDate ?? ''}
+                        onChange={(v: string) => tempTask && setTempTask({ ...tempTask, startDate: v })}
+                        className="w-full" />
                     ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempTask?.startDate ?? sel.task.startDate)}</span>}
                   </DetailRow>
                   <DetailRow icon={Calendar} label="Ngày kết thúc">
                     {isEditing ? (
-                      <input type="date" value={tempTask?.endDate ?? ''}
-                        onChange={e => tempTask && setTempTask({ ...tempTask, endDate: e.target.value })}
-                        className="text-[12px] font-medium text-slate-700 bg-transparent outline-none border-b border-slate-300 focus:border-indigo-400 transition-colors w-full px-1" />
+                      <DateInput value={tempTask?.endDate ?? ''}
+                        onChange={(v: string) => tempTask && setTempTask({ ...tempTask, endDate: v })}
+                        className="w-full" />
                     ) : <span className="text-[12px] text-slate-700 font-medium">{fmtDate(tempTask?.endDate ?? sel.task.endDate)}</span>}
                   </DetailRow>
                   <DetailRow icon={Zap} label="Giai đoạn">
@@ -814,16 +815,18 @@ export function PlanDetailPanel({
                           className="w-full px-2.5 py-1.5 text-[12px] text-slate-600 bg-white border border-slate-200 rounded-md outline-none focus:border-indigo-400 transition-all resize-none"
                         />
                         <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wide ml-0.5">Bắt đầu</label>
-                            <input type="date" value={newTaskStart} onChange={e => setNewTaskStart(e.target.value)}
-                              className="w-full mt-0.5 px-2 py-1 text-[11px] font-medium bg-white border border-slate-200 rounded-md outline-none focus:border-indigo-400 transition-all" />
-                          </div>
-                          <div>
-                            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wide ml-0.5">Kết thúc</label>
-                            <input type="date" value={newTaskEnd} onChange={e => setNewTaskEnd(e.target.value)}
-                              className="w-full mt-0.5 px-2 py-1 text-[11px] font-medium bg-white border border-slate-200 rounded-md outline-none focus:border-indigo-400 transition-all" />
-                          </div>
+                          <DateInput 
+                            label="Bắt đầu" 
+                            value={newTaskStart} 
+                            onChange={setNewTaskStart}
+                            className="space-y-1"
+                          />
+                          <DateInput 
+                            label="Kết thúc" 
+                            value={newTaskEnd} 
+                            onChange={setNewTaskEnd}
+                            className="space-y-1"
+                          />
                         </div>
                         <div>
                           <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wide ml-0.5">Lô đất</label>

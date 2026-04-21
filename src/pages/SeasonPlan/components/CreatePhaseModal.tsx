@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X, Info, Loader2, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../../../components/ui/button';
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface CreatePhaseModalProps {
   isOpen: boolean;
@@ -105,29 +106,16 @@ export function CreatePhaseModal({
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Bắt đầu</label>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full bg-slate-50 border-2 border-transparent focus:border-purple-500/20 focus:bg-white rounded-2xl py-3 px-4 outline-none transition-all font-bold text-slate-700"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Kết thúc</label>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full bg-slate-50 border-2 border-transparent focus:border-purple-500/20 focus:bg-white rounded-2xl py-3 px-4 outline-none transition-all font-bold text-slate-700"
-                    />
-                  </div>
-                </div>
+                <DateInput
+                  label="Bắt đầu"
+                  value={startDate}
+                  onChange={setStartDate}
+                />
+                <DateInput
+                  label="Kết thúc"
+                  value={endDate}
+                  onChange={setEndDate}
+                />
               </div>
             </div>
 

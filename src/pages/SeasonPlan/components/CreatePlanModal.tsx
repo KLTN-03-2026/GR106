@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import { CreateSeasonPlanRequest } from '../../../types/seasonPlan';
-import { generatePhasesFromCrop } from '../../../utils/seasonPlanUtils';
 import { Button } from '../../../components/ui/button';
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface CreatePlanModalProps {
   isOpen: boolean;
@@ -19,7 +19,7 @@ export function CreatePlanModal({
   onSave,
 }: CreatePlanModalProps) {
   const { crops, loading: cropsLoading } = useSelector((state: RootState) => state.crop);
-  const { loading: planLoading } = useSelector((state: RootState) => state.seasonPlan);
+  const { createLoading: planLoading } = useSelector((state: RootState) => state.seasonPlan);
 
   const [cropId, setCropId] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -34,17 +34,9 @@ export function CreatePlanModal({
       if (crop) {
         // Auto name - only if current name is empty or matched previous auto-name
         setName(prev => (!prev || prev.includes(' - Vụ mùa ')) ? `${crop.name} - Vụ mùa ${new Date().getFullYear()}` : prev);
-        
-        // Suggest end date if start date is present and end date is empty
-        if (startDate && !endDate) {
-          const phases = generatePhasesFromCrop(crop, startDate);
-          if (phases.length > 0) {
-            setEndDate(phases[phases.length - 1].endDate);
-          }
-        }
       }
     }
-  }, [cropId, startDate, crops, endDate]);
+  }, [cropId, crops]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,18 +50,11 @@ export function CreatePlanModal({
     const crop = crops.find(c => c.id === cropId);
     if (!crop) return;
 
-    // Use current calculated endDate or fallback to calculation
-    let finalEndDate = endDate;
-    if (!finalEndDate) {
-      const phases = generatePhasesFromCrop(crop, startDate);
-      finalEndDate = phases[phases.length - 1].endDate;
-    }
-
     onSave({
       name,
       cropId,
       startDate,
-      endDate: finalEndDate,
+      endDate,
       note: '', 
     });
 
@@ -138,35 +123,16 @@ export function CreatePlanModal({
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Ngày bắt đầu</label>
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full bg-slate-50 border-2 border-transparent focus:border-emerald-500/20 focus:bg-white rounded-2xl py-3 px-4 outline-none transition-all font-bold text-slate-700"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Ngày kết thúc</label>
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full bg-slate-50 border-2 border-transparent focus:border-emerald-500/20 focus:bg-white rounded-2xl py-3 px-4 outline-none transition-all font-bold text-slate-700"
-                  />
-                  {endDate && (
-                    <div className="absolute -bottom-5 right-1">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter bg-slate-50 px-1.5 py-0.5 rounded-md">
-                        Gợi ý theo cây trồng
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <DateInput
+                label="Ngày bắt đầu"
+                value={startDate}
+                onChange={setStartDate}
+              />
+              <DateInput
+                label="Ngày kết thúc"
+                value={endDate}
+                onChange={setEndDate}
+              />
             </div>
 
             <div className="space-y-2">
@@ -197,7 +163,7 @@ export function CreatePlanModal({
                 {planLoading ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="animate-spin" size={18} />
-                    <span>Đang tạo...</span>
+                    <span>Đang tạo kế hoạch...</span>
                   </div>
                 ) : (
                   'Tạo kế hoạch'

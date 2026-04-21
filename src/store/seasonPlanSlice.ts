@@ -6,12 +6,14 @@ import { RootState } from '../store';
 interface SeasonPlanState {
   plans: SeasonPlan[];
   loading: boolean;
+  createLoading: boolean; 
   error: any;
 }
 
 const initialState: SeasonPlanState = {
   plans: [],
   loading: false,
+  createLoading: false,
   error: null,
 };
 
@@ -245,7 +247,18 @@ const seasonPlanSlice = createSlice({
       .addCase(fetchPlans.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(fetchPlans.fulfilled, (state, action) => { state.loading = false; state.plans = action.payload; })
       .addCase(fetchPlans.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
-      .addCase(createPlan.fulfilled, (state, action) => { state.plans.push(action.payload); })
+      .addCase(createPlan.pending, (state) => { 
+        state.createLoading = true; 
+        state.error = null; // Vẫn clear error cũ nhưng không dùng loading chung
+      })
+      .addCase(createPlan.fulfilled, (state, action) => { 
+        state.createLoading = false;
+        state.plans.push(action.payload); 
+      })
+      .addCase(createPlan.rejected, (state) => { 
+        state.createLoading = false; 
+        // QUAN TRỌNG: Không set state.error chung ở đây để tránh hiện background error
+      })
       .addCase(updatePlan.fulfilled, (state, action) => {
         const index = state.plans.findIndex(p => p.id === action.payload.id);
         if (index !== -1) {

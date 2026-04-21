@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Trees, 
-  FileText, 
-  Loader2, 
+  Trees,
+  FileText,
+  Loader2,
   X,
   CheckCircle2
 } from 'lucide-react';
@@ -13,6 +13,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDispatch, useSelector } from 'react-redux';
 import { createFarm } from '../../store/farmSlice';
+import { FarmState } from '../../store/farmSlice';
 import { createFarmSchema, CreateFarmInput } from '../../schemas/farmSchemas';
 import { RootState, AppDispatch } from '../../store';
 import { Input } from '../../components/ui/input';
@@ -26,7 +27,7 @@ interface CreateFarmModalProps {
 
 export function CreateFarmModal({ isOpen, onClose, onSuccess }: CreateFarmModalProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const { loading } = useSelector((state: RootState) => state.farm);
+  const { loading } = useSelector((state: RootState) => state.farm as FarmState);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const {
@@ -88,9 +89,6 @@ export function CreateFarmModal({ isOpen, onClose, onSuccess }: CreateFarmModalP
                     <CheckCircle2 size={48} />
                   </motion.div>
                   <h2 className="text-3xl font-black text-gray-900 tracking-tight">Tuyệt vời!</h2>
-                  <p className="text-gray-500 font-medium">
-                    Trang trại của bạn đã được khởi tạo thành công. Đang cập nhật dữ liệu...
-                  </p>
                   <div className="flex justify-center">
                     <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
                   </div>
@@ -152,6 +150,7 @@ export function CreateFarmModal({ isOpen, onClose, onSuccess }: CreateFarmModalP
                         <span className="text-red-500 text-[10px] font-bold pl-1 uppercase tracking-wider">{errors.description.message}</span>
                       )}
                     </div>
+
 
                     <div className="pt-2 flex gap-3">
                       <Button

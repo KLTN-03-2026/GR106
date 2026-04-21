@@ -45,6 +45,8 @@ export const createFarmSchema = z.object({
   description: z.string().optional(),
 });
 
+export type CreateFarmInput = z.infer<typeof createFarmSchema>;
+
 export const createFarmResponseSchema = z.object({
   success: z.boolean(),
   code: z.number(),

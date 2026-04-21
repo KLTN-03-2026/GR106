@@ -10,10 +10,10 @@ interface AuthState {
 }
 
 const initialState: AuthState = {
-  isAuthenticated: !!localStorage.getItem('accessToken'),
-  accessToken: localStorage.getItem('accessToken'),
-  hubToken: localStorage.getItem('hubToken'),
-  currentFarmId: localStorage.getItem('currentFarmId'),
+  isAuthenticated: !!sessionStorage.getItem('accessToken'),
+  accessToken: sessionStorage.getItem('accessToken'),
+  hubToken: sessionStorage.getItem('hubToken'),
+  currentFarmId: sessionStorage.getItem('currentFarmId'),
   subscriptionVersion: 0
 };
 
@@ -26,9 +26,9 @@ const authSlice = createSlice({
       state.accessToken = action.payload.accessToken;
       state.hubToken = action.payload.accessToken;
       
-      localStorage.setItem('accessToken', action.payload.accessToken);
-      localStorage.setItem('hubToken', action.payload.accessToken);
-      localStorage.setItem('refreshToken', action.payload.refreshToken);
+      sessionStorage.setItem('accessToken', action.payload.accessToken);
+      sessionStorage.setItem('hubToken', action.payload.accessToken);
+      sessionStorage.setItem('refreshToken', action.payload.refreshToken);
     },
 
     setCredentials: (state, action: PayloadAction<AuthTokens>) => {
@@ -36,9 +36,9 @@ const authSlice = createSlice({
       state.accessToken = action.payload.accessToken;
       state.hubToken = action.payload.accessToken;
       
-      localStorage.setItem('accessToken', action.payload.accessToken);
-      localStorage.setItem('hubToken', action.payload.accessToken);
-      localStorage.setItem('refreshToken', action.payload.refreshToken);
+      sessionStorage.setItem('accessToken', action.payload.accessToken);
+      sessionStorage.setItem('hubToken', action.payload.accessToken);
+      sessionStorage.setItem('refreshToken', action.payload.refreshToken);
     },
 
     logout: (state) => {
@@ -46,7 +46,7 @@ const authSlice = createSlice({
       state.accessToken = null;
       state.hubToken = null;
       state.currentFarmId = null;
-      localStorage.clear();
+      sessionStorage.clear();
     },
 
     // Chọn farm - lưu farmToken làm accessToken hiện tại
@@ -54,8 +54,8 @@ const authSlice = createSlice({
       state.currentFarmId = action.payload.farmId;
       state.accessToken = action.payload.token;
       
-      localStorage.setItem('currentFarmId', action.payload.farmId);
-      localStorage.setItem('accessToken', action.payload.token);
+      sessionStorage.setItem('currentFarmId', action.payload.farmId);
+      sessionStorage.setItem('accessToken', action.payload.token);
     },
 
     // Thoát farm - quay về Hub bằng cách khôi phục accessToken từ hubToken
@@ -63,22 +63,22 @@ const authSlice = createSlice({
       state.currentFarmId = null;
       if (state.hubToken) {
         state.accessToken = state.hubToken;
-        localStorage.setItem('accessToken', state.hubToken);
+        sessionStorage.setItem('accessToken', state.hubToken);
       }
-      localStorage.removeItem('currentFarmId');
+      sessionStorage.removeItem('currentFarmId');
     },
 
     setAccessToken: (state, action: PayloadAction<{ token: string; farmId?: string }>) => {
       state.accessToken = action.payload.token;
-      localStorage.setItem('accessToken', action.payload.token);
+      sessionStorage.setItem('accessToken', action.payload.token);
       
       if (action.payload.farmId) {
         state.currentFarmId = action.payload.farmId;
-        localStorage.setItem('currentFarmId', action.payload.farmId);
+        sessionStorage.setItem('currentFarmId', action.payload.farmId);
       } else {
         // Nếu setAccessToken không kèm farmId, coi như đây là hub token mới
         state.hubToken = action.payload.token;
-        localStorage.setItem('hubToken', action.payload.token);
+        sessionStorage.setItem('hubToken', action.payload.token);
       }
     },
 
@@ -90,4 +90,4 @@ const authSlice = createSlice({
 });
 
 export const { loginSuccess, setCredentials, logout, setAccessToken, selectFarm, clearFarmContext, refreshSubscription } = authSlice.actions;
-export default authSlice.reducer;
+export default authSlice.reducer;

@@ -7,8 +7,9 @@ import {
   createFarmSchema
 } from '../schemas/farmSchemas';
 import { FarmResponse, FarmSummary, CreateFarmInput } from '../types/farm';
+import { farmService } from '../services/farm/farmService';
 
-interface FarmState {
+export interface FarmState {
   farms: FarmResponse[];
   farmSummary: FarmSummary[];
   currentFarm: FarmResponse | null;
@@ -74,7 +75,18 @@ export const updateFarm = createAsyncThunk(
   'farm/updateFarm',
   async ({ farmId, data }: { farmId: string; data: { name: string; description: string } }, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.patch(`/api/v1/farms/${farmId}`, data);
+      // 1. Silent select để lấy farmToken giúp vượt qua yêu cầu token của API update
+      const selectRes = await farmService.selectFarm(farmId);
+      if (!selectRes.success || !selectRes.data.farmToken) {
+        throw new Error('Không thể lấy mã định danh trang trại (Farm Token)');
+      }
+
+      // 2. Thực hiện cập nhật với farmToken cụ thể trong headers
+      const response = await axiosInstance.patch(`/api/v1/farms/${farmId}`, data, {
+        headers: {
+          Authorization: `Bearer ${selectRes.data.farmToken}`
+        }
+      });
       return createFarmResponseSchema.parse(response.data).data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || error.message);

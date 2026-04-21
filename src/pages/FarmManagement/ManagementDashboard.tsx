@@ -6,10 +6,6 @@ import {
   Plus,
   ArrowLeft,
   Search,
-  Briefcase,
-  CheckSquare,
-  Calendar,
-  DollarSign,
   Loader2,
   AlertCircle,
   ArrowRight,
@@ -107,31 +103,6 @@ export function ManagementDashboardPage() {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {[
-          { label: 'Kế hoạch', icon: Briefcase },
-          { label: 'Công việc', icon: CheckSquare },
-          { label: 'Ngày công', icon: Calendar },
-          { label: 'Doanh thu', icon: DollarSign },
-        ].map((stat, i) => (
-          <div
-            key={i}
-            className="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm"
-          >
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-gray-100">
-              <stat.icon size={16} className="text-gray-600" />
-            </div>
-            <div className="text-2xl font-semibold text-gray-800">
-              0
-            </div>
-            <div className="text-xs mt-1 tracking-wider text-gray-500">
-              {stat.label.toUpperCase()}
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* Error */}
       {error && (
         <div className="flex items-center gap-3 p-4 rounded-2xl mb-5 text-sm bg-red-50 border border-red-200 text-red-600">
@@ -179,22 +150,11 @@ export function ManagementDashboardPage() {
                 <MapPin size={11} />
                 <span className="truncate">Chủ: {farm.ownerFullName}</span>
               </div>
-
+ 
               <p className="text-xs leading-relaxed line-clamp-2 mb-4 min-h-[32px] text-gray-500">
                 {farm.description || 'Không có mô tả'}
               </p>
 
-              {/* Mini stats */}
-              <div className="grid grid-cols-3 rounded-xl p-2.5 mb-4 bg-gray-50 border border-gray-200">
-                {['Lô đất', 'TV viên', 'ha'].map((label, i) => (
-                  <div key={i} className="text-center text-[10px]">
-                    <div className="text-[15px] font-semibold text-gray-800">
-                      0
-                    </div>
-                    <div className="text-gray-500">{label}</div>
-                  </div>
-                ))}
-              </div>
 
               <div className="flex items-center gap-2 mt-auto">
                 <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-600 border border-emerald-100 bg-emerald-50 flex-1 px-3 py-1.5 rounded-full uppercase tracking-widest group-hover/card:bg-emerald-500 group-hover/card:text-white group-hover/card:border-transparent transition-all duration-300 shadow-sm shadow-emerald-100 group-hover/card:shadow-emerald-200">

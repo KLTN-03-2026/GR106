@@ -20,9 +20,9 @@ axiosInstance.interceptors.request.use(
       config.url?.includes('/auth/refresh') ||
       config.url?.includes('/auth/verify');
     
-    const token = localStorage.getItem('accessToken');
+    const token = sessionStorage.getItem('accessToken');
 
-    if (token && config.headers && !isPublicRoute) {
+    if (token && config.headers && !isPublicRoute && !config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -46,7 +46,7 @@ axiosInstance.interceptors.response.use(
         originalRequest._retry = true;
 
         try {
-          const refreshToken = localStorage.getItem('refreshToken');
+          const refreshToken = sessionStorage.getItem('refreshToken');
           if (!refreshToken) {
             throw new Error('No refresh token available');
           }
@@ -61,8 +61,8 @@ axiosInstance.interceptors.response.use(
             const { accessToken, refreshToken: newRefreshToken } = response.data.data;
 
             // 1. Cập nhật LocalStorage
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('refreshToken', newRefreshToken);
+            sessionStorage.setItem('accessToken', accessToken);
+            sessionStorage.setItem('refreshToken', newRefreshToken);
 
             // 2. Cập nhật Header cho request cũ
             originalRequest.headers.Authorization = `Bearer ${accessToken}`;
@@ -72,9 +72,9 @@ axiosInstance.interceptors.response.use(
           }
         } catch (refreshError) {
           // Nếu refresh thất bại, logout người dùng
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          localStorage.removeItem('user');
+          sessionStorage.removeItem('accessToken');
+          sessionStorage.removeItem('refreshToken');
+          sessionStorage.removeItem('user');
           window.location.href = '/login';
           return Promise.reject(refreshError);
         }

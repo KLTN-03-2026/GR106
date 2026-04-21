@@ -1,10 +1,11 @@
+import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
-import { Sidebar } from '../../pages/Dashboard/components/Sidebar'
+import Sidebar from './Sidebar'
 import { useAuth } from '../../hooks/useAuth'
 
 export default function AppLayout() {
   const { user } = useAuth()
-  
+
   // Get initials for the avatar based on full name
   const getInitials = () => {
     if (!user?.fullName) return 'U'
@@ -15,9 +16,11 @@ export default function AppLayout() {
     return names[0][0].toUpperCase()
   }
 
+  const [active, setActive] = useState('dashboard')
+
   return (
     <div className="flex w-full min-h-screen bg-gray-50">
-      <Sidebar />
+      <Sidebar active={active} setActive={setActive} variant="wide" />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden ml-64">
         <header className="h-16 border-b border-gray-200 bg-white px-8 flex items-center shrink-0">
           <div className="flex items-center justify-between w-full">

@@ -2,9 +2,9 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Trees, 
-  FileText, 
-  Loader2, 
+  Trees,
+  FileText,
+  Loader2,
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -139,8 +139,6 @@ export function EditFarmModal({ isOpen, onClose, farm, onSuccess }: EditFarmModa
                     )}
                   </div>
 
-
-
                   <div className="space-y-1.5">
                     <label className="flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">
                       Mô tả ngắn
@@ -155,6 +153,9 @@ export function EditFarmModal({ isOpen, onClose, farm, onSuccess }: EditFarmModa
                       />
                     </div>
                   </div>
+
+
+
 
                   <div className="pt-4 flex gap-3">
                     <Button

@@ -16,7 +16,7 @@ export default function DashboardLayout() {
   const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
   const isAdmin = accessToken ? getRolesFromToken(accessToken).includes('ROLE_ADMIN') : false;
-  
+
   const [isSyncing, setIsSyncing] = useState(false);
 
   // Tự động đồng bộ Farm Context từ URL (chỉ khi có farmId trong URL)
@@ -63,7 +63,7 @@ export default function DashboardLayout() {
     if (p.includes("/crop-catalog")) return "crop-catalog";
     if (p.includes("/season-plans")) return "season-plans";
     if (p.includes("/change-password")) return "settings";
-    
+
     // If URL is /farms/:id/actions, maybe highlight 'tree' or nothing?
     // User seems to view 'tree' as the entry to farms.
     if (p.includes("/farms/")) return "tree";
@@ -98,14 +98,14 @@ export default function DashboardLayout() {
 
   const handleNav = (key: string) => {
     setActive(key);
-    
+
     // Handle special keys
     if (key === "dashboard") {
       dispatch(clearFarmContext());
       navigate("/dashboard");
       return;
     }
-    
+
     if (key === "tree") {
       if (currentFarmId) {
         navigate(`/farms/${currentFarmId}/actions`);
@@ -128,7 +128,7 @@ export default function DashboardLayout() {
 
     // Context-dependent routes (Wallet, Activity, Task, Gemini, etc.)
     const farmContextKeys = ["wallet", "activity", "task", "gemini", "season-plans", "map", "land-plots", "members", "subscription"];
-    
+
     if (farmContextKeys.includes(key)) {
       if (currentFarmId) {
         // Navigate to farm-specific route

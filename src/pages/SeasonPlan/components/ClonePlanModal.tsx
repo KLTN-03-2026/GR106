@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { X, Copy, Calendar, Info } from 'lucide-react';
+import { X, Copy, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SeasonPlan } from '../../../types/seasonPlan';
 import { clonePlanLogic } from '../../../utils/seasonPlanUtils';
 import { Button } from '../../../components/ui/button';
+import { DateInput } from '../../../components/ui/DateInput';
 
 interface ClonePlanModalProps {
   isOpen: boolean;
@@ -91,18 +92,11 @@ export function ClonePlanModal({
             </div>
 
             <div className="space-y-2">
-              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Ngày bắt đầu mới</label>
-              <div className="relative group">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors">
-                  <Calendar size={18} />
-                </div>
-                <input
-                  type="date"
-                  value={newStartDate}
-                  onChange={(e) => setNewStartDate(e.target.value)}
-                  className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl py-3 pl-12 pr-4 outline-none transition-all font-bold text-slate-700"
-                />
-              </div>
+              <DateInput
+                label="Ngày bắt đầu mới"
+                value={newStartDate}
+                onChange={setNewStartDate}
+              />
               <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 px-1">Tất cả các giai đoạn sẽ tự động lùi theo ngày này</p>
             </div>
 
