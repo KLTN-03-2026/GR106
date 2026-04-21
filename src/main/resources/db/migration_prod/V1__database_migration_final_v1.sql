@@ -482,7 +482,7 @@ CREATE TABLE farm_members (
     user_id      UUID    NOT NULL REFERENCES users(id),
     farm_role_id UUID    NOT NULL REFERENCES farm_roles(id),
     is_active    BOOLEAN NOT NULL DEFAULT TRUE,
-    joined_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+    joined_at    TIMESTAMP DEFAULT NOW(),
     UNIQUE (farm_id, user_id)
 );
 CREATE INDEX idx_farm_members_user ON farm_members(user_id);
