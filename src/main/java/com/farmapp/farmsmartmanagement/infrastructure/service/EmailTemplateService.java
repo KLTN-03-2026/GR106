@@ -118,4 +118,50 @@ public class EmailTemplateService {
 </html>
 """.formatted(name, verifyLink, verifyLink);
     }
+
+    // EmailTemplateService.java — thêm method
+    public String buildCredentialsEmail(String fullName, String email,
+                                        String rawPassword, String farmName, String loginLink) {
+        return """
+        <div style="font-family:sans-serif;max-width:600px;margin:auto">
+            <h2>Xin chào %s,</h2>
+            <p>Bạn được mời tham gia farm <strong>%s</strong> trên FarmSmart.</p>
+            <p>Thông tin đăng nhập của bạn:</p>
+            <table style="border-collapse:collapse;width:100%%">
+                <tr>
+                    <td style="padding:8px;border:1px solid #ddd">Email</td>
+                    <td style="padding:8px;border:1px solid #ddd"><strong>%s</strong></td>
+                </tr>
+                <tr>
+                    <td style="padding:8px;border:1px solid #ddd">Mật khẩu tạm</td>
+                    <td style="padding:8px;border:1px solid #ddd"><strong>%s</strong></td>
+                </tr>
+            </table>
+            <p style="color:#e74c3c">
+                Vui lòng đổi mật khẩu sau khi đăng nhập lần đầu.
+            </p>
+            <a href="%s" style="display:inline-block;padding:12px 24px;
+                background:#27ae60;color:#fff;text-decoration:none;border-radius:4px">
+                Đăng nhập ngay
+            </a>
+        </div>
+        """.formatted(fullName, farmName, email, rawPassword, loginLink);
+    }
+
+    public String buildFarmInvitationEmail(String fullName, String farmName, String farmLink) {
+        return """
+        <div style="font-family:sans-serif;max-width:600px;margin:auto">
+            <h2>Xin chào %s,</h2>
+            <p>Bạn được mời tham gia farm <strong>%s</strong> trên FarmSmart.</p>
+            <p>Nhấn vào nút bên dưới để xem farm của bạn:</p>
+            <a href="%s" style="display:inline-block;padding:12px 24px;
+                background:#27ae60;color:#fff;text-decoration:none;border-radius:4px">
+                Vào farm ngay
+            </a>
+            <p style="color:#999;font-size:12px;margin-top:24px">
+                Nếu bạn không muốn tham gia, có thể bỏ qua email này.
+            </p>
+        </div>
+        """.formatted(fullName, farmName, farmLink);
+    }
 }
