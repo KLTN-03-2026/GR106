@@ -29,4 +29,6 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshTokenEntity
     """)
     void revokeAll(@Param("userId") UUID userId,
                    @Param("now") Instant now);
+
+    void deleteByUserId(UUID userId);
 }

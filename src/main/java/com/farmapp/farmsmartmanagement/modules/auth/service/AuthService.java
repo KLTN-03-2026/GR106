@@ -78,7 +78,7 @@ public class AuthService {
             String hash = HashUtils.sha256(rawToken);
 
             EmailVerificationTokenEntity token = new EmailVerificationTokenEntity();
-            token.setUserId(user.getId());
+            token.setUser(user);
             token.setTokenHash(hash);
             token.setExpiresAt(Instant.now().plusSeconds(15 * 60));
             emailVerificationTokenRepository.save(token);
@@ -146,7 +146,7 @@ public class AuthService {
                 throw new AppException(ErrorCode.INVALID_REQUEST, "Token đã được sử dụng");
             }
 
-            UserEntity user = userRepository.findById(token.getUserId())
+            UserEntity user = userRepository.findById(token.getUser().getId())
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
             user.setStatus(UserStatus.ACTIVE);

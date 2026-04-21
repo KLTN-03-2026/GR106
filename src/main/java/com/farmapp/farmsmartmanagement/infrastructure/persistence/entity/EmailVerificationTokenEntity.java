@@ -1,12 +1,12 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.UuidGenerator;
+import org.springframework.security.core.userdetails.User;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -15,6 +15,7 @@ import java.util.UUID;
 @Table(name = "email_verification_tokens")
 @Getter
 @Setter
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class EmailVerificationTokenEntity {
 
     @Id
@@ -22,7 +23,9 @@ public class EmailVerificationTokenEntity {
     @UuidGenerator
     private UUID id;
 
-    private UUID userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
 
     private String tokenHash;
 
