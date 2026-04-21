@@ -85,4 +85,12 @@ public class FarmController {
                 farmService.updateFarm(farmId,request)
         );
     }
+
+    @DeleteMapping("/{farmId}")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<Void>> deleteFarm(
+            @PathVariable("farmId") UUID farmId
+    ){
+        return ResponseUtil.noContent();
+    }
 }

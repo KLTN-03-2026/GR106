@@ -174,4 +174,16 @@ public class FarmService {
                 )
                 .toList();
     }
+
+    @Transactional
+    @PreAuthorize("hasRole('farm:delete')")
+    public void deleteFarm(UUID farmId) {
+        UUID userId = securityUtils.getCurrentUserId();
+
+        FarmEntity farm = farmRepository
+                .findByIdAndOwner_Id(farmId, userId)
+                .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
+
+        farm.setDeletedAt(Instant.now());
+    }
 }
