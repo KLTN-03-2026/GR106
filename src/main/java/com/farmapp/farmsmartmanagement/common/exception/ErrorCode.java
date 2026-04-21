@@ -78,7 +78,11 @@ public enum ErrorCode {
     PLAN_TIME_CANNOT_LESS_STAGE(409, "Thời gian kế hoạch phải bao phủ toàn bộ giai đoạn", HttpStatus.CONFLICT),
     PLAN_STAGE_TIME_MUST_BE_IN_PLAN_TIME(409, "Thời gian giai đoạn phải nằm trong thời gian kế hoạch", HttpStatus.CONFLICT),
     FARM_MEMBER_ALREADY_EXISTS(409,"Thành viên đã tồn tại trong trang trại" ,HttpStatus.CONFLICT ),
-    PAYMENT_NOT_FOUND(404,"Không tìm thấy giao dịch" ,HttpStatus.NOT_FOUND ),;
+    PAYMENT_NOT_FOUND(404,"Không tìm thấy giao dịch" ,HttpStatus.NOT_FOUND ),
+    YOU_HAVE_NOT_ANY_INVITATION(404,"Bạn không có bất kỳ lời mời vào trang trại nào" ,HttpStatus.NOT_FOUND ),
+    PLAN_STAGE_NOT_COVER_TASK(409, "Thời gian giai đoạn không bao phủ được công việc", HttpStatus.CONFLICT)
+
+    ;
 
     private final int code;
     private final String message;

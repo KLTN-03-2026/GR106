@@ -129,11 +129,18 @@ public class PlanStageService {
                 || plan.getEndDate().isBefore(request.getEndDate()))
             throw new AppException(ErrorCode.PLAN_STAGE_TIME_MUST_BE_IN_PLAN_TIME);
 
-        if(request.getStartDate()!=null && request.getEndDate()!=null &&
-                planStageRepository.existsOverlappingWithoutId(
-                        planId, planStageId, request.getStartDate(), request.getEndDate()
-                ))
-            throw new AppException(ErrorCode.PLAN_STAGE_OVERLAP);
+        if(request.getStartDate()!=null && request.getEndDate()!=null){
+
+            if(planStageRepository.existsOverlappingWithoutId(planId, planStageId, request.getStartDate(), request.getEndDate())) {
+                throw new AppException(ErrorCode.PLAN_STAGE_OVERLAP);
+            }
+
+            if(taskRepository.existsTaskOutsideStage(planStageId,request.getStartDate(), request.getEndDate()))
+                throw new AppException(ErrorCode.PLAN_STAGE_NOT_COVER_TASK);
+
+        }
+
+
 
 
         planStageMapper.updateEntityFromRequest(request, planStage);
@@ -161,6 +168,18 @@ public class PlanStageService {
         if(planStageRepository.existsOverlappingWithoutId(
                 planId, planStageId, request.getStartDate(), request.getEndDate()))
             throw new AppException(ErrorCode.PLAN_STAGE_OVERLAP);
+
+
+        if(request.getStartDate()!=null && request.getEndDate()!=null){
+
+            if(planStageRepository.existsOverlappingWithoutId(planId, planStageId, request.getStartDate(), request.getEndDate())) {
+                throw new AppException(ErrorCode.PLAN_STAGE_OVERLAP);
+            }
+
+            if(taskRepository.existsTaskOutsideStage(planStageId,request.getStartDate(), request.getEndDate()))
+                throw new AppException(ErrorCode.PLAN_STAGE_NOT_COVER_TASK);
+
+        }
 
         planStage.setStartDate(request.getStartDate());
         planStage.setEndDate(request.getEndDate());

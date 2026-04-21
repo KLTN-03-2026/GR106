@@ -2,7 +2,10 @@ package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,4 +20,21 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
     List<TaskEntity> findAllByPlanStageId(UUID planStageId);
 
     void deleteByPlanStageId(UUID stageId);
+
+
+    @Query("""
+    SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END
+    FROM TaskEntity t
+    WHERE t.planStage.id = :planStageId
+    AND (
+        t.startDate < :stageStartDate
+        OR t.endDate > :stageEndDate
+    )
+""")
+    boolean existsTaskOutsideStage(
+            @Param("planStageId") UUID planStageId,
+            @Param("stageStartDate") LocalDate stageStartDate,
+            @Param("stageEndDate") LocalDate stageEndDate
+    );
+
 }
