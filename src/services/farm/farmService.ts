@@ -53,6 +53,13 @@ export const farmService = {
       data
     );
     return response.data;
+  },
+
+  async deleteFarm(farmId: string): Promise<ApiResponse<any>> {
+    const response = await axiosInstance.delete<ApiResponse<any>>(
+      `/api/v1/farms/${farmId}`
+    );
+    return response.data;
   }
 };
 

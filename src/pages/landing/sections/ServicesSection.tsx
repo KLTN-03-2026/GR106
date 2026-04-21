@@ -65,7 +65,7 @@ const ServicesSection: React.FC = () => {
             className={`bg-white/5 border border-white/10 rounded-3xl p-8 hover:bg-white/10
               transition-all duration-[600ms] ease-out
               ${gridReveal.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"}`}
-            style={{ transitionDelay: gridReveal.visible ? `${i * 120}ms` : "0ms" }}
+            style={{ transitionDelay: "0ms" }}
           >
             <div className={`w-14 h-14 rounded-2xl ${s.bg} flex items-center justify-center mb-5`}>
               {s.icon}

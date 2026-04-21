@@ -100,9 +100,24 @@ export function LandPlotsPage() {
   };
 
   const handleViewMap = (plot: Plot) => {
-    navigate('/map', {
+    dispatch(fetchPlots(currentFarmId));
+    navigate(`/farms/${currentFarmId}/map?plotId=${plot.id}&source=land-plots`, {
       state: {
         selectedPlotId: plot.id,
+        preloadPlot: plot,
+        source: 'land-plots',
+      },
+    });
+  };
+
+  const handleEditBoundary = (plot: Plot) => {
+    dispatch(fetchPlots(currentFarmId));
+    navigate(`/farms/${currentFarmId}/map?plotId=${plot.id}&mode=editing&source=land-plots`, {
+      state: {
+        selectedPlotId: plot.id,
+        preloadPlot: plot,
+        mode: 'editing',
+        source: 'land-plots',
       },
     });
   };
@@ -162,7 +177,7 @@ export function LandPlotsPage() {
         {viewMode === 'table' ? (
           <PlotTable
             plots={filteredPlots}
-            onEdit={setEditingPlot}
+            onEdit={handleEditBoundary}
             onDelete={setDeletingPlot}
             onViewMap={handleViewMap}
           />
@@ -172,7 +187,7 @@ export function LandPlotsPage() {
               <PlotCard
                 key={plot.id}
                 plot={plot}
-                onEdit={setEditingPlot}
+                onEdit={handleEditBoundary}
                 onDelete={setDeletingPlot}
                 onViewMap={handleViewMap}
               />

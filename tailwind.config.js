@@ -76,13 +76,18 @@ export default {
         wave: {
           '0%, 100%': { transform: 'scaleY(1)' },
           '50%': { transform: 'scaleY(1.3)' }
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
         }
       },
       animation: {
         'slide-in-down': 'slideIn 0.7s ease-out forwards',
         'slide-in-down-fast': 'slideIn 0.4s ease-out forwards',
         'grow': 'grow 2s ease-in-out infinite',
-        'wave': 'wave 2s ease-in-out infinite'
+        'wave': 'wave 2s ease-in-out infinite',
+        'float': 'float 3s ease-in-out infinite'
       }
     }
   }

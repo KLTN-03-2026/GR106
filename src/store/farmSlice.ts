@@ -94,6 +94,30 @@ export const updateFarm = createAsyncThunk(
   }
 );
 
+// Async Thunk để xóa Farm
+export const deleteFarm = createAsyncThunk(
+  'farm/deleteFarm',
+  async (farmId: string, { rejectWithValue }) => {
+    try {
+      // 1. Silent select để lấy farmToken giúp vượt qua yêu cầu token của API delete
+      const selectRes = await farmService.selectFarm(farmId);
+      if (!selectRes.success || !selectRes.data.farmToken) {
+        throw new Error('Không thể lấy mã định danh trang trại (Farm Token)');
+      }
+
+      // 2. Thực hiện xóa với farmToken cụ thể trong headers
+      await axiosInstance.delete(`/api/v1/farms/${farmId}`, {
+        headers: {
+          Authorization: `Bearer ${selectRes.data.farmToken}`
+        }
+      });
+      return farmId;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 const farmSlice = createSlice({
   name: 'farm',
   initialState,
@@ -159,6 +183,23 @@ const farmSlice = createSlice({
         }
       })
       .addCase(updateFarm.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // deleteFarm
+      .addCase(deleteFarm.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteFarm.fulfilled, (state, action) => {
+        state.loading = false;
+        state.farms = state.farms.filter(f => f.id !== action.payload);
+        state.farmSummary = state.farmSummary.filter(f => f.farmId !== action.payload);
+        if (state.currentFarm && state.currentFarm.id === action.payload) {
+          state.currentFarm = null;
+        }
+      })
+      .addCase(deleteFarm.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

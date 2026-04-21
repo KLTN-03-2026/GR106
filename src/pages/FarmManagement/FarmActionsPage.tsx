@@ -7,13 +7,16 @@ import {
   Users,
   Home,
   Clock,
-  Trees
+  Trees,
+  Trash2
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchFarmsSummary } from '../../store/farmSlice';
+import { fetchFarmsSummary, deleteFarm } from '../../store/farmSlice';
 import { RootState, AppDispatch } from '../../store';
 import { EditFarmModal } from '../../components/farm/EditFarmModal';
 import { MemberCondensedList } from '../../components/members/MemberCondensedList';
+import { toast } from 'sonner';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 
 const FarmActionsPage: React.FC = () => {
     const { farmId } = useParams<{ farmId: string }>();
@@ -30,6 +33,24 @@ const FarmActionsPage: React.FC = () => {
 
     const farm = farmSummary.find(f => f.farmId === farmId);
     const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
+    const [isDeleting, setIsDeleting] = React.useState(false);
+
+    const handleDelete = async () => {
+        if (!farmId) return;
+        
+        setIsDeleting(true);
+        try {
+            await dispatch(deleteFarm(farmId)).unwrap();
+            toast.success("Xóa trang trại thành công");
+            navigate('/farms');
+        } catch (error: any) {
+            toast.error(error.message || "Không thể xóa trang trại. Vui lòng thử lại sau.");
+        } finally {
+            setIsDeleting(false);
+            setIsDeleteModalOpen(false);
+        }
+    };
 
     if (!farm) {
         return (
@@ -61,13 +82,22 @@ const FarmActionsPage: React.FC = () => {
 
                 <div className="flex items-center gap-3">
                     {(farm?.owner || farm?.myRole?.toLowerCase() === 'owner') && (
-                        <button 
-                            onClick={() => setIsEditModalOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 font-black text-xs uppercase tracking-wider hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm"
-                        >
-                            <Edit2 size={14} />
-                            Chỉnh sửa
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => setIsEditModalOpen(true)}
+                                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 font-black text-xs uppercase tracking-wider hover:border-emerald-500 hover:text-emerald-600 transition-all shadow-sm"
+                            >
+                                <Edit2 size={14} />
+                                Chỉnh sửa
+                            </button>
+                            <button 
+                                onClick={() => setIsDeleteModalOpen(true)}
+                                className="flex items-center gap-2 px-4 py-2 bg-white border border-rose-100 rounded-xl text-rose-500 font-black text-xs uppercase tracking-wider hover:bg-rose-50 hover:border-rose-300 transition-all shadow-sm"
+                            >
+                                <Trash2 size={14} />
+                                Xóa
+                            </button>
+                        </div>
                     )}
                     
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full border border-emerald-100">
@@ -158,6 +188,18 @@ const FarmActionsPage: React.FC = () => {
                 onClose={() => setIsEditModalOpen(false)}
                 farm={farm}
                 onSuccess={() => dispatch(fetchFarmsSummary())}
+            />
+
+            <ConfirmModal 
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleDelete}
+                title="Xóa trang trại"
+                message={`Bạn có chắc chắn muốn xóa trang trại "${farm?.farmName}"? Hành động này không thể hoàn tác và toàn bộ dữ liệu liên quan sẽ bị mất.`}
+                confirmLabel="Vâng, hãy xóa nó"
+                cancelLabel="Quay lại"
+                loading={isDeleting}
+                type="danger"
             />
         </div>
     );

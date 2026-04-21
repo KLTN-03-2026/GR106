@@ -168,7 +168,7 @@ export default function DashboardLayout() {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-y-auto bg-white rounded-[32px] shadow-sm border border-slate-200">
+      <div className={`flex-1 flex flex-col bg-white rounded-[32px] shadow-sm border border-slate-200 ${location.pathname.includes('/map') ? 'overflow-hidden' : 'overflow-y-auto'}`}>
         <Outlet />
       </div>
     </div>

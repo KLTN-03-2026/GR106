@@ -2,11 +2,11 @@ import { forwardRef } from "react";
 import { PhoneIcon, MailIcon, MapPinIcon } from "lucide-react";
 import { useReveal } from "@/hooks/useReveal";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui";
-import { Textarea } from "@/components/ui";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 const ContactSection = forwardRef<HTMLDivElement>((_, ref) => {
-  const { ref: revealRef, visible } = useReveal(0.1);
+  const { ref: revealRef, visible } = useReveal<HTMLDivElement>(0.1);
 
   return (
     <section
@@ -45,7 +45,7 @@ const ContactSection = forwardRef<HTMLDivElement>((_, ref) => {
                   key={i}
                   className={`flex items-center gap-3 transition-all duration-[500ms] ease-out
                     ${visible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6"}`}
-                  style={{ transitionDelay: visible ? `${200 + i * 100}ms` : "0ms" }}
+                  style={{ transitionDelay: "0ms" }}
                 >
                   <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
                     <Icon className="w-5 h-5 text-green-700" />
@@ -59,7 +59,7 @@ const ContactSection = forwardRef<HTMLDivElement>((_, ref) => {
           {/* Right: Form */}
           <div
             className={`flex-1 bg-white rounded-3xl shadow-xl p-10 border border-[#E8E0D0]
-              transition-all duration-[900ms] ease-out delay-[250ms]
+              transition-all duration-[900ms] ease-out delay-[0ms]
               ${visible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-12"}`}
           >
             <h3 className="font-playfair text-[24px] font-semibold text-[#2D3A1E] mb-6">

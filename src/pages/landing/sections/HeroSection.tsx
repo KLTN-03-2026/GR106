@@ -77,7 +77,7 @@ class HeroSection extends React.Component<HeroSectionProps, HeroSectionState> {
                 <div className="relative">
                   <span
                     className={`font-playfair text-[120px] md:text-[220px] font-semibold leading-none text-light-yellow-2 block mr-[15px] md:mr-[30px] mt-[40px]
-                        transition-all duration-[900ms] ease-out delay-[200ms]
+                        transition-all duration-[900ms] ease-out delay-[0ms]
                         ${heroMounted ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-16"}`}
                   >
                     AI
@@ -87,7 +87,7 @@ class HeroSection extends React.Component<HeroSectionProps, HeroSectionState> {
                     src={Water}
                     alt="Water drop"
                     className={`absolute top-[8px] left-[80px] md:left-[159px] w-[25px] md:w-[41px] h-[40px] md:h-[60px] object-contain
-                      transition-all duration-[700ms] ease-out delay-[900ms]
+                      transition-all duration-[700ms] ease-out delay-[50ms]
                       ${heroMounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-6"}`}
                   />
                 </div>
@@ -99,14 +99,14 @@ class HeroSection extends React.Component<HeroSectionProps, HeroSectionState> {
                 <div className="mt-[30px] md:mt-[67px] ml-[20px] md:ml-[40px] overflow-hidden">
                   <h1
                     className={`font-playfair text-[40px] md:text-[78px] font-semibold leading-none text-light-yellow-3
-                        transition-all duration-[800ms] ease-out delay-[500ms]
+                        transition-all duration-[800ms] ease-out delay-[0ms]
                         ${heroMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
                   >
                     MÙA VỤ
                   </h1>
                   <h1
                     className={`font-playfair text-[40px] md:text-[78px] font-semibold leading-none text-light-yellow-3 mt-3 md:mt-6
-                        transition-all duration-[800ms] ease-out delay-[650ms]
+                        transition-all duration-[800ms] ease-out delay-[0ms]
                         ${heroMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
                   >
                     KHỞI SẮC
@@ -121,7 +121,7 @@ class HeroSection extends React.Component<HeroSectionProps, HeroSectionState> {
               variant="cta-yellow"
               size="lg"
               className={`absolute left-4 lg:left-[93px] top-[480px] md:top-[540px] w-full max-w-[268px] h-[64px] rounded-2xl group
-                  transition-[opacity,transform] duration-[700ms] ease-out delay-[500ms]
+                  transition-[opacity,transform] duration-[700ms] ease-out delay-[0ms]
                   ${heroMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}
             >
               Tạo mùa vụ ngay
@@ -140,7 +140,7 @@ class HeroSection extends React.Component<HeroSectionProps, HeroSectionState> {
                   : "scaleY(0) translateY(100%)",
                 opacity: heroMounted ? 1 : 0,
                 transition:
-                  "transform 0.8s ease-out 1s, opacity 0.4s ease-out 1.2s",
+                  "transform 0.8s ease-out 0s, opacity 0.4s ease-out 0.1s",
                 zIndex: -1,
               }}
             />
@@ -148,7 +148,7 @@ class HeroSection extends React.Component<HeroSectionProps, HeroSectionState> {
             {/* Glassmorphism Card */}
             <div
               className={`absolute right-4 lg:right-[121px] top-[150px] w-[280px] md:w-[323px] h-[400px] md:h-[451px] rounded-[40px] overflow-hidden backdrop-blur-[8px] hidden lg:block
-                  transition-all duration-[1000ms] ease-out delay-[600ms]
+                  transition-all duration-[1000ms] ease-out delay-[0ms]
                   ${heroMounted ? "opacity-100 translate-x-0" : "opacity-0 translate-x-16"}`}
               style={{
                 background:

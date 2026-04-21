@@ -8,16 +8,13 @@ import {
   Search,
   Loader2,
   AlertCircle,
-  ArrowRight,
-  Trash2,
-  Pencil
+  ArrowRight
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { farmService } from '../../services/farm/farmService';
 import { selectFarm, clearFarmContext } from '../../store/authSlice';
 import { CreateFarmModal } from '../../components/farm';
-import { EditFarmModal } from '../../components/farm/EditFarmModal';
 import { fetchFarmsSummary } from '../../store/farmSlice';
 import { RootState, AppDispatch } from '../../store';
 
@@ -26,7 +23,6 @@ export function ManagementDashboardPage() {
   const dispatch = useDispatch<AppDispatch>();
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [editingFarm, setEditingFarm] = useState<any | null>(null);
 
   const { farmSummary, loading, error } = useSelector((state: RootState) => state.farm);
   
@@ -163,34 +159,6 @@ export function ManagementDashboardPage() {
                     <ArrowRight size={10} />
                   </div>
                 </div>
-                
-                {(farm.owner || farm.myRole?.toLowerCase() === 'owner') && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingFarm({
-                        id: farm.farmId,
-                        name: farm.farmName,
-                        description: farm.description
-                      });
-                    }}
-                    className="w-8 h-8 rounded-[12px] flex items-center justify-center bg-blue-50 text-blue-500 hover:bg-blue-500 hover:text-white transition-all shadow-sm border border-blue-100 shrink-0"
-                    title="Chỉnh sửa trang trại"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                )}
-                
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toast.info("Chức năng xóa sẽ được cập nhật sau khi có API từ bạn.");
-                  }}
-                  className="w-8 h-8 rounded-[12px] flex items-center justify-center bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all shadow-sm border border-red-100 shrink-0"
-                  title="Xóa trang trại"
-                >
-                  <Trash2 size={14} />
-                </button>
               </div>
             </div>
           ))}
@@ -200,13 +168,6 @@ export function ManagementDashboardPage() {
       <CreateFarmModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={() => dispatch(fetchFarmsSummary())}
-      />
-
-      <EditFarmModal
-        isOpen={!!editingFarm}
-        onClose={() => setEditingFarm(null)}
-        farm={editingFarm}
         onSuccess={() => dispatch(fetchFarmsSummary())}
       />
     </div>

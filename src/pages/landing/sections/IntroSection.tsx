@@ -9,7 +9,7 @@ interface IntroSectionProps {}
 
 const IntroSection = forwardRef<HTMLDivElement, IntroSectionProps>((_, ref) => {
   const navigate = useNavigate();
-  const { ref: revealRef, visible } = useReveal();
+  const { ref: revealRef, visible } = useReveal<HTMLDivElement>();
 
   return (
     <section
@@ -64,7 +64,7 @@ const IntroSection = forwardRef<HTMLDivElement, IntroSectionProps>((_, ref) => {
                 className={`flex-1 bg-white rounded-2xl p-5 shadow-sm border border-[#E8E0D0]
                     transition-all duration-[600ms] ease-out
                     ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-                style={{ transitionDelay: visible ? `${400 + i * 150}ms` : "0ms" }}
+                style={{ transitionDelay: "0ms" }}
               >
                 <div className={`w-12 h-12 rounded-full ${bg} flex items-center justify-center mb-3`}>
                   <Icon className={`w-6 h-6 ${iconColor}`} />
@@ -81,21 +81,26 @@ const IntroSection = forwardRef<HTMLDivElement, IntroSectionProps>((_, ref) => {
 
       {/* Corn Intro Image — positioned exactly like HeroSection */}
       <img
-        src={CornIntro}
-        alt="Corn"
-        className="absolute pointer-events-none z-20"
-        style={{
-          bottom: "-5%",
-          left: "493px",
-          width: "313px",
-          height: "359px",
-          objectFit: "cover",
-          filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.25))",
-          transition: "opacity 0.9s ease-out 0.2s, transform 0.9s ease-out 0.2s",
-          opacity: visible ? 1 : 0,
-          transform: visible ? "translateY(0)" : "translateY(20px)",
-        }}
-      />
+  src={CornIntro}
+  alt="Corn"
+  className="absolute pointer-events-none z-20"
+  style={{
+    top: "-320px",
+    bottom: "-5%",
+    left: "493px",
+    width: "313px",
+    height: "359px",
+    objectFit: "cover",
+    filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.25))",
+
+    // ✅ FIX: bỏ delay + đồng bộ duration
+    transition: "opacity 0.6s ease-out, transform 0.6s ease-out",
+
+    opacity: visible ? 1 : 0,
+    transform: visible ? "translateY(0)" : "translateY(20px)",
+  }}
+/>
+ 
     </section>
   );
 });

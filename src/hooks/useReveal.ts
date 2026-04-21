@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 
-export const useReveal = (threshold = 0.1) => {
+export const useReveal = <T extends HTMLElement>(threshold = 0.1) => {
   const [visible, setVisible] = useState(false);
-  const ref = useRef<HTMLElement>(null);
+  const ref = useRef<T>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.IntersectionObserver) {
@@ -14,6 +14,12 @@ export const useReveal = (threshold = 0.1) => {
     if (!target) return;
 
     let observer: IntersectionObserver | null = null;
+
+    // ✅ FIX: hiện ngay nếu đã nằm trong viewport (không delay khi F5)
+    const rect = target.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      setVisible(true);
+    }
 
     const initObserver = () => {
       if (!target || !(target instanceof Element)) return;
@@ -31,7 +37,7 @@ export const useReveal = (threshold = 0.1) => {
           { threshold }
         );
 
-        if (target instanceof Element && document.body.contains(target)) {
+        if (document.body.contains(target)) {
           observer.observe(target);
         }
       } catch (error) {
@@ -40,17 +46,14 @@ export const useReveal = (threshold = 0.1) => {
       }
     };
 
-    // Wait for next frame to ensure DOM is fully rendered
-    const frameId = requestAnimationFrame(initObserver);
+    // ❌ BỎ requestAnimationFrame → gây delay
+    initObserver();
 
     return () => {
-      cancelAnimationFrame(frameId);
       if (observer && target instanceof Element) {
         try {
           observer.unobserve(target);
-        } catch (e) {
-          // Ignore cleanup errors
-        }
+        } catch (e) {}
         observer.disconnect();
       }
     };

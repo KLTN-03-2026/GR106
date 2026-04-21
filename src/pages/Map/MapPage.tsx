@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../store';
 import { fetchPlots, createPlot, updatePlot } from '../../store/plotSlice';
 import { Plot, GeoPoint, Geometry } from '../../types/plot';
 import { toast } from 'sonner';
-import { ArrowLeft, Map as MapIcon } from 'lucide-react';
+import { ArrowLeft, Map as MapIcon, PencilIcon, MapPinIcon } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
 import { FarmMap } from './components/FarmMap';
@@ -18,6 +18,7 @@ import { isSelfIntersecting } from '../../utils/plotUtils';
 export function MapPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const dispatch = useDispatch<AppDispatch>();
   
   // Redux State — get currentFarmId instead of URL param
@@ -32,6 +33,16 @@ export function MapPage() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const locationState = location.state as {
+    selectedPlotId?: string;
+    mode?: DrawingMode;
+    source?: string;
+    preloadPlot?: Plot;
+  } | null;
+  const selectedPlotIdFromUrl = searchParams.get('plotId') ?? undefined;
+  const modeFromUrl = (searchParams.get('mode') as DrawingMode | null) ?? undefined;
+  const targetPlotId = selectedPlotIdFromUrl ?? locationState?.selectedPlotId;
+  const targetMode = modeFromUrl ?? locationState?.mode;
 
   // Redirect to farm selection if no farmId
   if (!currentFarmId) {
@@ -44,18 +55,36 @@ export function MapPage() {
   }, [dispatch, currentFarmId]);
 
   // Xử lý logic từ trang LandPlots chuyển qua
+  // Ưu tiên hiển thị ngay lô vừa click từ danh sách để UX tức thì
   useEffect(() => {
-    const state = location.state as { selectedPlotId?: string; mode?: DrawingMode };
-    if (state?.selectedPlotId && plots.length > 0) {
-      const plot = plots.find(p => p.id === state.selectedPlotId);
-      if (plot) {
-        setSelectedPlot(plot);
-        if (state.mode === 'editing') {
-          handleEditBoundaries(plot);
-        }
+    if (locationState?.preloadPlot) {
+      setSelectedPlot(locationState.preloadPlot);
+      if (targetMode === 'editing') {
+        handleEditBoundaries(locationState.preloadPlot);
       }
     }
-  }, [location.state, plots]);
+  }, [locationState?.preloadPlot, targetMode]);
+
+  // Đồng bộ lại bằng dữ liệu mới nhất từ API
+  useEffect(() => {
+    if (targetPlotId && plots.length > 0) {
+      const plot = plots.find((p) => p.id === targetPlotId);
+      if (plot) {
+        setSelectedPlot(plot);
+        if (targetMode === 'editing') {
+          handleEditBoundaries(plot);
+        } else {
+          setMode('none');
+          setCurrentPath([]);
+        }
+      }
+      return;
+    }
+
+    setSelectedPlot(null);
+    setMode('none');
+    setCurrentPath([]);
+  }, [targetPlotId, targetMode, plots]);
 
   // Tính diện tích tự động (m2 -> ha)
   const computeArea = (path: GeoPoint[]) => {
@@ -161,6 +190,20 @@ export function MapPage() {
     }
   };
 
+  const handleSelectPlot = (plot: Plot) => {
+    setSelectedPlot(plot);
+    if (mode !== 'none') {
+      setMode('none');
+      setCurrentPath([]);
+    }
+  };
+
+  const handleStartDrawForPlot = (plot: Plot) => {
+    setSelectedPlot(plot);
+    setMode('drawing');
+    setCurrentPath([]);
+  };
+
   const handleDeleteBoundary = async () => {
     if (!currentFarmId) return;
     setIsDeleteModalOpen(false);
@@ -218,6 +261,56 @@ export function MapPage() {
 
       {/* Map Container */}
       <div className="flex-1 w-full rounded-2xl border border-gray-100 overflow-hidden relative shadow-inner m-4 mt-2">
+      <div className="absolute top-4 left-4 z-20 w-80 max-h-[70%] overflow-hidden rounded-2xl border border-gray-200 bg-white/95 backdrop-blur-md shadow-xl">
+        <div className="px-4 py-3 border-b border-gray-100">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Danh sách lô đất</p>
+          <p className="text-sm font-semibold text-gray-900">{plots.length} lô trong trang trại</p>
+        </div>
+        <div className="max-h-[420px] overflow-y-auto">
+          {plots.map((plot) => {
+            const hasGeometry = !!plot.geometry?.coordinates?.[0]?.length;
+            const isActive = selectedPlot?.id === plot.id;
+            return (
+              <div
+                key={plot.id}
+                className={`px-4 py-3 border-b border-gray-100 last:border-b-0 ${isActive ? 'bg-emerald-50/70' : 'bg-white'}`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <button
+                    onClick={() => handleSelectPlot(plot)}
+                    className="text-left flex-1"
+                  >
+                    <p className="text-sm font-semibold text-gray-900 truncate">{plot.name}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {hasGeometry ? `${(plot.areaHa ?? 0).toLocaleString('vi-VN')} ha` : 'Chưa có ranh giới'}
+                    </p>
+                  </button>
+                  <span className={`text-[10px] px-2 py-1 rounded-full font-bold ${hasGeometry ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {hasGeometry ? 'Đã vẽ' : 'Chưa vẽ'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <button
+                    onClick={() => handleSelectPlot(plot)}
+                    className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center gap-1"
+                  >
+                    <MapPinIcon className="w-3 h-3" />
+                    Xem vị trí
+                  </button>
+                  <button
+                    onClick={() => (hasGeometry ? handleEditBoundaries(plot) : handleStartDrawForPlot(plot))}
+                    className="text-xs px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1"
+                  >
+                    <PencilIcon className="w-3 h-3" />
+                    {hasGeometry ? 'Chỉnh sửa' : 'Vẽ ranh giới'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       <FarmMap
         plots={plots}
         selectedPlotId={selectedPlot?.id}

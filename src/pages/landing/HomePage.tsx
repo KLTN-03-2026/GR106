@@ -12,11 +12,11 @@ class HomePage extends React.Component {
       <div className="w-full min-h-screen overflow-x-hidden">
         {/* Background wrapper for Navbar + HeroSection */}
         <div
-          className="relative w-full min-h-screen"
+          className="relative w-full min-h-[115vh]"
           style={{
             backgroundImage: `url(${CornBackground})`,
-            backgroundSize: "cover",
-            backgroundPosition: "top",
+            backgroundSize: "100% 115%",
+            backgroundPosition: "center top",
             backgroundAttachment: "scroll",
           }}
         >

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, Fragment } from 'react'
+import { useCallback, useMemo, Fragment, useRef, useEffect } from 'react'
 import {
   GoogleMap,
   Polygon,
@@ -66,23 +66,53 @@ export function FarmMap({
   onEditBoundaries,
 }: FarmMapProps) {
   const { isLoaded } = useGoogleMaps()
+  const mapRef = useRef<google.maps.Map | null>(null)
 
   // Center mặc định (ví dụ khu vực Tiền Giang/ĐBSCL) hoặc dựa trên plot có sẵn
   const center = useMemo(() => {
     if (selectedPlot?.geometry) {
       const path = convertGeoJSONToPath(selectedPlot.geometry)
-      if (path.length > 0) return path[0]
+      if (path.length > 0) return calculateCentroid(path.map((p) => ({ lat: p.lat, lng: p.lng })))
     }
     if (selectedPlot?.boundaries && selectedPlot.boundaries.length > 0) {
-      return selectedPlot.boundaries[0]
+      return calculateCentroid(selectedPlot.boundaries)
     }
     // Default location (e.g., Vietnam)
     return { lat: 10.3606, lng: 106.3653 }
   }, [selectedPlot])
 
-  const onLoad = useCallback(() => {}, [])
+  const onLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map
+  }, [])
 
-  const onUnmount = useCallback(() => {}, [])
+  const onUnmount = useCallback(() => {
+    mapRef.current = null
+  }, [])
+
+  useEffect(() => {
+    if (!mapRef.current || !window.google) return
+
+    const map = mapRef.current
+    const bounds = new window.google.maps.LatLngBounds()
+    let hasBounds = false
+
+    if (selectedPlot?.geometry) {
+      const selectedPath = convertGeoJSONToPath(selectedPlot.geometry)
+      selectedPath.forEach((point) => {
+        bounds.extend(point)
+        hasBounds = true
+      })
+    } else if (selectedPlot?.boundaries?.length) {
+      selectedPlot.boundaries.forEach((point) => {
+        bounds.extend(point)
+        hasBounds = true
+      })
+    }
+
+    if (hasBounds) {
+      map.fitBounds(bounds, 80)
+    }
+  }, [selectedPlot])
 
   const handleMapClick = (e: google.maps.MapMouseEvent) => {
     if (!isDrawing || !e.latLng) return
