@@ -3,157 +3,207 @@ package com.farmapp.farmsmartmanagement.modules.farm.service;
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.common.util.RlsUtils;
+import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
 import com.farmapp.farmsmartmanagement.config.app.AppProperties;
+import com.farmapp.farmsmartmanagement.domain.enums.InvitationStatus;
 import com.farmapp.farmsmartmanagement.domain.enums.UserStatus;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
-import com.farmapp.farmsmartmanagement.modules.auth.dto.request.RegisterRequest;
 import com.farmapp.farmsmartmanagement.modules.auth.event.SendCredentialsEmailEvent;
-import com.farmapp.farmsmartmanagement.modules.auth.service.AuthService;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.request.InvitationRequest;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmInvitationResponse;
+import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmMemberResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmRoleResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.event.SendFarmInvitationEvent;
-import com.farmapp.farmsmartmanagement.modules.farm.mapper.MemberMapper;
+import com.farmapp.farmsmartmanagement.modules.farm.mapper.FarmInvitationMapper;
+import com.farmapp.farmsmartmanagement.modules.farm.mapper.FarmMemberMapper;
+import com.farmapp.farmsmartmanagement.modules.farm.mapper.FarmRoleMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.event.EventPublicationInterceptor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class FarmInvitationService {
     FarmMemberRepository farmMemberRepository;
     FarmRoleRepository farmRoleRepository;
-    MemberMapper memberMapper;
     FarmRepository farmRepository;
     UserRoleRepository  userRoleRepository;
-
+    InvitationRepository invitationRepository;
     RoleRepository roleRepository;
     UserRepository userRepository;
+
     PasswordEncoder passwordEncoder;
+
+    FarmMemberMapper farmMemberMapper;
+    FarmInvitationMapper farmInvitationMapper;
+    FarmRoleMapper farmRoleMapper;
 
     RlsUtils rlsUtils;
 
     ApplicationEventPublisher eventPublisher;
 
+    SecurityUtils securityUtils;
+
 
     AppProperties appProperties;
 
-    public List<FarmRoleResponse> findAll() {
-        return memberMapper.toResponses(farmRoleRepository.findAll());
+    public List<FarmRoleResponse> findAllFarmRole() {
+        return farmRoleMapper.toResponses(farmRoleRepository.findAll());
     }
 
 
+    @Transactional(readOnly = true)
+    public List<FarmMemberResponse> findAllFarmMember(UUID farmId) {
+        List<FarmMemberEntity> farmMember = farmMemberRepository
+                .findAllByFarm_Id(farmId);
+
+        return farmMemberMapper.toFarmMemberResponses(farmMember);
+    }
+
     @Transactional
-    public FarmInvitationResponse inviteMember(UUID farmId, InvitationRequest request) {
+    public void inviteMember(UUID farmId, InvitationRequest request) {
+        if(securityUtils.getCurrentUserEmail()!=null && securityUtils.getCurrentUserEmail().equals(request.getEmail())) {
+            throw new AppException(ErrorCode.CANNOT_INVITE_YOUSELF);
+        }
+
         FarmEntity farm = farmRepository.findById(farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
 
         FarmRoleEntity farmRole = farmRoleRepository.findById(request.getRoleId())
                 .orElseThrow(() -> new AppException(ErrorCode.FARM_ROLE_NOT_FOUND));
 
-        // Tìm hoặc tạo user
-        UserEntity user;
-        boolean isNewUser = false;
-        String rawPassword;
+        // Kiểm tra đã có invitation PENDING chưa
+        boolean alreadyInvited = invitationRepository
+                .existsByEmailAndFarm_IdAndStatus(
+                        request.getEmail(), farmId, InvitationStatus.PENDING);
+        if (alreadyInvited)
+            throw new AppException(ErrorCode.INVITATION_ALREADY_SENT);
 
-        Optional<UserEntity> userOpt = userRepository.findByEmail(request.getEmail());
+        // Kiểm tra đã là member active chưa
+        userRepository.findByEmail(request.getEmail()).ifPresent(user -> {
+            farmMemberRepository.findByFarm_IdAndUser_Id(farmId, user.getId())
+                    .ifPresent(member -> {
+                        if (member.getIsActive())
+                            throw new AppException(ErrorCode.FARM_MEMBER_ALREADY_EXISTS);
+                    });
+        });
 
-        if (userOpt.isEmpty()) {
-            // User chưa có tài khoản — tạo với password random
-            rawPassword = generateTempPassword(); // giữ lại để gửi mail
-            isNewUser = true;
+        UUID invitedBy = securityUtils.getCurrentUserId();
 
-            user = rlsUtils.runAsAdmin(() -> {
+        // Tạo invitation
+        InvitationEntity invitation = new InvitationEntity();
+        invitation.setFarm(farm);
+        invitation.setInvitedBy(userRepository.getReferenceById(invitedBy));
+        invitation.setEmail(request.getEmail());
+        invitation.setFarmRole(farmRole);
+        invitation.setStatus(InvitationStatus.PENDING);
+        invitation.setExpiresAt(Instant.now().plus(7, ChronoUnit.DAYS));
+        invitation.setCreatedAt(Instant.now());
+        invitationRepository.save(invitation);
+
+        // Tìm hoặc tạo user — nhưng KHÔNG add vào farm ngay
+        boolean isNewUser = userRepository.findByEmail(request.getEmail()).isEmpty();
+        String rawPassword = null;
+
+        if (isNewUser) {
+            rawPassword = generateTempPassword();
+            String finalRaw = rawPassword;
+
+            rlsUtils.runAsAdmin(() -> {
                 UserEntity newUser = new UserEntity();
                 newUser.setEmail(request.getEmail());
-                newUser.setPassword(passwordEncoder.encode(rawPassword));
+                newUser.setPassword(passwordEncoder.encode(finalRaw));
                 newUser.setFullName("Vui lòng cập nhật tên");
-                newUser.setStatus(UserStatus.ACTIVE); // active luôn vì farm đã xác nhận
+                newUser.setStatus(UserStatus.PENDING); // PENDING — chưa accept
                 newUser.setIsLocked(false);
                 userRepository.save(newUser);
 
                 RoleEntity userRole = roleRepository.findByName("USER")
                         .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
                 userRoleRepository.save(new UserRoleEntity(newUser, userRole));
-
-                return newUser;
             });
-        } else {
-            rawPassword = null;
-            user = userOpt.get();
         }
 
-        // Kiểm tra đã là thành viên chưa
-        Optional<FarmMemberEntity> memberOpt = farmMemberRepository
-                .findByFarm_IdAndUser_Id(farmId, user.getId());
+        // Gửi mail sau khi commit
+        String acceptLink = appProperties.getFrontendUrl()
+                + "/invitations/" + invitation.getId() + "/accept";
 
-        FarmMemberEntity member;
-
-        if (memberOpt.isPresent()) {
-            member = memberOpt.get();
-
-            if (member.getIsActive() && member.getFarmRole().getId().equals(request.getRoleId())) {
-                throw new AppException(ErrorCode.FARM_MEMBER_ALREADY_EXISTS);
-            }
-
-            // Đã là thành viên nhưng inactive hoặc đổi role
-            member.setFarmRole(farmRole);
-            member.setIsActive(true);
-            farmMemberRepository.save(member);
-        } else {
-            // Tạo thành viên mới
-            member = new FarmMemberEntity();
-            member.setFarm(farm);
-            member.setUser(user);
-            member.setFarmRole(farmRole);
-            member.setIsActive(false);
-            farmMemberRepository.save(member);
-        }
-
-        // Publish event gửi mail SAU KHI transaction commit
         if (isNewUser) {
-            // Gửi mail kèm credentials
-            String finalRawPassword = rawPassword;
+            String finalRaw = rawPassword;
             eventPublisher.publishEvent(new SendCredentialsEmailEvent(
-                    this,
-                    user.getFullName(),
-                    user.getEmail(),
-                    finalRawPassword,
-                    farm.getName(),
-                    appProperties.getFrontendUrl() + "/login"
+                    this, request.getEmail(), request.getEmail(),
+                    finalRaw, farm.getName(), acceptLink
             ));
         } else {
-            // Gửi mail thông báo được mời (không có password)
             eventPublisher.publishEvent(new SendFarmInvitationEvent(
-                    this,
-                    user.getFullName(),
-                    user.getEmail(),
-                    farm.getName(),
-                    appProperties.getFrontendUrl() + "/farms/" + farmId
+                    this, request.getEmail(), request.getEmail(),
+                    farm.getName(), acceptLink
             ));
         }
+    }
 
-        return FarmInvitationResponse.builder()
-                .id(member.getId())
-                .farmId(farm.getId())
-                .memberId(user.getId())
-                .role(FarmRoleResponse.builder()
-                        .id(farmRole.getId())
-                        .name(farmRole.getName())
-                        .description(farmRole.getDescription())
-                        .build())
-                .build();
+    @Transactional
+    public FarmMemberResponse acceptInvitation(UUID invitationId) {
+        String email = securityUtils.getCurrentUserEmail();
+
+        InvitationEntity invitation = rlsUtils.runAsAdmin(() ->
+                invitationRepository.findById(invitationId)
+                        .orElseThrow(() -> new AppException(ErrorCode.INVITATION_NOT_FOUND))
+        );
+
+        // Validate
+        if (!invitation.getEmail().equals(email))
+            throw new AppException(ErrorCode.FORBIDDEN);
+
+        if (invitation.getStatus() != InvitationStatus.PENDING)
+            throw new AppException(ErrorCode.INVITATION_ALREADY_USED);
+
+        if (invitation.getExpiresAt().isBefore(Instant.now()))
+            throw new AppException(ErrorCode.INVITATION_EXPIRED);
+
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        // Kích hoạt user nếu là user mới
+        if (user.getStatus() == UserStatus.PENDING) {
+            user.setStatus(UserStatus.ACTIVE);
+            userRepository.save(user);
+        }
+
+        // Tạo hoặc reactivate farm member
+        return rlsUtils.runAsAdmin(() ->{
+            FarmMemberEntity member = farmMemberRepository
+                .findByFarm_IdAndUser_Id(invitation.getFarm().getId(), user.getId())
+                .orElse(new FarmMemberEntity());
+
+            member.setFarm(invitation.getFarm());
+            member.setUser(user);
+            member.setFarmRole(invitation.getFarmRole());
+            member.setIsActive(true);
+            member.setJoinedAt(Instant.now());
+            farmMemberRepository.save(member);
+
+            // Update invitation status
+            invitation.setStatus(InvitationStatus.ACCEPTED);
+            invitation.setAcceptedAt(Instant.now());
+            invitationRepository.save(invitation);
+
+            return farmMemberMapper.toFarmMemberResponse(member);
+        });
     }
 
     private String generateTempPassword() {
@@ -167,4 +217,24 @@ public class FarmInvitationService {
         return sb.toString();
     }
 
+
+    // Service — gộp lại
+    @Transactional(readOnly = true)
+    public List<FarmInvitationResponse> findAllMyInvitations(InvitationStatus status) {
+        String email = securityUtils.getCurrentUserEmail();
+        return rlsUtils.runAsAdmin(() -> {
+            List<InvitationEntity> invitations = status == null
+                    ? invitationRepository.findAllByEmail(email)
+                    : invitationRepository.findAllByEmailAndStatus(email, status);
+            return farmInvitationMapper.toResponses(invitations);
+        });
+    }
+
+    @Transactional(readOnly = true)
+    public List<FarmInvitationResponse> findAllInvitationsByFarm(UUID farmId, InvitationStatus status) {
+        List<InvitationEntity> invitations = status == null
+                ? invitationRepository.findAllByFarm_Id(farmId)
+                : invitationRepository.findAllByFarm_IdAndStatus(farmId, status);
+        return farmInvitationMapper.toResponses(invitations);
+    }
 }

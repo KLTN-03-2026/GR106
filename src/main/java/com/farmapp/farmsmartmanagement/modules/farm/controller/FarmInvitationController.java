@@ -4,8 +4,10 @@ package com.farmapp.farmsmartmanagement.modules.farm.controller;
 import com.farmapp.farmsmartmanagement.common.annotation.RequiresFarmToken;
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
 import com.farmapp.farmsmartmanagement.common.response.ResponseUtil;
+import com.farmapp.farmsmartmanagement.domain.enums.InvitationStatus;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.request.InvitationRequest;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmInvitationResponse;
+import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmMemberResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmRoleResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.service.FarmInvitationService;
 import jakarta.validation.Valid;
@@ -29,21 +31,61 @@ public class FarmInvitationController {
     public ResponseEntity<ApiResponse<List<FarmRoleResponse>>> findAllFarmRoles()
     {
         return ResponseUtil.success(
-                farmInvitationService.findAll()
+                farmInvitationService.findAllFarmRole()
         );
     }
 
-    @PostMapping("/api/v1/farms/{farmId}/member")
+    @GetMapping("/api/v1/farms/{farmId}/members")
     @RequiresFarmToken
-    public ResponseEntity<ApiResponse<FarmInvitationResponse>> InviteFarmMember(
+    public ResponseEntity<ApiResponse<List<FarmMemberResponse>>> findAllFarmMember(
+            @PathVariable("farmId") UUID farmId
+    ) {
+        return ResponseUtil.success(
+                farmInvitationService.findAllFarmMember(
+                        farmId
+                )
+        );
+    }
+
+    @PostMapping("/api/v1/farms/{farmId}/members")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<Void>> InviteFarmMember(
             @PathVariable("farmId")UUID farmId,
             @RequestBody @Valid InvitationRequest invitationRequest
     ) {
+        farmInvitationService.inviteMember(farmId, invitationRequest);
+
+        return ResponseUtil.noContent();
+    }
+
+    // FarmInvitationController.java — thêm 2 endpoint
+
+    @GetMapping("/api/v1/invitations/me")
+    public ResponseEntity<ApiResponse<List<FarmInvitationResponse>>> findAllMyInvitations(
+            @RequestParam(required = false) InvitationStatus status
+    ) {
         return ResponseUtil.success(
-                farmInvitationService.inviteMember(
-                        farmId,
-                        invitationRequest
-                )
+                farmInvitationService.findAllMyInvitations(status)
+        );
+    }
+
+    @PostMapping("/api/v1/invitations/{invitationId}/accept")
+    public ResponseEntity<ApiResponse<FarmMemberResponse>> acceptInvitation(
+            @PathVariable UUID invitationId
+    ) {
+        return ResponseUtil.success(
+                farmInvitationService.acceptInvitation(invitationId)
+        );
+    }
+
+    @GetMapping("/api/v1/farms/{farmId}/invitations")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<List<FarmInvitationResponse>>> findAllInvitationsByFarm(
+            @PathVariable UUID farmId,
+            @RequestParam(required = false) InvitationStatus status
+    ) {
+        return ResponseUtil.success(
+                farmInvitationService.findAllInvitationsByFarm(farmId, status)
         );
     }
 }

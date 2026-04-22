@@ -51,7 +51,7 @@ public class FarmAuthService {
         List<String> systemRoles = permissionRepository.findSystemRoles(userId);
 
         return new FarmSelectResponse(
-                jwtProvider.generateFarmToken(userId, farmId, systemRoles, permissions)
+                jwtProvider.generateFarmToken(userId, member.getUser().getEmail(), farmId, systemRoles, permissions)
         );
     }
 }

@@ -80,9 +80,14 @@ public enum ErrorCode {
     FARM_MEMBER_ALREADY_EXISTS(409,"Thành viên đã tồn tại trong trang trại" ,HttpStatus.CONFLICT ),
     PAYMENT_NOT_FOUND(404,"Không tìm thấy giao dịch" ,HttpStatus.NOT_FOUND ),
     YOU_HAVE_NOT_ANY_INVITATION(404,"Bạn không có bất kỳ lời mời vào trang trại nào" ,HttpStatus.NOT_FOUND ),
-    PLAN_STAGE_NOT_COVER_TASK(409, "Thời gian giai đoạn không bao phủ được công việc", HttpStatus.CONFLICT)
+    PLAN_STAGE_NOT_COVER_TASK(409, "Thời gian giai đoạn không bao phủ được công việc", HttpStatus.CONFLICT),
 
-    ;
+    INVITATION_ALREADY_SENT(409,"Bạn đã mời người dùng này" , HttpStatus.CONFLICT),
+    INVITATION_NOT_FOUND(404,"Không tìm thấy lời mời" ,HttpStatus.NOT_FOUND ),
+    INVITATION_ALREADY_USED(409, "Lời mời đã được sử dụng", HttpStatus.CONFLICT),
+    INVITATION_EXPIRED(409, "Lời mời đã hết hạn", HttpStatus.CONFLICT),
+
+    CANNOT_INVITE_YOUSELF(409,"Bạn không thể tự mời chính mình" ,HttpStatus.CONFLICT ),;
 
     private final int code;
     private final String message;
