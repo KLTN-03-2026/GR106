@@ -27,6 +27,9 @@ public class UserEntity extends BaseEntity {
 
     private String fullName;
 
+    @Column(name = "avatar_url")
+    String avatarUrl;
+
     @Column(name = "password_hash")
     private String password;
 
