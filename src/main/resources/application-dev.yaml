@@ -8,6 +8,11 @@ spring:
     enabled: false
     locations: classpath:db/migration_dev
 
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+
   data:
     redis:
       host: localhost
