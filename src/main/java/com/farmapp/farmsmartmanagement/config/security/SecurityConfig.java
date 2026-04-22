@@ -38,7 +38,9 @@ public class SecurityConfig {
                     "/api/v1/payment/ipn",
 
                     "/api/v1/crop-types",
-                    "/api/v1/crops"
+                    "/api/v1/crops",
+
+                    "/api/v1/invitations/*/preview"
             };
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {

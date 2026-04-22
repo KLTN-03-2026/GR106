@@ -9,6 +9,7 @@ import com.farmapp.farmsmartmanagement.modules.farm.dto.request.InvitationReques
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmInvitationResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmMemberResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmRoleResponse;
+import com.farmapp.farmsmartmanagement.modules.farm.dto.response.InvitationPreviewResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.service.FarmInvitationService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -58,6 +59,28 @@ public class FarmInvitationController {
         return ResponseUtil.noContent();
     }
 
+    // Hủy lời mời
+    @PatchMapping("/api/v1/farms/{farmId}/invitations/{invitationId}/cancel")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<Void>> cancelInvitation(
+            @PathVariable UUID farmId,
+            @PathVariable UUID invitationId
+    ) {
+        farmInvitationService.cancelInvitation(farmId, invitationId);
+        return ResponseUtil.noContent();
+    }
+
+    // Xóa thành viên
+    @DeleteMapping("/api/v1/farms/{farmId}/members/{memberId}")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<Void>> removeMember(
+            @PathVariable UUID farmId,
+            @PathVariable UUID memberId
+    ) {
+        farmInvitationService.removeMember(farmId, memberId);
+        return ResponseUtil.noContent();
+    }
+
     // FarmInvitationController.java — thêm 2 endpoint
 
     @GetMapping("/api/v1/invitations/me")
@@ -86,6 +109,16 @@ public class FarmInvitationController {
     ) {
         return ResponseUtil.success(
                 farmInvitationService.findAllInvitationsByFarm(farmId, status)
+        );
+    }
+
+    // Không cần auth — dùng để hiển thị thông tin trước khi login
+    @GetMapping("/api/v1/invitations/{invitationId}/preview")
+    public ResponseEntity<ApiResponse<InvitationPreviewResponse>> previewInvitation(
+            @PathVariable UUID invitationId
+    ) {
+        return ResponseUtil.success(
+                farmInvitationService.previewInvitation(invitationId)
         );
     }
 }

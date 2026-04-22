@@ -14,6 +14,7 @@ import com.farmapp.farmsmartmanagement.modules.farm.dto.request.InvitationReques
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmInvitationResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmMemberResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmRoleResponse;
+import com.farmapp.farmsmartmanagement.modules.farm.dto.response.InvitationPreviewResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.event.SendFarmInvitationEvent;
 import com.farmapp.farmsmartmanagement.modules.farm.mapper.FarmInvitationMapper;
 import com.farmapp.farmsmartmanagement.modules.farm.mapper.FarmMemberMapper;
@@ -236,5 +237,55 @@ public class FarmInvitationService {
                 ? invitationRepository.findAllByFarm_Id(farmId)
                 : invitationRepository.findAllByFarm_IdAndStatus(farmId, status);
         return farmInvitationMapper.toResponses(invitations);
+    }
+
+    @Transactional
+    public void cancelInvitation(UUID farmId, UUID invitationId) {
+        InvitationEntity invitation = invitationRepository.findById(invitationId)
+                .orElseThrow(() -> new AppException(ErrorCode.INVITATION_NOT_FOUND));
+
+        if (!invitation.getFarm().getId().equals(farmId))
+            throw new AppException(ErrorCode.FORBIDDEN);
+
+        if (invitation.getStatus() != InvitationStatus.PENDING)
+            throw new AppException(ErrorCode.INVITATION_ALREADY_USED);
+
+        invitation.setStatus(InvitationStatus.CANCELLED);
+        invitationRepository.save(invitation);
+    }
+
+    @Transactional
+    public void removeMember(UUID farmId, UUID memberId) {
+        FarmMemberEntity member = farmMemberRepository
+                .findByFarm_IdAndUser_Id(farmId, memberId)
+                .orElseThrow(() -> new AppException(ErrorCode.FARM_MEMBER_NOT_FOUND));
+
+        if (member.getFarmRole().getName().equals("OWNER"))
+            throw new AppException(ErrorCode.CANNOT_REMOVE_OWNER);
+
+        member.setIsActive(false);
+        farmMemberRepository.save(member);
+    }
+
+    // Service
+    public InvitationPreviewResponse previewInvitation(UUID invitationId) {
+        return rlsUtils.runAsAdmin(() -> {
+            InvitationEntity inv = invitationRepository.findById(invitationId)
+                    .orElseThrow(() -> new AppException(ErrorCode.INVITATION_NOT_FOUND));
+
+            if (inv.getStatus() != InvitationStatus.PENDING)
+                throw new AppException(ErrorCode.INVITATION_ALREADY_USED);
+
+            if (inv.getExpiresAt().isBefore(Instant.now()))
+                throw new AppException(ErrorCode.INVITATION_EXPIRED);
+
+            return InvitationPreviewResponse.builder()
+                    .farmName(inv.getFarm().getName())
+                    .inviterName(inv.getInvitedBy().getFullName())
+                    .role(inv.getFarmRole().getName())
+                    .email(inv.getEmail())
+                    .expiresAt(inv.getExpiresAt().toString())
+                    .build();
+        });
     }
 }

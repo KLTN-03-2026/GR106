@@ -55,6 +55,7 @@ public class InvitationEntity {
     @Column(name = "accepted_at")
     Instant acceptedAt;
 
+    @Column(name = "created_at")
     Instant createdAt;
 
 

@@ -6,14 +6,18 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.FieldDefaults;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
-public class FarmInvitationResponse {    UUID id;
+public class FarmInvitationResponse {
+    UUID id;
     FarmSupperSummaryResponse farm;
     FarmRoleResponse role;
     InvitationStatus status;
     InviterResponse inviter;
+    Instant createdAt;
+    Instant expiresAt;
 }
