@@ -14,6 +14,7 @@ import java.util.UUID;
 @Builder
 public class FarmInvitationResponse {
     UUID id;
+    String email;
     FarmSupperSummaryResponse farm;
     FarmRoleResponse role;
     InvitationStatus status;
