@@ -47,6 +47,67 @@ export function isSelfIntersecting(path: GeoPoint[]): boolean {
 }
 
 /**
+ * Kiểm tra một điểm có nằm trong polygon không (Ray Casting Algorithm).
+ */
+export function pointInPolygon(point: GeoPoint, polygon: GeoPoint[]): boolean {
+  if (polygon.length < 3) return false;
+  let inside = false;
+  const x = point.lat;
+  const y = point.lng;
+
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].lat, yi = polygon[i].lng;
+    const xj = polygon[j].lat, yj = polygon[j].lng;
+    const intersect =
+      yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+/**
+ * Kiểm tra hai polygon có chồng chéo nhau không.
+ * Trả về true nếu: cạnh cắt nhau HOẶC một polygon nằm hoàn toàn trong polygon kia.
+ */
+export function polygonsOverlap(polyA: GeoPoint[], polyB: GeoPoint[]): boolean {
+  if (polyA.length < 3 || polyB.length < 3) return false;
+
+  // Kiểm tra 1: Bất kỳ cặp cạnh nào cắt nhau
+  for (let i = 0; i < polyA.length; i++) {
+    const a1 = polyA[i];
+    const a2 = polyA[(i + 1) % polyA.length];
+    for (let j = 0; j < polyB.length; j++) {
+      const b1 = polyB[j];
+      const b2 = polyB[(j + 1) % polyB.length];
+      if (segmentsIntersect(a1, a2, b1, b2)) return true;
+    }
+  }
+
+  // Kiểm tra 2: Một điểm của A nằm trong B (A nằm trong B)
+  if (pointInPolygon(polyA[0], polyB)) return true;
+  // Kiểm tra 3: Một điểm của B nằm trong A (B nằm trong A)
+  if (pointInPolygon(polyB[0], polyA)) return true;
+
+  return false;
+}
+
+/**
+ * Chuyển đổi geometry GeoJSON của một Plot sang mảng GeoPoint.
+ */
+export function getPlotPath(plot: { geometry?: any; boundaries?: GeoPoint[] }): GeoPoint[] {
+  if (plot.geometry?.type === 'Polygon' && plot.geometry.coordinates?.[0]) {
+    const coords: GeoPoint[] = plot.geometry.coordinates[0].map((c: number[]) => ({
+      lng: c[0],
+      lat: c[1],
+    }));
+    // Bỏ điểm cuối trùng điểm đầu của GeoJSON Polygon
+    if (coords.length > 1) coords.pop();
+    return coords;
+  }
+  return plot.boundaries ?? [];
+}
+
+/**
  * Tính toán tọa độ trọng tâm (Centroid) của một đa giác.
  * Đây là phiên bản đơn giản dùng trung bình cộng các đỉnh.
  */

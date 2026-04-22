@@ -1,4 +1,4 @@
-import { useCallback, useMemo, Fragment, useRef, useEffect } from 'react'
+import { useCallback, useMemo, Fragment, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
 import {
   GoogleMap,
   Polygon,
@@ -8,10 +8,10 @@ import {
 import { useGoogleMaps } from '../../../providers/GoogleMapsProvider'
 import { Plot, GeoPoint } from '../../../types/plot'
 import { PlotInfoPopup } from './PlotInfoPopup'
-import { getColorFromId, calculateCentroid } from '../../../utils/plotUtils'
+import { getColorFromId, calculateCentroid, polygonsOverlap, getPlotPath } from '../../../utils/plotUtils'
 
 const MAP_OPTIONS: google.maps.MapOptions = {
-  mapTypeId: 'roadmap',
+  mapTypeId: 'satellite',
   disableDefaultUI: false,
   zoomControl: true,
   mapTypeControl: false,
@@ -28,6 +28,11 @@ const MAP_OPTIONS: google.maps.MapOptions = {
   ],
 }
 
+export interface FarmMapHandle {
+  /** Đọc path hiện tại của polygon đang chỉnh sửa từ Google Maps instance */
+  getEditedPath: () => GeoPoint[]
+}
+
 interface FarmMapProps {
   plots: Plot[]
   selectedPlotId?: string
@@ -35,15 +40,16 @@ interface FarmMapProps {
   isEditing: boolean
   currentPath: GeoPoint[]
   onPathChange: (path: GeoPoint[]) => void
-  onPlotSelect: (plot: Plot| null) => void
+  onPlotSelect: (plot: Plot | null) => void
   selectedPlot: Plot | null
   onEditBoundaries: (plot: Plot) => void
+  /** Callback khi trạng thái chồng chéo thay đổi (real-time) */
+  onOverlapChange?: (isOverlapping: boolean) => void
 }
 
 const convertGeoJSONToPath = (geometry?: any): google.maps.LatLngLiteral[] => {
   if (!geometry || geometry.type !== 'Polygon' || !geometry.coordinates) return []
   try {
-    // GeoJSON Polygon coordinates: [[[lng, lat], [lng, lat], ...]]
     return geometry.coordinates[0].map((coord: number[]) => ({
       lng: coord[0],
       lat: coord[1],
@@ -54,21 +60,82 @@ const convertGeoJSONToPath = (geometry?: any): google.maps.LatLngLiteral[] => {
   }
 }
 
-export function FarmMap({
-  plots,
-  selectedPlotId,
-  isDrawing,
-  isEditing,
-  currentPath,
-  onPathChange,
-  onPlotSelect,
-  selectedPlot,
-  onEditBoundaries,
-}: FarmMapProps) {
+export const FarmMap = forwardRef<FarmMapHandle, FarmMapProps>(function FarmMap(
+  {
+    plots,
+    selectedPlotId,
+    isDrawing,
+    isEditing,
+    currentPath,
+    onPathChange,
+    onPlotSelect,
+    selectedPlot,
+    onEditBoundaries,
+    onOverlapChange,
+  },
+  ref
+) {
   const { isLoaded } = useGoogleMaps()
   const mapRef = useRef<google.maps.Map | null>(null)
 
-  // Center mặc định (ví dụ khu vực Tiền Giang/ĐBSCL) hoặc dựa trên plot có sẵn
+  // Ref cho polygon đang chỉnh sửa (editing mode)
+  const editPolyRef = useRef<google.maps.Polygon | null>(null)
+  // Listeners của editing polygon để cleanup
+  const editListenersRef = useRef<google.maps.MapsEventListener[]>([])
+  // RAF handle để throttle overlap check
+  const rafRef = useRef<number | null>(null)
+  // Trạng thái chồng chéo hiện tại (dùng ref để tránh stale closure)
+  const isOverlappingRef = useRef(false)
+
+  // Expose getEditedPath() để MapPage có thể đọc khi Save
+  useImperativeHandle(ref, () => ({
+    getEditedPath(): GeoPoint[] {
+      if (!editPolyRef.current) return currentPath
+      const mvcPath = editPolyRef.current.getPath()
+      const path: GeoPoint[] = []
+      for (let i = 0; i < mvcPath.getLength(); i++) {
+        path.push({ lat: mvcPath.getAt(i).lat(), lng: mvcPath.getAt(i).lng() })
+      }
+      return path
+    },
+  }))
+
+  // Danh sách plots khác (loại trừ plot đang edit để không check overlap với chính nó)
+  const otherPlots = useMemo(
+    () => plots.filter((p) => p.id !== selectedPlot?.id),
+    [plots, selectedPlot]
+  )
+
+  // Kiểm tra overlap của path với các plots khác
+  const checkOverlap = useCallback(
+    (path: GeoPoint[]): boolean => {
+      if (path.length < 3) return false
+      return otherPlots.some((p) => {
+        const otherPath = getPlotPath(p)
+        if (otherPath.length < 3) return false
+        return polygonsOverlap(path, otherPath)
+      })
+    },
+    [otherPlots]
+  )
+
+  // Thông báo và cập nhật màu polygon khi overlap thay đổi
+  const notifyOverlap = useCallback(
+    (poly: google.maps.Polygon, hasOverlap: boolean) => {
+      if (hasOverlap === isOverlappingRef.current) return // Không thay đổi → bỏ qua
+      isOverlappingRef.current = hasOverlap
+      onOverlapChange?.(hasOverlap)
+
+      // Đổi màu polygon real-time
+      poly.setOptions({
+        fillColor: hasOverlap ? '#ef4444' : '#10b981',
+        strokeColor: hasOverlap ? '#dc2626' : '#059669',
+      })
+    },
+    [onOverlapChange]
+  )
+
+  // Center bản đồ
   const center = useMemo(() => {
     if (selectedPlot?.geometry) {
       const path = convertGeoJSONToPath(selectedPlot.geometry)
@@ -77,7 +144,6 @@ export function FarmMap({
     if (selectedPlot?.boundaries && selectedPlot.boundaries.length > 0) {
       return calculateCentroid(selectedPlot.boundaries)
     }
-    // Default location (e.g., Vietnam)
     return { lat: 10.3606, lng: 106.3653 }
   }, [selectedPlot])
 
@@ -89,16 +155,15 @@ export function FarmMap({
     mapRef.current = null
   }, [])
 
+  // Auto fitBounds khi selectedPlot thay đổi
   useEffect(() => {
     if (!mapRef.current || !window.google) return
-
     const map = mapRef.current
     const bounds = new window.google.maps.LatLngBounds()
     let hasBounds = false
 
     if (selectedPlot?.geometry) {
-      const selectedPath = convertGeoJSONToPath(selectedPlot.geometry)
-      selectedPath.forEach((point) => {
+      convertGeoJSONToPath(selectedPlot.geometry).forEach((point) => {
         bounds.extend(point)
         hasBounds = true
       })
@@ -108,27 +173,123 @@ export function FarmMap({
         hasBounds = true
       })
     }
-
-    if (hasBounds) {
-      map.fitBounds(bounds, 80)
-    }
+    if (hasBounds) map.fitBounds(bounds, 80)
   }, [selectedPlot])
 
-  const handleMapClick = (e: google.maps.MapMouseEvent) => {
-    if (!isDrawing || !e.latLng) return
-
-    const newPoint = {
-      lat: e.latLng.lat(),
-      lng: e.latLng.lng(),
+  // Reset overlap state khi thoát khỏi drawing/editing
+  useEffect(() => {
+    if (!isDrawing) {
+      isOverlappingRef.current = false
+      onOverlapChange?.(false)
     }
-    onPathChange([...currentPath, newPoint])
+  }, [isDrawing, onOverlapChange])
+
+  // Cleanup RAF khi unmount
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+      editListenersRef.current.forEach((l) => l.remove())
+      editListenersRef.current = []
+    }
+  }, [])
+
+  // Handler click bản đồ (chỉ dùng khi đang vẽ mới, không phải editing)
+  const handleMapClick = (e: google.maps.MapMouseEvent) => {
+    if (!isDrawing || isEditing || !e.latLng) return
+
+    const newPoint = { lat: e.latLng.lat(), lng: e.latLng.lng() }
+    const newPath = [...currentPath, newPoint]
+    onPathChange(newPath)
   }
 
-  if (!isLoaded) return (
-    <div className="w-full h-full bg-gray-100 flex items-center justify-center animate-pulse">
-      <div className="text-emerald-700 font-black text-xl animate-bounce">Đang tải bản đồ...</div>
-    </div>
+  // Handler onLoad cho editing polygon
+  const handleEditPolyLoad = useCallback(
+    (poly: google.maps.Polygon) => {
+      editPolyRef.current = poly
+      const mvcPath = poly.getPath()
+
+      const scheduleCheck = () => {
+        if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = null
+          const newPath: GeoPoint[] = []
+          for (let i = 0; i < mvcPath.getLength(); i++) {
+            newPath.push({ lat: mvcPath.getAt(i).lat(), lng: mvcPath.getAt(i).lng() })
+          }
+          const hasOverlap = checkOverlap(newPath)
+          notifyOverlap(poly, hasOverlap)
+        })
+      }
+
+      // Cleanup listeners cũ
+      editListenersRef.current.forEach((l) => l.remove())
+      editListenersRef.current = [
+        mvcPath.addListener('set_at', scheduleCheck),
+        mvcPath.addListener('insert_at', scheduleCheck),
+        mvcPath.addListener('remove_at', scheduleCheck),
+      ]
+
+      // Kiểm tra overlap ngay khi bắt đầu edit
+      const initialPath = currentPath
+      const hasOverlap = checkOverlap(initialPath)
+      isOverlappingRef.current = hasOverlap
+      onOverlapChange?.(hasOverlap)
+    },
+    [checkOverlap, notifyOverlap, onOverlapChange, currentPath]
   )
+
+  const handleEditPolyUnmount = useCallback(() => {
+    editListenersRef.current.forEach((l) => l.remove())
+    editListenersRef.current = []
+    editPolyRef.current = null
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+    rafRef.current = null
+  }, [])
+
+  // Handler onLoad cho drawing polygon
+  const handleDrawPolyLoad = useCallback(
+    (poly: google.maps.Polygon) => {
+      const mvcPath = poly.getPath()
+
+      const scheduleCheck = () => {
+        if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = null
+          const newPath: GeoPoint[] = []
+          for (let i = 0; i < mvcPath.getLength(); i++) {
+            newPath.push({ lat: mvcPath.getAt(i).lat(), lng: mvcPath.getAt(i).lng() })
+          }
+          onPathChange(newPath)
+          const hasOverlap = checkOverlap(newPath)
+          notifyOverlap(poly, hasOverlap)
+        })
+      }
+
+      mvcPath.addListener('set_at', scheduleCheck)
+      mvcPath.addListener('insert_at', scheduleCheck)
+      mvcPath.addListener('remove_at', scheduleCheck)
+    },
+    [checkOverlap, notifyOverlap, onPathChange]
+  )
+
+  // Kiểm tra overlap khi currentPath thay đổi (drawing mode, sau mỗi click)
+  useEffect(() => {
+    if (!isDrawing || isEditing || currentPath.length < 3) return
+    // Drawing mode: check overlap sau mỗi click
+    // Không có poly ref → chỉ cập nhật state overlap (poly tự đổi màu qua listener)
+    const hasOverlap = checkOverlap(currentPath)
+    if (hasOverlap !== isOverlappingRef.current) {
+      isOverlappingRef.current = hasOverlap
+      onOverlapChange?.(hasOverlap)
+    }
+  }, [currentPath, isDrawing, isEditing, checkOverlap, onOverlapChange])
+
+  if (!isLoaded)
+    return (
+      <div className="w-full h-full bg-gray-100 flex items-center justify-center animate-pulse">
+        <div className="text-emerald-700 font-black text-xl animate-bounce">Đang tải bản đồ...</div>
+      </div>
+    )
 
   return (
     <GoogleMap
@@ -142,11 +303,11 @@ export function FarmMap({
     >
       {/* 1. Hiển thị tất cả các lô đất hiện có */}
       {plots.map((plot) => {
-        const path = plot.geometry 
-          ? convertGeoJSONToPath(plot.geometry) 
-          : (plot.boundaries || [])
-
+        const path = plot.geometry ? convertGeoJSONToPath(plot.geometry) : plot.boundaries || []
         if (path.length < 3) return null
+
+        // Ẩn polygon của plot đang edit (vì có editing polygon riêng)
+        const isBeingEdited = isEditing && selectedPlotId === plot.id
 
         return (
           <Fragment key={plot.id}>
@@ -155,50 +316,37 @@ export function FarmMap({
               onClick={() => onPlotSelect(plot)}
               options={{
                 fillColor: getColorFromId(plot.id),
-                fillOpacity: selectedPlotId === plot.id ? 0.6 : 0.3,
+                fillOpacity: isBeingEdited ? 0 : selectedPlotId === plot.id ? 0.6 : 0.3,
                 strokeColor: getColorFromId(plot.id),
-                strokeOpacity: 0.8,
+                strokeOpacity: isBeingEdited ? 0 : 0.8,
                 strokeWeight: selectedPlotId === plot.id ? 4 : 2,
                 zIndex: selectedPlotId === plot.id ? 2 : 1,
               }}
             />
-            {/* Hiển thị nhãn tên lô đất ở trung tâm */}
             <Marker
-              position={calculateCentroid(path.map(p => ({ lat: p.lat, lng: p.lng })))}
+              position={calculateCentroid(path.map((p) => ({ lat: p.lat, lng: p.lng })))}
               label={{
                 text: plot.name,
                 color: '#ffffff',
                 fontSize: '12px',
                 fontWeight: '900',
-                className: 'bg-black/40 px-2 py-0.5 rounded-md backdrop-blur-sm'
               }}
               icon={{
                 path: window.google.maps.SymbolPath.CIRCLE,
-                scale: 0, // Ẩn icon marker, chỉ giữ label
+                scale: 0,
               }}
             />
           </Fragment>
         )
       })}
 
-      {/* 2. Hiển thị đường vẽ đang thực hiện (Drawing Mode) */}
-      {isDrawing && currentPath.length > 0 && (
+      {/* 2a. DRAWING mode: vẽ mới bằng click */}
+      {isDrawing && !isEditing && currentPath.length > 0 && (
         <>
           <Polygon
+            key="drawing-poly"
             path={currentPath}
-            onLoad={(poly) => {
-              const path = poly.getPath();
-              const updatePath = () => {
-                const newPath: GeoPoint[] = [];
-                for (let i = 0; i < path.getLength(); i++) {
-                  newPath.push({ lat: path.getAt(i).lat(), lng: path.getAt(i).lng() });
-                }
-                onPathChange(newPath);
-              };
-              google.maps.event.addListener(path, 'set_at', updatePath);
-              google.maps.event.addListener(path, 'insert_at', updatePath);
-              google.maps.event.addListener(path, 'remove_at', updatePath);
-            }}
+            onLoad={handleDrawPolyLoad}
             options={{
               fillColor: '#10b981',
               fillOpacity: 0.4,
@@ -206,12 +354,12 @@ export function FarmMap({
               strokeOpacity: 1,
               strokeWeight: 3,
               editable: true,
-              draggable: true,
+              draggable: false,
             }}
           />
           {currentPath.map((point, index) => (
             <Marker
-              key={index}
+              key={`draw-pt-${index}`}
               position={point}
               icon={{
                 path: window.google.maps.SymbolPath.CIRCLE,
@@ -226,12 +374,32 @@ export function FarmMap({
         </>
       )}
 
+      {/* 2b. EDITING mode: kéo các điểm đã có */}
+      {isEditing && selectedPlot && currentPath.length > 0 && (
+        <Polygon
+          key={`edit-${selectedPlot.id}`}
+          path={currentPath}
+          onLoad={handleEditPolyLoad}
+          onUnmount={handleEditPolyUnmount}
+          options={{
+            fillColor: '#10b981',
+            fillOpacity: 0.4,
+            strokeColor: '#059669',
+            strokeOpacity: 1,
+            strokeWeight: 3,
+            editable: true,
+            draggable: false,
+            zIndex: 10,
+          }}
+        />
+      )}
+
       {/* 3. Popup thông tin */}
       {selectedPlot && !isDrawing && !isEditing && (
         <InfoWindow
           position={
-            (selectedPlot.geometry ? convertGeoJSONToPath(selectedPlot.geometry)[0] : null) || 
-            selectedPlot.boundaries?.[0] || 
+            (selectedPlot.geometry ? convertGeoJSONToPath(selectedPlot.geometry)[0] : null) ||
+            selectedPlot.boundaries?.[0] ||
             center
           }
           onCloseClick={() => onPlotSelect(null)}
@@ -245,4 +413,4 @@ export function FarmMap({
       )}
     </GoogleMap>
   )
-}
+})
