@@ -6,18 +6,29 @@ import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
+// SecurityUtils.java
 @Component
 public class SecurityUtils {
 
-    public UUID getCurrentUserId() {
+    private UserPrincipal getPrincipal() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null) return null;
-        return ((UserPrincipal) auth.getPrincipal()).getUserId();
+        if (auth == null || !(auth.getPrincipal() instanceof UserPrincipal))
+            return null;
+        return (UserPrincipal) auth.getPrincipal();
+    }
+
+    public UUID getCurrentUserId() {
+        UserPrincipal p = getPrincipal();
+        return p != null ? p.getUserId() : null;
     }
 
     public UUID getCurrentFarmId() {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null) return null;
-        return ((UserPrincipal) auth.getPrincipal()).getFarmId();
+        UserPrincipal p = getPrincipal();
+        return p != null ? p.getFarmId() : null;
+    }
+
+    public String getCurrentUserEmail() {
+        UserPrincipal p = getPrincipal();
+        return p != null ? p.getEmail() : null;
     }
 }
