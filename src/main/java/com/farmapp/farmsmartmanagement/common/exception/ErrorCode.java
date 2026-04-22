@@ -87,9 +87,10 @@ public enum ErrorCode {
     INVITATION_ALREADY_USED(409, "Lời mời đã được sử dụng", HttpStatus.CONFLICT),
     INVITATION_EXPIRED(409, "Lời mời đã hết hạn", HttpStatus.CONFLICT),
 
-    CANNOT_INVITE_YOUSELF(409,"Bạn không thể tự mời chính mình" ,HttpStatus.CONFLICT ),
+    CANNOT_INVITE_YOURSELF(409,"Bạn không thể tự mời chính mình" ,HttpStatus.CONFLICT ),
     CANNOT_REMOVE_OWNER(409,"Không thể xoá chủ trang trại" ,HttpStatus.CONFLICT ),
-    FARM_MEMBER_NOT_FOUND(404,"Không tìm thấy thành viên",HttpStatus.NOT_FOUND)
+    FARM_MEMBER_NOT_FOUND(404,"Không tìm thấy thành viên",HttpStatus.NOT_FOUND),
+    CANNOT_REMOVE_YOURSELF(409,"Bạn không thể tự xoá chính mình" ,HttpStatus.CONFLICT ),
     ;
 
     private final int code;

@@ -276,6 +276,9 @@ public class FarmInvitationService {
             InvitationEntity inv = invitationRepository.findById(invitationId)
                     .orElseThrow(() -> new AppException(ErrorCode.INVITATION_NOT_FOUND));
 
+            if(inv.getStatus() == InvitationStatus.CANCELLED)
+                throw new AppException(ErrorCode.INVITATION_NOT_FOUND);
+
             if (inv.getStatus() != InvitationStatus.PENDING)
                 throw new AppException(ErrorCode.INVITATION_ALREADY_USED);
 
