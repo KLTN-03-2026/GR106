@@ -1,17 +1,17 @@
 import { Plot } from '../../../types/plot'
 import { PlotStatusBadge } from '../../LandPlots/components/PlotStatusBadge'
-import { MaximizeIcon, InfoIcon, ChevronRightIcon } from 'lucide-react'
+import { InfoIcon, ChevronRightIcon } from 'lucide-react'
 
 interface PlotInfoPopupProps {
   plot: Plot
   onClose: () => void
-  onEditBoundaries: (plot: Plot) => void
+  onEditBoundaries?: (plot: Plot) => void
 }
 
 export function PlotInfoPopup({
   plot,
   onClose,
-  onEditBoundaries,
+ 
 }: PlotInfoPopupProps) {
   return (
     <div className="bg-white rounded-xl shadow-lg p-3 min-w-[200px] max-w-[220px] border border-gray-100 font-sans animate-in fade-in zoom-in-95 duration-200">
@@ -45,7 +45,11 @@ export function PlotInfoPopup({
         <div className="bg-gray-50 px-2 py-1.5 rounded-lg border border-gray-100">
           <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Ranh giới</p>
           <div className="flex items-baseline gap-0.5">
-            <span className="text-xs font-black text-emerald-700">{plot.boundaries?.length || 0}</span>
+            <span className="text-xs font-black text-emerald-700">
+              {plot.geometry?.coordinates?.[0]
+                ? Math.max(0, plot.geometry.coordinates[0].length - 1)
+                : (plot.boundaries?.length || 0)}
+            </span>
             <span className="text-[8px] font-bold text-emerald-500">điểm</span>
           </div>
         </div>
@@ -55,13 +59,6 @@ export function PlotInfoPopup({
         <p className="text-[10px] text-gray-400 italic line-clamp-1 mb-2">"{plot.description}"</p>
       )}
 
-      <button
-        onClick={() => onEditBoundaries(plot)}
-        className="w-full flex items-center justify-center gap-1 py-1.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded-lg hover:bg-gray-200 transition-all active:scale-95 border border-gray-200"
-      >
-        <MaximizeIcon className="w-3 h-3" />
-        Cập nhật ranh giới
-      </button>
     </div>
   )
 }

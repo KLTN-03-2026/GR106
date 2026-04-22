@@ -37,8 +37,8 @@ export function MapPage() {
   const [editingPlot, setEditingPlot] = useState<Plot | null>(null);
   const [isDeletePlotConfirmOpen, setIsDeletePlotConfirmOpen] = useState(false);
   const [plotToDelete, setPlotToDelete] = useState<Plot | null>(null);
-  // Overlap detection
-  const [isOverlapping, setIsOverlapping] = useState(false);
+  // Overlap detection — lưu tên lô đang bị chồng chéo (null = không có)
+  const [overlappingPlotName, setOverlappingPlotName] = useState<string | null>(null);
   // Ref tới FarmMap để đọc path khi đang chỉnh sửa
   const farmMapRef = useRef<FarmMapHandle>(null);
   // Lưu path sẽ được lưu (đọc từ ref khi editing, từ state khi drawing)
@@ -125,7 +125,7 @@ export function MapPage() {
 
     // Kiểm tra tự cắt
     if (isSelfIntersecting(path)) {
-      toast.error('Ranh giới không hợp lệ: Đa giác không được tự cắt chính nó.');
+      toast.error('Ranh giaới không hợp lệ: Đa giác không được tự cắt chính nó.');
       return;
     }
 
@@ -199,7 +199,7 @@ export function MapPage() {
         setSelectedPlot(result);
         setMode('none');
         setCurrentPath([]);
-        setIsOverlapping(false);
+        setOverlappingPlotName(null);
         pathToSaveRef.current = [];
         dispatch(fetchPlots(currentFarmId));
       } catch (err: any) {
@@ -214,7 +214,7 @@ export function MapPage() {
   const handleCancelDrawing = () => {
     setMode('none');
     setCurrentPath([]);
-    setIsOverlapping(false);
+    setOverlappingPlotName(null);
     pathToSaveRef.current = [];
   };
 
@@ -468,7 +468,7 @@ export function MapPage() {
         onPlotSelect={setSelectedPlot}
         selectedPlot={selectedPlot}
         onEditBoundaries={startDrawing}
-        onOverlapChange={setIsOverlapping}
+        onOverlapChange={setOverlappingPlotName}
       />
 
       {/* Toolbar */}
@@ -480,7 +480,7 @@ export function MapPage() {
         onDeleteClick={() => setIsDeleteModalOpen(true)}
         canSave={currentPath.length >= 3}
         hasBoundary={!!(selectedPlot?.geometry || (selectedPlot?.boundaries && selectedPlot.boundaries.length > 0))}
-        isOverlapping={isOverlapping}
+        overlappingPlotName={overlappingPlotName}
       />
 
       {/* Thông báo hướng dẫn nếu đang ở chế độ rảnh rỗi */}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { XIcon, AlertCircleIcon } from 'lucide-react'
 import { Plot, Geometry } from '../../../types/plot'
-import { PlotDrawingMap } from './PlotDrawingMap'
+import { PlotDrawingMap, PlotDrawingMapHandle } from './PlotDrawingMap'
 
 interface CreatePlotModalProps {
   isOpen: boolean
@@ -26,6 +26,8 @@ export function CreatePlotModal({
   const [areaHa, setAreaHa] = useState(0)
   const [error, setError] = useState('')
   const [warning, setWarning] = useState('')
+
+  const mapRef = React.useRef<PlotDrawingMapHandle>(null)
 
   // Khởi tạo geometry nếu được truyền từ bên ngoài (ví dụ từ MapPage)
   React.useEffect(() => {
@@ -128,6 +130,7 @@ export function CreatePlotModal({
                   Vẽ lô đất trên bản đồ
                 </label>
                 <PlotDrawingMap 
+                  ref={mapRef}
                   onGeometryChange={handleGeometryChange} 
                   existingPlots={existingPlots}
                   tempPlotData={{
@@ -179,12 +182,14 @@ export function CreatePlotModal({
 
                 <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-tight pt-1.5 border-t border-gray-100">
                   <span className={geometry ? "text-emerald-600" : "text-gray-400"}>
-                    {geometry ? "● Ranh giới đã sẵn sàng" : "○ Chờ vẽ ranh giới"}
+                    {geometry 
+                      ? `● Ranh giới đã sẵn sàng (${areaHa.toLocaleString(undefined, { maximumFractionDigits: 4 })} ha)` 
+                      : "○ Chờ vẽ ranh giới"}
                   </span>
                   {geometry && (
                     <button
                       type="button"
-                      onClick={() => setGeometry(null)}
+                      onClick={() => mapRef.current?.clear()}
                       className="text-red-500 hover:underline"
                     >
                       Xóa để vẽ lại
