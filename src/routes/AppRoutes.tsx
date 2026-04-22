@@ -4,8 +4,11 @@ import { PublicRoutes } from './PublicRoutes';
 import { PrivateRoutes } from './PrivateRoutes';
 import { LoadingPage } from '../components/ui/LoadingPage';
 import ProtectedRoute from './ProtectedRoute';
-import { AcceptInvitationPage } from '@/pages/Invitation/Acceptinvitationpage';
-
+const AcceptInvitationPage = lazy(() =>
+  import('../pages/Invitation/AcceptInvitationPage').then(module => ({
+    default: module.AcceptInvitationPage,
+  }))
+)
 // Pages
 const HomePage = lazy(() => import('../pages/landing/HomePage'));
 const LoginPage = lazy(() => import('../pages/Login/LoginPage').then(module => ({ default: module.LoginPage })));
