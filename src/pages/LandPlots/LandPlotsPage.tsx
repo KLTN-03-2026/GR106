@@ -69,13 +69,18 @@ export function LandPlotsPage() {
   const handleUpdatePlot = async (updatedPlot: Plot) => {
     if (!currentFarmId) return;
     try {
+      const isClearDescription =
+        updatedPlot.description != null && updatedPlot.description.trim() === '';
+
       await dispatch(updatePlot({ 
         farmId: currentFarmId,
         plotId: updatedPlot.id, 
         plotData: {
           name: updatedPlot.name,
-          description: updatedPlot.description,
-          status: updatedPlot.status
+          status: updatedPlot.status,
+          ...(isClearDescription
+            ? { isClearDescription: true }
+            : { description: updatedPlot.description }),
         }
       })).unwrap();
       setEditingPlot(null);
@@ -120,6 +125,10 @@ export function LandPlotsPage() {
         source: 'land-plots',
       },
     });
+  };
+
+  const handleEditPlotInfo = (plot: Plot) => {
+    setEditingPlot(plot);
   };
 
   return (
@@ -177,7 +186,7 @@ export function LandPlotsPage() {
         {viewMode === 'table' ? (
           <PlotTable
             plots={filteredPlots}
-            onEdit={handleEditBoundary}
+            onEdit={handleEditPlotInfo}
             onDelete={setDeletingPlot}
             onViewMap={handleViewMap}
           />
@@ -187,7 +196,7 @@ export function LandPlotsPage() {
               <PlotCard
                 key={plot.id}
                 plot={plot}
-                onEdit={handleEditBoundary}
+                onEdit={handleEditPlotInfo}
                 onDelete={setDeletingPlot}
                 onViewMap={handleViewMap}
               />

@@ -56,7 +56,7 @@ export function PlotCard({ plot, onEdit, onDelete, onViewMap }: PlotCardProps) {
           <button
             onClick={() => onEdit(plot)}
             className="p-2 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-            title="Chỉnh sửa ranh giới"
+            title="Chỉnh sửa thông tin"
           >
             <Edit2Icon className="w-4 h-4" />
           </button>

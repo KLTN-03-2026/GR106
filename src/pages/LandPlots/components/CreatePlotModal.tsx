@@ -47,10 +47,10 @@ export function CreatePlotModal({
       return
     }
 
-    // if (!geometry) {
-    //   setError('Vui lòng vẽ ranh giới lô đất trên bản đồ')
-    //   return
-    // }
+    if (!geometry) {
+      setError('Vui lòng vẽ ranh giới lô đất trên bản đồ')
+      return
+    }
 
     const isDuplicate = existingPlots.some(
       (p) => p.name.toLowerCase() === name.trim().toLowerCase(),
@@ -62,9 +62,8 @@ export function CreatePlotModal({
 
     onSave({
       plotName: name.trim(),
-      description: description.trim(),
-      geometry: geometry,
-      areaHa: areaHa,
+      geometry,
+      ...(description.trim() ? { description: description.trim() } : {}),
     })
 
     handleClose()

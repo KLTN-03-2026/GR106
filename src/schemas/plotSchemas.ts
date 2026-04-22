@@ -21,7 +21,7 @@ export const plotSchema = z.object({
 // Schema cho Payload tạo Plot mới
 export const createPlotSchema = z.object({
   plotName: z.string().min(1, 'Tên lô đất không được để trống'),
-  geometry: geometrySchema.optional().nullable(),
+  geometry: geometrySchema,
   description: z.string().optional().nullable(),
 });
 
@@ -42,10 +42,11 @@ export const createPlotResponseSchema = apiResponseSchema(plotSchema);
 // Schema cho Payload cập nhật Plot
 export const updatePlotSchema = z.object({
   name: z.string().min(1, 'Tên lô đất không được để trống').optional(),
-  areaHa: z.number().positive('Diện tích phải lớn hơn 0').optional(),
   status: z.enum(['ACTIVE', 'INACTIVE']).optional(),
   description: z.string().optional().nullable(),
-  geometry: geometrySchema.optional().nullable(),
+  geometry: geometrySchema.optional(),
+  isClearDescription: z.boolean().optional(),
+  isClearGeometry: z.boolean().optional(),
 });
 
 export const updatePlotResponseSchema = apiResponseSchema(plotSchema);

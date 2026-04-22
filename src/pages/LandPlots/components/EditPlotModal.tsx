@@ -16,7 +16,6 @@ export function EditPlotModal({
   plot,
 }: EditPlotModalProps) {
   const [name, setName] = useState('')
-  const [areaHa, setAreaHa] = useState('')
   const [description, setDescription] = useState('')
   const [status, setStatus] = useState<string>('ACTIVE')
   const [error, setError] = useState('')
@@ -24,7 +23,6 @@ export function EditPlotModal({
   useEffect(() => {
     if (plot) {
       setName(plot.name)
-      setAreaHa(plot.areaHa == null ? '' : plot.areaHa.toString())
       setDescription(plot.description || '')
       setStatus(plot.status)
       setError('')
@@ -42,16 +40,10 @@ export function EditPlotModal({
       setError('Vui lòng nhập tên lô đất')
       return
     }
-    const numArea = parseFloat(areaHa)
-    if (isNaN(numArea) || numArea <= 0) {
-      setError('Diện tích phải là số dương lớn hơn 0')
-      return
-    }
 
     onSave({
       ...plot,
       name: name.trim(),
-      areaHa: numArea,
       description: description.trim(),
       status: status as 'ACTIVE' | 'INACTIVE',
     })
@@ -92,24 +84,6 @@ export function EditPlotModal({
               onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
               maxLength={100}
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="edit-area"
-              className="block text-sm font-bold text-gray-700 mb-1.5 uppercase tracking-tight"
-            >
-              Diện tích (ha) <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="edit-area"
-              type="number"
-              step="0.01"
-              min="0.01"
-              value={areaHa}
-              onChange={(e) => setAreaHa(e.target.value)}
-              className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
             />
           </div>
 

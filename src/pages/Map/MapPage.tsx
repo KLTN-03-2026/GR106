@@ -13,6 +13,7 @@ import { DrawingToolbar, DrawingMode } from './components/DrawingToolbar';
 import { BoundaryConfirmDialog } from './components/BoundaryConfirmDialog';
 import { DeleteBoundaryDialog } from './components/DeleteBoundaryDialog';
 import { CreatePlotModal } from '../LandPlots/components/CreatePlotModal';
+import { EditPlotModal } from '../LandPlots/components/EditPlotModal';
 import { isSelfIntersecting } from '../../utils/plotUtils';
 
 export function MapPage() {
@@ -33,6 +34,7 @@ export function MapPage() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingPlot, setEditingPlot] = useState<Plot | null>(null);
   const locationState = location.state as {
     selectedPlotId?: string;
     mode?: DrawingMode;
@@ -131,19 +133,26 @@ export function MapPage() {
     if (!currentFarmId) return;
     setIsConfirmOpen(false);
     
-    // Nếu đang chọn một lô đất cũ, thực hiện cập nhật
-    if (selectedPlot && (selectedPlot.geometry || (selectedPlot.boundaries && selectedPlot.boundaries.length > 0))) {
+    // Nếu đang chọn một lô đất có sẵn (kể cả chưa có ranh giới), thực hiện cập nhật geometry bằng PATCH
+    if (selectedPlot) {
       const geometry: Geometry = {
         type: 'Polygon',
         coordinates: [[...currentPath.map(p => [p.lng, p.lat]), [currentPath[0]?.lng, currentPath[0]?.lat]]]
       };
+      const isClearDescription =
+        selectedPlot.description != null && selectedPlot.description.trim() === '';
       
       try {
         const result = await dispatch(updatePlot({ 
           farmId: currentFarmId,
           plotId: selectedPlot.id, 
           plotData: { 
-            geometry 
+            name: selectedPlot.name,
+            status: selectedPlot.status,
+            geometry,
+            ...(isClearDescription
+              ? { isClearDescription: true }
+              : { description: selectedPlot.description }),
           } 
         })).unwrap();
         
@@ -214,7 +223,7 @@ export function MapPage() {
         farmId: currentFarmId,
         plotId: selectedPlot.id, 
         plotData: { 
-          geometry: null 
+          isClearGeometry: true
         } 
       })).unwrap();
       
@@ -225,6 +234,35 @@ export function MapPage() {
       dispatch(fetchPlots(currentFarmId));
     } catch (err: any) {
       toast.error(err.message || 'Lỗi khi xóa ranh giới');
+    }
+  };
+
+  const handleUpdatePlotInfo = async (updatedPlot: Plot) => {
+    if (!currentFarmId) return;
+    try {
+      const isClearDescription =
+        updatedPlot.description != null && updatedPlot.description.trim() === '';
+
+      const result = await dispatch(
+        updatePlot({
+          farmId: currentFarmId,
+          plotId: updatedPlot.id,
+          plotData: {
+            name: updatedPlot.name,
+            status: updatedPlot.status,
+            ...(isClearDescription
+              ? { isClearDescription: true }
+              : { description: updatedPlot.description }),
+          },
+        }),
+      ).unwrap();
+
+      toast.success('Cập nhật thông tin lô đất thành công');
+      setEditingPlot(null);
+      setSelectedPlot(result);
+      dispatch(fetchPlots(currentFarmId));
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể cập nhật thông tin lô đất');
     }
   };
 
@@ -302,7 +340,14 @@ export function MapPage() {
                     className="text-xs px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1"
                   >
                     <PencilIcon className="w-3 h-3" />
-                    {hasGeometry ? 'Chỉnh sửa' : 'Vẽ ranh giới'}
+                    {hasGeometry ? 'Chỉnh sửa ranh giới' : 'Vẽ ranh giới'}
+                  </button>
+                  <button
+                    onClick={() => setEditingPlot(plot)}
+                    className="text-xs px-2.5 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 hover:bg-emerald-50 flex items-center gap-1"
+                  >
+                    <PencilIcon className="w-3 h-3" />
+                    Sửa thông tin
                   </button>
                 </div>
               </div>
@@ -367,6 +412,13 @@ export function MapPage() {
           coordinates: [[...currentPath.map(p => [p.lng, p.lat]), [currentPath[0]?.lng, currentPath[0]?.lat]]]
         }}
         initialAreaHa={calculatedArea}
+      />
+
+      <EditPlotModal
+        isOpen={!!editingPlot}
+        onClose={() => setEditingPlot(null)}
+        onSave={handleUpdatePlotInfo}
+        plot={editingPlot}
       />
       </div>
     </div>

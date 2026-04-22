@@ -29,7 +29,7 @@ export interface CreatePlotInput {
 export interface UpdatePlotInput {
   name?: string;
   status?: PlotStatus;
-  geometry?: Geometry | null;
+  geometry?: Geometry;
   description?: string;
   isClearDescription?: boolean;
   isClearGeometry?: boolean;

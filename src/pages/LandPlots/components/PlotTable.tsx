@@ -77,7 +77,7 @@ export function PlotTable({
                     <button
                       onClick={() => onEdit(plot)}
                       className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
-                      title="Chỉnh sửa ranh giới"
+                      title="Chỉnh sửa thông tin"
                     >
                       <Edit2Icon className="w-4.5 h-4.5" />
                     </button>
