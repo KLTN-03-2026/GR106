@@ -46,6 +46,7 @@ public class FarmSubscriptionService {
 //    public FarmSubscriptionResponse
 
     @Transactional
+    @PreAuthorize("hasAuthority('subscription:manage')")
     public List<FarmSubscriptionResponse> getFarmSubscriptionHistory(UUID farmId){
         return farmSubscriptionRepository.findByFarm_Id(farmId)
                 .stream()
