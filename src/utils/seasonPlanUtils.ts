@@ -27,7 +27,10 @@ export const generatePhasesFromCrop = (crop: Crop, startDate: string): Phase[] =
     // Nếu không có giai đoạn, sinh 1 giai đoạn mặc định
     return [{
       id: `phase-default-${Date.now()}`,
+      planId: '',
       name: 'Chăm sóc',
+      source: 'MANUAL',
+      orderIndex: 0,
       startDate: startDate,
       endDate: addDays(startDate, 30),
       duration: 30,
@@ -53,7 +56,10 @@ export const generatePhasesFromCrop = (crop: Crop, startDate: string): Phase[] =
     const endDate = addDays(currentDate, duration);
     const phase: Phase = {
       id: `phase-${index}-${Date.now()}`,
+      planId: '',
       name: stage.name,
+      source: 'TEMPLATE',
+      orderIndex: index,
       startDate: currentDate,
       endDate: endDate,
       duration: duration,
@@ -237,6 +243,7 @@ export const canDeletePlan = (role: string | undefined, status: string): boolean
  * Nhân bản kế hoạch với ngày bắt đầu mới và sao chép toàn bộ nhiệm vụ
  */
 export const clonePlanLogic = (plan: SeasonPlan, newName: string, newStartDate: string): SeasonPlan => {
+  const newPlanId = `plan-clone-${Date.now()}`;
   const newPhases: Phase[] = [];
   let currentDate = newStartDate;
 
@@ -249,15 +256,19 @@ export const clonePlanLogic = (plan: SeasonPlan, newName: string, newStartDate: 
     const nStart = new Date(currentDate).getTime();
     const offsetDays = Math.round((nStart - oldStartDate) / (1000 * 60 * 60 * 24));
 
+    const newPhaseId = `phase-${Date.now()}-${index}`;
+
     newPhases.push({
       ...phase,
-      id: `phase-${Date.now()}-${index}`,
+      id: newPhaseId,
+      planId: newPlanId,
       startDate: currentDate,
       endDate: endDate,
       status: DRAFT_STATUS,
       tasks: phase.tasks.map(task => ({
         ...task,
         id: `task-${Date.now()}-${Math.random()}`,
+        planStageId: newPhaseId,
         startDate: addDays(task.startDate, offsetDays),
         endDate: addDays(task.endDate, offsetDays),
         status: DRAFT_STATUS
@@ -268,7 +279,7 @@ export const clonePlanLogic = (plan: SeasonPlan, newName: string, newStartDate: 
 
   return {
     ...plan,
-    id: `plan-clone-${Date.now()}`,
+    id: newPlanId,
     name: newName,
     startDate: newStartDate,
     endDate: currentDate,
