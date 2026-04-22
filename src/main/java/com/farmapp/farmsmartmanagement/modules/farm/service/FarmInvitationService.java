@@ -129,7 +129,7 @@ public class FarmInvitationService {
                 newUser.setEmail(request.getEmail());
                 newUser.setPassword(passwordEncoder.encode(finalRaw));
                 newUser.setFullName("Vui lòng cập nhật tên");
-                newUser.setStatus(UserStatus.PENDING); // PENDING — chưa accept
+                newUser.setStatus(UserStatus.ACTIVE); // ACTIVE luôn vì đã tạo tài khoản luôn — chưa accept
                 newUser.setIsLocked(false);
                 userRepository.save(newUser);
 
