@@ -5,7 +5,7 @@ import { memberService } from '../../services/members/memberService'
 import { StatusBadge } from './StatusBadge'
 import { CancelInviteModal } from './CancelInviteModal'
 import { toast } from 'sonner'
-import { Invitation, MemberRole } from '../../types/member'
+import { FarmRole, Invitation, MemberRole } from '../../types/member'
 
 export function InvitationTable() {
   const { farmId } = useParams<{ farmId: string }>()
@@ -14,9 +14,9 @@ export function InvitationTable() {
   const [selectedInvitation, setSelectedInvitation] =
     useState<Invitation | null>(null)
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false)
-  const [activeFilter, setActiveFilter] = useState<string>(
-    'all',
-  )
+  const [activeFilter, setActiveFilter] = useState<
+    'all' | 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'CANCELLED'
+  >('all')
 
   const fetchInvitations = async () => {
     if (!farmId) return
@@ -46,8 +46,13 @@ export function InvitationTable() {
     toast.success('Đã gửi lại lời mời thành công')
   }
 
-  const getRoleLabel = (role: MemberRole) => {
-    return role === 'manager' ? 'Quản lý trang trại' : role === 'worker' ? 'Nhân công' : role;
+  const getRoleLabel = (role: FarmRole) => {
+    const name = role.name.toUpperCase()
+    return name === 'MANAGER'
+      ? 'Quản lý trang trại'
+      : name === 'WORKER'
+        ? 'Nhân công'
+        : role.description || role.name
   }
 
   const filteredInvitations = invitations.filter(
@@ -59,31 +64,46 @@ export function InvitationTable() {
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => setActiveFilter('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeFilter === 'all' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeFilter === 'all'
+            ? 'bg-emerald-100 text-emerald-700'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
         >
           Tất cả
         </button>
         <button
-          onClick={() => setActiveFilter('pending')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeFilter === 'pending' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          onClick={() => setActiveFilter('PENDING')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeFilter === 'PENDING'
+            ? 'bg-emerald-100 text-emerald-700'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
         >
           Chờ chấp nhận
         </button>
         <button
-          onClick={() => setActiveFilter('expired')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeFilter === 'expired' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          onClick={() => setActiveFilter('EXPIRED')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeFilter === 'EXPIRED'
+            ? 'bg-emerald-100 text-emerald-700'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
         >
           Đã hết hạn
         </button>
         <button
-          onClick={() => setActiveFilter('cancelled')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeFilter === 'cancelled' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          onClick={() => setActiveFilter('CANCELLED')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeFilter === 'CANCELLED'
+            ? 'bg-emerald-100 text-emerald-700'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
         >
           Đã hủy
         </button>
         <button
-          onClick={() => setActiveFilter('accepted')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeFilter === 'accepted' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          onClick={() => setActiveFilter('ACCEPTED')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeFilter === 'ACCEPTED'
+            ? 'bg-emerald-100 text-emerald-700'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
         >
           Đã chấp nhận
         </button>
@@ -133,7 +153,12 @@ export function InvitationTable() {
                   className="hover:bg-gray-50 transition-colors"
                 >
                   <td className="px-6 py-4 text-gray-900">
-                    {invitation.email}
+                    {invitation.inviter.email}  {/* was: invitation.email */}
+                  </td>
+                  <td className="px-6 py-4 text-gray-600">
+                    {invitation.expiresAt
+                      ? new Date(invitation.expiresAt).toLocaleDateString('vi-VN')
+                      : '—'}
                   </td>
                   <td className="px-6 py-4 text-gray-900">
                     {getRoleLabel(invitation.role)}

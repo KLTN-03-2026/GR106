@@ -1,72 +1,52 @@
 import { axiosInstance } from '../../config/axios';
 import { ApiResponse } from '../../types/auth';
-import { 
-  Member, 
-  Invitation, 
-  InviteMemberRequest, 
-  ChangeRoleRequest 
+import {
+  Member,
+  Invitation,
+  InviteMemberRequest,
+  ChangeRoleRequest
 } from '../../types/member';
 
+// memberService.ts
 export const memberService = {
-  /**
-   * Lấy danh sách thành viên của farm
-   */
   async getMembers(farmId: string): Promise<ApiResponse<Member[]>> {
-    const response = await axiosInstance.get<ApiResponse<Member[]>>(
-      `/api/v1/farms/${farmId}/members`
-    );
-    return response.data;
+    const res = await axiosInstance.get(`/api/v1/farms/${farmId}/members`);
+    return res.data;
   },
 
-  /**
-   * Mời thành viên
-   */
-  async inviteMember(farmId: string, data: InviteMemberRequest): Promise<ApiResponse<any>> {
-    const response = await axiosInstance.post<ApiResponse<any>>(
-      `/api/v1/farms/${farmId}/invitations`,
-      data
-    );
-    return response.data;
+  async inviteMember(farmId: string, data: InviteMemberRequest): Promise<ApiResponse<void>> {
+    const res = await axiosInstance.post(`/api/v1/farms/${farmId}/members`, data);
+    return res.data;
   },
 
-  /**
-   * Thay đổi vai trò thành viên
-   */
+  async getInvitations(farmId: string, status?: string): Promise<ApiResponse<Invitation[]>> {
+    const res = await axiosInstance.get(`/api/v1/farms/${farmId}/invitations`, {
+      params: status ? { status } : undefined
+    });
+    return res.data;
+  },
+
+  async cancelInvitation(farmId: string, invitationId: string): Promise<ApiResponse<void>> {
+    const res = await axiosInstance.patch(
+      `/api/v1/farms/${farmId}/invitations/${invitationId}/cancel`
+    );
+    return res.data;
+  },
+
+  async removeMember(farmId: string, memberId: string): Promise<ApiResponse<void>> {
+    const res = await axiosInstance.delete(`/api/v1/farms/${farmId}/members/${memberId}`);
+    return res.data;
+  },
+
   async changeRole(farmId: string, memberId: string, data: ChangeRoleRequest): Promise<ApiResponse<Member>> {
-    const response = await axiosInstance.patch<ApiResponse<Member>>(
+    const res = await axiosInstance.patch(
       `/api/v1/farms/${farmId}/members/${memberId}/role`,
       data
     );
-    return response.data;
+    return res.data;
   },
-
-  /**
-   * Xóa thành viên khỏi trang trại
-   */
-  async removeMember(farmId: string, memberId: string): Promise<ApiResponse<string>> {
-    const response = await axiosInstance.delete<ApiResponse<string>>(
-      `/api/v1/farms/${farmId}/members/${memberId}`
-    );
-    return response.data;
+  async getFarmRoles(): Promise<ApiResponse<FarmRole[]>> {
+    const res = await axiosInstance.get('/api/v1/farms/roles')
+    return res.data
   },
-
-  /**
-   * Lấy danh sách lời mời
-   */
-  async getInvitations(farmId: string): Promise<ApiResponse<Invitation[]>> {
-    const response = await axiosInstance.get<ApiResponse<Invitation[]>>(
-      `/api/v1/farms/${farmId}/invitations`
-    );
-    return response.data;
-  },
-
-  /**
-   * Hủy lời mời
-   */
-  async cancelInvitation(farmId: string, invitationId: string): Promise<ApiResponse<string>> {
-    const response = await axiosInstance.patch<ApiResponse<string>>(
-      `/api/v1/farms/${farmId}/invitations/${invitationId}/cancel`
-    );
-    return response.data;
-  }
 };

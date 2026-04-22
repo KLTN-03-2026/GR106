@@ -4,6 +4,7 @@ import { PublicRoutes } from './PublicRoutes';
 import { PrivateRoutes } from './PrivateRoutes';
 import { LoadingPage } from '../components/ui/LoadingPage';
 import ProtectedRoute from './ProtectedRoute';
+import { AcceptInvitationPage } from '@/pages/Invitation/Acceptinvitationpage';
 
 // Pages
 const HomePage = lazy(() => import('../pages/landing/HomePage'));
@@ -51,6 +52,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="/reset-password" element={<Suspense fallback={<LoadingPage />}><ResetPasswordPage /></Suspense>} />
         <Route path="/verify-email" element={<Suspense fallback={<LoadingPage />}><VerifyEmailPage /></Suspense>} />
         <Route path="/invite/expired" element={<Suspense fallback={<LoadingPage />}><InviteExpiredPage /></Suspense>} />
+        <Route path="/invitations/:invitationId/accept" element={<AcceptInvitationPage />} />
       </Route>
 
       {/* Private Routes */}
