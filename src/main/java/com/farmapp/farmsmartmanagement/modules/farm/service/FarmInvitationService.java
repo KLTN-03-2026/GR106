@@ -78,7 +78,7 @@ public class FarmInvitationService {
     @Transactional
     public void inviteMember(UUID farmId, InvitationRequest request) {
         if(securityUtils.getCurrentUserEmail()!=null && securityUtils.getCurrentUserEmail().equals(request.getEmail())) {
-            throw new AppException(ErrorCode.CANNOT_INVITE_YOUSELF);
+            throw new AppException(ErrorCode.CANNOT_INVITE_YOURSELF);
         }
 
         FarmEntity farm = farmRepository.findById(farmId)
