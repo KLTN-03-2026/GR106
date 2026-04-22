@@ -10,6 +10,7 @@ import java.util.UUID;
 
 public interface RefreshTokenRepository extends JpaRepository<RefreshTokenEntity, UUID> {
 
+    @EntityGraph(attributePaths = {"user"})
     Optional<RefreshTokenEntity> findByTokenHash(String tokenHash);
 
     @Modifying
@@ -25,7 +26,7 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshTokenEntity
     @Query("""
         UPDATE RefreshTokenEntity t
         SET t.revokedAt = :now
-        WHERE t.userId = :userId
+        WHERE t.user.id = :userId
     """)
     void revokeAll(@Param("userId") UUID userId,
                    @Param("now") Instant now);

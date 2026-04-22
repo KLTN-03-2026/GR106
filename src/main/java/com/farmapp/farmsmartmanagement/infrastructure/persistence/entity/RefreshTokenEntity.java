@@ -19,8 +19,9 @@ public class RefreshTokenEntity {
     @UuidGenerator
     private UUID id;
 
-    @Column(name = "user_id")
-    private UUID userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id",  nullable = false)
+    private UserEntity user;
 
     @Column(name = "token_hash")
     private String tokenHash;

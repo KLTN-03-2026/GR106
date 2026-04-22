@@ -4,6 +4,7 @@ import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.common.util.RlsUtils;
 import com.farmapp.farmsmartmanagement.config.app.JwtProperties;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.UserEntity;
 import com.farmapp.farmsmartmanagement.modules.auth.dto.response.TokenResponse;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.RefreshTokenEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.security.JwtProvider;
@@ -38,7 +39,7 @@ public class RefreshTokenService {
     }
 
     // CREATE REFRESH TOKEN
-    public String create(UUID userId, String userAgent, String ip) {
+    public String create(UserEntity user, String userAgent, String ip) {
 
         return rlsUtils.runAsAdmin(() -> {
                 String raw = UUID.randomUUID().toString();
@@ -47,7 +48,7 @@ public class RefreshTokenService {
                 var now = Instant.now();
 
                 RefreshTokenEntity entity = new RefreshTokenEntity();
-                entity.setUserId(userId);
+                entity.setUser(user);
                 entity.setTokenHash(hash(raw));
                 entity.setExpiresAt(now.plusSeconds(jwtProperties.getRefreshExpiration())); // 7 days
                 entity.setUserAgent(userAgent);
@@ -73,17 +74,18 @@ public class RefreshTokenService {
                 }
 
                 if (token.getRevokedAt() != null) {
-                    repo.revokeAll(token.getUserId(), Instant.now());
+                    repo.revokeAll(token.getUser().getId(), Instant.now());
                     throw new AppException(ErrorCode.REFRESH_TOKEN_REUSED);
                 }
 
                 repo.revoke(hash, Instant.now());
 
                 // dùng IP/UA mới từ request hiện tại thay vì của token cũ
-                String newRefresh = create(token.getUserId(), userAgent, ipAddress);
+                String newRefresh = create(token.getUser(), userAgent, ipAddress);
 
-                List<String> systemRoles = permissionService.loadSystemRoles(token.getUserId());
-                String access = jwtProvider.generateUserToken(token.getUserId(), systemRoles);
+                List<String> systemRoles = permissionService.loadSystemRoles(token.getUser().getId());
+                String access = jwtProvider.generateUserToken(token.getUser().getId(), token.getUser().getEmail(), systemRoles);
+
 
                 return new TokenResponse(access, newRefresh);
             });

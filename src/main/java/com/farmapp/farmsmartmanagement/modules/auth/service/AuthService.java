@@ -116,7 +116,7 @@ public class AuthService {
                 refreshTokenRepository.revokeAll(user.getId(), Instant.now());
                 // Load system roles → đưa vào token
                 List<String> systemRoles = permissionRepository.findSystemRoles(user.getId());
-                String access = jwtProvider.generateUserToken(user.getId(), systemRoles);
+                String access = jwtProvider.generateUserToken(user.getId(), user.getEmail(), systemRoles);
 
                 String raw = UUID.randomUUID().toString();
 
@@ -124,7 +124,7 @@ public class AuthService {
                 var now = Instant.now();
 
                 RefreshTokenEntity entity = new RefreshTokenEntity();
-                entity.setUserId(user.getId());
+                entity.setUser(user);
                 entity.setTokenHash(hash(raw));
                 entity.setExpiresAt(now.plusSeconds(jwtProperties.getRefreshExpiration())); // 7 days
                 entity.setUserAgent(userAgent);

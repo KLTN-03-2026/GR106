@@ -31,9 +31,10 @@ public class JwtProvider {
         this.key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
     }
 
-    public String generateUserToken(UUID userId, List<String> systemRoles) {
+    public String generateUserToken(UUID userId, String email, List<String> systemRoles) {
         return Jwts.builder()
                 .setSubject(userId.toString())
+                .claim("email", email)
                 .claim("roles", systemRoles)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
@@ -41,10 +42,11 @@ public class JwtProvider {
                 .compact();
     }
 
-    public String generateFarmToken(UUID userId, UUID farmId,
+    public String generateFarmToken(UUID userId, String email, UUID farmId,
                                     List<String> systemRoles, List<String> permissions) {
         return Jwts.builder()
                 .setSubject(userId.toString())
+                .claim("email", email)
                 .claim("roles", systemRoles)
                 .claim("farmId", farmId.toString())
                 .claim("perms", permissions)
