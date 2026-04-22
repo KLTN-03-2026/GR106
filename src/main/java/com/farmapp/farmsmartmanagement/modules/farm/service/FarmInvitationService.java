@@ -256,6 +256,9 @@ public class FarmInvitationService {
 
     @Transactional
     public void removeMember(UUID farmId, UUID memberId) {
+        if(memberId!=null && memberId.equals(securityUtils.getCurrentUserId()))
+            throw new AppException(ErrorCode.CANNOT_REMOVE_YOURSELF);
+
         FarmMemberEntity member = farmMemberRepository
                 .findByFarm_IdAndUser_Id(farmId, memberId)
                 .orElseThrow(() -> new AppException(ErrorCode.FARM_MEMBER_NOT_FOUND));
