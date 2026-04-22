@@ -22,14 +22,14 @@ export const MemberCondensedList: React.FC = () => {
         </div>
       ) : members.length > 0 ? (
         members.map((member, i) => (
-          <div 
+          <div
             key={i}
             className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-slate-100 hover:border-emerald-200 transition-all hover:shadow-sm group"
           >
             <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
               <span className="text-sm font-bold">{member.name ? member.name.charAt(0).toUpperCase() : '?'}</span>
             </div>
-            
+
             <div className="flex-1 min-w-0">
               <p className="text-sm font-black text-slate-800 truncate">{member.name || member.email}</p>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{member.role === 'manager' ? 'Quản lý' : member.role === 'worker' ? 'Nhân công' : 'Chủ sở hữu'}</p>
@@ -52,8 +52,8 @@ export const MemberCondensedList: React.FC = () => {
         </div>
       )}
 
-      
-      <button 
+
+      <button
         onClick={() => navigate(farmId ? `/farms/${farmId}/members` : '/farms')}
         className="mt-2 w-full py-3 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-[10px] font-black uppercase tracking-widest hover:border-emerald-300 hover:text-emerald-600 transition-all"
       >

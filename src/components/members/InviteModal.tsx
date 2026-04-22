@@ -60,14 +60,9 @@ export function InviteModal({ isOpen, onClose }: InviteModalProps) {
 
     try {
       setIsSubmitting(true)
-      const res = await memberService.inviteMember(farmId, {
-        email,
-        roleId: selectedRoleId  // ← UUID thật từ API
-      })
-      if (res.success) {
-        toast.success('Đã gửi lời mời đến ' + email)
-        handleClose()
-      }
+      await memberService.inviteMember(farmId, { email, roleId: selectedRoleId })
+      toast.success('Đã gửi lời mời đến ' + email)
+      handleClose()
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Có lỗi xảy ra khi gửi lời mời')
     } finally {

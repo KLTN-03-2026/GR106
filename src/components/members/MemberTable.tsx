@@ -172,27 +172,30 @@ export function MemberTable() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <StatusBadge status={member.isActive ? 'active' : 'inactive'} />
+                        <StatusBadge status={member.isActive ? 'active' : 'rejected'} />
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {!member.isOwner && (
+                        {member.role?.name !== "OWNER" && (
                           <div className="relative inline-block group/menu">
                             <button className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
                               <MoreVertical className="w-4 h-4 text-slate-400" />
                             </button>
-                            <div className="absolute right-0 mt-1 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 hidden group-hover/menu:block z-10">
-                              <button
-                                onClick={() => { setSelectedMember(member); setIsChangeRoleModalOpen(true) }}
-                                className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50"
-                              >
-                                Thay đổi vai trò
-                              </button>
-                              <button
-                                onClick={() => { setSelectedMember(member); setIsRemoveMemberModalOpen(true) }}
-                                className="w-full px-4 py-2 text-left text-xs font-bold text-rose-500 hover:bg-rose-50"
-                              >
-                                Xóa khỏi trang trại
-                              </button>
+                            <div className="absolute right-0 pt-1 hidden group-hover/menu:block z-10">
+                              {/* pt-1 lấp khoảng trống giữa button và menu */}
+                              <div className="w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2">
+                                <button
+                                  onClick={() => { setSelectedMember(member); setIsChangeRoleModalOpen(true) }}
+                                  className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50"
+                                >
+                                  Thay đổi vai trò
+                                </button>
+                                <button
+                                  onClick={() => { setSelectedMember(member); setIsRemoveMemberModalOpen(true) }}
+                                  className="w-full px-4 py-2 text-left text-xs font-bold text-rose-500 hover:bg-rose-50"
+                                >
+                                  Xóa khỏi trang trại
+                                </button>
+                              </div>
                             </div>
                           </div>
                         )}

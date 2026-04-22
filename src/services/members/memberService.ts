@@ -4,7 +4,8 @@ import {
   Member,
   Invitation,
   InviteMemberRequest,
-  ChangeRoleRequest
+  ChangeRoleRequest,
+  FarmRole
 } from '../../types/member';
 
 // memberService.ts
@@ -14,9 +15,20 @@ export const memberService = {
     return res.data;
   },
 
-  async inviteMember(farmId: string, data: InviteMemberRequest): Promise<ApiResponse<void>> {
-    const res = await axiosInstance.post(`/api/v1/farms/${farmId}/members`, data);
-    return res.data;
+  async inviteMember(farmId: string, data: InviteMemberRequest): Promise<void> {
+    await axiosInstance.post(`/api/v1/farms/${farmId}/members`, data)
+  },
+
+  async cancelInvitation(farmId: string, invitationId: string): Promise<void> {
+    await axiosInstance.patch(`/api/v1/farms/${farmId}/invitations/${invitationId}/cancel`)
+  },
+
+  async removeMember(farmId: string, memberId: string): Promise<void> {
+    await axiosInstance.delete(`/api/v1/farms/${farmId}/members/${memberId}`)
+  },
+
+  async changeRole(farmId: string, memberId: string, data: ChangeRoleRequest): Promise<void> {
+    await axiosInstance.patch(`/api/v1/farms/${farmId}/members/${memberId}/role`, data)
   },
 
   async getInvitations(farmId: string, status?: string): Promise<ApiResponse<Invitation[]>> {
@@ -26,25 +38,6 @@ export const memberService = {
     return res.data;
   },
 
-  async cancelInvitation(farmId: string, invitationId: string): Promise<ApiResponse<void>> {
-    const res = await axiosInstance.patch(
-      `/api/v1/farms/${farmId}/invitations/${invitationId}/cancel`
-    );
-    return res.data;
-  },
-
-  async removeMember(farmId: string, memberId: string): Promise<ApiResponse<void>> {
-    const res = await axiosInstance.delete(`/api/v1/farms/${farmId}/members/${memberId}`);
-    return res.data;
-  },
-
-  async changeRole(farmId: string, memberId: string, data: ChangeRoleRequest): Promise<ApiResponse<Member>> {
-    const res = await axiosInstance.patch(
-      `/api/v1/farms/${farmId}/members/${memberId}/role`,
-      data
-    );
-    return res.data;
-  },
   async getFarmRoles(): Promise<ApiResponse<FarmRole[]>> {
     const res = await axiosInstance.get('/api/v1/farms/roles')
     return res.data

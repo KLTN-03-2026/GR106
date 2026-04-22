@@ -2,14 +2,13 @@ export type MemberRole = 'owner' | 'manager' | 'worker' | 'employee';
 export type MemberStatus = 'active' | 'pending' | 'rejected';
 
 export interface Member {
-  id: string;
-  name: string;
-  email: string;
-  role: FarmRole;
-  status: MemberStatus;
-  isOwner: boolean;
-  avatarUrl?: string;
-  joinedAt?: string;
+  userId: string       // API trả về userId, không phải id
+  fullName: string     // không phải name
+  email: string
+  role: FarmRole       // object, không phải string
+  isActive: boolean    // không phải status
+  joinedAt: string
+  avatarUrl?: string | null
 }
 
 export interface FarmRole {

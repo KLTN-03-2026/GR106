@@ -26,11 +26,10 @@ export function RemoveMemberModal({
 
     try {
       setIsSubmitting(true)
-      const res = await memberService.removeMember(farmId, member.id)
-      if (res.success) {
-        toast.success('Đã xóa thành viên khỏi trang trại')
-        onClose()
-      }
+      await memberService.removeMember(farmId, member.userId)
+      // 204 không có body — không cần check res.success
+      toast.success('Đã xóa thành viên khỏi trang trại')
+      onClose()
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Có lỗi xảy ra khi xóa thành viên')
     } finally {
@@ -54,7 +53,7 @@ export function RemoveMemberModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="bg-gray-50 rounded-lg p-4">
             <p className="text-sm text-gray-600 mb-1">Thành viên</p>
-            <p className="font-semibold text-gray-900">{member.name}</p>
+            <p className="font-semibold text-gray-900">{member.fullName}</p>
           </div>
 
           <div className="space-y-3">
