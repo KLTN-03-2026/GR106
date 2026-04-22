@@ -62,6 +62,8 @@ public class JwtProvider {
         UUID userId = UUID.fromString(claims.getSubject());
         String farmIdStr = claims.get("farmId", String.class);
         UUID farmId = farmIdStr != null ? UUID.fromString(farmIdStr) : null;
+        String email = claims.get("email", String.class);
+
 
         List<SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
 
@@ -87,7 +89,7 @@ public class JwtProvider {
             authorities.addAll(permissionService.loadAuthorities(userId, farmId));
         }
 
-        return new UserPrincipal(userId, farmId, authorities);
+        return new UserPrincipal(userId, farmId, email, authorities);
     }
 
     public boolean validate(String token) {
