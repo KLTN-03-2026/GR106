@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
 import { X, AlertCircle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Modal } from '../ui/Modal'
-import { memberService } from '../../services/members/memberService'
+import { cancelInvitation } from '../../store/memberSlice'
+import type { AppDispatch } from '../../store'
 
 interface Invitation {
   id: string
@@ -24,6 +26,7 @@ export function CancelInviteModal({
   invitation,
 }: CancelInviteModalProps) {
   const { farmId } = useParams<{ farmId: string }>()
+  const dispatch = useDispatch<AppDispatch>()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,12 +35,10 @@ export function CancelInviteModal({
 
     try {
       setIsSubmitting(true)
-      const res = await memberService.cancelInvitation(farmId, invitation.id)
-      if (res.success) {
-        toast.success('Đã hủy lời mời')
-        if (onSuccess) onSuccess()
-        onClose()
-      }
+      await dispatch(cancelInvitation({ farmId, invitationId: invitation.id })).unwrap()
+      toast.success('Đã hủy lời mời')
+      if (onSuccess) onSuccess()
+      onClose()
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Không thể hủy lời mời')
     } finally {

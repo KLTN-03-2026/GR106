@@ -1,18 +1,21 @@
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { Member } from '../../types/member';
+import type { AppDispatch, RootState } from '../../store';
+import { fetchMembers } from '../../store/memberSlice';
 
 export const MemberCondensedList: React.FC = () => {
   const navigate = useNavigate();
   const { farmId } = useParams<{ farmId: string }>();
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch<AppDispatch>();
+  const { members, loadingMembers: loading } = useSelector(
+    (state: RootState) => state.member,
+  );
 
   useEffect(() => {
-    // Member API is currently not available, disabling to prevent 404 errors
-    setLoading(false);
-    setMembers([]);
-  }, []);
+    if (!farmId) return;
+    dispatch(fetchMembers(farmId));
+  }, [dispatch, farmId]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -21,21 +24,21 @@ export const MemberCondensedList: React.FC = () => {
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest animate-pulse">Đang tải...</p>
         </div>
       ) : members.length > 0 ? (
-        members.map((member, i) => (
+        members.map((member) => (
           <div
-            key={i}
+            key={member.userId}
             className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-slate-100 hover:border-emerald-200 transition-all hover:shadow-sm group"
           >
             <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
-              <span className="text-sm font-bold">{member.name ? member.name.charAt(0).toUpperCase() : '?'}</span>
+              <span className="text-sm font-bold">{member.fullName ? member.fullName.charAt(0).toUpperCase() : '?'}</span>
             </div>
 
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-black text-slate-800 truncate">{member.name || member.email}</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{member.role === 'manager' ? 'Quản lý' : member.role === 'worker' ? 'Nhân công' : 'Chủ sở hữu'}</p>
+              <p className="text-sm font-black text-slate-800 truncate">{member.fullName || member.email}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{member.role?.description || member.role?.name}</p>
             </div>
 
-            {member.isOwner ? (
+            {member.role?.name === 'OWNER' ? (
               <span className="px-2.5 py-1 rounded-full bg-white text-slate-600 text-[10px] font-black uppercase tracking-wider border border-slate-100 shadow-sm">
                 Chủ sở hữu
               </span>

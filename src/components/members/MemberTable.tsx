@@ -1,60 +1,51 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { MoreVertical, Users, UserPlus, Loader2, Mail } from 'lucide-react'
-import { memberService } from '../../services/members/memberService'
+import { useDispatch, useSelector } from 'react-redux'
 import { StatusBadge } from './StatusBadge'
 import { ChangeRoleModal } from './ChangeRoleModal'
 import { RemoveMemberModal } from './RemoveMemberModal'
 import { InviteModal } from './InviteModal'
 import { getRoleDisplayName } from '../../utils/roleUtils'
-import { Member, Invitation } from '../../types/member'
+import type { AppDispatch, RootState } from '../../store'
+import type { InvitationStatus, Member } from '../../types/member'
+import { cancelInvitation, fetchInvitations, fetchMembers } from '../../store/memberSlice'
 
 type Tab = 'members' | 'invitations'
 
 export function MemberTable() {
   const { farmId } = useParams<{ farmId: string }>()
+  const dispatch = useDispatch<AppDispatch>()
+  const { members, invitations, loadingMembers, loadingInvitations } = useSelector(
+    (state: RootState) => state.member,
+  )
 
   const [tab, setTab] = useState<Tab>('members')
-  const [members, setMembers] = useState<Member[]>([])
-  const [invitations, setInvitations] = useState<Invitation[]>([])
-  const [loading, setLoading] = useState(true)
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
   const [isChangeRoleModalOpen, setIsChangeRoleModalOpen] = useState(false)
   const [isRemoveMemberModalOpen, setIsRemoveMemberModalOpen] = useState(false)
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [memberFilter, setMemberFilter] = useState<'all' | 'active' | 'inactive'>('all')
-
-  const fetchMembers = async () => {
-    if (!farmId) return
-    setLoading(true)
-    try {
-      const res = await memberService.getMembers(farmId)
-      if (res.success) setMembers(res.data)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchInvitations = async () => {
-    if (!farmId) return
-    setLoading(true)
-    try {
-      const res = await memberService.getInvitations(farmId)
-      if (res.success) setInvitations(res.data)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [openActionMemberId, setOpenActionMemberId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (tab === 'members') fetchMembers()
-    else fetchInvitations()
-  }, [tab])
+    if (!farmId) return
+    if (tab === 'members') {
+      dispatch(fetchMembers(farmId))
+      return
+    }
+    dispatch(fetchInvitations(farmId))
+  }, [dispatch, farmId, tab])
+
+  useEffect(() => {
+    const handleClickOutside = () => setOpenActionMemberId(null)
+    window.addEventListener('click', handleClickOutside)
+    return () => window.removeEventListener('click', handleClickOutside)
+  }, [])
 
   const handleCancelInvitation = async (invitationId: string) => {
     if (!farmId) return
-    await memberService.cancelInvitation(farmId, invitationId)
-    fetchInvitations()
+    await dispatch(cancelInvitation({ farmId, invitationId }))
   }
 
   const filteredMembers = members.filter(m =>
@@ -99,7 +90,7 @@ export function MemberTable() {
               ].map(f => (
                 <button
                   key={f.id}
-                  onClick={() => setMemberFilter(f.id as any)}
+                  onClick={() => setMemberFilter(f.id as 'all' | 'active' | 'inactive')}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${memberFilter === f.id
                     ? 'bg-slate-800 text-white'
                     : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-100'
@@ -123,7 +114,7 @@ export function MemberTable() {
 
       {/* Content */}
       <div className="bg-white rounded-[24px] border border-slate-200 overflow-hidden shadow-sm">
-        {loading ? (
+        {(tab === 'members' ? loadingMembers : loadingInvitations) ? (
           <div className="p-12 text-center">
             <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mx-auto mb-4" />
             <p className="text-xs text-slate-500 font-medium">Đang tải...</p>
@@ -137,19 +128,19 @@ export function MemberTable() {
               <p className="text-sm font-bold text-slate-800">Chưa có thành viên</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[500px] overflow-y-auto custom-scrollbar relative">
               <table className="w-full">
-                <thead className="bg-slate-50/50 border-b border-slate-100">
+                <thead className="bg-slate-50 border-b border-slate-100 sticky top-0 z-10">
                   <tr>
                     {['Thành viên', 'Vai trò', 'Trạng thái', ''].map(h => (
-                      <th key={h} className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <th key={h} className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50">
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredMembers.map(member => (
+                  {filteredMembers.map((member, index) => (
                     <tr key={member.userId} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -176,21 +167,39 @@ export function MemberTable() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         {member.role?.name !== "OWNER" && (
-                          <div className="relative inline-block group/menu">
-                            <button className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+                          <div className="relative inline-block">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setOpenActionMemberId((prev) => (prev === member.userId ? null : member.userId))
+                              }}
+                              className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                            >
                               <MoreVertical className="w-4 h-4 text-slate-400" />
                             </button>
-                            <div className="absolute right-0 pt-1 hidden group-hover/menu:block z-10">
-                              {/* pt-1 lấp khoảng trống giữa button và menu */}
+                            <div
+                              className={`absolute right-0 z-10 ${
+                                index >= filteredMembers.length - 2 ? 'bottom-full mb-1' : 'top-full mt-1'
+                              } ${openActionMemberId === member.userId ? 'block' : 'hidden'}`}
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <div className="w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2">
                                 <button
-                                  onClick={() => { setSelectedMember(member); setIsChangeRoleModalOpen(true) }}
+                                  onClick={() => {
+                                    setOpenActionMemberId(null)
+                                    setSelectedMember(member)
+                                    setIsChangeRoleModalOpen(true)
+                                  }}
                                   className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50"
                                 >
                                   Thay đổi vai trò
                                 </button>
                                 <button
-                                  onClick={() => { setSelectedMember(member); setIsRemoveMemberModalOpen(true) }}
+                                  onClick={() => {
+                                    setOpenActionMemberId(null)
+                                    setSelectedMember(member)
+                                    setIsRemoveMemberModalOpen(true)
+                                  }}
                                   className="w-full px-4 py-2 text-left text-xs font-bold text-rose-500 hover:bg-rose-50"
                                 >
                                   Xóa khỏi trang trại
@@ -216,12 +225,12 @@ export function MemberTable() {
               <p className="text-sm font-bold text-slate-800">Chưa có lời mời nào</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[500px] overflow-y-auto custom-scrollbar relative">
               <table className="w-full">
-                <thead className="bg-slate-50/50 border-b border-slate-100">
+                <thead className="bg-slate-50 border-b border-slate-100 sticky top-0 z-10">
                   <tr>
                     {['Email', 'Vai trò', 'Trạng thái', 'Hết hạn', ''].map(h => (
-                      <th key={h} className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <th key={h} className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50">
                         {h}
                       </th>
                     ))}
@@ -273,18 +282,32 @@ export function MemberTable() {
       {/* Modals */}
       <InviteModal
         isOpen={isInviteModalOpen}
-        onClose={() => { setIsInviteModalOpen(false); fetchMembers() }}
+        onClose={() => {
+          setIsInviteModalOpen(false)
+          if (farmId) {
+            dispatch(fetchMembers(farmId))
+            dispatch(fetchInvitations(farmId))
+          }
+        }}
       />
       {selectedMember && (
         <>
           <ChangeRoleModal
             isOpen={isChangeRoleModalOpen}
-            onClose={() => { setIsChangeRoleModalOpen(false); setSelectedMember(null); fetchMembers() }}
+            onClose={() => {
+              setIsChangeRoleModalOpen(false)
+              setSelectedMember(null)
+              if (farmId) dispatch(fetchMembers(farmId))
+            }}
             member={selectedMember}
           />
           <RemoveMemberModal
             isOpen={isRemoveMemberModalOpen}
-            onClose={() => { setIsRemoveMemberModalOpen(false); setSelectedMember(null); fetchMembers() }}
+            onClose={() => {
+              setIsRemoveMemberModalOpen(false)
+              setSelectedMember(null)
+              if (farmId) dispatch(fetchMembers(farmId))
+            }}
             member={selectedMember}
           />
         </>
@@ -294,14 +317,14 @@ export function MemberTable() {
 }
 
 // Component badge cho invitation status
-function InvitationStatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; className: string }> = {
+function InvitationStatusBadge({ status }: { status: InvitationStatus }) {
+  const map: Record<InvitationStatus, { label: string; className: string }> = {
     PENDING: { label: 'Chờ xác nhận', className: 'bg-amber-50 text-amber-600 border-amber-100' },
     ACCEPTED: { label: 'Đã chấp nhận', className: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
     EXPIRED: { label: 'Hết hạn', className: 'bg-slate-50 text-slate-400 border-slate-100' },
     CANCELLED: { label: 'Đã hủy', className: 'bg-rose-50 text-rose-400 border-rose-100' },
   }
-  const s = map[status] ?? map.EXPIRED
+  const s = map[status]
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold border ${s.className}`}>
       {s.label}

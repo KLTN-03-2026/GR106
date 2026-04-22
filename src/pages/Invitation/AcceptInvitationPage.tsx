@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Loader2, CheckCircle2, XCircle, Eye, EyeOff, Sprout } from 'lucide-react'
 import { axiosInstance } from '../../config/axios'
-import { toast } from 'sonner'
 
 type Phase = 'loading' | 'login-required' | 'accepting' | 'success' | 'error'
 

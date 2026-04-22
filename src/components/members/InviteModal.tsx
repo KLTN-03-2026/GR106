@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
 import { X, UserPlus, Mail, Users, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Modal } from '../ui/Modal'
 import { cn } from '../../utils/cn'
 import { memberService } from '../../services/members/memberService'
+import { inviteMember } from '../../store/memberSlice'
+import type { AppDispatch } from '../../store'
 
 interface FarmRole {
   id: string
@@ -19,6 +22,7 @@ interface InviteModalProps {
 
 export function InviteModal({ isOpen, onClose }: InviteModalProps) {
   const { farmId } = useParams<{ farmId: string }>()
+  const dispatch = useDispatch<AppDispatch>()
   const [email, setEmail] = useState('')
   const [selectedRoleId, setSelectedRoleId] = useState<string>('')
   const [emailError, setEmailError] = useState('')
@@ -60,7 +64,7 @@ export function InviteModal({ isOpen, onClose }: InviteModalProps) {
 
     try {
       setIsSubmitting(true)
-      await memberService.inviteMember(farmId, { email, roleId: selectedRoleId })
+      await dispatch(inviteMember({ farmId, payload: { email, roleId: selectedRoleId } })).unwrap()
       toast.success('Đã gửi lời mời đến ' + email)
       handleClose()
     } catch (err: any) {

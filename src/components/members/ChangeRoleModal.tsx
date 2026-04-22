@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
+import { useDispatch } from 'react-redux'
 import { X, AlertCircle, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Modal } from '../ui/Modal'
 import { memberService } from '../../services/members/memberService'
 import { Member, FarmRole } from '../../types/member'
+import { changeMemberRole } from '../../store/memberSlice'
+import type { AppDispatch } from '../../store'
 
 interface ChangeRoleModalProps {
   isOpen: boolean
@@ -14,6 +17,7 @@ interface ChangeRoleModalProps {
 
 export function ChangeRoleModal({ isOpen, onClose, member }: ChangeRoleModalProps) {
   const { farmId } = useParams<{ farmId: string }>()
+  const dispatch = useDispatch<AppDispatch>()
   const [roles, setRoles] = useState<FarmRole[]>([])
   const [selectedRoleId, setSelectedRoleId] = useState<string>('')
   const [isLoadingRoles, setIsLoadingRoles] = useState(false)
@@ -41,7 +45,7 @@ export function ChangeRoleModal({ isOpen, onClose, member }: ChangeRoleModalProp
       }
     }
     fetchRoles()
-  }, [isOpen])
+  }, [isOpen, member.role?.id])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,11 +53,15 @@ export function ChangeRoleModal({ isOpen, onClose, member }: ChangeRoleModalProp
 
     try {
       setIsSubmitting(true)
-      const res = await memberService.changeRole(farmId, member.userId, { roleId: selectedRoleId })
-      if (res.success) {
-        toast.success('Đã thay đổi vai trò thành công')
-        onClose()
-      }
+      await dispatch(
+        changeMemberRole({
+          farmId,
+          memberId: member.userId,
+          payload: { roleId: selectedRoleId },
+        }),
+      ).unwrap()
+      toast.success('Đã thay đổi vai trò thành công')
+      onClose()
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Có lỗi xảy ra khi thay đổi vai trò')
     } finally {

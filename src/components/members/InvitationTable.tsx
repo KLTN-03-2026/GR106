@@ -1,16 +1,19 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Mail, Loader2 } from 'lucide-react'
-import { memberService } from '../../services/members/memberService'
-import { StatusBadge } from './StatusBadge'
+import { useDispatch, useSelector } from 'react-redux'
+import { Loader2, Mail } from 'lucide-react'
 import { CancelInviteModal } from './CancelInviteModal'
-import { toast } from 'sonner'
-import { FarmRole, Invitation, MemberRole } from '../../types/member'
+import { StatusBadge } from './StatusBadge'
+import type { FarmRole, Invitation } from '../../types/member'
+import type { AppDispatch, RootState } from '../../store'
+import { fetchInvitations as fetchInvitationsThunk } from '../../store/memberSlice'
 
 export function InvitationTable() {
   const { farmId } = useParams<{ farmId: string }>()
-  const [invitations, setInvitations] = useState<Invitation[]>([])
-  const [loading, setLoading] = useState(true)
+  const dispatch = useDispatch<AppDispatch>()
+  const { invitations, loadingInvitations: loading } = useSelector(
+    (state: RootState) => state.member,
+  )
   const [selectedInvitation, setSelectedInvitation] =
     useState<Invitation | null>(null)
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false)
@@ -18,32 +21,19 @@ export function InvitationTable() {
     'all' | 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'CANCELLED'
   >('all')
 
-  const fetchInvitations = async () => {
+  const loadInvitations = async () => {
     if (!farmId) return
-    try {
-      setLoading(true)
-      const res = await memberService.getInvitations(farmId)
-      if (res.success) {
-        setInvitations(res.data)
-      }
-    } catch (err: any) {
-      console.error('Error fetching invitations:', err)
-    } finally {
-      setLoading(false)
-    }
+    await dispatch(fetchInvitationsThunk(farmId))
   }
 
   useEffect(() => {
-    fetchInvitations()
-  }, [])
+    if (!farmId) return
+    dispatch(fetchInvitationsThunk(farmId))
+  }, [dispatch, farmId])
 
   const handleCancelInvite = (invitation: Invitation) => {
     setSelectedInvitation(invitation)
     setIsCancelModalOpen(true)
-  }
-
-  const handleResendInvite = (_invitation: Invitation) => {
-    toast.success('Đã gửi lại lời mời thành công')
   }
 
   const getRoleLabel = (role: FarmRole) => {
@@ -133,13 +123,13 @@ export function InvitationTable() {
                   Email
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Vai trò được mời
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Trạng thái
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Ngày gửi
+                  Vai trò được mời
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Hết hạn
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Hành động
@@ -153,38 +143,25 @@ export function InvitationTable() {
                   className="hover:bg-gray-50 transition-colors"
                 >
                   <td className="px-6 py-4 text-gray-900">
-                    {invitation.inviter.email}  {/* was: invitation.email */}
+                    {invitation.email}
                   </td>
                   <td className="px-6 py-4 text-gray-600">
-                    {invitation.expiresAt
-                      ? new Date(invitation.expiresAt).toLocaleDateString('vi-VN')
-                      : '—'}
-                  </td>
-                  <td className="px-6 py-4 text-gray-900">
-                    {getRoleLabel(invitation.role)}
-                  </td>
-                  <td className="px-6 py-4">
                     <StatusBadge status={invitation.status} />
                   </td>
+                  <td className="px-6 py-4">
+                    {getRoleLabel(invitation.role)}
+                  </td>
                   <td className="px-6 py-4 text-gray-600">
-                    {invitation.invitedAt}
+                    {new Date(invitation.expiresAt).toLocaleDateString('vi-VN')}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      {invitation.status === 'pending' && (
+                      {invitation.status === 'PENDING' && (
                         <button
                           onClick={() => handleCancelInvite(invitation)}
                           className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded transition-colors"
                         >
                           Hủy lời mời
-                        </button>
-                      )}
-                      {invitation.status === 'expired' && (
-                        <button
-                          onClick={() => handleResendInvite(invitation)}
-                          className="px-3 py-1.5 text-sm text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
-                        >
-                          Gửi lại lời mời
                         </button>
                       )}
                     </div>
@@ -203,7 +180,7 @@ export function InvitationTable() {
             setIsCancelModalOpen(false)
             setSelectedInvitation(null)
           }}
-          onSuccess={fetchInvitations}
+          onSuccess={loadInvitations}
           invitation={selectedInvitation}
         />
       )}
