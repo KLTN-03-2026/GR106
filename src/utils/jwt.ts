@@ -34,13 +34,22 @@ export const getRolesFromToken = (token: string): string[] => {
   return [];
 };
 
-export const parseRole = (roles: string[], perms?: string[]): RoleId => {
+export const parseRole = (roles: string[], perms?: string[], farmRole?: string): RoleId => {
   const upperRoles = (roles || []).map(r => r.toUpperCase());
   
+  // Ưu tiên 1: Đọc farmRole trực tiếp từ farmToken (backend đặt rõ ràng)
+  if (farmRole) {
+    const fr = farmRole.toUpperCase();
+    if (fr === 'OWNER') return 'owner';
+    if (fr === 'MANAGER') return 'manager';
+    if (fr === 'EMPLOYEE' || fr === 'WORKER') return 'employee';
+  }
+
+  // Ưu tiên 2: Role system-level (ROLE_ADMIN, ROLE_OWNER)
   if (upperRoles.includes('ROLE_ADMIN') || upperRoles.includes('ADMIN')) return 'admin';
   if (upperRoles.includes('ROLE_OWNER') || upperRoles.includes('OWNER')) return 'owner';
   
-  // Nâng cấp quyền hiển thị nếu có các perms quan trọng của Chủ trang trại
+  // Ưu tiên 3: Suy ra role từ permissions (ABAC fallback)
   if (perms && perms.length > 0) {
     if (perms.includes('farm:delete') || perms.includes('farm:update') || perms.includes('member:invite')) {
       return 'owner';
@@ -48,8 +57,13 @@ export const parseRole = (roles: string[], perms?: string[]): RoleId => {
     if (perms.includes('task:assign') || perms.includes('plan:create')) {
       return 'manager';
     }
+    // Manager chỉ có plan:read nhưng không có plan:create
+    if (perms.includes('plan:read') && !perms.includes('plan:create')) {
+      return 'manager';
+    }
   }
 
+  // Ưu tiên 4: Role cứng trong token
   if (upperRoles.includes('ROLE_MANAGER') || upperRoles.includes('MANAGER')) return 'manager';
   if (upperRoles.includes('ROLE_EMPLOYEE') || upperRoles.includes('EMPLOYEE') || upperRoles.includes('ROLE_WORKER') || upperRoles.includes('WORKER')) return 'employee';
   
@@ -63,10 +77,9 @@ export const getUserFromToken = (token: string) => {
 
   const roles = getRolesFromToken(token);
   const perms = payload.perms || payload.permissions || [];
-  const role = parseRole(roles, perms);
+  const farmRole = payload.farmRole; // Field đặc biệt trong farmToken từ Backend
+  const role = parseRole(roles, perms, farmRole);
   
-  // Ưu tiên lấy fullName từ token
-  // Nếu không có tên, dùng Email. Nếu không có Email, mới dùng "Thành viên"
   const fullName = payload.fullName || payload.name || payload.email || 'Thành viên';
   const email = payload.email || 'user@example.com';
 

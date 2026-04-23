@@ -192,39 +192,36 @@ export const syncPlanDatesWithPhases = (plan: SeasonPlan): SeasonPlan => {
  * Quản lý (Manager) -> Chỉ xem
  */
 export const canEditPlan = (role: string | undefined | null, token?: string | null): boolean => {
-  // Check role from props/state first
+  // 1. Kiểm tra dựa trên Role đã qua xử lý (từ parseRole)
   if (role) {
-    const r = role.toUpperCase();
-    // Chủ trang trại, Admin, User (chủ sở hữu) -> Được sửa
-    if (r === 'OWNER' || r === 'ADMIN' || r === 'ROLE_OWNER' || r === 'ROLE_ADMIN' || r === 'USER' || r === 'ROLE_USER') {
-      return true;
-    }
-    // Quản lý (MANAGER) -> Chỉ xem
-    if (r === 'MANAGER' || r === 'ROLE_MANAGER') {
-      return false;
-    }
+    const r = role.toLowerCase();
+    if (r === 'owner' || r === 'admin') return true;
+    if (r === 'manager' || r === 'employee' || r === 'user') return false;
   }
 
-  // Fallback check from token if role is not clear
+  // 2. Kiểm tra sâu trong Token (nếu có)
   if (token) {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
+      const perms: string[] = payload.perms || payload.permissions || [];
       const rawRoles = payload.roles || payload.authorities || payload.role || [];
       
-      let roles: string[] = [];
-      if (Array.isArray(rawRoles)) {
-        roles = rawRoles.map((r: any) => String(r));
-      } else if (typeof rawRoles === 'string') {
-        roles = rawRoles.split(',').map((r: string) => r.trim());
-      }
+      const upperRoles = (Array.isArray(rawRoles) ? rawRoles : [rawRoles]).map(r => String(r).toUpperCase());
 
-      const upperRoles = roles.map(r => r.toUpperCase());
-      const hasEditingRole = upperRoles.some(r => 
-        ['OWNER', 'ROLE_OWNER', 'ADMIN', 'ROLE_ADMIN', 'USER', 'ROLE_USER'].includes(r)
-      );
-      const isStrictManager = upperRoles.some(r => ['MANAGER', 'ROLE_MANAGER'].includes(r));
+      // Ưu tiên 1: Hệ thống Admin luôn có quyền
+      if (upperRoles.includes('ROLE_ADMIN') || upperRoles.includes('ADMIN')) return true;
 
-      return hasEditingRole && !isStrictManager;
+      // Ưu tiên 2: Quyền dựa trên permissions thực tế (ABAC)
+      // Nếu có quyền mời thành viên hoặc xóa farm -> Chắc chắn là Owner -> Được sửa
+      if (perms.includes('member:invite') || perms.includes('farm:delete')) return true;
+
+      // Nếu có quyền tạo plan nhưng KHÔNG có quyền mời thành viên -> Manager -> Chỉ xem
+      if (perms.includes('plan:create')) return false;
+
+      // Ưu tiên 3: Role cứng
+      if (upperRoles.includes('ROLE_OWNER') || upperRoles.includes('OWNER')) return true;
+
+      return false;
     } catch {
       return false;
     }

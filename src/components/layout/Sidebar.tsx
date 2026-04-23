@@ -36,34 +36,34 @@ const NAV_GROUPS = [
   {
     title: "TỔNG QUAN",
     items: [
-      { key: "tree", label: "Trang trại của tôi", icon: Trees },
-      { key: "dashboard", label: "Bảng điều khiển", icon: LayoutDashboard },
-      { key: "activity", label: "Theo dõi chỉ số", icon: Activity },
+      { key: "tree", label: "Trang trại của tôi", icon: Trees }, // Luôn hiển thị (multi-tenant)
+      { key: "dashboard", label: "Bảng điều khiển", icon: LayoutDashboard, roles: ["owner", "admin"] },
+      { key: "activity", label: "Theo dõi chỉ số", icon: Activity, roles: ["owner", "admin"] },
     ]
   },
   {
     title: "TIỆN ÍCH",
     items: [
-      { key: "wallet", label: "Ví & Thanh toán", icon: Wallet },
-      { key: "activity", label: "Hoạt động", icon: Activity },
-      { key: "task", label: "Nhiệm vụ", icon: GitFork },
-      { key: "gemini", label: "Trợ lý AI", icon: Sparkles },
+      { key: "wallet", label: "Ví & Thanh toán", icon: Wallet, roles: ["owner", "admin"] },
+      { key: "activity", label: "Hoạt động", icon: Activity, roles: ["owner", "admin"] },
+      { key: "task", label: "Nhiệm vụ", icon: GitFork, roles: ["owner", "admin"] },
+      { key: "gemini", label: "Trợ lý AI", icon: Sparkles, roles: ["owner", "admin"] },
     ]
   },
   {
     title: "QUẢN LÝ",
     items: [
-      { key: "map", label: "Bản đồ nông trại", icon: MapIcon },
-      { key: "land-plots", label: "Lô đất & Cây trồng", icon: Grid3X3 },
-      { key: "crop-catalog", label: "Danh mục cây trồng", icon: Trees },
-      { key: "season-plans", label: "Kế hoạch mùa vụ", icon: Zap },
-      { key: "members", label: "Thành viên", icon: Users },
+      { key: "map", label: "Bản đồ nông trại", icon: MapIcon, roles: ["owner", "admin"] },
+      { key: "land-plots", label: "Lô đất & Cây trồng", icon: Grid3X3, roles: ["owner", "admin"] },
+      { key: "crop-catalog", label: "Danh mục cây trồng", icon: Trees, roles: ["owner", "admin"] },
+      { key: "season-plans", label: "Kế hoạch mùa vụ", icon: Zap, roles: ["owner", "manager", "admin"] }, // Manager chỉ xem
+      { key: "members", label: "Thành viên", icon: Users, roles: ["owner", "admin"] }, // Manager không quản lý thành viên
     ]
   },
   {
     title: "HỆ THỐNG",
     items: [
-      { key: "subscription", label: "Dịch vụ & Gói cước", icon: CreditCard },
+      { key: "subscription", label: "Dịch vụ & Gói cước", icon: CreditCard, roles: ["owner"] },
     ]
   }
 ];
@@ -96,6 +96,15 @@ export default function Sidebar({
 
   const currentFarm = currentFarmId ? farmSummary.find((f: any) => f.farmId === currentFarmId) : null;
 
+  // Lấy role thực tế từ farmSummary API (chính xác nhất, không phụ thuộc parse token)
+  // Ví dụ: 'OWNER', 'MANAGER', 'WORKER' -> chuẩn hóa thành lowercase
+  const myFarmRole = currentFarm
+    ? (currentFarm.myRole?.toLowerCase() === 'worker' ? 'employee' : currentFarm.myRole?.toLowerCase())
+    : null;
+  
+  // Role hiệu lực: uu tiên myFarmRole (khi trong farm), fallback user.role (hub level)
+  const effectiveRole = (currentFarmId && myFarmRole) ? myFarmRole : user?.role;
+
   return (
     <>
       {variant === "compact" ? (
@@ -114,7 +123,16 @@ export default function Sidebar({
             </Button>
 
             {NAV_ICONS
-              .filter(item => item.key !== "season-plans" || !!currentFarmId)
+              .filter(item => {
+                if (item.key === "season-plans" && !currentFarmId) return false;
+                if (!currentFarmId) return true;
+                
+                const groupItem = NAV_GROUPS.flatMap(g => g.items).find(i => i.key === item.key);
+                if (groupItem?.roles) {
+                  return effectiveRole ? groupItem.roles.includes(effectiveRole) : false;
+                }
+                return true;
+              })
               .map(({ icon: Icon, key }) => (
                 <Button
                   key={key}
@@ -207,7 +225,14 @@ export default function Sidebar({
                 </h3>
                 <div className="flex flex-col gap-0.5">
                   {group.items
-                    .filter(item => item.key !== "season-plans" || !!currentFarmId)
+                    .filter(item => {
+                      if (item.key === "season-plans" && !currentFarmId) return false;
+                      if (!currentFarmId) return true;
+                      if (item.roles) {
+                        return effectiveRole ? item.roles.includes(effectiveRole) : false;
+                      }
+                      return true;
+                    })
                     .map((item) => (
                       <button
                         key={item.key}

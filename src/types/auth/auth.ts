@@ -45,6 +45,7 @@ export interface JwtPayload {
   roles?: string[]; // Array of roles: ["ROLE_USER", "ROLE_OWNER", etc.]
   authorities?: string[]; // Array of strings (common in Spring Security)
   role?: string;         // Single role string
+  farmRole?: string;     // Role trong farm (OWNER, MANAGER, EMPLOYEE) - trong farmToken
   fullName?: string; // Họ tên thực tế từ Backend
   name?: string;     // Tên dự phòng từ Backend
   email?: string;    // Email thực tế
@@ -52,6 +53,7 @@ export interface JwtPayload {
   exp?: number;
   perms?: string[];       // Danh sách quyền (ví dụ: farm:update)
   permissions?: string[]; // Dự phòng cho trường hợp Backend dùng 'permissions'
+  farmId?: string;   // Farm ID trong farmToken
 }
 
 export interface LoginInput extends LoginRequest {}

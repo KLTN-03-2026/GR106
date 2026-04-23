@@ -21,12 +21,12 @@ export function MapPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const dispatch = useDispatch<AppDispatch>();
-  
+
   // Redux State — get currentFarmId instead of URL param
   const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
   const { plots } = useSelector((state: RootState) => state.plot);
   const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null);
-  
+
   // Drawing State
   const [mode, setMode] = useState<DrawingMode>('none');
   const [currentPath, setCurrentPath] = useState<GeoPoint[]>([]);
@@ -100,7 +100,7 @@ export function MapPage() {
   const computeArea = (path: GeoPoint[]) => {
     if (path.length < 3) return 0;
     if (!window.google) return 0;
-    
+
     try {
       const googlePath = path.map(p => new window.google.maps.LatLng(p.lat, p.lng));
       const areaInSqMeters = window.google.maps.geometry.spherical.computeArea(googlePath);
@@ -125,7 +125,7 @@ export function MapPage() {
 
     // Kiểm tra tự cắt
     if (isSelfIntersecting(path)) {
-      toast.error('Ranh giaới không hợp lệ: Đa giác không được tự cắt chính nó.');
+      toast.error('Ranh giới không hợp lệ. Ranh giới không được cắt nhau');
       return;
     }
 
@@ -227,7 +227,7 @@ export function MapPage() {
   const handleEditBoundaries = (plot: Plot) => {
     setSelectedPlot(plot);
     setMode('editing');
-    
+
     // Chuyển đổi GeoJSON sang path nếu có
     if (plot.geometry?.type === 'Polygon') {
       const path = plot.geometry.coordinates[0].map((coord: any) => ({
@@ -262,14 +262,14 @@ export function MapPage() {
     if (!selectedPlot) return;
 
     try {
-      const result = await dispatch(updatePlot({ 
+      const result = await dispatch(updatePlot({
         farmId: currentFarmId,
-        plotId: selectedPlot.id, 
-        plotData: { 
+        plotId: selectedPlot.id,
+        plotData: {
           isClearGeometry: true
-        } 
+        }
       })).unwrap();
-      
+
       toast.success('Đã xóa ranh giới lô đất');
       setSelectedPlot(result);
       setMode('none');
@@ -337,7 +337,7 @@ export function MapPage() {
       {/* Header */}
       <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-6">
-          <button 
+          <button
             onClick={() => navigate(`/farms/${currentFarmId}/actions`)}
             className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-all font-bold text-xs shrink-0"
           >
@@ -365,196 +365,194 @@ export function MapPage() {
 
       {/* Map Container */}
       <div className="flex-1 w-full rounded-2xl border border-gray-100 overflow-hidden relative shadow-inner m-4 mt-2">
-      <div className="absolute top-4 left-4 z-20 w-80 flex flex-col rounded-2xl border border-gray-200 bg-white/95 backdrop-blur-md shadow-xl" style={{ maxHeight: 'calc(100% - 2rem)' }}>
-        {/* Header */}
-        <div className="px-4 py-3 border-b border-gray-100 shrink-0">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Danh sách lô đất</p>
-          <p className="text-sm font-semibold text-gray-900">{plots.length} lô trong trang trại</p>
-        </div>
-        {/* Scrollable list */}
-        <div className="overflow-y-auto flex-1 min-h-0">
-          {plots.length === 0 ? (
-            <div className="px-4 py-6 text-center text-sm text-gray-400">
-              Chưa có lô đất nào
-            </div>
-          ) : (
-            plots.map((plot) => {
-              const hasGeometry = !!plot.geometry?.coordinates?.[0]?.length;
-              const isActive = selectedPlot?.id === plot.id;
-              return (
-                <div
-                  key={plot.id}
-                  className={`px-4 py-3 border-b border-gray-100 last:border-b-0 transition-colors ${
-                    isActive ? 'bg-emerald-50/70' : 'bg-white hover:bg-gray-50/50'
-                  }`}
-                >
-                  {/* Tên + badge */}
-                  <div className="flex items-start justify-between gap-2">
-                    <button
-                      onClick={() => handleSelectPlot(plot)}
-                      className="text-left flex-1 min-w-0"
-                    >
-                      <p className="text-sm font-semibold text-gray-900 truncate">{plot.name}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {hasGeometry ? `${(plot.areaHa ?? 0).toLocaleString('vi-VN')} ha` : 'Chưa có ranh giới'}
-                      </p>
-                    </button>
-                    <span className={`text-[10px] px-2 py-1 rounded-full font-bold shrink-0 ${
-                      hasGeometry ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      {hasGeometry ? 'Đã vẽ' : 'Chưa vẽ'}
-                    </span>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                    <button
-                      onClick={() => handleSelectPlot(plot)}
-                      className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center gap-1 transition-colors"
-                    >
-                      <MapPinIcon className="w-3 h-3" />
-                      Xem vị trí
-                    </button>
-
-                    {hasGeometry ? (
+        <div className="absolute top-4 left-4 z-20 w-80 flex flex-col rounded-2xl border border-gray-200 bg-white/95 backdrop-blur-md shadow-xl" style={{ maxHeight: 'calc(100% - 2rem)' }}>
+          {/* Header */}
+          <div className="px-4 py-3 border-b border-gray-100 shrink-0">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Danh sách lô đất</p>
+            <p className="text-sm font-semibold text-gray-900">{plots.length} lô trong trang trại</p>
+          </div>
+          {/* Scrollable list */}
+          <div className="overflow-y-auto flex-1 min-h-0">
+            {plots.length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-gray-400">
+                Chưa có lô đất nào
+              </div>
+            ) : (
+              plots.map((plot) => {
+                const hasGeometry = !!plot.geometry?.coordinates?.[0]?.length;
+                const isActive = selectedPlot?.id === plot.id;
+                return (
+                  <div
+                    key={plot.id}
+                    className={`px-4 py-3 border-b border-gray-100 last:border-b-0 transition-colors ${isActive ? 'bg-emerald-50/70' : 'bg-white hover:bg-gray-50/50'
+                      }`}
+                  >
+                    {/* Tên + badge */}
+                    <div className="flex items-start justify-between gap-2">
                       <button
-                        onClick={() => handleEditBoundaries(plot)}
-                        className="text-xs px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 transition-colors"
+                        onClick={() => handleSelectPlot(plot)}
+                        className="text-left flex-1 min-w-0"
                       >
-                        <MousePointer2Icon className="w-3 h-3" />
-                        Chỉnh sửa ranh giới
+                        <p className="text-sm font-semibold text-gray-900 truncate">{plot.name}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {hasGeometry ? `${(plot.areaHa ?? 0).toLocaleString('vi-VN')} ha` : 'Chưa có ranh giới'}
+                        </p>
                       </button>
-                    ) : (
+                      <span className={`text-[10px] px-2 py-1 rounded-full font-bold shrink-0 ${hasGeometry ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                        {hasGeometry ? 'Đã vẽ' : 'Chưa vẽ'}
+                      </span>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                       <button
-                        onClick={() => handleStartDrawForPlot(plot)}
-                        className="text-xs px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 transition-colors"
+                        onClick={() => handleSelectPlot(plot)}
+                        className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 flex items-center gap-1 transition-colors"
+                      >
+                        <MapPinIcon className="w-3 h-3" />
+                        Xem vị trí
+                      </button>
+
+                      {hasGeometry ? (
+                        <button
+                          onClick={() => handleEditBoundaries(plot)}
+                          className="text-xs px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 transition-colors"
+                        >
+                          <MousePointer2Icon className="w-3 h-3" />
+                          Chỉnh sửa ranh giới
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleStartDrawForPlot(plot)}
+                          className="text-xs px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 transition-colors"
+                        >
+                          <PencilIcon className="w-3 h-3" />
+                          Vẽ ranh giới
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => setEditingPlot(plot)}
+                        className="text-xs px-2.5 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 hover:bg-emerald-50 flex items-center gap-1 transition-colors"
                       >
                         <PencilIcon className="w-3 h-3" />
-                        Vẽ ranh giới
+                        Sửa thông tin
                       </button>
-                    )}
 
-                    <button
-                      onClick={() => setEditingPlot(plot)}
-                      className="text-xs px-2.5 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 hover:bg-emerald-50 flex items-center gap-1 transition-colors"
-                    >
-                      <PencilIcon className="w-3 h-3" />
-                      Sửa thông tin
-                    </button>
-
-                    <button
-                      onClick={() => handleDeletePlotClick(plot)}
-                      className="text-xs px-2.5 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-1 transition-colors ml-auto"
-                    >
-                      <Trash2Icon className="w-3 h-3" />
-                      Xóa
-                    </button>
+                      <button
+                        onClick={() => handleDeletePlotClick(plot)}
+                        className="text-xs px-2.5 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-1 transition-colors ml-auto"
+                      >
+                        <Trash2Icon className="w-3 h-3" />
+                        Xóa
+                      </button>
+                    </div>
                   </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-
-      <FarmMap
-        ref={farmMapRef}
-        plots={plots}
-        selectedPlotId={selectedPlot?.id}
-        isDrawing={mode !== 'none'}
-        isEditing={mode === 'editing'}
-        currentPath={currentPath}
-        onPathChange={setCurrentPath}
-        onPlotSelect={setSelectedPlot}
-        selectedPlot={selectedPlot}
-        onEditBoundaries={startDrawing}
-        onOverlapChange={setOverlappingPlotName}
-      />
-
-      {/* Toolbar */}
-      <DrawingToolbar
-        mode={mode}
-        onModeChange={setMode}
-        onSave={handleSaveDrawing}
-        onCancel={handleCancelDrawing}
-        onDeleteClick={() => setIsDeleteModalOpen(true)}
-        canSave={currentPath.length >= 3}
-        hasBoundary={!!(selectedPlot?.geometry || (selectedPlot?.boundaries && selectedPlot.boundaries.length > 0))}
-        overlappingPlotName={overlappingPlotName}
-      />
-
-      {/* Thông báo hướng dẫn nếu đang ở chế độ rảnh rỗi */}
-      {mode === 'none' && !selectedPlot && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-6 py-3 rounded-2xl shadow-xl border border-white/50 text-gray-700 font-bold text-sm flex items-center gap-3 animate-bounce">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-          Sử dụng thanh công cụ để vẽ lô đất mới hoặc chọn lô đất có sẵn
-        </div>
-      )}
-
-      <BoundaryConfirmDialog
-        isOpen={isConfirmOpen}
-        onClose={() => setIsConfirmOpen(false)}
-        onConfirm={handleConfirmSave}
-        plotName={selectedPlot?.name || 'Lô đất mới'}
-        calculatedArea={calculatedArea}
-      />
-
-      <DeleteBoundaryDialog
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={handleDeleteBoundary}
-        plotName={selectedPlot?.name || ''}
-      />
-
-      {/* Dialog xác nhận xóa lô đất */}
-      {isDeletePlotConfirmOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 w-[360px] mx-4">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2.5 bg-red-100 rounded-xl">
-                <Trash2Icon className="w-5 h-5 text-red-600" />
-              </div>
-              <h3 className="text-base font-bold text-gray-900">Xóa lô đất</h3>
-            </div>
-            <p className="text-sm text-gray-600 mb-5">
-              Bạn có chắc muốn xóa lô đất <span className="font-semibold text-gray-900">"{plotToDelete?.name}"</span>? Hành động này không thể hoàn tác.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => { setIsDeletePlotConfirmOpen(false); setPlotToDelete(null); }}
-                className="px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleConfirmDeletePlot}
-                className="px-4 py-2 rounded-xl text-sm font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors"
-              >
-                Xóa lô đất
-              </button>
-            </div>
+                );
+              })
+            )}
           </div>
         </div>
-      )}
 
-      <CreatePlotModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSave={handleCreatePlotFromMap}
-        existingPlots={plots}
-        initialGeometry={{
-          type: 'Polygon',
-          coordinates: [[...currentPath.map(p => [p.lng, p.lat]), [currentPath[0]?.lng, currentPath[0]?.lat]]]
-        }}
-        initialAreaHa={calculatedArea}
-      />
+        <FarmMap
+          ref={farmMapRef}
+          plots={plots}
+          selectedPlotId={selectedPlot?.id}
+          isDrawing={mode !== 'none'}
+          isEditing={mode === 'editing'}
+          currentPath={currentPath}
+          onPathChange={setCurrentPath}
+          onPlotSelect={setSelectedPlot}
+          selectedPlot={selectedPlot}
+          onEditBoundaries={startDrawing}
+          onOverlapChange={setOverlappingPlotName}
+        />
 
-      <EditPlotModal
-        isOpen={!!editingPlot}
-        onClose={() => setEditingPlot(null)}
-        onSave={handleUpdatePlotInfo}
-        plot={editingPlot}
-      />
+        {/* Toolbar */}
+        <DrawingToolbar
+          mode={mode}
+          onModeChange={setMode}
+          onSave={handleSaveDrawing}
+          onCancel={handleCancelDrawing}
+          onDeleteClick={() => setIsDeleteModalOpen(true)}
+          canSave={currentPath.length >= 3}
+          hasBoundary={!!(selectedPlot?.geometry || (selectedPlot?.boundaries && selectedPlot.boundaries.length > 0))}
+          overlappingPlotName={overlappingPlotName}
+        />
+
+        {/* Thông báo hướng dẫn nếu đang ở chế độ rảnh rỗi */}
+        {mode === 'none' && !selectedPlot && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-6 py-3 rounded-2xl shadow-xl border border-white/50 text-gray-700 font-bold text-sm flex items-center gap-3 animate-bounce">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+            Sử dụng thanh công cụ để vẽ lô đất mới hoặc chọn lô đất có sẵn
+          </div>
+        )}
+
+        <BoundaryConfirmDialog
+          isOpen={isConfirmOpen}
+          onClose={() => setIsConfirmOpen(false)}
+          onConfirm={handleConfirmSave}
+          plotName={selectedPlot?.name || 'Lô đất mới'}
+          calculatedArea={calculatedArea}
+        />
+
+        <DeleteBoundaryDialog
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          onConfirm={handleDeleteBoundary}
+          plotName={selectedPlot?.name || ''}
+        />
+
+        {/* Dialog xác nhận xóa lô đất */}
+        {isDeletePlotConfirmOpen && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl p-6 w-[360px] mx-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2.5 bg-red-100 rounded-xl">
+                  <Trash2Icon className="w-5 h-5 text-red-600" />
+                </div>
+                <h3 className="text-base font-bold text-gray-900">Xóa lô đất</h3>
+              </div>
+              <p className="text-sm text-gray-600 mb-5">
+                Bạn có chắc muốn xóa lô đất <span className="font-semibold text-gray-900">"{plotToDelete?.name}"</span>? Hành động này không thể hoàn tác.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => { setIsDeletePlotConfirmOpen(false); setPlotToDelete(null); }}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleConfirmDeletePlot}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors"
+                >
+                  Xóa lô đất
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <CreatePlotModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSave={handleCreatePlotFromMap}
+          existingPlots={plots}
+          initialGeometry={{
+            type: 'Polygon',
+            coordinates: [[...currentPath.map(p => [p.lng, p.lat]), [currentPath[0]?.lng, currentPath[0]?.lat]]]
+          }}
+          initialAreaHa={calculatedArea}
+        />
+
+        <EditPlotModal
+          isOpen={!!editingPlot}
+          onClose={() => setEditingPlot(null)}
+          onSave={handleUpdatePlotInfo}
+          plot={editingPlot}
+        />
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import { selectFarm, clearFarmContext } from "../store/authSlice";
 import { farmService } from "../services/farm/farmService";
 import { RootState } from "../store";
 import { getRolesFromToken } from "../utils/jwt";
+import { fetchFarmsSummary } from "../store/farmSlice";
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
@@ -15,9 +16,17 @@ export default function DashboardLayout() {
   const dispatch = useDispatch();
   const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
+  const farmSummary = useSelector((state: RootState) => state.farm.farmSummary);
   const isAdmin = accessToken ? getRolesFromToken(accessToken).includes('ROLE_ADMIN') : false;
 
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Đảm bảo farmSummary luôn được load (cần cho phân quyền Sidebar theo myRole)
+  useEffect(() => {
+    if (farmSummary.length === 0) {
+      dispatch(fetchFarmsSummary() as any);
+    }
+  }, [dispatch, farmSummary.length]);
 
   // Tự động đồng bộ Farm Context từ URL (chỉ khi có farmId trong URL)
   useEffect(() => {
@@ -101,8 +110,12 @@ export default function DashboardLayout() {
 
     // Handle special keys
     if (key === "dashboard") {
-      dispatch(clearFarmContext());
-      navigate("/dashboard");
+      if (currentFarmId) {
+        navigate(`/farms/${currentFarmId}/actions`);
+      } else {
+        dispatch(clearFarmContext());
+        navigate("/dashboard");
+      }
       return;
     }
 

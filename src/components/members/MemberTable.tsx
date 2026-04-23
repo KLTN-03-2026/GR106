@@ -7,6 +7,7 @@ import { ChangeRoleModal } from './ChangeRoleModal'
 import { RemoveMemberModal } from './RemoveMemberModal'
 import { InviteModal } from './InviteModal'
 import { getRoleDisplayName } from '../../utils/roleUtils'
+import { useAuth } from '../../hooks/useAuth'
 import type { AppDispatch, RootState } from '../../store'
 import type { InvitationStatus, Member } from '../../types/member'
 import { cancelInvitation, fetchInvitations, fetchMembers } from '../../store/memberSlice'
@@ -19,6 +20,8 @@ export function MemberTable() {
   const { members, invitations, loadingMembers, loadingInvitations } = useSelector(
     (state: RootState) => state.member,
   )
+  const { user } = useAuth()
+  const isOwner = user?.role === 'owner' || user?.role === 'admin'
 
   const [tab, setTab] = useState<Tab>('members')
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
@@ -102,13 +105,15 @@ export function MemberTable() {
             </div>
           )}
 
-          <button
-            onClick={() => setIsInviteModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all text-xs font-bold active:scale-95"
-          >
-            <UserPlus size={14} />
-            Mời thành viên
-          </button>
+          {isOwner && (
+            <button
+              onClick={() => setIsInviteModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all text-xs font-bold active:scale-95"
+            >
+              <UserPlus size={14} />
+              Mời thành viên
+            </button>
+          )}
         </div>
       </div>
 
@@ -166,7 +171,7 @@ export function MemberTable() {
                         <StatusBadge status={member.isActive ? 'active' : 'rejected'} />
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {member.role?.name !== "OWNER" && (
+                        {isOwner && member.role?.name !== "OWNER" && (
                           <div className="relative inline-block">
                             <button
                               onClick={(e) => {

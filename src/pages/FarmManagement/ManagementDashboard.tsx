@@ -17,6 +17,7 @@ import { selectFarm, clearFarmContext } from '../../store/authSlice';
 import { CreateFarmModal } from '../../components/farm';
 import { fetchFarmsSummary } from '../../store/farmSlice';
 import { RootState, AppDispatch } from '../../store';
+import { getRoleDisplayName } from '../../utils/roleUtils';
 
 export function ManagementDashboardPage() {
   const navigate = useNavigate();
@@ -136,8 +137,14 @@ export function ManagementDashboardPage() {
                   <Trees size={18} className="text-green-600" />
                 </div>
 
-                <span className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-white border border-gray-100 text-gray-600 shadow-sm">
-                  {farm.myRole?.toUpperCase() === 'OWNER' ? 'Chủ sở hữu' : 'Thành viên'}
+                <span className={`text-[10px] font-medium px-2.5 py-1 rounded-full border shadow-sm ${
+                  farm.myRole?.toUpperCase() === 'OWNER'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                    : farm.myRole?.toUpperCase() === 'MANAGER'
+                    ? 'bg-blue-50 text-blue-700 border-blue-100'
+                    : 'bg-gray-50 text-gray-600 border-gray-100'
+                }`}>
+                  {getRoleDisplayName(farm.myRole?.toLowerCase())}
                 </span>
               </div>
 
