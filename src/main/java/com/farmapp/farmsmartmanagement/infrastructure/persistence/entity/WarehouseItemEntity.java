@@ -35,7 +35,7 @@ public class WarehouseItemEntity extends BaseEntity {
     @Column(name = "name", nullable = false)
     String name;
 
-    @Column(name = "sku")
+    @Column(name = "sku", nullable = false, unique = true)
     String sku;
 
     @ManyToOne(fetch = FetchType.LAZY)
