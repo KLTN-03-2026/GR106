@@ -46,7 +46,7 @@ const NAV_GROUPS = [
     items: [
       { key: "wallet", label: "Ví & Thanh toán", icon: Wallet, roles: ["owner", "admin"] },
       { key: "activity", label: "Hoạt động", icon: Activity, roles: ["owner", "admin"] },
-      { key: "task", label: "Nhiệm vụ", icon: GitFork, roles: ["owner", "admin"] },
+      { key: "task", label: "Nhiệm vụ", icon: GitFork, roles: ["owner", "admin", "employee"] }, // Nhân công xem nhiệm vụ được giao
       { key: "gemini", label: "Trợ lý AI", icon: Sparkles, roles: ["owner", "admin"] },
     ]
   },
@@ -101,7 +101,7 @@ export default function Sidebar({
   const myFarmRole = currentFarm
     ? (currentFarm.myRole?.toLowerCase() === 'worker' ? 'employee' : currentFarm.myRole?.toLowerCase())
     : null;
-  
+
   // Role hiệu lực: uu tiên myFarmRole (khi trong farm), fallback user.role (hub level)
   const effectiveRole = (currentFarmId && myFarmRole) ? myFarmRole : user?.role;
 
@@ -126,7 +126,7 @@ export default function Sidebar({
               .filter(item => {
                 if (item.key === "season-plans" && !currentFarmId) return false;
                 if (!currentFarmId) return true;
-                
+
                 const groupItem = NAV_GROUPS.flatMap(g => g.items).find(i => i.key === item.key);
                 if (groupItem?.roles) {
                   return effectiveRole ? groupItem.roles.includes(effectiveRole) : false;
