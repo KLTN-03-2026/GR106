@@ -1075,7 +1075,7 @@ CREATE TABLE warehouse_items (
     warehouse_id  UUID NOT NULL REFERENCES warehouses(id),
     farm_id       UUID NOT NULL REFERENCES farms(id),
     name          VARCHAR(200) NOT NULL,
-    sku           VARCHAR(100),
+    sku           VARCHAR(100) NOT NULL UNIQUE,
     unit_id       UUID NOT NULL REFERENCES units(id),
     unit_price    DECIMAL(15,2),
     supplier      VARCHAR(200),
