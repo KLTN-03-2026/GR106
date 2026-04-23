@@ -25,7 +25,7 @@ ALTER TABLE warehouse_items
 ADD COLUMN sku VARCHAR(100) NOT NULL REFERENCES skus(sku);
 
 ALTER TABLE warehouse_items
-ADD COLUMN supplier_code UUID NOT NULL REFERENCES suppliers(supplier_code);
+ADD COLUMN supplier_code VARCHAR(100) NOT NULL REFERENCES suppliers(supplier_code);
 
 ALTER TABLE warehouse_items
 ADD CONSTRAINT warehouse_items_warehouse_sku_unique UNIQUE (warehouse_id, sku); -- Mỗi sku duy nhất tại mỗi kho
