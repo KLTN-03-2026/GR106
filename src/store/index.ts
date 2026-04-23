@@ -5,6 +5,7 @@ import plotReducer from './plotSlice';
 import cropReducer from './cropSlice';
 import seasonPlanReducer from './seasonPlanSlice';
 import memberReducer from './memberSlice';
+import warehouseReducer from './warehouseSlice';
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     crop: cropReducer,
     seasonPlan: seasonPlanReducer,
     member: memberReducer,
+    warehouse: warehouseReducer,
   }
 });
 

@@ -71,6 +71,7 @@ export default function DashboardLayout() {
     if (p.includes("/gemini")) return "gemini";
     if (p.includes("/crop-catalog")) return "crop-catalog";
     if (p.includes("/season-plans")) return "season-plans";
+    if (p.includes("/warehouses")) return "warehouses";
     if (p.includes("/change-password")) return "settings";
 
     // If URL is /farms/:id/actions, maybe highlight 'tree' or nothing?
@@ -82,7 +83,7 @@ export default function DashboardLayout() {
 
   const [active, setActive] = useState(getActive());
 
-  const wideSidebarPaths = ["/members", "/land-plots", "/map", "/subscription", "/crop-catalog", "/season-plans"];
+  const wideSidebarPaths = ["/members", "/land-plots", "/map", "/subscription", "/crop-catalog", "/season-plans", "/warehouses"];
   const isWideSidebarPage =
     wideSidebarPaths.some(path => location.pathname.includes(path)) ||
     (location.pathname.startsWith("/farms") && location.pathname !== "/farms");
@@ -140,7 +141,7 @@ export default function DashboardLayout() {
     }
 
     // Context-dependent routes (Wallet, Activity, Task, Gemini, etc.)
-    const farmContextKeys = ["wallet", "activity", "task", "gemini", "season-plans", "map", "land-plots", "members", "subscription"];
+    const farmContextKeys = ["wallet", "activity", "task", "gemini", "season-plans", "map", "land-plots", "members", "subscription", "warehouses"];
 
     if (farmContextKeys.includes(key)) {
       if (currentFarmId) {

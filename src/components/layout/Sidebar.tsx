@@ -15,6 +15,7 @@ import {
   Sparkles,
   LogOut,
   Key,
+  Warehouse,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "../../utils/cn";
@@ -57,6 +58,7 @@ const NAV_GROUPS = [
       { key: "land-plots", label: "Lô đất & Cây trồng", icon: Grid3X3, roles: ["owner", "admin"] },
       { key: "crop-catalog", label: "Danh mục cây trồng", icon: Trees, roles: ["owner", "admin"] },
       { key: "season-plans", label: "Kế hoạch mùa vụ", icon: Zap, roles: ["owner", "manager", "admin"] }, // Manager chỉ xem
+      { key: "warehouses", label: "Kho hàng", icon: Warehouse, roles: ["owner", "manager", "admin"] }, // Manager chỉ xem, Owner toàn quyền
       { key: "members", label: "Thành viên", icon: Users, roles: ["owner", "admin"] }, // Manager không quản lý thành viên
     ]
   },

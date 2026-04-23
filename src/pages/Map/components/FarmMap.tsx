@@ -10,6 +10,7 @@ import {
   getColorFromId, calculateCentroid, polygonsOverlap,
   getPlotPath, segmentsIntersect, pointInPolygon,
 } from '../../../utils/plotUtils'
+import { Warehouse } from '../../../types/warehouse'
 
 const MAP_OPTIONS: google.maps.MapOptions = {
   mapTypeId: 'satellite', disableDefaultUI: false, zoomControl: true,
@@ -32,6 +33,9 @@ interface FarmMapProps {
   selectedPlot: Plot | null
   onEditBoundaries: (plot: Plot) => void
   onOverlapChange?: (overlappingPlotName: string | null) => void
+  warehouses: Warehouse[]
+  selectedWarehouseId?: string
+  onWarehouseSelect: (warehouse: Warehouse | null) => void
 }
 
 const toLatLng = (geometry?: any): google.maps.LatLngLiteral[] => {
@@ -60,7 +64,8 @@ function segVsPlots(from: GeoPoint, to: GeoPoint, plots: Plot[]): boolean {
 
 export const FarmMap = forwardRef<FarmMapHandle, FarmMapProps>(function FarmMap(
   { plots, selectedPlotId, isDrawing, isEditing, currentPath, onPathChange,
-    onPlotSelect, selectedPlot, onEditBoundaries, onOverlapChange }, ref
+    onPlotSelect, selectedPlot, onEditBoundaries, onOverlapChange, 
+    warehouses, selectedWarehouseId, onWarehouseSelect }, ref
 ) {
   const { isLoaded } = useGoogleMaps()
   const mapRef = useRef<google.maps.Map | null>(null)
@@ -76,6 +81,11 @@ export const FarmMap = forwardRef<FarmMapHandle, FarmMapProps>(function FarmMap(
   const otherPlots = useMemo(
     () => plots.filter((p) => p.id !== selectedPlot?.id),
     [plots, selectedPlot]
+  )
+
+  const selectedWarehouse = useMemo(
+    () => warehouses.find(w => w.id === selectedWarehouseId) || null,
+    [warehouses, selectedWarehouseId]
   )
 
   useImperativeHandle(ref, () => ({
@@ -234,8 +244,12 @@ export const FarmMap = forwardRef<FarmMapHandle, FarmMapProps>(function FarmMap(
       if (p.length) return calculateCentroid(p.map(x => ({ lat: x.lat, lng: x.lng })))
     }
     if (selectedPlot?.boundaries?.length) return calculateCentroid(selectedPlot.boundaries)
+    if (selectedWarehouseId) {
+      const wh = warehouses.find(w => w.id === selectedWarehouseId)
+      if (wh) return { lat: wh.latitude, lng: wh.longitude }
+    }
     return { lat: 10.3606, lng: 106.3653 }
-  }, [selectedPlot])
+  }, [selectedPlot, selectedWarehouseId, warehouses])
 
   const onLoad = useCallback((map: google.maps.Map) => { mapRef.current = map }, [])
   const onUnmount = useCallback(() => { mapRef.current = null }, [])
@@ -249,16 +263,36 @@ export const FarmMap = forwardRef<FarmMapHandle, FarmMapProps>(function FarmMap(
       // Zoom vào lô được chọn
       const pts = selectedPlot.geometry ? toLatLng(selectedPlot.geometry) : (selectedPlot.boundaries ?? [])
       pts.forEach(p => { bounds.extend(p); has = true })
+    } else if (selectedWarehouseId) {
+      const wh = warehouses.find(w => w.id === selectedWarehouseId)
+      if (wh) {
+        bounds.extend({ lat: wh.latitude, lng: wh.longitude })
+        has = true
+      }
     } else {
       // Không có lô nào được chọn — fit tất cả các lô hiện có
       plots.forEach(plot => {
         const pts = plot.geometry ? toLatLng(plot.geometry) : (plot.boundaries ?? [])
         pts.forEach(p => { bounds.extend(p); has = true })
       })
+      warehouses.forEach(wh => {
+        bounds.extend({ lat: wh.latitude, lng: wh.longitude })
+        has = true
+      })
     }
 
-    if (has) mapRef.current.fitBounds(bounds, 80)
-  }, [selectedPlot, plots])
+    if (has) {
+      if (selectedWarehouseId) {
+        const center = bounds.getCenter()
+        mapRef.current.panTo(center)
+        mapRef.current.setZoom(18)
+      } else if (selectedPlot) {
+        mapRef.current.fitBounds(bounds, 80)
+      } else {
+        mapRef.current.fitBounds(bounds, 80)
+      }
+    }
+  }, [selectedPlot, selectedWarehouseId, plots, warehouses])
 
   if (!isLoaded)
     return (
@@ -310,6 +344,26 @@ export const FarmMap = forwardRef<FarmMapHandle, FarmMapProps>(function FarmMap(
           </Fragment>
         )
       })}
+
+      {/* ── 1b. Tất cả kho hàng ── */}
+      {warehouses.map((wh) => (
+        <Marker
+          key={`wh-${wh.id}`}
+          position={{ lat: wh.latitude, lng: wh.longitude }}
+          onClick={() => !isDrawing && onWarehouseSelect(wh)}
+          icon={{
+            url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+            scaledSize: selectedWarehouseId === wh.id ? new window.google.maps.Size(40, 40) : new window.google.maps.Size(32, 32)
+          }}
+          label={{
+            text: wh.name,
+            color: '#fff',
+            fontSize: '11px',
+            fontWeight: 'bold',
+            className: 'mt-8 bg-blue-600/80 px-2 py-0.5 rounded shadow-sm border border-blue-400'
+          }}
+        />
+      ))}
 
       {/* ── 2a. DRAWING: segments đã vẽ ── */}
       {isDrawing && !isEditing && currentPath.length >= 2 && (
@@ -378,7 +432,7 @@ export const FarmMap = forwardRef<FarmMapHandle, FarmMapProps>(function FarmMap(
         />
       )}
 
-      {/* ── 4. Popup ── */}
+      {/* ── 4a. Popup Lô đất ── */}
       {selectedPlot && !isDrawing && !isEditing && (
         <InfoWindow
           position={
@@ -392,6 +446,34 @@ export const FarmMap = forwardRef<FarmMapHandle, FarmMapProps>(function FarmMap(
             onClose={() => onPlotSelect(null)}
             onEditBoundaries={onEditBoundaries}
           />
+        </InfoWindow>
+      )}
+
+      {/* ── 4b. Popup Kho hàng ── */}
+      {selectedWarehouse && !isDrawing && !isEditing && (
+        <InfoWindow
+          position={{ lat: selectedWarehouse.latitude, lng: selectedWarehouse.longitude }}
+          onCloseClick={() => onWarehouseSelect(null)}
+        >
+          <div className="p-3 min-w-[200px] text-left">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-1.5 bg-blue-100 rounded-lg text-blue-600">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-warehouse"><path d="M22 22H2"/><path d="M6 22V10l6-6 6 6v12"/><path d="M10 22v-4a2 2 0 0 1 4 0v4"/><path d="M2 10l10-8 10 8"/></svg>
+              </div>
+              <h3 className="font-bold text-slate-900 text-sm">{selectedWarehouse.name}</h3>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2 text-xs text-slate-500">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+                <span>{selectedWarehouse.address}</span>
+              </div>
+              <div className="pt-2 border-t border-slate-100">
+                 <span className="text-[10px] font-mono font-bold text-slate-400">
+                   {selectedWarehouse.latitude.toFixed(6)}, {selectedWarehouse.longitude.toFixed(6)}
+                 </span>
+              </div>
+            </div>
+          </div>
         </InfoWindow>
       )}
     </GoogleMap>

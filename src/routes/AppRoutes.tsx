@@ -36,6 +36,7 @@ const CropCatalogPage = lazy(() => import('../pages/CropCatalog/CropCatalogPage'
 const SeasonPlanPage = lazy(() => import('../pages/SeasonPlan/SeasonPlanPage'));
 const SeasonPlanListPage = lazy(() => import('../pages/SeasonPlan/SeasonPlanListPage'));
 const AdminDashboardPage = lazy(() => import('../pages/Admin/AdminDashboardPage'));
+const WarehousePage = lazy(() => import('../pages/Warehouse/WarehousePage').then(module => ({ default: module.WarehousePage })));
 
 // Layouts
 const DashboardLayout = lazy(() => import('../layouts/DashboardLayout'));
@@ -89,6 +90,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="subscription/pricing" element={<Suspense fallback={<LoadingPage />}><SubscriptionPage /></Suspense>} />
             <Route path="gemini" element={<Suspense fallback={<LoadingPage />}><GeminiPage /></Suspense>} />
             <Route path="crop-catalog" element={<Suspense fallback={<LoadingPage />}><CropCatalogPage /></Suspense>} />
+            <Route path="warehouses" element={<Suspense fallback={<LoadingPage />}><WarehousePage /></Suspense>} />
           </Route>
         </Route>
 
