@@ -26,6 +26,14 @@ public interface WarehouseItemRepository extends JpaRepository<WarehouseItemEnti
     """)
     boolean existsBySkuAndFarm_Id(String sku, UUID farmId);
 
+    @Query("""
+        SELECT COUNT(wi) > 0
+        FROM WarehouseItemEntity wi
+        WHERE wi.sku.sku = :sku
+          AND wi.warehouse.id = :warehouseId
+    """)
+    boolean existsBySkuAndWarehouse_Id(String sku, UUID warehouseId);
+
     boolean existsByNameAndWarehouse_Id(String name, UUID warehouseId);
 
     List<WarehouseItemEntity> findAllByWarehouse_Id(UUID warehouseId);

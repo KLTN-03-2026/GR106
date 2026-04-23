@@ -52,6 +52,10 @@ public class WarehouseItemService {
         UserEntity user = userRepository.getReferenceById(userId);
         FarmEntity farm = farmRepository.getReferenceById(farmId);
 
+        if(warehouseItemRepository.existsBySkuAndWarehouse_Id(request.getSku(), warehouseId)){
+            throw new AppException(ErrorCode.SKU_IS_USING);
+        }
+
         WarehouseEntity warehouse = warehouseRepository
                 .findById(warehouseId)
                 .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND));
