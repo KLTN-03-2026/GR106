@@ -95,7 +95,12 @@ public enum ErrorCode {
     SUPPLIER_ALREADY_EXISTS(409,"Mã nhà cung cấp đã tồn tại" ,HttpStatus.CONFLICT ),
     SKU_IS_USING(409,"Mã hàng đang được sử dụng" ,HttpStatus.CONFLICT ),
 
-    SUPPLIER_IS_USING(409,"Mã hàng đang được sử dụng" ,HttpStatus.CONFLICT );
+    SUPPLIER_IS_USING(409,"Mã hàng đang được sử dụng" ,HttpStatus.CONFLICT ), WAREHOUSE_ITEM_ALREADY_EXISTS(409,"Tên vật tư đã tồn tai" ,HttpStatus.CONFLICT ),
+    UNIT_NOT_FOUND(404,"Không tìm thấy đơn vị" ,HttpStatus.NOT_FOUND ),
+    SUPPLIER_NOT_FOUND(404,"Không tìm thấy nhà cung cấp" ,HttpStatus.NOT_FOUND ),
+    SKU_NOT_FOUND(404,"Không tìm thấy mã vật tư" , HttpStatus.NOT_FOUND);
+
+
 
     private final int code;
     private final String message;

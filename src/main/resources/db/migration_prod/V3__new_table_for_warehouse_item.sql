@@ -30,6 +30,10 @@ ADD COLUMN supplier_code UUID NOT NULL REFERENCES suppliers(supplier_code);
 ALTER TABLE warehouse_items
 ADD CONSTRAINT warehouse_items_warehouse_sku_unique UNIQUE (warehouse_id, sku); -- Mỗi sku duy nhất tại mỗi kho
 
+ALTER TABLE warehouse_items
+ALTER COLUMN supplier_code DROP NOT NULL;
+
+
 DO $$
 BEGIN
   -- Bảng skus

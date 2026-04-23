@@ -4,6 +4,7 @@ import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.Warehou
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
 import java.util.UUID;
 
 
@@ -12,7 +13,7 @@ public interface WarehouseItemRepository extends JpaRepository<WarehouseItemEnti
     @Query("""
         SELECT COUNT(wi) > 0
         FROM WarehouseItemEntity wi
-        WHERE wi.supplierCode.supplierCode = :supplierCode
+        WHERE wi.supplier.supplierCode = :supplierCode
           AND wi.farm.id = :farmId
     """)
     boolean existsBySupplierCodeAndFarm_Id(String supplierCode, UUID farmId);
@@ -24,4 +25,8 @@ public interface WarehouseItemRepository extends JpaRepository<WarehouseItemEnti
           AND wi.farm.id = :farmId
     """)
     boolean existsBySkuAndFarm_Id(String sku, UUID farmId);
+
+    boolean existsByNameAndWarehouse_Id(String name, UUID warehouseId);
+
+    List<WarehouseItemEntity> findAllByWarehouse_Id(UUID warehouseId);
 }

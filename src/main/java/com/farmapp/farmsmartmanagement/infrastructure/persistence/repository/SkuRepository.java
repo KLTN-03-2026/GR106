@@ -12,11 +12,11 @@ public interface SkuRepository extends JpaRepository<SkuEntity, String> {
 
 
     @Query("""
-    SELECT COUNT(s) > 0
-    FROM SkuEntity s
-    WHERE s.sku = :sku
-      AND s.farm.id = :farmId
-""")
+        SELECT COUNT(s) > 0
+        FROM SkuEntity s
+        WHERE s.sku = :sku
+        AND s.farm.id = :farmId
+    """)
     boolean existsBySkuAndFarmId(@Param("sku") String sku,
                                  @Param("farmId") UUID farmId);
 

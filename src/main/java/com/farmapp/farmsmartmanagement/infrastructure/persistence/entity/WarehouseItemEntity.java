@@ -41,7 +41,7 @@ public class WarehouseItemEntity extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_code",nullable = false,unique = true)
-    SupplierEntity supplierCode;
+    SupplierEntity supplier;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "unit_id", nullable = false)

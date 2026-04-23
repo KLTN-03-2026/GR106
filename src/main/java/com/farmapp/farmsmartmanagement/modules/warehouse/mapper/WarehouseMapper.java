@@ -15,6 +15,7 @@ import java.util.List;
 public interface WarehouseMapper {
 
     WarehouseResponse toResponse(WarehouseEntity entity);
+
     List<WarehouseResponse> toResponses(List<WarehouseEntity> entity);
 
     WarehouseEntity createEntityFromRequest(CreateWarehouseRequest request);
