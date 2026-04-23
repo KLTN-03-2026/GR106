@@ -26,8 +26,8 @@ public class CreateWarehouseRequest {
     @Sanitize
     String address;
 
-    @DecimalMin(value = "-90.0",message = "G")
-    @DecimalMax(value = "90.0")
+    @DecimalMin(value = "-90.0",message = "Giá trị toạ độ không hợp lệ")
+    @DecimalMax(value = "90.0", message = "Giá trị toạ độ không hợp lệ")
     @Digits(integer = 3, fraction = 6)
     BigDecimal latitude;
 
