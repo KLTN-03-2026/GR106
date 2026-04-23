@@ -91,7 +91,11 @@ public enum ErrorCode {
     CANNOT_REMOVE_OWNER(409,"Không thể xoá chủ trang trại" ,HttpStatus.CONFLICT ),
     FARM_MEMBER_NOT_FOUND(404,"Không tìm thấy thành viên",HttpStatus.NOT_FOUND),
     CANNOT_REMOVE_YOURSELF(409,"Bạn không thể tự xoá chính mình" ,HttpStatus.CONFLICT ),
-    ;
+    SKU_ALREADY_EXISTS(409,"Mã hàng đã tồn tại" ,HttpStatus.CONFLICT ),
+    SUPPLIER_ALREADY_EXISTS(409,"Mã nhà cung cấp đã tồn tại" ,HttpStatus.CONFLICT ),
+    SKU_IS_USING(409,"Mã hàng đang được sử dụng" ,HttpStatus.CONFLICT ),
+
+    SUPPLIER_IS_USING(409,"Mã hàng đang được sử dụng" ,HttpStatus.CONFLICT );
 
     private final int code;
     private final String message;

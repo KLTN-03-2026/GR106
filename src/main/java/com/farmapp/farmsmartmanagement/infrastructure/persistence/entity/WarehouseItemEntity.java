@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
-@Table(name = "warehouses")
+@Table(name = "warehouse_items")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -35,8 +35,13 @@ public class WarehouseItemEntity extends BaseEntity {
     @Column(name = "name", nullable = false)
     String name;
 
-    @Column(name = "sku", nullable = false, unique = true)
-    String sku;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sku", nullable = false)
+    SkuEntity sku;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supplier_code",nullable = false,unique = true)
+    SupplierEntity supplierCode;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "unit_id", nullable = false)
@@ -44,9 +49,6 @@ public class WarehouseItemEntity extends BaseEntity {
 
     @Column(name = "unit_price", precision = 15, scale = 2)
     BigDecimal unitPrice;
-
-    @Column(name = "supplier")
-    String supplier;
 
     @Column(name = "min_stock_qty", precision = 10, scale = 3)
     BigDecimal minStockQty;

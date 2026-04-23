@@ -44,8 +44,8 @@ public class PlanService {
 
 //    Tất cả farm mà user là member -> check file byPassRlsWithUser.txt
 //    @Transactional
-//    public List<PlanResponse> findAll() {
-//        return planMapper.toResponses(planRepository.findAll());
+//    public List<PlanResponse> getSkus() {
+//        return planMapper.toResponses(planRepository.getSkus());
 //    }
 
     // Auto find với Rls -> không cần set farmId
