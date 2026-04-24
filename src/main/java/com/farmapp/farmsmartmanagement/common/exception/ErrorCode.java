@@ -48,6 +48,7 @@ public enum ErrorCode {
     PLAN_STAGE_NOT_FOUND(404, "Không tìm thấy giai đoạn của kế hoạch", HttpStatus.NOT_FOUND),
     TASK_NOT_FOUND(404,"Không tìm thấy công việc" ,HttpStatus.NOT_FOUND ),
     WAREHOUSE_NOT_FOUND(404, "Không tìm thấy kho", HttpStatus.NOT_FOUND),
+    WAREHOUSE_ITEM_NOT_FOUND(404, "Không tìm thấy vật tư", HttpStatus.NOT_FOUND),
 
     // --- Payment conflict ---
     PAYMENT_ALREADY_PROCESSED(409, "Payment already processed", HttpStatus.CONFLICT),
@@ -98,7 +99,10 @@ public enum ErrorCode {
     SUPPLIER_IS_USING(409,"Mã hàng đang được sử dụng" ,HttpStatus.CONFLICT ), WAREHOUSE_ITEM_ALREADY_EXISTS(409,"Tên vật tư đã tồn tai" ,HttpStatus.CONFLICT ),
     UNIT_NOT_FOUND(404,"Không tìm thấy đơn vị" ,HttpStatus.NOT_FOUND ),
     SUPPLIER_NOT_FOUND(404,"Không tìm thấy nhà cung cấp" ,HttpStatus.NOT_FOUND ),
-    SKU_NOT_FOUND(404,"Không tìm thấy mã vật tư" , HttpStatus.NOT_FOUND);
+    SKU_NOT_FOUND(404,"Không tìm thấy mã vật tư" , HttpStatus.NOT_FOUND),
+    TASK_IS_TERMINAL(409,"Công việc đã kết thúc" ,HttpStatus.CONFLICT ),
+    TASK_MATERIAL_ALREADY_EXISTS(409, "Vật tư này đã được thêm vào task, vui lòng cập nhật số lượng thay vì thêm mới",  HttpStatus.CONFLICT ),
+    ;
 
 
 

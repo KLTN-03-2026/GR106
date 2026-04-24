@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
@@ -35,6 +36,20 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
             @Param("planStageId") UUID planStageId,
             @Param("stageStartDate") LocalDate stageStartDate,
             @Param("stageEndDate") LocalDate stageEndDate
+    );
+
+    // TaskRepository
+    @Query("""
+        SELECT t FROM TaskEntity t
+        WHERE t.id = :taskId
+          AND t.planStage.id = :stageId
+          AND t.planStage.plan.id = :planId
+          AND t.status.isTerminal = false
+    """)
+    Optional<TaskEntity> findByIdAndStageIdAndPlanId(
+            @Param("taskId") UUID taskId,
+            @Param("stageId") UUID stageId,
+            @Param("planId") UUID planId
     );
 
 }

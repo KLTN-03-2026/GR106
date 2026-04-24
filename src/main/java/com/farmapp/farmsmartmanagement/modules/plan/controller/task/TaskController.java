@@ -1,4 +1,4 @@
-package com.farmapp.farmsmartmanagement.modules.plan.controller;
+package com.farmapp.farmsmartmanagement.modules.plan.controller.task;
 
 import com.farmapp.farmsmartmanagement.common.annotation.RequiresFarmToken;
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
@@ -7,7 +7,7 @@ import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreateTaskReques
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdateTaskRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdateTaskTimeRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.TaskResponse;
-import com.farmapp.farmsmartmanagement.modules.plan.service.TaskService;
+import com.farmapp.farmsmartmanagement.modules.plan.service.task.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,7 +16,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

@@ -1,6 +1,7 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Digits;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.SQLRestriction;
