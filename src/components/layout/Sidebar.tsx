@@ -16,6 +16,8 @@ import {
   LogOut,
   Key,
   Warehouse,
+  Truck,
+  Tag,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "../../utils/cn";
@@ -59,6 +61,8 @@ const NAV_GROUPS = [
       { key: "crop-catalog", label: "Danh mục cây trồng", icon: Trees, roles: ["owner", "admin"] },
       { key: "season-plans", label: "Kế hoạch mùa vụ", icon: Zap, roles: ["owner", "manager", "admin"] }, // Manager chỉ xem
       { key: "warehouses", label: "Kho hàng", icon: Warehouse, roles: ["owner", "manager", "admin"] }, // Manager chỉ xem, Owner toàn quyền
+      { key: "suppliers", label: "Nhà cung cấp", icon: Truck, roles: ["owner", "manager", "admin"] },
+      { key: "skus", label: "Mã SKU", icon: Tag, roles: ["owner", "manager", "admin"] },
       { key: "members", label: "Thành viên", icon: Users, roles: ["owner", "admin"] }, // Manager không quản lý thành viên
     ]
   },
@@ -195,7 +199,7 @@ export default function Sidebar({
         </aside>
       ) : (
         // ==================== PHẦN WIDE (giữ nguyên) ====================
-        <aside className="flex flex-col h-full w-[250px] bg-white shrink-0 rounded-[32px] shadow-sm border border-slate-200 p-2 transition-all duration-300 overflow-hidden">
+        <aside className="flex flex-col h-full w-[250px] bg-white shrink-0 rounded-[32px] shadow-sm border border-slate-200 p-2 transition-all duration-300">
           {/* Brand Label */}
           <div className="flex items-center gap-2 px-3 py-1.5 mb-0.5 shrink-0">
             <div className="w-8 h-8 bg-slate-100 rounded-xl flex items-center justify-center text-slate-800 border border-slate-200 shrink-0">
@@ -219,7 +223,7 @@ export default function Sidebar({
           </div>
 
           {/* Navigation Groups */}
-          <nav className="flex-1 flex flex-col gap-2 shrink-0">
+          <nav className="flex-1 flex flex-col gap-2 shrink-0 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
             {NAV_GROUPS.map((group) => (
               <div key={group.title} className="flex flex-col gap-0">
                 <h3 className="px-4 text-[7px] font-black text-slate-400 uppercase tracking-[2px] mb-0.5 opacity-70">

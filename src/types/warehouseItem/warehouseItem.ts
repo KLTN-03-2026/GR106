@@ -30,6 +30,8 @@ export interface WarehouseItem {
     email: string;
   };
   createdAt: string;
+  unitPrice: number;
+  minStockQty: number;
 }
 
 export interface CreateWarehouseItemDto {

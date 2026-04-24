@@ -9,6 +9,7 @@ import warehouseReducer from './warehouseSlice';
 import warehouseItemReducer from './warehouseItemSlice';
 import supplierReducer from './supplierSlice';
 import skuReducer from './skuSlice';
+import unitReducer from './unitSlice';
 
 export const store = configureStore({
   reducer: {
@@ -22,6 +23,7 @@ export const store = configureStore({
     warehouseItem: warehouseItemReducer,
     supplier: supplierReducer,
     sku: skuReducer,
+    unit: unitReducer,
   }
 });
 

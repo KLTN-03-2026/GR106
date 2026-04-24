@@ -8,6 +8,7 @@ import { farmService } from "../services/farm/farmService";
 import { RootState } from "../store";
 import { getRolesFromToken } from "../utils/jwt";
 import { fetchFarmsSummary } from "../store/farmSlice";
+import { fetchUnits } from "../store/unitSlice";
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
@@ -27,6 +28,13 @@ export default function DashboardLayout() {
       dispatch(fetchFarmsSummary() as any);
     }
   }, [dispatch, farmSummary.length]);
+
+  // Step 1: Load master data (Units) - Run once on startup
+  useEffect(() => {
+    if (accessToken) {
+      dispatch(fetchUnits() as any);
+    }
+  }, [dispatch, accessToken]);
 
   // Tự động đồng bộ Farm Context từ URL (chỉ khi có farmId trong URL)
   useEffect(() => {
@@ -72,6 +80,8 @@ export default function DashboardLayout() {
     if (p.includes("/crop-catalog")) return "crop-catalog";
     if (p.includes("/season-plans")) return "season-plans";
     if (p.includes("/warehouses")) return "warehouses";
+    if (p.includes("/suppliers")) return "suppliers";
+    if (p.includes("/skus")) return "skus";
     if (p.includes("/change-password")) return "settings";
 
     // If URL is /farms/:id/actions, maybe highlight 'tree' or nothing?
@@ -83,7 +93,7 @@ export default function DashboardLayout() {
 
   const [active, setActive] = useState(getActive());
 
-  const wideSidebarPaths = ["/members", "/land-plots", "/map", "/subscription", "/crop-catalog", "/season-plans", "/warehouses"];
+  const wideSidebarPaths = ["/members", "/land-plots", "/map", "/subscription", "/crop-catalog", "/season-plans", "/warehouses", "/suppliers", "/skus"];
   const isWideSidebarPage =
     wideSidebarPaths.some(path => location.pathname.includes(path)) ||
     (location.pathname.startsWith("/farms") && location.pathname !== "/farms");
@@ -141,7 +151,7 @@ export default function DashboardLayout() {
     }
 
     // Context-dependent routes (Wallet, Activity, Task, Gemini, etc.)
-    const farmContextKeys = ["wallet", "activity", "task", "gemini", "season-plans", "map", "land-plots", "members", "subscription", "warehouses"];
+    const farmContextKeys = ["wallet", "activity", "task", "gemini", "season-plans", "map", "land-plots", "members", "subscription", "warehouses", "suppliers", "skus"];
 
     if (farmContextKeys.includes(key)) {
       if (currentFarmId) {

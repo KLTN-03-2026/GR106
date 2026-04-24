@@ -148,7 +148,7 @@ export function WarehousePage() {
             {warehouses.map((wh) => (
               <div
                 key={wh.id}
-                onClick={() => handleViewMap(wh)}
+                onClick={() => navigate(`/farms/${currentFarmId}/warehouses/${wh.id}`)}
                 className="group bg-white rounded-[28px] border border-slate-100 shadow-sm p-6 flex flex-col gap-5 transition-all duration-300 relative overflow-hidden cursor-pointer active:bg-slate-50"
               >
                 <div className="flex items-start justify-between relative z-10">
@@ -194,7 +194,10 @@ export function WarehousePage() {
                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                         <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Sẵn sàng</span>
                      </div>
-                     <div className="flex items-center gap-2 text-blue-600 font-bold text-[11px] bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                     <div 
+                       onClick={(e) => { e.stopPropagation(); handleViewMap(wh); }}
+                       className="flex items-center gap-2 text-blue-600 font-bold text-[11px] bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition-all cursor-pointer"
+                     >
                         <MapIcon size={12} />
                         Xem trên bản đồ
                      </div>

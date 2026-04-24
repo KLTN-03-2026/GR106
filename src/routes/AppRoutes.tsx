@@ -37,6 +37,9 @@ const SeasonPlanPage = lazy(() => import('../pages/SeasonPlan/SeasonPlanPage'));
 const SeasonPlanListPage = lazy(() => import('../pages/SeasonPlan/SeasonPlanListPage'));
 const AdminDashboardPage = lazy(() => import('../pages/Admin/AdminDashboardPage'));
 const WarehousePage = lazy(() => import('../pages/Warehouse/WarehousePage').then(module => ({ default: module.WarehousePage })));
+const WarehouseDetailPage = lazy(() => import('../pages/Warehouse/WarehouseDetailPage').then(module => ({ default: module.WarehouseDetailPage })));
+const SupplierListPage = lazy(() => import('../pages/Supplier/SupplierListPage').then(module => ({ default: module.SupplierListPage })));
+const SKUListPage = lazy(() => import('../pages/SKU/SKUListPage').then(module => ({ default: module.SKUListPage })));
 
 // Layouts
 const DashboardLayout = lazy(() => import('../layouts/DashboardLayout'));
@@ -91,6 +94,9 @@ export const AppRoutes: React.FC = () => {
             <Route path="gemini" element={<Suspense fallback={<LoadingPage />}><GeminiPage /></Suspense>} />
             <Route path="crop-catalog" element={<Suspense fallback={<LoadingPage />}><CropCatalogPage /></Suspense>} />
             <Route path="warehouses" element={<Suspense fallback={<LoadingPage />}><WarehousePage /></Suspense>} />
+            <Route path="warehouses/:warehouseId" element={<Suspense fallback={<LoadingPage />}><WarehouseDetailPage /></Suspense>} />
+            <Route path="suppliers" element={<Suspense fallback={<LoadingPage />}><SupplierListPage /></Suspense>} />
+            <Route path="skus" element={<Suspense fallback={<LoadingPage />}><SKUListPage /></Suspense>} />
           </Route>
         </Route>
 
