@@ -37,4 +37,6 @@ public interface WarehouseItemRepository extends JpaRepository<WarehouseItemEnti
     boolean existsByNameAndWarehouse_Id(String name, UUID warehouseId);
 
     List<WarehouseItemEntity> findAllByWarehouse_Id(UUID warehouseId);
+
+    Optional<WarehouseItemEntity> findByIdAndFarmId(UUID warehouseItemId, UUID id);
 }
