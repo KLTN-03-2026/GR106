@@ -1,6 +1,7 @@
-import { useCallback } from "react";
-import { GoogleMap, Marker } from "@react-google-maps/api";
+import { useCallback, useMemo } from "react";
+import { GoogleMap, Marker, Polygon } from "@react-google-maps/api";
 import { useGoogleMaps } from "../../providers/GoogleMapsProvider";
+import { Plot } from "../../types/plot";
 
 interface LatLng {
   lat: number;
@@ -10,6 +11,7 @@ interface LatLng {
 interface LocationPickerMapProps {
   value: LatLng | null;
   onChange: (coords: LatLng) => void;
+  plots?: Plot[];
 }
 
 const DEFAULT_CENTER = { lat: 10.762622, lng: 106.660172 };
@@ -18,7 +20,17 @@ const MAP_STYLES = [
   { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
 ];
 
-export default function LocationPickerMap({ value, onChange }: LocationPickerMapProps) {
+const PLOT_OPTIONS = {
+  fillColor: "#10b981",
+  fillOpacity: 0.3,
+  strokeColor: "#059669",
+  strokeWeight: 2,
+  clickable: false,
+  editable: false,
+  zIndex: 1,
+};
+
+export default function LocationPickerMap({ value, onChange, plots = [] }: LocationPickerMapProps) {
   const { isLoaded, loadError } = useGoogleMaps();
 
   const handleMapClick = useCallback(
@@ -31,6 +43,19 @@ export default function LocationPickerMap({ value, onChange }: LocationPickerMap
     },
     [onChange]
   );
+
+  // Chuyển đổi geometry của lô đất sang format của Google Maps
+  const plotPolygons = useMemo(() => {
+    return plots
+      .filter(plot => plot.geometry?.coordinates?.[0])
+      .map(plot => ({
+        id: plot.id,
+        path: plot.geometry!.coordinates[0].map(coord => ({
+          lat: coord[1],
+          lng: coord[0],
+        }))
+      }));
+  }, [plots]);
 
   const onLoad = useCallback(() => {}, []);
 
@@ -53,7 +78,7 @@ export default function LocationPickerMap({ value, onChange }: LocationPickerMap
   return (
     <div className="relative group rounded-2xl overflow-hidden border border-slate-200 shadow-inner">
       <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-white/90 backdrop-blur-md text-[9px] font-black uppercase tracking-tighter text-slate-600 px-3 py-1.5 rounded-full shadow-sm border border-slate-200 pointer-events-none">
-        Click để chọn vị trí
+        Click để chọn vị trí kho
       </div>
 
       <GoogleMap
@@ -71,6 +96,15 @@ export default function LocationPickerMap({ value, onChange }: LocationPickerMap
           fullscreenControl: false,
         }}
       >
+        {/* Render các lô đất hiện có */}
+        {plotPolygons.map(plot => (
+          <Polygon
+            key={plot.id}
+            path={plot.path}
+            options={PLOT_OPTIONS}
+          />
+        ))}
+
         {value && (
           <Marker
             position={value}
@@ -87,3 +121,4 @@ export default function LocationPickerMap({ value, onChange }: LocationPickerMap
     </div>
   );
 }
+

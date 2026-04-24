@@ -31,6 +31,8 @@ export const useAuth = () => {
     accessToken: auth.accessToken,
     user,
     currentFarmId: auth.currentFarmId,
-    logout: () => dispatch(logout())
+    logout: () => {
+      dispatch(logout());
+    }
   }), [auth.isAuthenticated, auth.accessToken, user, auth.currentFarmId, dispatch]);
 };

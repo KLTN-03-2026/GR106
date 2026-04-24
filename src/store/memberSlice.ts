@@ -118,12 +118,15 @@ export const changeMemberRole = createAsyncThunk(
   },
 );
 
+import { logout } from './authSlice';
+
 const memberSlice = createSlice({
   name: 'member',
   initialState,
   reducers: {},
   extraReducers: (builder) => {
     builder
+      .addCase(logout, () => initialState)
       .addCase(fetchMembers.pending, (state) => {
         state.loadingMembers = true;
         state.error = null;

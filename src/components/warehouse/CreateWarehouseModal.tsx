@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { X, Loader2, Warehouse, Info } from "lucide-react";
 import LocationPickerMap from "./LocationPickerMap";
 import { createWarehouse } from "../../store/warehouseSlice";
+import { fetchPlots } from "../../store/plotSlice";
 import type { AppDispatch, RootState } from "../../store";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/button";
@@ -24,7 +25,15 @@ interface Props {
 export function CreateWarehouseModal({ farmId, isOpen, onClose, onSuccess }: Props) {
   const dispatch = useDispatch<AppDispatch>();
   const { submitting } = useSelector((state: RootState) => state.warehouse);
+  const { plots } = useSelector((state: RootState) => state.plot);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (isOpen && farmId) {
+      dispatch(fetchPlots(farmId));
+    }
+  }, [dispatch, isOpen, farmId]);
+
 
   const {
     register,
@@ -139,7 +148,7 @@ export function CreateWarehouseModal({ farmId, isOpen, onClose, onSuccess }: Pro
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
                 Vị trí tọa độ <span className="text-rose-500">*</span>
               </label>
-              <LocationPickerMap value={location} onChange={handleLocationChange} />
+              <LocationPickerMap value={location} onChange={handleLocationChange} plots={plots} />
               {(errors.latitude || errors.longitude) && (
                 <p className="mt-1 text-[10px] font-bold text-rose-500 flex items-center gap-1">
                    <Info size={10} /> Vui lòng click chọn vị trí trên bản đồ

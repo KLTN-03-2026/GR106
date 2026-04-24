@@ -58,6 +58,7 @@ export const deleteWarehouse = createAsyncThunk(
   }
 );
 
+import { logout } from './authSlice';
 const warehouseSlice = createSlice({
   name: 'warehouse',
   initialState,
@@ -68,6 +69,7 @@ const warehouseSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(logout, () => initialState)
       // fetchWarehouses
       .addCase(fetchWarehouses.pending, (state) => {
         state.loading = true;

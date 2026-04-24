@@ -117,12 +117,23 @@ export const deleteFarm = createAsyncThunk(
   }
 );
 
+import { logout } from './authSlice';
+
 const farmSlice = createSlice({
   name: 'farm',
   initialState,
-  reducers: {},
+  reducers: {
+    clearFarmData: (state) => {
+      state.farms = [];
+      state.farmSummary = [];
+      state.currentFarm = null;
+      state.loading = false;
+      state.error = null;
+    }
+  },
   extraReducers: (builder) => {
     builder
+      .addCase(logout, () => initialState)
       // createFarm
       .addCase(createFarm.pending, (state) => {
         state.loading = true;
@@ -205,4 +216,5 @@ const farmSlice = createSlice({
   },
 });
 
+export const { clearFarmData } = farmSlice.actions;
 export default farmSlice.reducer;

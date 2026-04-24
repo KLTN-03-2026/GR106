@@ -74,6 +74,7 @@ export const deletePlot = createAsyncThunk(
 );
 
 
+import { logout } from './authSlice';
 const plotSlice = createSlice({
   name: 'plot',
   initialState,
@@ -95,6 +96,7 @@ const plotSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(logout, () => initialState)
       // fetchPlots
       .addCase(fetchPlots.pending, (state) => {
         state.loading = true;
