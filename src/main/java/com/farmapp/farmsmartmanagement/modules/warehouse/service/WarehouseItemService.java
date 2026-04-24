@@ -81,6 +81,7 @@ public class WarehouseItemService {
             throw new AppException(ErrorCode.WAREHOUSE_ITEM_ALREADY_EXISTS);
 
         WarehouseItemEntity warehouseItemEntity = new WarehouseItemEntity();
+        warehouseItemEntity.setStock(request.getStock());
         warehouseItemEntity.setWarehouse(warehouse);
         warehouseItemEntity.setUnit(unit);
         warehouseItemEntity.setSku(sku);
