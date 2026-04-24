@@ -26,8 +26,10 @@ const FarmActionsPage: React.FC = () => {
     const { farmSummary } = useSelector((state: RootState) => state.farm);
     
     React.useEffect(() => {
-        dispatch(fetchFarmsSummary());
-    }, [dispatch]);
+        if (farmSummary.length === 0) {
+            dispatch(fetchFarmsSummary());
+        }
+    }, [dispatch, farmSummary.length]);
 
     const farm = farmSummary.find(f => f.farmId === farmId);
     const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);

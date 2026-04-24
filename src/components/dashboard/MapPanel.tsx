@@ -9,26 +9,14 @@ const DEFAULT_ZOOM = 13;
 
 export default function MapPanel() {
   const mainMapRef = useRef<google.maps.Map | null>(null);
-  const miniMapRef = useRef<google.maps.Map | null>(null);
-
-   const { isLoaded } = useGoogleMaps();
+  const { isLoaded } = useGoogleMaps();
 
   const onMainMapLoad = useCallback((map: google.maps.Map) => {
     mainMapRef.current = map;
   }, []);
 
-  const onMiniMapLoad = useCallback((map: google.maps.Map) => {
-    miniMapRef.current = map;
-  }, []);
-
   const onMainMapIdle = useCallback(() => {
-    const main = mainMapRef.current;
-    const mini = miniMapRef.current;
-    if (!main || !mini) return;
-    const center = main.getCenter();
-    if (center) {
-      mini.setCenter(center);
-    }
+    // No-op or handle main map idle
   }, []);
 
   const handleZoomIn = useCallback(() => {
@@ -48,21 +36,11 @@ export default function MapPanel() {
     if (!map) return;
     map.setCenter(DEFAULT_CENTER);
     map.setZoom(DEFAULT_ZOOM);
-    miniMapRef.current?.setCenter(DEFAULT_CENTER);
   }, []);
 
   const mapOptions: google.maps.MapOptions = {
     disableDefaultUI: true,
     gestureHandling: "greedy",
-  };
-
-  const miniMapOptions: google.maps.MapOptions = {
-    disableDefaultUI: true,
-    gestureHandling: "none",
-    draggable: false,
-    zoomControl: false,
-    scrollwheel: false,
-    disableDoubleClickZoom: true,
   };
 
   return (
@@ -118,23 +96,13 @@ export default function MapPanel() {
         </Button>
       </div>
 
-      {/* Mini-map */}
-      <div className="absolute bottom-[38px] left-9 z-20 w-[149px] h-[149px] rounded-[22px] border-4 border-white overflow-hidden shadow-lg">
-        {isLoaded && (
-          <GoogleMap
-            mapContainerStyle={{ width: "100%", height: "100%" }}
-            center={DEFAULT_CENTER}
-            zoom={10}
-            options={miniMapOptions}
-            onLoad={onMiniMapLoad}
-          />
-        )}
-        <div
-          className="absolute bottom-3 left-[18px] z-30 cursor-pointer"
-          onClick={handleRefresh}
-        >
-          <RefreshCw size={20} color="#EDEDED" />
-        </div>
+      {/* Refresh button - moved from mini-map to main map controls area if needed, 
+          or just keep it as is but without the mini-map wrapper */}
+      <div 
+        className="absolute bottom-5 right-8 z-20 w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-sm cursor-pointer hover:bg-gray-50"
+        onClick={handleRefresh}
+      >
+        <RefreshCw size={18} className="text-slate-600" />
       </div>
     </div>
   );

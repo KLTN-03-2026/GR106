@@ -8,7 +8,6 @@ import { farmService } from "../services/farm/farmService";
 import { RootState } from "../store";
 import { getRolesFromToken } from "../utils/jwt";
 import { fetchFarmsSummary } from "../store/farmSlice";
-import { fetchUnits } from "../store/unitSlice";
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
@@ -22,19 +21,12 @@ export default function DashboardLayout() {
 
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Đảm bảo farmSummary luôn được load (cần cho phân quyền Sidebar theo myRole)
+  // Đảm bảo farmSummary được load khi ở trong một farm (cần cho phân quyền Sidebar theo myRole)
   useEffect(() => {
-    if (farmSummary.length === 0) {
+    if (currentFarmId && farmSummary.length === 0) {
       dispatch(fetchFarmsSummary() as any);
     }
-  }, [dispatch, farmSummary.length]);
-
-  // Step 1: Load master data (Units) - Run once on startup
-  useEffect(() => {
-    if (accessToken) {
-      dispatch(fetchUnits() as any);
-    }
-  }, [dispatch, accessToken]);
+  }, [dispatch, currentFarmId, farmSummary.length]);
 
   // Tự động đồng bộ Farm Context từ URL (chỉ khi có farmId trong URL)
   useEffect(() => {
@@ -50,7 +42,7 @@ export default function DashboardLayout() {
         try {
           const res = await farmService.selectFarm(urlFarmId);
           if (res.success && res.data.farmToken) {
-            dispatch(selectFarm({ token: res.data.farmToken, farmId: urlFarmId }));
+            dispatch(selectFarm({ token: res.data.farmToken, currentFarmId: urlFarmId }));
           }
         } catch (err: any) {
           console.error('[Sync] Farm selection failed', err);

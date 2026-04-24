@@ -3,9 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { useAuth } from '../../hooks/useAuth';
-import { fetchPlots, clearPlots, setAggregateStats, setPlots } from '../../store/plotSlice';
+import { fetchPlots, clearPlots } from '../../store/plotSlice';
 import { fetchCrops, fetchCropTypes } from '../../store/cropSlice';
-import { dashboardService } from '../../services/dashboard/dashboardService';
 import {
   StatCard,
   WeatherCard,
@@ -38,24 +37,9 @@ function useDashboardData(farmId?: string) {
       dispatch(fetchPlots(farmId));
       setIsSyncing(false);
     } else {
-      // 2b. CHẾ ĐỘ HUB: Quét nền lấy dữ liệu tổng hợp
+      // 2b. CHẾ ĐỘ HUB: Không quét nền tự động để tránh redundant requests
       dispatch(clearPlots());
-      
-      if (hubToken) {
-        setIsSyncing(true);
-        // Chạy ngầm việc quét nền
-        dashboardService.fetchAggregateStats(hubToken)
-          .then(data => {
-            dispatch(setAggregateStats({ totalPlots: data.totalPlots, totalArea: data.totalArea }));
-            dispatch(setPlots(data.allPlots));
-          })
-          .catch(err => {
-            console.error('[Dashboard] Background aggregate failed', err);
-          })
-          .finally(() => {
-            setIsSyncing(false);
-          });
-      }
+      setIsSyncing(false);
     }
   }, [farmId, dispatch, hubToken]);
 

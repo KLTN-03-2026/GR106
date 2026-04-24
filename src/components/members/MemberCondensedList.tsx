@@ -14,8 +14,11 @@ export const MemberCondensedList: React.FC = () => {
 
   useEffect(() => {
     if (!farmId) return;
-    dispatch(fetchMembers(farmId));
-  }, [dispatch, farmId]);
+    // Chỉ fetch nếu chưa có dữ liệu thành viên nào trong store
+    if (members.length === 0) {
+      dispatch(fetchMembers(farmId));
+    }
+  }, [dispatch, farmId, members.length]);
 
   return (
     <div className="flex flex-col gap-3">

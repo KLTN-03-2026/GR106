@@ -11,6 +11,7 @@ import type { AppDispatch, RootState } from '../../store'
 import { fetchWarehouseItems, createWarehouseItem } from '../../store/warehouseItemSlice'
 import { fetchSuppliers } from '../../store/supplierSlice'
 import { fetchSkus } from '../../store/skuSlice'
+import { fetchUnits } from '../../store/unitSlice'
 import { useAuth } from '../../hooks/useAuth'
 
 export function WarehouseDetailPage() {
@@ -66,6 +67,7 @@ export function WarehouseDetailPage() {
       dispatch(fetchWarehouseItems({ farmId, warehouseId }))
       dispatch(fetchSuppliers(farmId))
       dispatch(fetchSkus(farmId))
+      dispatch(fetchUnits())
     }
   }, [dispatch, farmId, warehouseId])
 

@@ -44,7 +44,7 @@ export function ManagementDashboardPage() {
     try {
       const res = await farmService.selectFarm(farm.farmId);
       if (res.success && res.data.farmToken) {
-        dispatch(selectFarm({ token: res.data.farmToken, farmId: farm.farmId }));
+        dispatch(selectFarm({ token: res.data.farmToken, currentFarmId: farm.farmId }));
         navigate(`/farms/${farm.farmId}/actions`);
       }
     } catch (err: any) {

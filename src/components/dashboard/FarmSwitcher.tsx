@@ -14,7 +14,7 @@ import { cn } from '../../utils/cn';
 import { useAuth } from '../../hooks/useAuth';
 import { fetchFarmsSummary } from '../../store/farmSlice';
 import { RootState, AppDispatch } from '../../store';
-import { FarmSummary } from '../../schemas/farmSchemas';
+import { FarmSummary } from '../../types/farm';
 
 interface FarmSwitcherProps {
   onAddClick?: () => void;
@@ -31,8 +31,10 @@ export default function FarmSwitcher({ onAddClick }: FarmSwitcherProps) {
   const [selectedFarm, setSelectedFarm] = useState<FarmSummary | null>(null);
 
   useEffect(() => {
-    dispatch(fetchFarmsSummary());
-  }, [dispatch]);
+    if (farmSummary.length === 0) {
+      dispatch(fetchFarmsSummary());
+    }
+  }, [dispatch, farmSummary.length]);
 
   // Set default selected farm once data is loaded
   useEffect(() => {

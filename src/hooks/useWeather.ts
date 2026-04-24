@@ -89,6 +89,12 @@ export const useWeather = (): UseWeatherState => {
       console.log("🌦️ Weather Data Fetched:", weatherData);
 
       if (!controller.signal.aborted) {
+        // Lưu vào cache
+        sessionStorage.setItem("weather_cache", JSON.stringify({
+          data: weatherData,
+          timestamp: Date.now()
+        }));
+
         setState((prev) => ({
           ...prev,
           data: weatherData,
@@ -115,6 +121,27 @@ export const useWeather = (): UseWeatherState => {
   }, []);
 
   const getLocationAndFetchWeather = useCallback(() => {
+    // 1. Kiểm tra cache trong sessionStorage
+    const cached = sessionStorage.getItem("weather_cache");
+    if (cached) {
+      try {
+        const { data, timestamp } = JSON.parse(cached);
+        // Nếu cache chưa quá 30 phút, dùng luôn
+        if (Date.now() - timestamp < 30 * 60 * 1000) {
+          console.log("🌦️ Using cached weather data");
+          setState({
+            data,
+            loading: false,
+            error: null,
+            refetch: getLocationAndFetchWeather
+          });
+          return;
+        }
+      } catch (e) {
+        console.warn("Weather cache parse failed");
+      }
+    }
+
     if (!navigator.geolocation) {
       fetchWeather(DEFAULT_LAT, DEFAULT_LON);
       return;

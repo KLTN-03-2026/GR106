@@ -50,11 +50,11 @@ const authSlice = createSlice({
     },
 
     // Chọn farm - lưu farmToken làm accessToken hiện tại
-    selectFarm: (state, action: PayloadAction<{ token: string; farmId: string }>) => {
-      state.currentFarmId = action.payload.farmId;
+    selectFarm: (state, action: PayloadAction<{ token: string; currentFarmId: string }>) => {
+      state.currentFarmId = action.payload.currentFarmId;
       state.accessToken = action.payload.token;
 
-      sessionStorage.setItem('currentFarmId', action.payload.farmId);
+      sessionStorage.setItem('currentFarmId', action.payload.currentFarmId);
       sessionStorage.setItem('accessToken', action.payload.token);
     },
 
