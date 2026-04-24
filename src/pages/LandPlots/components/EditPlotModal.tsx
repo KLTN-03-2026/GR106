@@ -121,18 +121,18 @@ export function EditPlotModal({
             />
           </div>
 
-          <div className="p-4 bg-blue-50 text-blue-800 text-sm rounded-xl flex items-start gap-3 border border-blue-100 shadow-sm transition-all duration-300">
-            <div className="p-1.5 bg-blue-100 rounded-lg text-blue-600 shadow-sm border border-blue-200 shrink-0">
-              <InfoIcon className="w-5 h-5" />
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="font-bold text-blue-900 leading-tight">Lưu ý ranh giới đất</span>
-              <p className="text-sm text-blue-700 leading-relaxed font-medium">
-                Không thể chỉnh sửa ranh giới lô đất từ màn hình này. Vui lòng sử dụng chức năng
-                <span className="font-bold text-blue-800 decoration-blue-300 underline underline-offset-4 ml-1">Bản đồ lô đất</span>.
-              </p>
-            </div>
-          </div>
+   
+<div className="p-4 bg-emerald-50 text-emerald-800 text-sm rounded-xl flex items-start gap-3 border border-emerald-100">
+  <div className="p-1.5 bg-emerald-100 rounded-lg text-emerald-600 shrink-0">
+    <InfoIcon className="w-5 h-5" />
+  </div>
+  <div className="flex flex-col gap-1">
+    <span className="font-bold text-emerald-900 leading-tight">Đang chỉnh sửa trên bản đồ</span>
+    <p className="text-sm text-emerald-700 leading-relaxed font-medium">
+      Ranh giới lô đất có thể được điều chỉnh trực tiếp trên bản đồ sau khi lưu thông tin này.
+    </p>
+  </div>
+</div>
 
           <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
             <button

@@ -5,7 +5,7 @@ import { AppDispatch, RootState } from '../../store';
 import { fetchPlots, createPlot, updatePlot, deletePlot } from '../../store/plotSlice';
 import { fetchWarehouses } from '../../store/warehouseSlice';
 import { Plot, GeoPoint, Geometry } from '../../types/plot';
-import { Warehouse } from '../../types/warehouse';
+import { Warehouse } from '../../types/warehouse/warehouse';
 import { toast } from 'sonner';
 import { ArrowLeft, Map as MapIcon } from 'lucide-react';
 import { Navigate } from 'react-router-dom';

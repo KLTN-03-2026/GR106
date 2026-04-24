@@ -10,7 +10,7 @@ import {
   getColorFromId, calculateCentroid, polygonsOverlap,
   getPlotPath, segmentsIntersect, pointInPolygon,
 } from '../../../utils/plotUtils'
-import { Warehouse } from '../../../types/warehouse'
+import { Warehouse } from '../../../types/warehouse/warehouse'
 
 const MAP_OPTIONS: google.maps.MapOptions = {
   mapTypeId: 'satellite', disableDefaultUI: false, zoomControl: true,

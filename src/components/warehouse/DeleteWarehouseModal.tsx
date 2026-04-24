@@ -1,5 +1,5 @@
 import { Trash2, AlertTriangle, X, Loader2 } from 'lucide-react'
-import { Warehouse } from '../../types/warehouse'
+import { Warehouse } from '../../types/warehouse/warehouse'
 
 interface DeleteWarehouseModalProps {
   isOpen: boolean

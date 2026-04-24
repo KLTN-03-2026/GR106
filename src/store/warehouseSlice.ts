@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { warehouseService } from '../services/warehouse/warehouseService';
-import { Warehouse, CreateWarehouseRequest } from '../types/warehouse';
+import { Warehouse, CreateWarehouseRequest } from '../types/warehouse/warehouse';
 
 interface WarehouseState {
   warehouses: Warehouse[];

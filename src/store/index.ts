@@ -6,6 +6,9 @@ import cropReducer from './cropSlice';
 import seasonPlanReducer from './seasonPlanSlice';
 import memberReducer from './memberSlice';
 import warehouseReducer from './warehouseSlice';
+import warehouseItemReducer from './warehouseItemSlice';
+import supplierReducer from './supplierSlice';
+import skuReducer from './skuSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +19,9 @@ export const store = configureStore({
     seasonPlan: seasonPlanReducer,
     member: memberReducer,
     warehouse: warehouseReducer,
+    warehouseItem: warehouseItemReducer,
+    supplier: supplierReducer,
+    sku: skuReducer,
   }
 });
 

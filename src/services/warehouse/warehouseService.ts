@@ -1,6 +1,6 @@
 import { axiosInstance } from '../../config/axios';
 import { ApiResponse } from '../../types/auth';
-import { Warehouse, CreateWarehouseRequest } from '../../types/warehouse';
+import { Warehouse, CreateWarehouseRequest } from '../../types/warehouse/warehouse';
 
 export const warehouseService = {
   async getWarehouses(farmId: string): Promise<ApiResponse<Warehouse[]>> {

@@ -50,10 +50,17 @@ export function CreateWarehouseModal({ farmId, isOpen, onClose, onSuccess }: Pro
     }
   });
 
-  const handleLocationChange = (coords: { lat: number; lng: number }) => {
+  const handleLocationChange = (coords: { lat: number; lng: number } | null) => {
     setLocation(coords);
-    setValue("latitude", coords.lat, { shouldValidate: true });
-    setValue("longitude", coords.lng, { shouldValidate: true });
+    if (coords) {
+      setValue("latitude", coords.lat, { shouldValidate: true });
+      setValue("longitude", coords.lng, { shouldValidate: true });
+    } else {
+      // @ts-ignore
+      setValue("latitude", undefined, { shouldValidate: true });
+      // @ts-ignore
+      setValue("longitude", undefined, { shouldValidate: true });
+    }
   };
 
   const onSubmit = async (data: CreateWarehouseFormValues) => {

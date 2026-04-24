@@ -1,4 +1,4 @@
-import { Warehouse } from '../../../types/warehouse';
+import { Warehouse } from '../../../types/warehouse/warehouse';
 import { MapPinIcon } from 'lucide-react';
 
 interface Props {

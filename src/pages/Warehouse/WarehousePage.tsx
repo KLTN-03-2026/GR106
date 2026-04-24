@@ -9,7 +9,7 @@ import { fetchWarehouses, deleteWarehouse } from '../../store/warehouseSlice'
 import type { AppDispatch, RootState } from '../../store'
 import { useAuth } from '../../hooks/useAuth'
 import { CreateWarehouseModal, DeleteWarehouseModal } from '../../components/warehouse'
-import { Warehouse } from '../../types/warehouse'
+import { Warehouse } from '../../types/warehouse/warehouse'
 
 export function WarehousePage() {
   const navigate = useNavigate()

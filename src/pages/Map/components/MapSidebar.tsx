@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Map as MapIcon } from 'lucide-react';
 import { Plot } from '../../../types/plot';
-import { Warehouse } from '../../../types/warehouse';
+import { Warehouse } from '../../../types/warehouse/warehouse';
 import { PlotListItem } from './PlotListItem';
 import { WarehouseListItem } from './WarehouseListItem';
 
