@@ -14,6 +14,8 @@ public class WarehouseItemResponse {
     UUID id;
     String name;
 
+    BigDecimal stock;
+
     WarehouseResponse warehouse;
 
     UnitResponse unit;
