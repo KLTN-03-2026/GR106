@@ -8,8 +8,7 @@ import { Navigate } from 'react-router-dom'
 import { fetchWarehouses, deleteWarehouse } from '../../store/warehouseSlice'
 import type { AppDispatch, RootState } from '../../store'
 import { useAuth } from '../../hooks/useAuth'
-import { CreateWarehouseModal } from './components/CreateWarehouseModal'
-import { DeleteWarehouseModal } from './components/DeleteWarehouseModal'
+import { CreateWarehouseModal, DeleteWarehouseModal } from '../../components/warehouse'
 import { Warehouse } from '../../types/warehouse'
 
 export function WarehousePage() {
