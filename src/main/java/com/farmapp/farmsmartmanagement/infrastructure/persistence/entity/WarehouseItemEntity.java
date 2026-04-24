@@ -35,6 +35,10 @@ public class WarehouseItemEntity extends BaseEntity {
     @Column(name = "name", nullable = false)
     String name;
 
+    @Digits(integer = 13, fraction = 2)
+            @Column(name = "stock", nullable = false)
+    BigDecimal stock;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sku", nullable = false)
     SkuEntity sku;
