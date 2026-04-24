@@ -21,6 +21,9 @@ public class CreateWarehouseItemRequest {
     @Size(max = 200)
     String name;
 
+    @Min(value = 0,message = "Số lượng vật tư không thể ")
+    BigDecimal stock;
+
     @NotNull(message = "Mã vật tư không được để trống")
     @Size(max = 100)
     String sku;
