@@ -38,6 +38,7 @@ export function WarehouseDetailPage() {
   const [formData, setFormData] = useState({
     name: '',
     unitId: '',
+    stock: 0,
     sku: '',
     supplierCode: '',
     unitPrice: 0,
@@ -49,6 +50,16 @@ export function WarehouseDetailPage() {
     const myFarmRole = currentFarm?.myRole?.toLowerCase() || user?.role
     return ['owner', 'manager', 'admin'].includes(myFarmRole || '')
   }, [farmSummary, farmId, user])
+
+  const lowStockCount = useMemo(() => 
+    items.filter(item => item.stock <= (item.minStockQty || 0)).length,
+    [items]
+  )
+
+  const totalInventoryValue = useMemo(() => 
+    items.reduce((acc, item) => acc + (item.stock * (item.unitPrice || 0)), 0),
+    [items]
+  )
 
   useEffect(() => {
     if (farmId && warehouseId) {
@@ -72,7 +83,7 @@ export function WarehouseDetailPage() {
       await dispatch(createWarehouseItem({ farmId, warehouseId, itemData: formData })).unwrap()
       toast.success('Đã thêm vật tư mới')
       setIsModalOpen(false)
-      setFormData({ name: '', unitId: '', sku: '', supplierCode: '', unitPrice: 0, minStockQty: 0 })
+      setFormData({ name: '', unitId: '', stock: 0, sku: '', supplierCode: '', unitPrice: 0, minStockQty: 0 })
     } catch (err: any) {
       toast.error(err || 'Không thể thêm vật tư')
     } finally {
@@ -138,7 +149,7 @@ export function WarehouseDetailPage() {
             </div>
             <div className="text-left">
               <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Sắp hết hàng</p>
-              <h3 className="text-2xl font-black text-slate-900">0</h3>
+              <h3 className="text-2xl font-black text-slate-900">{lowStockCount}</h3>
             </div>
           </div>
 
@@ -148,7 +159,7 @@ export function WarehouseDetailPage() {
             </div>
             <div className="text-left">
               <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Giá trị tồn kho</p>
-              <h3 className="text-2xl font-black text-slate-900">--</h3>
+              <h3 className="text-2xl font-black text-slate-900">{totalInventoryValue.toLocaleString()}</h3>
             </div>
           </div>
         </div>
@@ -193,6 +204,7 @@ export function WarehouseDetailPage() {
                   <tr className="border-b border-slate-50">
                     <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Vật tư / SKU</th>
                     <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Đơn vị</th>
+                    <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Số lượng tồn</th>
                     <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Nhà cung cấp</th>
                     <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Đơn giá (VNĐ)</th>
                     <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Hành động</th>
@@ -214,6 +226,11 @@ export function WarehouseDetailPage() {
                       </td>
                       <td className="px-8 py-5">
                         <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold uppercase">{item.unit.name}</span>
+                      </td>
+                      <td className="px-8 py-5 text-right">
+                        <span className={`text-sm font-black ${item.stock <= (item.minStockQty || 0) ? 'text-rose-600' : 'text-slate-900'}`}>
+                          {item.stock.toLocaleString()}
+                        </span>
                       </td>
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-2">
@@ -304,6 +321,19 @@ export function WarehouseDetailPage() {
                       <option value="">Chọn nhà cung cấp</option>
                       {suppliers.map(s => <option key={s.code} value={s.code}>{s.name}</option>)}
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5 ml-1">Số lượng tồn kho ban đầu</label>
+                    <input
+                      type="number"
+                      required
+                      min="0"
+                      value={formData.stock}
+                      onChange={e => setFormData(p => ({ ...p, stock: Number(e.target.value) }))}
+                      className="w-full px-5 py-4 bg-emerald-50/30 border border-emerald-100 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-black text-emerald-600"
+                      placeholder="0"
+                    />
                   </div>
 
                   <div>

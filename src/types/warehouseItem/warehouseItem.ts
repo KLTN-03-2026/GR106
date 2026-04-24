@@ -1,6 +1,7 @@
 export interface WarehouseItem {
   id: string;
   name: string;
+  stock: number;
   warehouse: {
     id: string;
     name: string;
@@ -28,6 +29,10 @@ export interface WarehouseItem {
     id: string;
     fullName: string;
     email: string;
+    phone: string;
+    status: string;
+    isLocked: boolean;
+    createdAt: string;
   };
   createdAt: string;
   unitPrice: number;
@@ -37,6 +42,7 @@ export interface WarehouseItem {
 export interface CreateWarehouseItemDto {
   unitId: string;
   name: string;
+  stock: number;
   sku: string;
   unitPrice: number;
   supplierCode: string;
