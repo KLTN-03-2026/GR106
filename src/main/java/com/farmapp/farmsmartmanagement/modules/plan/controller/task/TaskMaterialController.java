@@ -17,6 +17,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
@@ -41,19 +42,19 @@ public class TaskMaterialController {
         );
     }
 
-//    // Lấy danh sách vật tư của task
-//    @GetMapping("/api/v1/plans/{planId}/stages/{stageId}/tasks/{taskId}/materials")
-//    @RequiresFarmToken
-//    @Operation(summary = "Danh sách vật tư của Task", security = @SecurityRequirement(name = "bearerAuth"))
-//    public ResponseEntity<ApiResponse<List<TaskMaterialResponse>>> getAll(
-//            @PathVariable UUID planId,
-//            @PathVariable UUID stageId,
-//            @PathVariable UUID taskId
-//    ) {
-//        return ResponseUtil.success(
-//                taskMaterialService.findAllByTaskId(taskId)
-//        );
-//    }
+    // Lấy danh sách vật tư của task
+    @GetMapping("/api/v1/plans/{planId}/stages/{stageId}/tasks/{taskId}/materials")
+    @RequiresFarmToken
+    @Operation(summary = "Danh sách vật tư của Task", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<ApiResponse<List<TaskMaterialResponse>>> getAll(
+            @PathVariable UUID planId,
+            @PathVariable UUID stageId,
+            @PathVariable UUID taskId
+    ) {
+        return ResponseUtil.success(
+                taskMaterialService.findAllByTaskId(taskId)
+        );
+    }
 //
 //    // Cập nhật số lượng vật tư
 //    @PatchMapping("/api/v1/plans/{planId}/stages/{stageId}/tasks/{taskId}/materials/{materialId}")

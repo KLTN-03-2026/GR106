@@ -15,7 +15,9 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -36,6 +38,12 @@ public class TaskMaterialService {
 
     SecurityUtils securityUtils;
 
+    @Transactional(readOnly = true)
+    public List<TaskMaterialResponse> findAllByTaskId(UUID taskId) {
+        return taskMaterialMapper.toResponses(taskMaterialRepository.findAllByTask_Id(taskId));
+    }
+
+    @Transactional
     public TaskMaterialResponse createTaskMaterial(UUID planId, UUID stageId, UUID taskId, CreateTaskMaterialRequest request) {
 
         UUID farmId = securityUtils.getCurrentFarmId();
