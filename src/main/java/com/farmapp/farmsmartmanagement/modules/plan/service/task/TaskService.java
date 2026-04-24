@@ -1,4 +1,4 @@
-package com.farmapp.farmsmartmanagement.modules.plan.service;
+package com.farmapp.farmsmartmanagement.modules.plan.service.task;
 
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
