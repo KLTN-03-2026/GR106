@@ -1,21 +1,18 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useDispatch, useSelector } from 'react-redux'
 import { Tag, Plus, Trash2, Loader2, ArrowLeft, Search, Barcode } from 'lucide-react'
 import { toast } from 'sonner'
-import type { AppDispatch, RootState } from '../../store'
-import { fetchSkus, createSku, deleteSku } from '../../store/skuSlice'
-import { useAuth } from '../../hooks/useAuth'
+import { useAuth } from '../../hooks/auth/useAuth'
+import { useSkus } from '../../hooks/skus/useSkus'
+import { useFarms } from '../../hooks/farms/useFarms'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { createSkuSchema } from '../../schemas/skuSchemas'
 
 export function SKUListPage() {
   const { farmId } = useParams<{ farmId: string }>()
   const navigate = useNavigate()
-  const dispatch = useDispatch<AppDispatch>()
-  
-  const { skus, loading } = useSelector((state: RootState) => state.sku)
-  const farmSummary = useSelector((state: RootState) => state.farm.farmSummary)
+  const { skus, loading, fetchSkus, createSku, deleteSku } = useSkus()
+  const { farmSummary } = useFarms()
   const { user } = useAuth()
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -33,8 +30,8 @@ export function SKUListPage() {
   }, [farmSummary, farmId, user])
 
   useEffect(() => {
-    if (farmId) dispatch(fetchSkus(farmId))
-  }, [dispatch, farmId])
+    if (farmId) fetchSkus(farmId)
+  }, [fetchSkus, farmId])
 
   const filteredSkus = skus.filter(s => 
     s.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -58,7 +55,7 @@ export function SKUListPage() {
     
     setSubmitting(true)
     try {
-      await dispatch(createSku({ farmId, data: { sku: newSku.sku, description: newSku.description } })).unwrap()
+      await createSku(farmId, { sku: newSku.sku, description: newSku.description }).unwrap()
       toast.success('Đã thêm mã SKU mới')
       setIsModalOpen(false)
       setNewSku({ sku: '', description: '' })
@@ -78,7 +75,7 @@ export function SKUListPage() {
     if (!farmId || !skuToDelete) return
     setIsDeleting(true)
     try {
-      await dispatch(deleteSku({ farmId, sku: skuToDelete })).unwrap()
+      await deleteSku(farmId, skuToDelete).unwrap()
       toast.success('Đã xóa mã SKU')
       setIsDeleteConfirmOpen(false)
     } catch (err: any) {

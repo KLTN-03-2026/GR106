@@ -5,16 +5,15 @@ import * as z from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { Loader2, Mail, Lock, User, Tractor } from 'lucide-react';
 import { toast } from 'sonner';
-import { useDispatch } from 'react-redux';
-import { authService } from '../../../services/auth/authService';
-import { farmService } from '../../../services/farm/farmService';
-import { setCredentials } from '../../../store/authSlice';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { useFarms } from '@/hooks/farms/useFarms';
 import { registerSchema } from '../../../schemas/authSchemas';
 type RegisterFormValues = z.infer<typeof registerSchema>;
 export const RegisterForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const { register: registerUser, login } = useAuth();
+  const { createFarm } = useFarms();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const {
     register,
     handleSubmit,
@@ -32,28 +31,21 @@ export const RegisterForm: React.FC = () => {
         password: data.password,
         fullName: data.fullName
       };
-      const regResponse = await authService.register(regPayload);
+      await registerUser(regPayload);
       
-      if (!regResponse.success) {
-        throw new Error(regResponse.message || 'Đăng ký không thành công');
-      }
-
       // 2. Automatic Login to get Token
-      const loginResponse = await authService.login({
+      const loginResult = await login({
         email: data.email,
         password: data.password
       });
 
-      if (loginResponse.success && loginResponse.data.accessToken) {
-        // Cập nhật Redux ngay để có token gọi API tiếp theo
-        dispatch(setCredentials(loginResponse.data));
-
+      if (loginResult && loginResult.accessToken) {
         // 3. Create Initial Farm
         try {
-          await farmService.createFarm({
+          await createFarm({
             farmName: data.farmName,
             description: `Trang trại của ${data.fullName}`
-          });
+          }).unwrap();
           
           toast.success('Đăng ký và tạo trang trại thành công!');
           navigate('/dashboard');

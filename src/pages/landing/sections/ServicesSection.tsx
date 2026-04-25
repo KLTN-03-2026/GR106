@@ -1,6 +1,6 @@
 import React from "react";
 import { BotIcon, CloudSunIcon, BarChart2Icon, LeafIcon } from "lucide-react";
-import { useReveal } from "@/hooks/useReveal";
+import { useReveal } from "@/hooks/reveal/useReveal";
 
 const services = [
   {

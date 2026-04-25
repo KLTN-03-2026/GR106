@@ -10,41 +10,38 @@ import {
   AlertCircle,
   ArrowRight
 } from 'lucide-react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { useFarms } from '@/hooks/farms/useFarms';
 import { toast } from 'sonner';
 import { farmService } from '../../services/farm/farmService';
-import { selectFarm, clearFarmContext } from '../../store/authSlice';
 import { CreateFarmModal } from '../../components/farm';
-import { fetchFarmsSummary } from '../../store/farmSlice';
-import { RootState, AppDispatch } from '../../store';
 import { getRoleDisplayName } from '../../utils/roleUtils';
 
 export function ManagementDashboardPage() {
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
+  const { selectFarm, clearFarmContext } = useAuth();
+  const { farmSummary, loading, error, fetchFarmsSummary } = useFarms();
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const { farmSummary, loading, error } = useSelector((state: RootState) => state.farm);
-  
   // Tự động xóa farm context khi vào trang danh sách farm
   useEffect(() => {
-    dispatch(clearFarmContext());
-  }, [dispatch]);
+    clearFarmContext();
+  }, [clearFarmContext]);
 
   useEffect(() => {
     // Chỉ fetch nếu chưa có dữ liệu để tránh race-condition với việc xóa farm
     if (farmSummary.length === 0) {
-      dispatch(fetchFarmsSummary());
+      fetchFarmsSummary();
     }
-  }, [dispatch, farmSummary.length]);
+  }, [fetchFarmsSummary, farmSummary.length]);
 
 
   const handleSelectFarm = async (farm: any) => {
     try {
       const res = await farmService.selectFarm(farm.farmId);
       if (res.success && res.data.farmToken) {
-        dispatch(selectFarm({ token: res.data.farmToken, currentFarmId: farm.farmId }));
+        selectFarm(res.data.farmToken, farm.farmId);
         navigate(`/farms/${farm.farmId}/actions`);
       }
     } catch (err: any) {
@@ -178,7 +175,7 @@ export function ManagementDashboardPage() {
       <CreateFarmModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={() => dispatch(fetchFarmsSummary())}
+        onSuccess={() => fetchFarmsSummary()}
       />
     </div>
   );

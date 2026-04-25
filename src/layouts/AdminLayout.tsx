@@ -1,15 +1,14 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Sprout, LayoutDashboard, LogOut, ChevronLeft } from "lucide-react";
-import { useDispatch } from "react-redux";
-import { logout } from "../store/authSlice";
+import { useAuth } from "@/hooks/auth/useAuth";
 
 export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const dispatch = useDispatch();
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    dispatch(logout());
+    logout();
     navigate("/login");
   };
 

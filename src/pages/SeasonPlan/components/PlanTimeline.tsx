@@ -6,7 +6,7 @@ import React, {
   useCallback,
 } from 'react';
 import { SeasonPlan, Phase, Task } from '../../../types/seasonPlan';
-import { ChevronRight, ChevronDown, Plus, Trash2, GripVertical } from 'lucide-react';
+import {ChevronDown, Plus, Trash2, GripVertical } from 'lucide-react';
 import { cn } from '../../../utils/cn';
 import {
   addDays,
@@ -72,6 +72,43 @@ function getMonday(d: Date): Date {
   result.setDate(d.getDate() + diff);
   result.setHours(0, 0, 0, 0);
   return result;
+}
+
+// ─── AnimatedRow: wrapper that smoothly expands/collapses a single row ────────
+//
+// Technique: the outer div always stays in the DOM (no conditional render).
+// We animate `height` from 0 → ROW_H and `opacity` 0 → 1 via CSS transition.
+// This avoids layout jumps and gives a butter-smooth accordion effect.
+//
+interface AnimatedRowProps {
+  visible: boolean;
+  rowHeight: number;
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+function AnimatedRow({ visible, rowHeight, children, className, style }: AnimatedRowProps) {
+  return (
+    <div
+      className={className}
+      style={{
+        height: visible ? rowHeight : 0,
+        opacity: visible ? 1 : 0,
+        overflow: 'hidden',
+        // Use cubic-bezier for a natural spring-like feel:
+        // height eases out quickly, opacity slightly trails for depth
+        transition: visible
+          ? 'height 220ms cubic-bezier(0.4,0,0.2,1), opacity 180ms ease-out 40ms'
+          : 'height 200ms cubic-bezier(0.4,0,1,1), opacity 140ms ease-in',
+        flexShrink: 0,
+        willChange: 'height, opacity',
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -198,16 +235,6 @@ export function PlanTimeline({
 
   // ─────────────────────────────────────────────────────────────────────────
   // HEADER DATA
-  //
-  // WEEKS:  dayCells[] — one per day.
-  //         Each cell: leftPx, width=PPD, dayLabel ("1"…"31"),
-  //         isFirstOfMonth (to show month name), isWeekend, isToday.
-  //         Rendered as 2 sub-rows inside a single header band:
-  //           top 28px: month spans
-  //           bottom 28px: day numbers
-  //
-  // MONTHS: topCells (month names) + subCells (week-start dates)
-  // QUARTERS: topCells (quarter labels) + subCells (month short names)
   // ─────────────────────────────────────────────────────────────────────────
 
   interface DayCell {
@@ -240,7 +267,6 @@ export function PlanTimeline({
     return cells;
   }, [timeScale, minDate, maxDate, PPD, todayDate]);
 
-  // Month spans for the top portion of weeks header
   const monthSpans = useMemo(() => {
     if (timeScale !== 'weeks') return [];
     const spans: { label: string; leftPx: number; widthPx: number }[] = [];
@@ -269,7 +295,6 @@ export function PlanTimeline({
     const sub: ColCell[] = [];
 
     if (timeScale === 'months') {
-      // top = months
       let cur = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
       while (cur <= maxDate) {
         const nxt = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
@@ -279,7 +304,6 @@ export function PlanTimeline({
         if (days > 0) top.push({ label: cur.toLocaleString('vi-VN', { month: 'long' }), widthPx: days * PPD });
         cur = nxt;
       }
-      // sub = week starts
       const currentMonday = getMonday(todayDate);
       let wcur = getMonday(minDate);
       while (wcur <= maxDate) {
@@ -297,7 +321,6 @@ export function PlanTimeline({
         wcur = wend;
       }
     } else {
-      // quarters
       const Q = [['Tháng 1', 'Tháng 3'], ['Tháng 4', 'Tháng 6'], ['Tháng 7', 'Tháng 9'], ['Tháng 10', 'Tháng 12']];
       const qStart = Math.floor(minDate.getMonth() / 3) * 3;
       let cur = new Date(minDate.getFullYear(), qStart, 1);
@@ -312,7 +335,6 @@ export function PlanTimeline({
         }
         cur = nxt;
       }
-      // sub = months
       let mcur = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
       while (mcur <= maxDate) {
         const nxt = new Date(mcur.getFullYear(), mcur.getMonth() + 1, 1);
@@ -375,7 +397,6 @@ export function PlanTimeline({
     });
   };
 
-
   const finalizeBarDrag = useCallback(async (drag: BarDragState, delta: number) => {
     if (delta === 0) {
       setBarDrag(null); setDragDeltaDays(0); setDragTooltip(null);
@@ -386,7 +407,6 @@ export function PlanTimeline({
 
     const { target, mode, origStart, origEnd } = drag;
 
-    // Tính ngày mới cuối cùng dựa trên công thức yêu cầu
     const nextDates = (() => {
       if (mode === 'MOVE') {
         return {
@@ -398,7 +418,6 @@ export function PlanTimeline({
         const dur = Math.max(1, diffDays(origStart, origEnd) - delta);
         return { startDate: addDays(origEnd, -dur), endDate: origEnd };
       }
-      // RESIZE_RIGHT
       const dur = Math.max(1, diffDays(origStart, origEnd) + delta);
       return { startDate: origStart, endDate: addDays(origStart, dur) };
     })();
@@ -412,7 +431,6 @@ export function PlanTimeline({
     } catch (err) {
       console.error('Timeline update error:', err);
     } finally {
-      // Reset SAU KHI API hoàn thành → tránh bar nhảy về vị trí cũ rồi mới cập nhật
       setBarDrag(null);
       setDragDeltaDays(0);
       setDragTooltip(null);
@@ -440,20 +458,17 @@ export function PlanTimeline({
     setDragDeltaDays(0);
     dragDeltaRef.current = 0;
 
-    // Đổi cursor toàn trang
     document.body.style.cursor =
       mode === 'MOVE' ? 'grabbing' :
         mode === 'RESIZE_LEFT' ? 'w-resize' : 'e-resize';
 
     const onMove = (ev: MouseEvent) => {
-      if (ev.buttons === 0) { onUp(); return; } // nút chuột đã thả
+      if (ev.buttons === 0) { onUp(); return; }
 
-      // Tính delta theo ngày (làm tròn theo PPD)
       const delta = Math.round((ev.clientX - dragContext.startX) / PPD);
       setDragDeltaDays(delta);
       dragDeltaRef.current = delta;
 
-      // Tính ngày preview cho tooltip
       let s = dragContext.origStart, en = dragContext.origEnd;
       if (mode === 'MOVE') { s = addDays(s, delta); en = addDays(en, delta); }
       else if (mode === 'RESIZE_LEFT') { s = addDays(s, delta); }
@@ -472,12 +487,11 @@ export function PlanTimeline({
     };
 
     const onUp = () => {
-      // Dọn dẹp listeners
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
       window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('blur', onUp);       // tab mất focus
-      window.removeEventListener('mouseleave', onUp as EventListener); // chuột ra ngoài cửa sổ
+      window.removeEventListener('blur', onUp);
+      window.removeEventListener('mouseleave', onUp as EventListener);
 
       if (finalizeBarDragRef.current) {
         finalizeBarDragRef.current(dragContext, dragDeltaRef.current);
@@ -521,7 +535,7 @@ export function PlanTimeline({
       ne = addDaysToStr(barDrag.origEnd, d);
     } else if (barDrag.mode === 'RESIZE_LEFT') {
       const dur = Math.max(1, diffDays(barDrag.origStart, barDrag.origEnd) - d);
-      ns = addDaysToStr(barDrag.origEnd, -dur); // giữ nguyên end, dịch start
+      ns = addDaysToStr(barDrag.origEnd, -dur);
     } else {
       ne = addDaysToStr(barDrag.origStart, Math.max(1, diffDays(barDrag.origStart, barDrag.origEnd) + d));
     }
@@ -557,7 +571,11 @@ export function PlanTimeline({
     return 'bg-slate-400';
   };
 
-  // ── Row list ──────────────────────────────────────────────────────────────
+  // ── Row list ─────────────────────────────────────────────────────────────
+  // ⚡ KEY CHANGE: We now build ALL rows (phases + tasks) regardless of expand state.
+  // Visibility is controlled by the AnimatedRow wrapper (height 0 ↔ ROW_H).
+  // This keeps DOM stable → smooth CSS transitions, no layout flash.
+  // ──────────────────────────────────────────────────────────────────────────
   interface Row {
     type: 'plan' | 'phase' | 'task';
     id: string;
@@ -565,34 +583,70 @@ export function PlanTimeline({
     phaseId?: string;
     depth: number;
     item: any;
+    // Visibility flags (computed from expand state)
+    visibleInPlan: boolean;   // shown when parent plan is expanded (or single plan)
+    visibleInPhase: boolean;  // shown when parent phase is also expanded (tasks only)
   }
 
   const rows = useMemo((): Row[] => {
     const list: Row[] = [];
     const multi = plans.length > 1;
     plans.forEach(plan => {
-      if (multi) list.push({ type: 'plan', id: plan.id, planId: plan.id, depth: 0, item: plan });
-      if (!multi || expandedPlans.has(plan.id)) {
-        plan.phases.forEach(phase => {
-          list.push({ type: 'phase', id: phase.id, planId: plan.id, depth: multi ? 1 : 0, item: phase });
-          if (expandedPhases.has(phase.id)) {
-            (phase.tasks ?? []).forEach(task => {
-              list.push({ type: 'task', id: task.id, planId: plan.id, phaseId: phase.id, depth: multi ? 2 : 1, item: task });
-            });
-          }
+      const planExpanded = !multi || expandedPlans.has(plan.id);
+      if (multi) {
+        list.push({
+          type: 'plan', id: plan.id, planId: plan.id, depth: 0, item: plan,
+          visibleInPlan: true, visibleInPhase: true,
         });
       }
+      plan.phases.forEach(phase => {
+        list.push({
+          type: 'phase', id: phase.id, planId: plan.id, depth: multi ? 1 : 0, item: phase,
+          visibleInPlan: planExpanded, visibleInPhase: true,
+        });
+        (phase.tasks ?? []).forEach(task => {
+          list.push({
+            type: 'task', id: task.id, planId: plan.id, phaseId: phase.id, depth: multi ? 2 : 1, item: task,
+            visibleInPlan: planExpanded,
+            visibleInPhase: expandedPhases.has(phase.id),
+          });
+        });
+      });
     });
     return list;
   }, [plans, expandedPlans, expandedPhases]);
 
+  // visible = both parent plan expanded AND parent phase expanded (for tasks)
+  const isRowVisible = (r: Row) =>
+    r.type === 'task' ? r.visibleInPlan && r.visibleInPhase : r.visibleInPlan;
+
   // ── Dimensions ───────────────────────────────────────────────────────────
   const ROW_H = 40;
-  const HEADER_TOP_H = 28; // month / quarter row
-  const HEADER_SUB_H = 28; // day / week / month row
+  const HEADER_TOP_H = 28;
+  const HEADER_SUB_H = 28;
   const HEADER_H = HEADER_TOP_H + HEADER_SUB_H;
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Total visible height for Gantt canvas (drives scrollHeight) ───────────
+  // We still need to compute a "real" height for the canvas.
+  // Since AnimatedRow sets height=0 on hidden rows, the absolute-positioned
+  // canvas needs a manual height. We track it via a running y counter.
+  //
+  // But wait — the sidebar uses AnimatedRow (flow layout, height drives spacing).
+  // The Gantt canvas uses absolute positioning per row index.
+  //
+  // ➜ Solution: use the SAME AnimatedRow approach for the Gantt canvas too,
+  //   BUT keep each row as a flex child (not absolute), and use `top: <accumulated>`
+  //   via a CSS custom property trick.
+  //
+  // Actually the cleaner approach: keep the absolute-y approach but derive `top`
+  // from a running accumulator that accounts for hidden rows having height=0.
+  // We precompute `rowTops` so each Gantt row knows its absolute top.
+  //
+  // For animated rows, the top changes as heights animate. Since CSS transitions
+  // handle that automatically when we use flow layout, we switch the Gantt canvas
+  // to flow layout too (just like sidebar), wrapping each row in an AnimatedRow.
+
+  // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <div
       className={cn(
@@ -602,7 +656,6 @@ export function PlanTimeline({
     >
       {/* ════════ HEADER ════════ */}
       <div className="flex flex-shrink-0 border-b-2 border-slate-300 bg-white" style={{ height: HEADER_H }}>
-        {/* Sidebar label */}
         <div
           className="flex-shrink-0 border-r border-slate-200 flex flex-col justify-end pb-1 px-3"
           style={{ width: sidebarWidth }}
@@ -611,30 +664,23 @@ export function PlanTimeline({
         </div>
         <div style={{ width: 4, flexShrink: 0 }} />
 
-        {/* Scrollable header */}
         <div ref={headerRef} className="flex-1 overflow-hidden relative" style={{ scrollbarWidth: 'none' }}>
           <div style={{ width: totalWidth, height: HEADER_H, position: 'relative' }}>
-
             {timeScale === 'weeks' ? (
               <>
-                {/* ── Top portion: month name spans ── */}
-                {monthSpans.map((ms, i) => {
-                  return (
-                    <div
-                      key={i}
-                      className="absolute border-r border-slate-200"
-                      style={{ left: ms.leftPx, width: ms.widthPx, top: 0, height: HEADER_TOP_H }}
-                    >
-                      <div className="sticky left-0 h-full flex items-center overflow-hidden">
-                        <span className="text-[10px] font-semibold text-slate-700 whitespace-nowrap">
-                          {ms.label}
-                        </span>
-                      </div>
+                {monthSpans.map((ms, i) => (
+                  <div
+                    key={i}
+                    className="absolute border-r border-slate-200"
+                    style={{ left: ms.leftPx, width: ms.widthPx, top: 0, height: HEADER_TOP_H }}
+                  >
+                    <div className="sticky left-0 h-full flex items-center overflow-hidden">
+                      <span className="text-[10px] font-semibold text-slate-700 whitespace-nowrap">
+                        {ms.label}
+                      </span>
                     </div>
-                  );
-                })}
-
-                {/* ── Bottom portion: individual day cells ── */}
+                  </div>
+                ))}
                 {dayCells.map((cell, i) => (
                   <div
                     key={i}
@@ -661,7 +707,6 @@ export function PlanTimeline({
               </>
             ) : (
               <>
-                {/* ── Top row: months or quarters ── */}
                 {(() => {
                   let x = 0;
                   return topCells.map((col, i) => {
@@ -681,8 +726,6 @@ export function PlanTimeline({
                     );
                   });
                 })()}
-
-                {/* ── Bottom row: weeks or months ── */}
                 {(() => {
                   let x = 0;
                   return subCells.map((col, i) => {
@@ -711,96 +754,113 @@ export function PlanTimeline({
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* ── Sidebar ── */}
+        {/*
+          ✅ Uses flow layout + AnimatedRow per row.
+          Hidden rows take height:0 so the sidebar scrollHeight shrinks naturally.
+          The ref still syncs scrollTop with gantt canvas.
+        */}
         <div
           ref={sidebarBodyRef}
           className="flex-shrink-0 overflow-y-auto z-20 bg-white flex flex-col"
           style={{ width: sidebarWidth, scrollbarWidth: 'none' }}
         >
           {rows.map(r => {
+            const visible = isRowVisible(r);
             const isSelected = selectedId === r.id;
             const pl = 10 + r.depth * 20;
 
             if (r.type === 'plan') {
               const expanded = expandedPlans.has(r.id);
               return (
-                <div
-                  key={r.id}
-                  style={{ height: ROW_H, paddingLeft: pl }}
-                  className={cn(
-                    'flex items-center pr-2 border-b border-slate-100 hover:bg-slate-50 cursor-pointer group transition-colors flex-shrink-0',
-                    isSelected && 'bg-indigo-50 border-l-[3px] border-l-indigo-500',
-                  )}
-                  onClick={() => onSelect({ type: 'PLAN', id: r.id, planId: r.id })}
-                >
-                  <button className="p-0.5 mr-1.5 text-slate-400 hover:text-indigo-600 flex-shrink-0" onClick={e => togglePlan(r.id, e)}>
-                    {expanded ? <ChevronDown size={14} strokeWidth={2.5} /> : <ChevronRight size={14} strokeWidth={2.5} />}
-                  </button>
-                  <div className="w-4 h-4 rounded flex items-center justify-center mr-2 flex-shrink-0 bg-indigo-500">
-                    <svg width="9" height="9" viewBox="0 0 10 10"><path d="M5 1l1.5 3h3l-2.5 2 1 3L5 7.5 2 9l1-3L.5 4h3z" fill="white" /></svg>
-                  </div>
-                  <span className="truncate text-[12px] font-semibold text-slate-700 flex-1 min-w-0">{r.item.name}</span>
-                  {canEdit && onDeletePlan && (
+                <AnimatedRow key={r.id} visible={visible} rowHeight={ROW_H}>
+                  <div
+                    style={{ height: ROW_H, paddingLeft: pl }}
+                    className={cn(
+                      'flex items-center pr-2 border-b border-slate-100 hover:bg-slate-50 cursor-pointer group transition-colors',
+                      isSelected && 'bg-indigo-50 border-l-[3px] border-l-indigo-500',
+                    )}
+                    onClick={() => onSelect({ type: 'PLAN', id: r.id, planId: r.id })}
+                  >
                     <button
-                      className="opacity-0 group-hover:opacity-100 ml-1 p-1 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-all flex-shrink-0"
-                      onClick={e => { e.stopPropagation(); onDeletePlan(r.id); }}
+                      className="p-0.5 mr-1.5 text-slate-400 hover:text-indigo-600 flex-shrink-0 transition-transform duration-200"
+                      style={{ transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+                      onClick={e => togglePlan(r.id, e)}
                     >
-                      <Trash2 size={12} />
+                      <ChevronDown size={14} strokeWidth={2.5} />
                     </button>
-                  )}
-                </div>
+                    <div className="w-4 h-4 rounded flex items-center justify-center mr-2 flex-shrink-0 bg-indigo-500">
+                      <svg width="9" height="9" viewBox="0 0 10 10"><path d="M5 1l1.5 3h3l-2.5 2 1 3L5 7.5 2 9l1-3L.5 4h3z" fill="white" /></svg>
+                    </div>
+                    <span className="truncate text-[12px] font-semibold text-slate-700 flex-1 min-w-0">{r.item.name}</span>
+                    {canEdit && onDeletePlan && (
+                      <button
+                        className="opacity-0 group-hover:opacity-100 ml-1 p-1 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-all flex-shrink-0"
+                        onClick={e => { e.stopPropagation(); onDeletePlan(r.id); }}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                </AnimatedRow>
               );
             }
 
             if (r.type === 'phase') {
               const expanded = expandedPhases.has(r.id);
               return (
-                <div
-                  key={r.id}
-                  style={{ height: ROW_H, paddingLeft: pl }}
-                  className={cn(
-                    'flex items-center pr-2 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors flex-shrink-0',
-                    isSelected && 'bg-indigo-50 border-l-[3px] border-l-indigo-500',
-                  )}
-                  onClick={() => onSelect({ type: 'PHASE', id: r.id, planId: r.planId })}
-                >
-                  <button className="p-0.5 mr-1.5 text-slate-300 hover:text-indigo-500 flex-shrink-0" onClick={e => togglePhase(r.id, r.planId, e)}>
-                    {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-                  </button>
-                  <div className="w-3.5 h-3.5 rounded-sm bg-indigo-500 flex items-center justify-center mr-2 flex-shrink-0">
-                    <svg width="8" height="8" viewBox="0 0 8 8">
-                      <path d="M4 1L7 4L4 7M1 4h6" stroke="white" strokeWidth="1.3" fill="none" strokeLinecap="round" />
-                    </svg>
+                <AnimatedRow key={r.id} visible={visible} rowHeight={ROW_H}>
+                  <div
+                    style={{ height: ROW_H, paddingLeft: pl }}
+                    className={cn(
+                      'flex items-center pr-2 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors',
+                      isSelected && 'bg-indigo-50 border-l-[3px] border-l-indigo-500',
+                    )}
+                    onClick={() => onSelect({ type: 'PHASE', id: r.id, planId: r.planId })}
+                  >
+                    <button
+                      className="p-0.5 mr-1.5 text-slate-300 hover:text-indigo-500 flex-shrink-0 transition-transform duration-200"
+                      style={{ transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+                      onClick={e => togglePhase(r.id, r.planId, e)}
+                    >
+                      <ChevronDown size={13} />
+                    </button>
+                    <div className="w-3.5 h-3.5 rounded-sm bg-indigo-500 flex items-center justify-center mr-2 flex-shrink-0">
+                      <svg width="8" height="8" viewBox="0 0 8 8">
+                        <path d="M4 1L7 4L4 7M1 4h6" stroke="white" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+                      </svg>
+                    </div>
+                    <span className="truncate text-[12px] font-medium text-slate-700 flex-1 min-w-0">{r.item.name}</span>
                   </div>
-                  <span className="truncate text-[12px] font-medium text-slate-700 flex-1 min-w-0">{r.item.name}</span>
-                </div>
+                </AnimatedRow>
               );
             }
 
             // task
             const sc = statusCode(r.item.status);
             return (
-              <div
-                key={r.id}
-                style={{ height: ROW_H, paddingLeft: pl }}
-                className={cn(
-                  'flex items-center pr-2 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors flex-shrink-0',
-                  isSelected && 'bg-indigo-50/60 border-l-[3px] border-l-indigo-300',
-                )}
-                onClick={() => onSelect({ type: 'TASK', id: r.id, planId: r.planId, phaseId: r.phaseId })}
-              >
-                <div className={cn('w-3 h-3 rounded-sm border mr-2 flex items-center justify-center flex-shrink-0', sc === 'HOÀN THÀNH' ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300')}>
-                  {sc === 'HOÀN THÀNH' && (
-                    <svg width="7" height="7" viewBox="0 0 8 8">
-                      <path d="M1 4l2 2 4-3" stroke="white" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+              <AnimatedRow key={r.id} visible={visible} rowHeight={ROW_H}>
+                <div
+                  style={{ height: ROW_H, paddingLeft: pl }}
+                  className={cn(
+                    'flex items-center pr-2 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors',
+                    isSelected && 'bg-indigo-50/60 border-l-[3px] border-l-indigo-300',
                   )}
+                  onClick={() => onSelect({ type: 'TASK', id: r.id, planId: r.planId, phaseId: r.phaseId })}
+                >
+                  <div className={cn('w-3 h-3 rounded-sm border mr-2 flex items-center justify-center flex-shrink-0', sc === 'HOÀN THÀNH' ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300')}>
+                    {sc === 'HOÀN THÀNH' && (
+                      <svg width="7" height="7" viewBox="0 0 8 8">
+                        <path d="M1 4l2 2 4-3" stroke="white" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-400 mr-1.5 flex-shrink-0 font-mono">{(r.item as any).code ?? ''}</span>
+                  <span className="truncate text-[12px] text-slate-600 flex-1 min-w-0">{r.item.name}</span>
+                  <span className={cn('ml-1 flex-shrink-0 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide', statusBadgeCls(r.item.status))}>
+                    {statusLabel(r.item.status)}
+                  </span>
                 </div>
-                <span className="text-[10px] text-slate-400 mr-1.5 flex-shrink-0 font-mono">{(r.item as any).code ?? ''}</span>
-                <span className="truncate text-[12px] text-slate-600 flex-1 min-w-0">{r.item.name}</span>
-                <span className={cn('ml-1 flex-shrink-0 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide', statusBadgeCls(r.item.status))}>
-                  {statusLabel(r.item.status)}
-                </span>
-              </div>
+              </AnimatedRow>
             );
           })}
 
@@ -832,14 +892,23 @@ export function PlanTimeline({
         </div>
 
         {/* ── Gantt canvas ── */}
+        {/*
+          ✅ Switched from absolute-positioned rows to flow layout via AnimatedRow.
+          This keeps the canvas height in sync with sidebar naturally.
+          The inner container still has a min-width = totalWidth so the
+          horizontal scroll works correctly.
+          Each row is position:relative so bars (absolute within them) still work.
+        */}
         <div
           ref={ganttBodyRef}
           className="flex-1 overflow-auto relative"
           style={{ scrollbarWidth: 'none' }}
           onScroll={onBodyScroll}
         >
-          <div style={{ width: totalWidth, height: '100%', minHeight: Math.max(rows.length * ROW_H + ROW_H, 300), position: 'relative' }}>
+          {/* Full-width scrollable canvas */}
+          <div style={{ width: totalWidth, minHeight: 300, position: 'relative' }}>
 
+            {/* ── Background decorations (absolute, full height) ── */}
             {/* Weekend shading */}
             {timeScale === 'weeks' && dayCells
               .filter(c => c.isWeekend && c.date.getDay() === 6)
@@ -862,11 +931,9 @@ export function PlanTimeline({
 
             {/* Vertical grid lines — weeks/months */}
             {timeScale !== 'weeks' && (() => {
-              // top-level boundaries (stronger)
               const topLines: number[] = [];
               let x = 0;
               topCells.forEach(c => { topLines.push(x); x += c.widthPx; });
-              // sub boundaries (lighter)
               const subLines: number[] = [];
               let sx = 0;
               subCells.forEach(c => { subLines.push(sx); sx += c.widthPx; });
@@ -893,13 +960,17 @@ export function PlanTimeline({
               </div>
             )}
 
-            {/* Rows */}
-            {rows.map((r, i) => {
-              const top = i * ROW_H;
+            {/* ── Rows — flow layout via AnimatedRow ── */}
+            {rows.map((r) => {
+              const visible = isRowVisible(r);
               const isSelected = selectedId === r.id;
 
               if (r.type === 'plan') {
-                return <div key={r.id} style={{ position: 'absolute', top, left: 0, right: 0, height: ROW_H }} className="border-b border-slate-100" />;
+                return (
+                  <AnimatedRow key={r.id} visible={visible} rowHeight={ROW_H}>
+                    <div style={{ height: ROW_H, position: 'relative' }} className="border-b border-slate-100" />
+                  </AnimatedRow>
+                );
               }
 
               if (r.type === 'phase') {
@@ -907,42 +978,46 @@ export function PlanTimeline({
                 const ps = previewStyle(r.planId, ph.id, 'phase', ph.startDate, ph.endDate);
                 const isDragging = barDrag?.target.kind === 'phase' && (barDrag.target as any).phaseId === ph.id;
                 return (
-                  <div key={r.id} style={{ position: 'absolute', top, left: 0, right: 0, height: ROW_H }}
-                    className={cn('border-b border-slate-100 cursor-pointer', isSelected ? 'bg-indigo-50/20' : 'hover:bg-slate-50/40')}
-                    onClick={() => onSelect({ type: 'PHASE', id: ph.id, planId: r.planId })}
-                  >
+                  <AnimatedRow key={r.id} visible={visible} rowHeight={ROW_H}>
                     <div
-                      className={cn(
-                        'absolute flex items-center overflow-hidden rounded-md z-10',
-                        isSelected ? 'bg-indigo-600' : 'bg-indigo-500 hover:bg-indigo-600',
-                        isDragging ? 'opacity-90 ring-2 ring-indigo-300' : '',
-                        canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
-                      )}
-                      style={{
-                        ...ps,
-                        top: '50%',
-                        height: 24,
-                        willChange: 'left, width',
-                        transition: isDragging ? 'none' : 'left .15s ease-out, width .15s ease-out',
-                      }}
-                      onMouseDown={canEdit ? e => startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: ph.id }, 'MOVE', ph.startDate, ph.endDate) : undefined}
-                      onClick={e => { e.stopPropagation(); onSelect({ type: 'PHASE', id: ph.id, planId: r.planId }); }}
+                      style={{ height: ROW_H, position: 'relative' }}
+                      className={cn('border-b border-slate-100 cursor-pointer', isSelected ? 'bg-indigo-50/20' : 'hover:bg-slate-50/40')}
+                      onClick={() => onSelect({ type: 'PHASE', id: ph.id, planId: r.planId })}
                     >
-                      {canEdit && (
-                        <div className="absolute left-0 top-0 bottom-0 w-2 cursor-w-resize z-20 flex items-center justify-center hover:bg-white/10"
-                          onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: ph.id }, 'RESIZE_LEFT', ph.startDate, ph.endDate); }}>
-                          <span className="w-px h-3 bg-white/60 rounded-full" />
-                        </div>
-                      )}
-                      <span className="text-[11px] font-semibold text-white px-3 truncate pointer-events-none">{ph.name}</span>
-                      {canEdit && (
-                        <div className="absolute right-0 top-0 bottom-0 w-2 cursor-e-resize z-20 flex items-center justify-center hover:bg-white/10"
-                          onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: ph.id }, 'RESIZE_RIGHT', ph.startDate, ph.endDate); }}>
-                          <span className="w-px h-3 bg-white/60 rounded-full" />
-                        </div>
-                      )}
+                      <div
+                        className={cn(
+                          'absolute flex items-center overflow-hidden rounded-md z-10',
+                          isSelected ? 'bg-indigo-600' : 'bg-indigo-500 hover:bg-indigo-600',
+                          isDragging ? 'opacity-90 ring-2 ring-indigo-300' : '',
+                          canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
+                        )}
+                        style={{
+                          ...ps,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          height: 24,
+                          willChange: 'left, width',
+                          transition: isDragging ? 'none' : 'left .15s ease-out, width .15s ease-out',
+                        }}
+                        onMouseDown={canEdit ? e => startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: ph.id }, 'MOVE', ph.startDate, ph.endDate) : undefined}
+                        onClick={e => { e.stopPropagation(); onSelect({ type: 'PHASE', id: ph.id, planId: r.planId }); }}
+                      >
+                        {canEdit && (
+                          <div className="absolute left-0 top-0 bottom-0 w-2 cursor-w-resize z-20 flex items-center justify-center hover:bg-white/10"
+                            onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: ph.id }, 'RESIZE_LEFT', ph.startDate, ph.endDate); }}>
+                            <span className="w-px h-3 bg-white/60 rounded-full" />
+                          </div>
+                        )}
+                        <span className="text-[11px] font-semibold text-white px-3 truncate pointer-events-none">{ph.name}</span>
+                        {canEdit && (
+                          <div className="absolute right-0 top-0 bottom-0 w-2 cursor-e-resize z-20 flex items-center justify-center hover:bg-white/10"
+                            onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: ph.id }, 'RESIZE_RIGHT', ph.startDate, ph.endDate); }}>
+                            <span className="w-px h-3 bg-white/60 rounded-full" />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  </AnimatedRow>
                 );
               }
 
@@ -952,35 +1027,39 @@ export function PlanTimeline({
               const isDragging = barDrag?.target.kind === 'task' && (barDrag.target as any).taskId === tk.id;
               const sc = statusCode(tk.status);
               return (
-                <div key={r.id} style={{ position: 'absolute', top, left: 0, right: 0, height: ROW_H }}
-                  className={cn('border-b border-slate-50 cursor-pointer', isSelected ? 'bg-indigo-50/15' : 'hover:bg-slate-50/30')}
-                  onClick={() => onSelect({ type: 'TASK', id: tk.id, planId: r.planId, phaseId: r.phaseId })}
-                >
+                <AnimatedRow key={r.id} visible={visible} rowHeight={ROW_H}>
                   <div
-                    className={cn('absolute rounded overflow-hidden z-10', taskBarCls(tk.status), isDragging ? 'opacity-90 ring-2 ring-indigo-300' : '', canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer')}
-                    style={{
-                      ...ps,
-                      top: '50%',
-                      height: 14,
-                      minWidth: 20,
-                      willChange: 'left, width',
-                      transition: isDragging ? 'none' : 'left .15s ease-out, width .15s ease-out',
-                    }}
-                    onMouseDown={canEdit ? e => startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tk.id }, 'MOVE', tk.startDate, tk.endDate) : undefined}
-                    onClick={e => { e.stopPropagation(); onSelect({ type: 'TASK', id: tk.id, planId: r.planId, phaseId: r.phaseId }); }}
+                    style={{ height: ROW_H, position: 'relative' }}
+                    className={cn('border-b border-slate-50 cursor-pointer', isSelected ? 'bg-indigo-50/15' : 'hover:bg-slate-50/30')}
+                    onClick={() => onSelect({ type: 'TASK', id: tk.id, planId: r.planId, phaseId: r.phaseId })}
                   >
-                    <div className="absolute inset-0 bg-black/20 pointer-events-none"
-                      style={{ width: sc === 'HOÀN THÀNH' ? '100%' : sc === 'ĐANG TIÊN HÀNH' ? '45%' : '0%' }} />
-                    {canEdit && (
-                      <>
-                        <div className="absolute left-0 top-0 bottom-0 w-2 cursor-w-resize z-10"
-                          onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tk.id }, 'RESIZE_LEFT', tk.startDate, tk.endDate); }} />
-                        <div className="absolute right-0 top-0 bottom-0 w-2 cursor-e-resize z-10"
-                          onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tk.id }, 'RESIZE_RIGHT', tk.startDate, tk.endDate); }} />
-                      </>
-                    )}
+                    <div
+                      className={cn('absolute rounded overflow-hidden z-10', taskBarCls(tk.status), isDragging ? 'opacity-90 ring-2 ring-indigo-300' : '', canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer')}
+                      style={{
+                        ...ps,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        height: 14,
+                        minWidth: 20,
+                        willChange: 'left, width',
+                        transition: isDragging ? 'none' : 'left .15s ease-out, width .15s ease-out',
+                      }}
+                      onMouseDown={canEdit ? e => startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tk.id }, 'MOVE', tk.startDate, tk.endDate) : undefined}
+                      onClick={e => { e.stopPropagation(); onSelect({ type: 'TASK', id: tk.id, planId: r.planId, phaseId: r.phaseId }); }}
+                    >
+                      <div className="absolute inset-0 bg-black/20 pointer-events-none"
+                        style={{ width: sc === 'HOÀN THÀNH' ? '100%' : sc === 'ĐANG TIÊN HÀNH' ? '45%' : '0%' }} />
+                      {canEdit && (
+                        <>
+                          <div className="absolute left-0 top-0 bottom-0 w-2 cursor-w-resize z-10"
+                            onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tk.id }, 'RESIZE_LEFT', tk.startDate, tk.endDate); }} />
+                          <div className="absolute right-0 top-0 bottom-0 w-2 cursor-e-resize z-10"
+                            onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tk.id }, 'RESIZE_RIGHT', tk.startDate, tk.endDate); }} />
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
+                </AnimatedRow>
               );
             })}
           </div>

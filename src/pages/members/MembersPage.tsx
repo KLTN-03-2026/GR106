@@ -1,13 +1,12 @@
 import { useNavigate } from 'react-router-dom'
-import { useSelector } from 'react-redux'
-import { RootState } from '../../store'
+import { useAuth } from '../../hooks/auth/useAuth'
 import { ArrowLeft } from 'lucide-react'
 
 import { MemberTable } from '../../components/members/MemberTable'
 
 export function MembersPage() {
   const navigate = useNavigate()
-  const { currentFarmId } = useSelector((state: RootState) => state.auth)
+  const { currentFarmId } = useAuth()
 
   return (
     <div className="w-full px-6 pt-6">

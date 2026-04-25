@@ -1,5 +1,4 @@
-import { useSelector } from 'react-redux';
-import { RootState } from '../../../store';
+import { useCrops } from '../../../hooks/crops/useCrops';
 import { SeasonPlan } from '../../../types/seasonPlan';
 import { StatusBadge } from './StatusBadge';
 import { Trash2, Copy, Eye, MoreVertical } from 'lucide-react';
@@ -18,7 +17,7 @@ export function PlanList({
   onDeletePlan,
   onClonePlan,
 }: PlanListProps) {
-  const { crops } = useSelector((state: RootState) => state.crop);
+  const { crops } = useCrops();
 
   return (
     <div className="bg-white rounded-[32px] border border-slate-100 overflow-hidden shadow-sm">

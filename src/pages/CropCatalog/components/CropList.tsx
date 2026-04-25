@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Plus, Edit2, Trash2, Filter, Loader2, Sprout, ChevronDown, Check, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../hooks/auth/useAuth';
+import { useCrops } from '../../../hooks/crops/useCrops';
 import { Crop } from '../../../types/crop';
-import { RootState } from '../../../store';
 
 interface CropListProps {
   crops: Crop[];
@@ -28,8 +28,8 @@ export const CropList: React.FC<CropListProps> = ({
   isAdmin 
 }) => {
   const navigate = useNavigate();
-  const { currentFarmId } = useSelector((state: RootState) => state.auth);
-  const { cropTypes } = useSelector((state: RootState) => state.crop);
+  const { currentFarmId } = useAuth();
+  const { cropTypes } = useCrops();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTypeId, setFilterTypeId] = useState<string>('All');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);

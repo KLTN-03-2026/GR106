@@ -6,7 +6,7 @@ import {
   CloudRain,
   Snowflake,
 } from "lucide-react";
-import { useWeather } from "../../hooks/useWeather";
+import { useWeather } from "../../hooks/weather/useWeather";
 import weatherBg from "../../assets/weather-bg.png";
 import rainyBg from "../../assets/Rainy.png";
 

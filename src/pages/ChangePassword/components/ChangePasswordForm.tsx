@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Loader2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { authService } from '../../../services/auth/authService';
-import { useAuth } from '../../../hooks/useAuth';
+import { useAuth } from '../../../hooks/auth/useAuth';
 import { changePasswordSchema } from '../../../schemas/authSchemas';
 type ChangePasswordValues = z.infer<typeof changePasswordSchema>;
 export const ChangePasswordForm: React.FC = () => {

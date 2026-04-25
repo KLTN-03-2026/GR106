@@ -1,19 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useDispatch, useSelector } from 'react-redux'
-import { Loader2, Mail } from 'lucide-react'
-import { CancelInviteModal } from './CancelInviteModal'
-import { StatusBadge } from './StatusBadge'
-import type { FarmRole, Invitation } from '../../types/member'
-import type { AppDispatch, RootState } from '../../store'
-import { fetchInvitations as fetchInvitationsThunk } from '../../store/memberSlice'
+import { useMembers } from '@/hooks/members/useMembers';
+import { Loader2, Mail } from 'lucide-react';
+import { CancelInviteModal } from './CancelInviteModal';
+import { StatusBadge } from './StatusBadge';
+import { type FarmRole, type Invitation } from '../../types/member';
 
 export function InvitationTable() {
   const { farmId } = useParams<{ farmId: string }>()
-  const dispatch = useDispatch<AppDispatch>()
-  const { invitations, loadingInvitations: loading } = useSelector(
-    (state: RootState) => state.member,
-  )
+  const { invitations, loadingInvitations: loading, fetchInvitations } = useMembers()
   const [selectedInvitation, setSelectedInvitation] =
     useState<Invitation | null>(null)
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false)
@@ -23,13 +18,13 @@ export function InvitationTable() {
 
   const loadInvitations = async () => {
     if (!farmId) return
-    await dispatch(fetchInvitationsThunk(farmId))
+    await fetchInvitations(farmId)
   }
 
   useEffect(() => {
     if (!farmId) return
-    dispatch(fetchInvitationsThunk(farmId))
-  }, [dispatch, farmId])
+    fetchInvitations(farmId)
+  }, [fetchInvitations, farmId])
 
   const handleCancelInvite = (invitation: Invitation) => {
     setSelectedInvitation(invitation)

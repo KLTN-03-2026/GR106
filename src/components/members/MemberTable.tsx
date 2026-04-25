@@ -1,25 +1,23 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { MoreVertical, Users, UserPlus, Loader2, Mail } from 'lucide-react'
-import { useDispatch, useSelector } from 'react-redux'
 import { StatusBadge } from './StatusBadge'
 import { ChangeRoleModal } from './ChangeRoleModal'
 import { RemoveMemberModal } from './RemoveMemberModal'
 import { InviteModal } from './InviteModal'
 import { getRoleDisplayName } from '../../utils/roleUtils'
-import { useAuth } from '../../hooks/useAuth'
-import type { AppDispatch, RootState } from '../../store'
+import { useAuth } from '../../hooks/auth/useAuth'
+import { useMembers } from '../../hooks/members/useMembers'
 import type { InvitationStatus, Member } from '../../types/member'
-import { cancelInvitation, fetchInvitations, fetchMembers } from '../../store/memberSlice'
 
 type Tab = 'members' | 'invitations'
 
 export function MemberTable() {
   const { farmId } = useParams<{ farmId: string }>()
-  const dispatch = useDispatch<AppDispatch>()
-  const { members, invitations, loadingMembers, loadingInvitations } = useSelector(
-    (state: RootState) => state.member,
-  )
+  const { 
+    members, invitations, loadingMembers, loadingInvitations, 
+    fetchMembers, fetchInvitations, cancelInvitation 
+  } = useMembers()
   const { user } = useAuth()
   const isOwner = user?.role === 'owner' || user?.role === 'admin'
 
@@ -34,11 +32,11 @@ export function MemberTable() {
   useEffect(() => {
     if (!farmId) return
     if (tab === 'members') {
-      dispatch(fetchMembers(farmId))
+      fetchMembers(farmId)
       return
     }
-    dispatch(fetchInvitations(farmId))
-  }, [dispatch, farmId, tab])
+    fetchInvitations(farmId)
+  }, [fetchMembers, fetchInvitations, farmId, tab])
 
   useEffect(() => {
     const handleClickOutside = () => setOpenActionMemberId(null)
@@ -48,7 +46,7 @@ export function MemberTable() {
 
   const handleCancelInvitation = async (invitationId: string) => {
     if (!farmId) return
-    await dispatch(cancelInvitation({ farmId, invitationId }))
+    await cancelInvitation(farmId, invitationId)
   }
 
   const filteredMembers = members.filter(m =>
@@ -290,8 +288,8 @@ export function MemberTable() {
         onClose={() => {
           setIsInviteModalOpen(false)
           if (farmId) {
-            dispatch(fetchMembers(farmId))
-            dispatch(fetchInvitations(farmId))
+            fetchMembers(farmId)
+            fetchInvitations(farmId)
           }
         }}
       />
@@ -302,7 +300,7 @@ export function MemberTable() {
             onClose={() => {
               setIsChangeRoleModalOpen(false)
               setSelectedMember(null)
-              if (farmId) dispatch(fetchMembers(farmId))
+              if (farmId) fetchMembers(farmId)
             }}
             member={selectedMember}
           />
@@ -311,7 +309,7 @@ export function MemberTable() {
             onClose={() => {
               setIsRemoveMemberModalOpen(false)
               setSelectedMember(null)
-              if (farmId) dispatch(fetchMembers(farmId))
+              if (farmId) fetchMembers(farmId)
             }}
             member={selectedMember}
           />

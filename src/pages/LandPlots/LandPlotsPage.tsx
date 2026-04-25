@@ -1,9 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../store';
-import { Plot } from '../../types/plot';
-import { fetchPlots, createPlot, updatePlot, deletePlot } from '../../store/plotSlice';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { usePlots } from '@/hooks/plots/usePlots';
 import { toast } from 'sonner';
 import { LayoutGridIcon, PlusIcon, ArrowLeft } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
@@ -13,14 +11,12 @@ import { PlotFilters } from './components/PlotFilters';
 import { CreatePlotModal } from './components/CreatePlotModal';
 import { EditPlotModal } from './components/EditPlotModal';
 import { DeletePlotDialog } from './components/DeletePlotDialog';
+import { Plot } from '@/types/plot';
 
 export function LandPlotsPage() {
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
-
-  // Redux State — get currentFarmId instead of URL param
-  const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
-  const { plots } = useSelector((state: RootState) => state.plot);
+  const { currentFarmId } = useAuth();
+  const { plots, fetchPlots, createPlot, updatePlot, deletePlot } = usePlots();
 
   // Redirect to farm selection if no farmId
   if (!currentFarmId) {
@@ -38,8 +34,8 @@ export function LandPlotsPage() {
   const [deletingPlot, setDeletingPlot] = useState<Plot | null>(null);
 
   useEffect(() => {
-    dispatch(fetchPlots(currentFarmId));
-  }, [dispatch, currentFarmId]);
+    fetchPlots(currentFarmId);
+  }, [fetchPlots, currentFarmId]);
 
   // Xử lý lọc dữ liệu
   const filteredPlots = useMemo(() => {
@@ -57,10 +53,10 @@ export function LandPlotsPage() {
   const handleCreatePlot = async (plotData: any) => {
     if (!currentFarmId) return;
     try {
-      await dispatch(createPlot({ farmId: currentFarmId, plotData })).unwrap();
+      await createPlot(currentFarmId, plotData).unwrap();
       setIsCreateModalOpen(false);
       toast.success('Tạo lô đất mới thành công');
-      dispatch(fetchPlots(currentFarmId));
+      fetchPlots(currentFarmId);
     } catch (err: any) {
       toast.error(err.message || 'Không thể tạo lô đất');
     }
@@ -72,20 +68,16 @@ export function LandPlotsPage() {
       const isClearDescription =
         updatedPlot.description != null && updatedPlot.description.trim() === '';
 
-      await dispatch(updatePlot({ 
-        farmId: currentFarmId,
-        plotId: updatedPlot.id, 
-        plotData: {
-          name: updatedPlot.name,
-          status: updatedPlot.status,
-          ...(isClearDescription
-            ? { isClearDescription: true }
-            : { description: updatedPlot.description }),
-        }
-      })).unwrap();
+      await updatePlot(currentFarmId, updatedPlot.id, {
+        name: updatedPlot.name,
+        status: updatedPlot.status,
+        ...(isClearDescription
+          ? { isClearDescription: true }
+          : { description: updatedPlot.description }),
+      }).unwrap();
       setEditingPlot(null);
       toast.success('Cập nhật thông tin lô đất thành công');
-      dispatch(fetchPlots(currentFarmId));
+      fetchPlots(currentFarmId);
     } catch (err: any) {
       toast.error(err.message || 'Không thể cập nhật lô đất');
     }
@@ -94,10 +86,10 @@ export function LandPlotsPage() {
   const handleDeletePlot = async () => {
     if (deletingPlot && currentFarmId) {
       try {
-        await dispatch(deletePlot({ farmId: currentFarmId, plotId: deletingPlot.id })).unwrap();
+        await deletePlot(currentFarmId, deletingPlot.id).unwrap();
         toast.success('Đã xóa lô đất thành công');
         setDeletingPlot(null);
-        dispatch(fetchPlots(currentFarmId));
+        fetchPlots(currentFarmId);
       } catch (err: any) {
         toast.error(err.message || 'Không thể xóa lô đất');
       }
@@ -105,7 +97,7 @@ export function LandPlotsPage() {
   };
 
   const handleViewMap = (plot: Plot) => {
-    dispatch(fetchPlots(currentFarmId));
+    fetchPlots(currentFarmId);
     navigate(`/farms/${currentFarmId}/map?plotId=${plot.id}&source=land-plots`, {
       state: {
         selectedPlotId: plot.id,
@@ -116,7 +108,7 @@ export function LandPlotsPage() {
   };
 
   const handleEditBoundary = (plot: Plot) => {
-    dispatch(fetchPlots(currentFarmId));
+    fetchPlots(currentFarmId);
     navigate(`/farms/${currentFarmId}/map?plotId=${plot.id}&mode=editing&source=land-plots`, {
       state: {
         selectedPlotId: plot.id,

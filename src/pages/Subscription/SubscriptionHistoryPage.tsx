@@ -9,8 +9,7 @@ import { useCurrentSubscription, useSubscriptionHistory } from '@/hooks/subscrip
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/utils/cn';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { Navigate } from 'react-router-dom';
 
 const StatusBadge = ({ status }: { status: string }) => {
@@ -33,7 +32,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 export default function SubscriptionHistoryPage() {
   const navigate = useNavigate();
-  const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
+  const { currentFarmId } = useAuth();
   
   // Redirect if no farm context
   if (!currentFarmId) {

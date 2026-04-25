@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState, AppDispatch } from '../../store';
-import { fetchCropTypes, createCrop, deleteCropType, fetchCrops } from '../../store/cropSlice';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { useCrops } from '@/hooks/crops/useCrops';
 import { Crop, CreateCropRequest } from '../../types/crop';
 import { getRolesFromToken } from '../../utils/jwt';
 import { toast } from 'sonner';
@@ -12,16 +11,20 @@ import { CropList } from './components/CropList';
 import { CropForm } from './components/CropForm';
 import { QuickAddCropTypeModal } from './components/QuickAddCropTypeModal';
 import { CreateCropTypeRequest } from '../../types/crop';
-import { createCropType } from '../../store/cropSlice';
 
 export const CropCatalogPage: React.FC = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
-  
-  // Redux State — get currentFarmId instead of URL param
-  const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
-  const { crops, loading, error } = useSelector((state: RootState) => state.crop);
-  const { accessToken } = useSelector((state: RootState) => state.auth);
+  const { currentFarmId, accessToken } = useAuth();
+  const { 
+    crops, 
+    loading, 
+    error, 
+    fetchCrops, 
+    fetchCropTypes, 
+    createCrop, 
+    createCropType, 
+    deleteCropType 
+  } = useCrops();
   
   // Giải mã token để lấy quyền thực tế
   const roles = accessToken ? getRolesFromToken(accessToken) : [];
@@ -40,10 +43,10 @@ export const CropCatalogPage: React.FC = () => {
   useEffect(() => {
     if (currentFarmId || isAdmin) {
       // Tải cả danh mục cây trồng và loại cây trồng
-      dispatch(fetchCropTypes());
-      dispatch(fetchCrops());
+      fetchCropTypes();
+      fetchCrops();
     }
-  }, [dispatch, currentFarmId, isAdmin]);
+  }, [fetchCropTypes, fetchCrops, currentFarmId, isAdmin]);
 
   useEffect(() => {
     if (error) {
@@ -73,11 +76,11 @@ export const CropCatalogPage: React.FC = () => {
       }
       
       if (activeTab === 'types') {
-        await dispatch(deleteCropType(id)).unwrap();
+        await deleteCropType(id).unwrap();
         toast.success('Xóa loại cây trồng thành công');
         // Tải lại cả cây trồng vì có thể ảnh hưởng đến danh mục
-        dispatch(fetchCrops());
-        dispatch(fetchCropTypes());
+        fetchCrops();
+        fetchCropTypes();
       } else {
         // [LƯU Ý] Tài liệu Backend hiện tại chưa cung cấp DELETE /api/v1/crops
         toast.error('API xóa cây trồng hiện chưa được hỗ trợ');
@@ -93,10 +96,10 @@ export const CropCatalogPage: React.FC = () => {
         // [ĐANG CHỜ API]
         toast.error('API cập nhật hiện chưa sẵn sàng');
       } else {
-        await dispatch(createCrop(data as CreateCropRequest)).unwrap();
+        await createCrop(data as CreateCropRequest).unwrap();
         toast.success('Thêm cây trồng mới thành công');
         // Tải lại để lấy thông tin đầy đủ từ Backend (bao gồm các object liên quan)
-        dispatch(fetchCrops());
+        fetchCrops();
       }
       setView('list');
     } catch (err: any) {
@@ -106,11 +109,11 @@ export const CropCatalogPage: React.FC = () => {
 
   const handleSaveType = async (data: CreateCropTypeRequest) => {
     try {
-      await dispatch(createCropType(data)).unwrap();
+      await createCropType(data).unwrap();
       toast.success('Thêm loại cây trồng mới thành công');
       setIsTypeModalOpen(false);
       // Tải lại danh sách
-      dispatch(fetchCropTypes());
+      fetchCropTypes();
     } catch (err: any) {
       toast.error(err.message || 'Thao tác thất bại');
     }

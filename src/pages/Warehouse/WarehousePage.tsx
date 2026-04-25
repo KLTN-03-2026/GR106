@@ -1,25 +1,20 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useDispatch, useSelector } from 'react-redux'
 import { Warehouse as WarehouseIcon, MapPin, Plus, Trash2, Loader2, ArrowLeft, Map as MapIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Navigate } from 'react-router-dom'
 
-import { fetchWarehouses, deleteWarehouse } from '../../store/warehouseSlice'
-import type { AppDispatch, RootState } from '../../store'
-import { useAuth } from '../../hooks/useAuth'
+import { useAuth } from '../../hooks/auth/useAuth'
+import { useWarehouses } from '../../hooks/warehouses/useWarehouses'
+import { useFarms } from '../../hooks/farms/useFarms'
 import { CreateWarehouseModal, DeleteWarehouseModal } from '../../components/warehouse'
 import { Warehouse } from '../../types/warehouse/warehouse'
 
 export function WarehousePage() {
   const navigate = useNavigate()
-  const dispatch = useDispatch<AppDispatch>()
-  
-  // Redux State
-  const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId)
-  const { warehouses, loading, submitting } = useSelector((state: RootState) => state.warehouse)
-  const farmSummary = useSelector((state: RootState) => state.farm.farmSummary)
-  const { user } = useAuth()
+  const { user, currentFarmId } = useAuth()
+  const { warehouses, loading, submitting, fetchWarehouses, deleteWarehouse } = useWarehouses()
+  const { farmSummary } = useFarms()
 
   // Local UI State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -44,9 +39,9 @@ export function WarehousePage() {
 
   useEffect(() => {
     if (currentFarmId) {
-      dispatch(fetchWarehouses(currentFarmId))
+      fetchWarehouses(currentFarmId)
     }
-  }, [dispatch, currentFarmId])
+  }, [fetchWarehouses, currentFarmId])
 
   const handleDeleteClick = (warehouse: Warehouse) => {
     setWarehouseToDelete(warehouse)
@@ -58,9 +53,9 @@ export function WarehousePage() {
 
     setDeletingId(warehouseToDelete.id)
     try {
-      await dispatch(deleteWarehouse({ farmId: currentFarmId, warehouseId: warehouseToDelete.id })).unwrap()
+      await deleteWarehouse(currentFarmId, warehouseToDelete.id).unwrap()
       toast.success('Đã xóa kho hàng thành công')
-      dispatch(fetchWarehouses(currentFarmId))
+      fetchWarehouses(currentFarmId)
       setIsDeleteModalOpen(false)
     } catch (err: any) {
       toast.error(typeof err === 'string' ? err : 'Không thể xóa kho hàng')
@@ -216,7 +211,7 @@ export function WarehousePage() {
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           onSuccess={() => {
-            dispatch(fetchWarehouses(currentFarmId))
+            fetchWarehouses(currentFarmId)
           }}
         />
       )}

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ChevronDownIcon, ArrowUpRightIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../hooks/auth/useAuth";
 import { Button } from "../ui/button";
 import { NavbarDivider } from "./NavbarDivider";
 import LogoBrowser from "../../assets/Logo-browser.png";

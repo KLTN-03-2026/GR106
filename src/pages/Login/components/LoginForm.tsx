@@ -2,18 +2,16 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { Loader2, Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
-import { authService } from '../../../services/auth/authService';
-import { loginSuccess } from '../../../store/authSlice';
 import { getRolesFromToken } from '../../../utils/jwt';
 import { loginSchema } from '../../../schemas/authSchemas';
 import { LoginInput } from '../../../types/auth';
 
 export const LoginForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const dispatch = useDispatch();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const {
     register,
@@ -25,18 +23,15 @@ export const LoginForm: React.FC = () => {
   const onSubmit = async (data: LoginInput) => {
     try {
       setIsLoading(true);
-      const response = await authService.login(data);
-      if (response.success) {
-        dispatch(loginSuccess(response.data));
-        toast.success('Đăng nhập thành công');
-        // Redirect based on user role
-        const token = response.data.accessToken;
-        const roles = getRolesFromToken(token);
-        if (roles.includes('ROLE_ADMIN')) {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/dashboard');
-        }
+      const result = await login(data);
+      toast.success('Đăng nhập thành công');
+      
+      // Redirect based on user role
+      const roles = getRolesFromToken(result.accessToken);
+      if (roles.includes('ROLE_ADMIN')) {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard');
       }
     } catch (error: any) {
       const errorMessage = error.response?.status === 401 

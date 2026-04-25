@@ -2,21 +2,17 @@ import { Outlet, useNavigate, useLocation, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import Sidebar from "../components/layout/Sidebar";
-import { useDispatch, useSelector } from "react-redux";
-import { selectFarm, clearFarmContext } from "../store/authSlice";
-import { farmService } from "../services/farm/farmService";
-import { RootState } from "../store";
-import { getRolesFromToken } from "../utils/jwt";
-import { fetchFarmsSummary } from "../store/farmSlice";
+import { useAuth } from '@/hooks/auth/useAuth';
+import { useFarms } from '@/hooks/farms/useFarms';
+import { farmService } from '../services/farm/farmService';
+import { getRolesFromToken } from '../utils/jwt';
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { farmId: urlFarmId } = useParams<{ farmId: string }>();
-  const dispatch = useDispatch();
-  const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
-  const accessToken = useSelector((state: RootState) => state.auth.accessToken);
-  const farmSummary = useSelector((state: RootState) => state.farm.farmSummary);
+  const { currentFarmId, accessToken, selectFarm, clearFarmContext } = useAuth();
+  const { farmSummary, fetchFarmsSummary } = useFarms();
   const isAdmin = accessToken ? getRolesFromToken(accessToken).includes('ROLE_ADMIN') : false;
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -24,9 +20,9 @@ export default function DashboardLayout() {
   // Đảm bảo farmSummary được load khi ở trong một farm (cần cho phân quyền Sidebar theo myRole)
   useEffect(() => {
     if (currentFarmId && farmSummary.length === 0) {
-      dispatch(fetchFarmsSummary() as any);
+      fetchFarmsSummary();
     }
-  }, [dispatch, currentFarmId, farmSummary.length]);
+  }, [fetchFarmsSummary, currentFarmId, farmSummary.length]);
 
   // Tự động đồng bộ Farm Context từ URL (chỉ khi có farmId trong URL)
   useEffect(() => {
@@ -42,7 +38,7 @@ export default function DashboardLayout() {
         try {
           const res = await farmService.selectFarm(urlFarmId);
           if (res.success && res.data.farmToken) {
-            dispatch(selectFarm({ token: res.data.farmToken, currentFarmId: urlFarmId }));
+            selectFarm(res.data.farmToken, urlFarmId);
           }
         } catch (err: any) {
           console.error('[Sync] Farm selection failed', err);
@@ -53,7 +49,7 @@ export default function DashboardLayout() {
     };
 
     syncFarmContext();
-  }, [urlFarmId, currentFarmId, dispatch, isAdmin, location.pathname, navigate]);
+  }, [urlFarmId, currentFarmId, selectFarm, isAdmin, location.pathname, navigate]);
 
   const getActive = () => {
     const p = location.pathname;
@@ -116,7 +112,7 @@ export default function DashboardLayout() {
       if (currentFarmId) {
         navigate(`/farms/${currentFarmId}/actions`);
       } else {
-        dispatch(clearFarmContext());
+        clearFarmContext();
         navigate("/dashboard");
       }
       return;
@@ -126,7 +122,7 @@ export default function DashboardLayout() {
       if (currentFarmId) {
         navigate(`/farms/${currentFarmId}/actions`);
       } else {
-        dispatch(clearFarmContext());
+        clearFarmContext();
         navigate("/farms");
       }
       return;
@@ -169,7 +165,7 @@ export default function DashboardLayout() {
       } else if (currentFarmId) {
         navigate(`/farms/${currentFarmId}/crop-catalog`);
       } else {
-        dispatch(clearFarmContext());
+        clearFarmContext();
         navigate("/farms");
       }
       return;

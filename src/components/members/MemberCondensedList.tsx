@@ -1,24 +1,19 @@
 import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { AppDispatch, RootState } from '../../store';
-import { fetchMembers } from '../../store/memberSlice';
+import { useMembers } from '@/hooks/members/useMembers';
 
 export const MemberCondensedList: React.FC = () => {
   const navigate = useNavigate();
   const { farmId } = useParams<{ farmId: string }>();
-  const dispatch = useDispatch<AppDispatch>();
-  const { members, loadingMembers: loading } = useSelector(
-    (state: RootState) => state.member,
-  );
+  const { members, loadingMembers: loading, fetchMembers } = useMembers();
 
   useEffect(() => {
     if (!farmId) return;
     // Chỉ fetch nếu chưa có dữ liệu thành viên nào trong store
     if (members.length === 0) {
-      dispatch(fetchMembers(farmId));
+      fetchMembers(farmId);
     }
-  }, [dispatch, farmId, members.length]);
+  }, [fetchMembers, farmId, members.length]);
 
   return (
     <div className="flex flex-col gap-3">

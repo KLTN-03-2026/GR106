@@ -12,9 +12,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
-import { useDispatch } from 'react-redux';
-import { AppDispatch } from '../../store';
-import { updateFarm } from '../../store/farmSlice';
+import { useFarms } from '@/hooks/farms/useFarms';
 
 import { farmEditSchema, FarmEditInput } from '../../schemas/farmSchemas';
 
@@ -26,7 +24,7 @@ interface EditFarmModalProps {
 }
 
 export function EditFarmModal({ isOpen, onClose, farm, onSuccess }: EditFarmModalProps) {
-  const dispatch = useDispatch<AppDispatch>();
+  const { updateFarm } = useFarms();
 
 
   const {
@@ -59,13 +57,10 @@ export function EditFarmModal({ isOpen, onClose, farm, onSuccess }: EditFarmModa
         return;
       }
 
-      await dispatch(updateFarm({ 
-        farmId: targetFarmId, 
-        data: {
-          name: data.name,
-          description: data.description || ''
-        }
-      })).unwrap();
+      await updateFarm(targetFarmId, {
+        name: data.name,
+        description: data.description || ''
+      }).unwrap();
       
       toast.success('Cập nhật trang trại thành công');
       onSuccess?.();

@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import axios from "axios";
-import { WeatherData, UseWeatherState } from "../types/weather";
-import { ENV } from "../config/env";
-import { translateWeather } from "../utils/weatherUtils";
+import { WeatherData, UseWeatherState } from "../../types/weather";
+import { ENV } from "../../config/env";
+import { translateWeather } from "../../utils/weatherUtils";
 
 const WEATHER_API_KEY = ENV.WEATHER_KEY;
 const WEATHER_API_BASE_URL = "https://api.openweathermap.org/data/2.5/weather";

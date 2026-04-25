@@ -1,21 +1,18 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useDispatch, useSelector } from 'react-redux'
 import { Truck, Plus, Trash2, Loader2, ArrowLeft, Search, Building2 } from 'lucide-react'
 import { toast } from 'sonner'
-import type { AppDispatch, RootState } from '../../store'
-import { fetchSuppliers, createSupplier, deleteSupplier } from '../../store/supplierSlice'
-import { useAuth } from '../../hooks/useAuth'
+import { useAuth } from '../../hooks/auth/useAuth'
+import { useSuppliers } from '../../hooks/suppliers/useSuppliers'
+import { useFarms } from '../../hooks/farms/useFarms'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { createSupplierSchema } from '../../schemas/supplierSchemas'
 
 export function SupplierListPage() {
   const { farmId } = useParams<{ farmId: string }>()
   const navigate = useNavigate()
-  const dispatch = useDispatch<AppDispatch>()
-  
-  const { suppliers, loading } = useSelector((state: RootState) => state.supplier)
-  const farmSummary = useSelector((state: RootState) => state.farm.farmSummary)
+  const { suppliers, loading, fetchSuppliers, createSupplier, deleteSupplier } = useSuppliers()
+  const { farmSummary } = useFarms()
   const { user } = useAuth()
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -33,8 +30,8 @@ export function SupplierListPage() {
   }, [farmSummary, farmId, user])
 
   useEffect(() => {
-    if (farmId) dispatch(fetchSuppliers(farmId))
-  }, [dispatch, farmId])
+    if (farmId) fetchSuppliers(farmId)
+  }, [fetchSuppliers, farmId])
 
   const filteredSuppliers = suppliers.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -58,7 +55,7 @@ export function SupplierListPage() {
     
     setSubmitting(true)
     try {
-      await dispatch(createSupplier({ farmId, data: { supplierCode: newSupplier.code, name: newSupplier.name } })).unwrap()
+      await createSupplier(farmId, { supplierCode: newSupplier.code, name: newSupplier.name }).unwrap()
       toast.success('Đã thêm nhà cung cấp mới')
       setIsModalOpen(false)
       setNewSupplier({ code: '', name: '' })
@@ -78,7 +75,7 @@ export function SupplierListPage() {
     if (!farmId || !supplierToDelete) return
     setIsDeleting(true)
     try {
-      await dispatch(deleteSupplier({ farmId, supplierCode: supplierToDelete })).unwrap()
+      await deleteSupplier(farmId, supplierToDelete).unwrap()
       toast.success('Đã xóa nhà cung cấp')
       setIsDeleteConfirmOpen(false)
     } catch (err: any) {

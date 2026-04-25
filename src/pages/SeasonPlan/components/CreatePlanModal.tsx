@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { X, Calendar, Sprout, Info, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../../store';
+import { useCrops } from '../../../hooks/crops/useCrops';
+import { useSeasonPlans } from '../../../hooks/seasonPlans/useSeasonPlans';
 import { CreateSeasonPlanRequest } from '../../../types/seasonPlan';
 import { createPlanRequestSchema } from '../../../schemas/seasonPlanSchemas';
 import { Button } from '../../../components/ui/button';
@@ -19,8 +19,8 @@ export function CreatePlanModal({
   onClose,
   onSave,
 }: CreatePlanModalProps) {
-  const { crops, loading: cropsLoading } = useSelector((state: RootState) => state.crop);
-  const { createLoading: planLoading } = useSelector((state: RootState) => state.seasonPlan);
+  const { crops, loading: cropsLoading } = useCrops();
+  const { createLoading: planLoading } = useSeasonPlans();
 
   const [cropId, setCropId] = useState('');
   const [startDate, setStartDate] = useState('');

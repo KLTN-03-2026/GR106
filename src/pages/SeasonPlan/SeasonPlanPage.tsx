@@ -1,28 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '../../store';
-import {
-  addPlan,
-  updatePlanTime,
-  fetchPlans,
-  createPlan,
-  removePlan,
-  fetchStages,
-  createPhase,
-  removePhase,
-  fetchTasks,
-  updatePhase,
-  updatePhaseTime,
-  createSeasonTask,
-  updateSeasonTask,
-  updateTaskTime,
-  removeSeasonTask,
-  addPlotsToPlan,
-  fetchPlanPlots,
-  optimisticallyUpdatePhaseTime,
-  optimisticallyUpdateTaskTime,
-} from '../../store/seasonPlanSlice';
+import { useSeasonPlans } from '../../hooks/seasonPlans/useSeasonPlans';
+import { usePlots } from '../../hooks/plots/usePlots';
+import { useCrops } from '../../hooks/crops/useCrops';
 import { SeasonPlan, PlanStatus, Task } from '../../types/seasonPlan';
 import {
   Search,
@@ -52,7 +32,7 @@ import { Modal } from '../../components/ui/Modal';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { cn } from '../../utils/cn';
 import { Button } from '../../components/ui/button';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../hooks/auth/useAuth';
 import { canEditPlan } from '../../utils/seasonPlanUtils';
 import { fetchPlots } from '../../store/plotSlice';
 import { fetchCrops } from '../../store/cropSlice';
@@ -143,10 +123,20 @@ function getPlanPlotNames(p: SeasonPlan): string {
 export function SeasonPlanPage() {
   const { farmId, planId } = useParams<{ farmId: string; planId?: string }>();
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
 
-  const { plans, loading, error } = useSelector((state: RootState) => state.seasonPlan);
-  const { plots } = useSelector((state: RootState) => state.plot);
+  const { 
+    plans, loading, error, 
+    fetchPlans, createPlan, deletePlan: removePlan, updatePlanTime,
+    fetchStages, fetchPlanPlots, createPhase, deletePhase: removePhase, updatePhase, 
+    updatePhaseTime, fetchTasks, createTask: createSeasonTask, 
+    updateTask: updateSeasonTask, updateTaskTime, deleteTask: removeSeasonTask, 
+    addPlotsToPlan, optimisticallyUpdatePhaseTime, optimisticallyUpdateTaskTime,
+    addPlanToState
+  } = useSeasonPlans();
+  
+  const { plots } = usePlots();
+  useCrops();
+  
   const { user, accessToken } = useAuth();
   const canEdit = canEditPlan(user?.role, accessToken);
 
@@ -195,19 +185,19 @@ export function SeasonPlanPage() {
 
   // ── Effects ───────────────────────────────────────────────────────────────
   useEffect(() => {
-    dispatch(fetchPlans());
+    fetchPlans();
     if (farmId) {
-      dispatch(fetchPlots(farmId));
+      fetchPlots(farmId);
     }
-    dispatch(fetchCrops());
-  }, [dispatch, accessToken, farmId]);
+    fetchCrops();
+  }, [fetchPlans, fetchPlots, fetchCrops, accessToken, farmId]);
 
   useEffect(() => {
     if (isCreateModalOpen && farmId) {
-      dispatch(fetchPlots(farmId));
-      dispatch(fetchCrops());
+      fetchPlots(farmId);
+      fetchCrops();
     }
-  }, [isCreateModalOpen, dispatch, farmId]);
+  }, [isCreateModalOpen, fetchPlots, fetchCrops, farmId]);
 
 
 
@@ -223,19 +213,19 @@ export function SeasonPlanPage() {
 
   useEffect(() => {
     if (selectedItem?.planId) {
-      dispatch(fetchStages(selectedItem.planId));
-      dispatch(fetchPlanPlots(selectedItem.planId));
+      fetchStages(selectedItem.planId);
+      fetchPlanPlots(selectedItem.planId);
     }
-  }, [selectedItem?.planId, dispatch]);
+  }, [selectedItem?.planId, fetchStages, fetchPlanPlots]);
 
   useEffect(() => {
     if (selectedItem?.type === 'PHASE' || selectedItem?.type === 'TASK') {
       const stageId = selectedItem.type === 'PHASE' ? selectedItem.id : selectedItem.phaseId;
       if (stageId && selectedItem.planId) {
-        dispatch(fetchTasks({ planId: selectedItem.planId, stageId }));
+        fetchTasks(selectedItem.planId, stageId);
       }
     }
-  }, [selectedItem?.id, selectedItem?.phaseId, selectedItem?.type, selectedItem?.planId, dispatch]);
+  }, [selectedItem?.id, selectedItem?.phaseId, selectedItem?.type, selectedItem?.planId, fetchTasks]);
 
   // ── Error helper ──────────────────────────────────────────────────────────
   const extractErrorMessage = (err: any): string => {
@@ -268,10 +258,10 @@ export function SeasonPlanPage() {
   const handleCreatePlan = async (newPlanData: any) => {
     try {
       const { plotId, ...planPayload } = newPlanData;
-      const plan = await dispatch(createPlan(planPayload)).unwrap();
+      const plan = await createPlan(planPayload).unwrap();
       if (plotId && plan.id) {
-        await dispatch(addPlotsToPlan({ planId: plan.id, plotIds: [plotId] })).unwrap();
-        dispatch(fetchPlanPlots(plan.id));
+        await addPlotsToPlan(plan.id, [plotId]).unwrap();
+        fetchPlanPlots(plan.id);
       }
       setIsCreateModalOpen(false);
       setNotification({
@@ -295,11 +285,7 @@ export function SeasonPlanPage() {
 
       // Cập nhật ngày bắt đầu và kết thúc → PUT /api/v1/plans/{planId}/time
       if (isDateChanged) {
-        await dispatch(updatePlanTime({
-          planId: updatedPlan.id,
-          startDate: updatedPlan.startDate,
-          endDate: updatedPlan.endDate
-        })).unwrap();
+        await updatePlanTime(updatedPlan.id, updatedPlan.startDate, updatedPlan.endDate).unwrap();
       }
     } catch (err: any) {
       showError('Lỗi cập nhật kế hoạch', err);
@@ -307,7 +293,7 @@ export function SeasonPlanPage() {
   };
 
   const handleExpandPhase = (planId: string, phaseId: string) => {
-    dispatch(fetchTasks({ planId, stageId: phaseId }));
+    fetchTasks(planId, phaseId);
   };
 
   const handleUpdatePhaseTimeFromTimeline = async (
@@ -317,12 +303,12 @@ export function SeasonPlanPage() {
   ) => {
     try {
       // Optimistic UI update so bar does not snap back while waiting for PUT response
-      dispatch(optimisticallyUpdatePhaseTime({ planId, stageId, startDate: data.startDate, endDate: data.endDate }));
-      await dispatch(updatePhaseTime({ planId, stageId, data })).unwrap();
-      await dispatch(fetchStages(planId)).unwrap();
+      optimisticallyUpdatePhaseTime({ planId, stageId, startDate: data.startDate, endDate: data.endDate });
+      await updatePhaseTime(planId, stageId, data).unwrap();
+      await fetchStages(planId).unwrap();
     } catch (err: any) {
       // Re-sync from server when PUT fails to rollback optimistic state
-      await dispatch(fetchStages(planId));
+      await fetchStages(planId);
       showError('Lỗi cập nhật timeline giai đoạn', err);
     }
   };
@@ -334,11 +320,11 @@ export function SeasonPlanPage() {
     data: { startDate: string; endDate: string }
   ) => {
     try {
-      dispatch(optimisticallyUpdateTaskTime({ planId, stageId, taskId, startDate: data.startDate, endDate: data.endDate }));
-      await dispatch(updateTaskTime({ planId, stageId, taskId, data })).unwrap();
+      optimisticallyUpdateTaskTime({ planId, stageId, taskId, startDate: data.startDate, endDate: data.endDate });
+      await updateTaskTime(planId, stageId, taskId, data).unwrap();
     } catch (err: any) {
       // Re-sync from server when PUT fails to rollback optimistic state
-      await dispatch(fetchTasks({ planId, stageId }));
+      await fetchTasks(planId, stageId);
       showError('Lỗi cập nhật timeline công việc', err);
     }
   };
@@ -346,7 +332,7 @@ export function SeasonPlanPage() {
   const handleUpdatePhase = async (planId: string, stageId: string, data: { name: string; startDate: string; endDate: string }, originalPhase?: any) => {
     try {
       if (!originalPhase) {
-        await dispatch(updatePhase({ planId, stageId, data })).unwrap();
+        await updatePhase(planId, stageId, data).unwrap();
         return;
       }
 
@@ -354,11 +340,11 @@ export function SeasonPlanPage() {
       const isNameChanged = originalPhase.name !== data.name;
 
       if (isDateChanged) {
-        await dispatch(updatePhaseTime({ planId, stageId, data: { startDate: data.startDate, endDate: data.endDate } })).unwrap();
+        await updatePhaseTime(planId, stageId, { startDate: data.startDate, endDate: data.endDate }).unwrap();
       }
 
       if (isNameChanged) {
-        await dispatch(updatePhase({ planId, stageId, data })).unwrap();
+        await updatePhase(planId, stageId, data).unwrap();
       }
     } catch (err: any) {
       showError('Lỗi cập nhật giai đoạn', err);
@@ -374,7 +360,7 @@ export function SeasonPlanPage() {
     if (!deleteConfirm.planId) return;
     setDeleteConfirm(prev => ({ ...prev, isDeleting: true }));
     try {
-      await dispatch(removePlan(deleteConfirm.planId)).unwrap();
+      await removePlan(deleteConfirm.planId).unwrap();
       setSelectedItem(null);
       if (deleteConfirm.planId === currentPlan?.id)
         navigate(`/farms/${farmId}/season-plans`);
@@ -403,7 +389,7 @@ export function SeasonPlanPage() {
     if (!phaseModalTargetPlanId) return;
     setIsPhaseSaving(true);
     try {
-      await dispatch(createPhase({ planId: phaseModalTargetPlanId, data })).unwrap();
+      await createPhase(phaseModalTargetPlanId, data).unwrap();
       setIsCreatePhaseModalOpen(false);
       setPhaseModalTargetPlanId(null);
     } catch (err: any) {
@@ -442,7 +428,7 @@ export function SeasonPlanPage() {
       return;
     }
     try {
-      await dispatch(createSeasonTask({ planId, stageId: phaseId, data: { ...data, plotId } })).unwrap();
+      await createSeasonTask(planId, phaseId, { ...data, plotId }).unwrap();
     } catch (err: any) {
       let errorMsg = 'Dữ liệu đầu vào không hợp lệ';
       let details: string[] = [];
@@ -460,7 +446,7 @@ export function SeasonPlanPage() {
 
   const handleDeletePhase = async (planId: string, stageId: string) => {
     try {
-      await dispatch(removePhase({ planId, stageId })).unwrap();
+      await removePhase(planId, stageId).unwrap();
       setSelectedItem(null);
     } catch (err: any) {
       showError('Lỗi xóa giai đoạn', err);
@@ -469,7 +455,7 @@ export function SeasonPlanPage() {
 
   const handleDeleteTask = async (planId: string, stageId: string, taskId: string) => {
     try {
-      await dispatch(removeSeasonTask({ planId, stageId, taskId })).unwrap();
+      await removeSeasonTask(planId, stageId, taskId).unwrap();
       setSelectedItem({ type: 'PHASE', id: stageId, planId });
     } catch (err: any) {
       showError('Lỗi xóa công việc', err);
@@ -478,7 +464,7 @@ export function SeasonPlanPage() {
 
   const handleAddPlotsToPlan = async (planId: string, plotIds: string[]) => {
     try {
-      await dispatch(addPlotsToPlan({ planId, plotIds })).unwrap();
+      await addPlotsToPlan(planId, plotIds).unwrap();
     } catch (err: any) {
       showError('Lỗi thêm lô đất', err);
     }
@@ -499,10 +485,7 @@ export function SeasonPlanPage() {
     }
     try {
       if (!originalTask) {
-        await dispatch(updateSeasonTask({
-          planId, stageId, taskId: task.id,
-          data: { name: task.name, description: task.description || '', startDate: task.startDate, endDate: task.endDate, plotId },
-        })).unwrap();
+        await updateSeasonTask(planId, stageId, task.id, { name: task.name, description: task.description || '', startDate: task.startDate, endDate: task.endDate, plotId }).unwrap();
         return;
       }
 
@@ -510,17 +493,11 @@ export function SeasonPlanPage() {
       const isNameChanged = originalTask.name !== task.name || originalTask.description !== task.description;
 
       if (isDateChanged) {
-        await dispatch(updateTaskTime({
-          planId, stageId, taskId: task.id,
-          data: { startDate: task.startDate, endDate: task.endDate },
-        })).unwrap();
+        await updateTaskTime(planId, stageId, task.id, { startDate: task.startDate, endDate: task.endDate }).unwrap();
       }
 
       if (isNameChanged) {
-        await dispatch(updateSeasonTask({
-          planId, stageId, taskId: task.id,
-          data: { name: task.name, description: task.description || '', startDate: task.startDate, endDate: task.endDate, plotId },
-        })).unwrap();
+        await updateSeasonTask(planId, stageId, task.id, { name: task.name, description: task.description || '', startDate: task.startDate, endDate: task.endDate, plotId }).unwrap();
       }
     } catch (err: any) {
       showError('Lỗi cập nhật', err);
@@ -744,7 +721,7 @@ export function SeasonPlanPage() {
                   <p className="text-slate-500 text-sm max-w-md mb-5">
                     {typeof error === 'string' ? error : 'Đã có lỗi xảy ra khi kết nối máy chủ.'}
                   </p>
-                  <Button onClick={() => dispatch(fetchPlans())} className="bg-slate-900 text-white hover:bg-slate-800 h-8 text-sm">
+                  <Button onClick={() => fetchPlans()} className="bg-slate-900 text-white hover:bg-slate-800 h-8 text-sm">
                     Thử lại
                   </Button>
                 </div>
@@ -846,7 +823,7 @@ export function SeasonPlanPage() {
         <ClonePlanModal
           isOpen
           onClose={() => setCloneSourcePlan(null)}
-          onClone={newPlan => dispatch(addPlan(newPlan))}
+          onClone={newPlan => addPlanToState(newPlan)}
           plan={cloneSourcePlan}
         />
       )}

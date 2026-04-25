@@ -2,11 +2,9 @@ import React, { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Save, Plus, Trash2, Upload, AlertCircle, Info, Thermometer, Droplets, FlaskConical, PlusCircle } from 'lucide-react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Crop, CreateCropTypeRequest } from '../../../types/crop';
-import { createCropSchema, CreateCropFormInput } from '../../../schemas/cropSchemas';
-import { AppDispatch, RootState } from '../../../store';
-import { fetchCropTypes, createCropType } from '../../../store/cropSlice';
+import { useCrops } from '@/hooks/crops/useCrops';
+import { type Crop, type CreateCropTypeRequest } from '../../../types/crop';
+import { createCropSchema, type CreateCropFormInput } from '../../../schemas/cropSchemas';
 import { QuickAddCropTypeModal } from './QuickAddCropTypeModal';
 import { toast } from 'sonner';
 
@@ -25,8 +23,7 @@ export const CropForm: React.FC<CropFormProps> = ({
   onCancel,
   existingCrops,
 }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { cropTypes, cropTypesLoading } = useSelector((state: RootState) => state.crop);
+  const { cropTypes, loading: cropTypesLoading, fetchCropTypes, createCropType } = useCrops();
 
   const [activeTab, setActiveTab] = useState<TabType>('basic');
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
@@ -34,9 +31,9 @@ export const CropForm: React.FC<CropFormProps> = ({
   // Load crop types on mount
   React.useEffect(() => {
     if (cropTypes.length === 0) {
-      dispatch(fetchCropTypes());
+      fetchCropTypes();
     }
-  }, [dispatch, cropTypes.length]);
+  }, [fetchCropTypes, cropTypes.length]);
 
   const {
     register,
@@ -103,7 +100,7 @@ export const CropForm: React.FC<CropFormProps> = ({
 
   const handleQuickAddType = async (typeData: CreateCropTypeRequest) => {
     try {
-      await dispatch(createCropType(typeData)).unwrap();
+      await createCropType(typeData).unwrap();
       toast.success('Thêm loại cây thành công');
       setIsTypeModalOpen(false);
     } catch (err: any) {

@@ -1,12 +1,10 @@
 import React, { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
-import { X, AlertTriangle, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
-import { Modal } from '../ui/Modal'
-import { Member } from '../../types/member'
-import { removeMember } from '../../store/memberSlice'
-import type { AppDispatch } from '../../store'
+import { useMembers } from '@/hooks/members/useMembers';
+import { X, AlertTriangle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Modal } from '../ui/Modal';
+import { type Member } from '../../types/member';
 
 interface RemoveMemberModalProps {
   isOpen: boolean
@@ -20,7 +18,7 @@ export function RemoveMemberModal({
   member,
 }: RemoveMemberModalProps) {
   const { farmId } = useParams<{ farmId: string }>()
-  const dispatch = useDispatch<AppDispatch>()
+  const { removeMember } = useMembers()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,7 +27,7 @@ export function RemoveMemberModal({
 
     try {
       setIsSubmitting(true)
-      await dispatch(removeMember({ farmId, memberId: member.userId })).unwrap()
+      await removeMember(farmId, member.userId).unwrap()
       toast.success('Đã xóa thành viên khỏi trang trại')
       onClose()
     } catch (err: any) {

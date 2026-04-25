@@ -1,36 +1,34 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useDispatch, useSelector } from 'react-redux'
 import { 
   Package, Plus, Loader2, Search, Filter, 
   Trash2, Edit2, AlertCircle,
   ChevronRight, Building, Tag, Layers
 } from 'lucide-react'
 import { toast } from 'sonner'
-import type { AppDispatch, RootState } from '../../store'
-import { fetchWarehouseItems, createWarehouseItem } from '../../store/warehouseItemSlice'
-import { fetchSuppliers } from '../../store/supplierSlice'
-import { fetchSkus } from '../../store/skuSlice'
-import { fetchUnits } from '../../store/unitSlice'
-import { useAuth } from '../../hooks/useAuth'
+import { useAuth } from '../../hooks/auth/useAuth'
+import { useWarehouseItems } from '../../hooks/warehouseItems/useWarehouseItems'
+import { useSuppliers } from '../../hooks/suppliers/useSuppliers'
+import { useSkus } from '../../hooks/skus/useSkus'
+import { useUnits } from '../../hooks/units/useUnits'
+import { useWarehouses } from '../../hooks/warehouses/useWarehouses'
+import { useFarms } from '../../hooks/farms/useFarms'
 import { createWarehouseItemSchema } from '../../schemas/warehouseItemSchemas'
 
 export function WarehouseDetailPage() {
   const { farmId, warehouseId } = useParams<{ farmId: string; warehouseId: string }>()
   const navigate = useNavigate()
-  const dispatch = useDispatch<AppDispatch>()
-  
-  const { items, loading } = useSelector((state: RootState) => state.warehouseItem)
-  const { suppliers } = useSelector((state: RootState) => state.supplier)
-  const { skus } = useSelector((state: RootState) => state.sku)
-  const { units } = useSelector((state: RootState) => state.unit)
-  const { warehouses } = useSelector((state: RootState) => state.warehouse)
-  const farmSummary = useSelector((state: RootState) => state.farm.farmSummary)
+  const { items, loading, fetchItems, createItem } = useWarehouseItems()
+  const { suppliers, fetchSuppliers } = useSuppliers()
+  const { skus, fetchSkus } = useSkus()
+  const { units, fetchUnits } = useUnits()
+  const { warehouses } = useWarehouses()
+  const { farmSummary } = useFarms()
   const { user } = useAuth()
 
   const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   
   const currentWarehouse = useMemo(() => 
     warehouses.find(w => w.id === warehouseId), 
@@ -65,12 +63,12 @@ export function WarehouseDetailPage() {
 
   useEffect(() => {
     if (farmId && warehouseId) {
-      dispatch(fetchWarehouseItems({ farmId, warehouseId }))
-      dispatch(fetchSuppliers(farmId))
-      dispatch(fetchSkus(farmId))
-      dispatch(fetchUnits())
+      fetchItems(farmId, warehouseId)
+      fetchSuppliers(farmId)
+      fetchSkus(farmId)
+      fetchUnits()
     }
-  }, [dispatch, farmId, warehouseId])
+  }, [fetchItems, fetchSuppliers, fetchSkus, fetchUnits, farmId, warehouseId])
 
   const filteredItems = items.filter(item => 
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -88,16 +86,16 @@ export function WarehouseDetailPage() {
 
     if (!farmId || !warehouseId) return
     
-    setSubmitting(true)
     try {
-      await dispatch(createWarehouseItem({ farmId, warehouseId, itemData: validation.data })).unwrap()
+      setIsSubmitting(true)
+      await createItem(farmId, warehouseId, validation.data).unwrap()
       toast.success('Đã thêm vật tư mới')
       setIsModalOpen(false)
       setFormData({ name: '', unitId: '', stock: 0, sku: '', supplierCode: '', unitPrice: 0, minStockQty: 0 })
     } catch (err: any) {
       toast.error(err || 'Không thể thêm vật tư')
     } finally {
-      setSubmitting(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -379,10 +377,10 @@ export function WarehouseDetailPage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={submitting}
+                    disabled={isSubmitting}
                     className="flex-1 px-8 py-4 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 transition-all disabled:opacity-50 flex items-center justify-center gap-3 uppercase tracking-widest text-xs shadow-xl shadow-emerald-200"
                   >
-                    {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
                       <>
                         <Plus size={18} />
                         Xác nhận nhập kho

@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
-import { X, AlertCircle, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
-import { Modal } from '../ui/Modal'
-import { memberService } from '../../services/members/memberService'
-import { Member, FarmRole } from '../../types/member'
-import { changeMemberRole } from '../../store/memberSlice'
-import type { AppDispatch } from '../../store'
+import { useMembers } from '@/hooks/members/useMembers';
+import { X, AlertCircle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Modal } from '../ui/Modal';
+import { memberService } from '../../services/members/memberService';
+import { type Member, type FarmRole } from '../../types/member';
 import { changeRoleSchema } from '../../schemas/memberSchemas'
 
 interface ChangeRoleModalProps {
@@ -18,7 +16,7 @@ interface ChangeRoleModalProps {
 
 export function ChangeRoleModal({ isOpen, onClose, member }: ChangeRoleModalProps) {
   const { farmId } = useParams<{ farmId: string }>()
-  const dispatch = useDispatch<AppDispatch>()
+  const { changeMemberRole } = useMembers()
   const [roles, setRoles] = useState<FarmRole[]>([])
   const [selectedRoleId, setSelectedRoleId] = useState<string>('')
   const [isLoadingRoles, setIsLoadingRoles] = useState(false)
@@ -61,13 +59,7 @@ export function ChangeRoleModal({ isOpen, onClose, member }: ChangeRoleModalProp
 
     try {
       setIsSubmitting(true)
-      await dispatch(
-        changeMemberRole({
-          farmId,
-          memberId: member.userId,
-          payload: validation.data,
-        }),
-      ).unwrap()
+      await changeMemberRole(farmId, member.userId, validation.data).unwrap()
       toast.success('Đã thay đổi vai trò thành công')
       onClose()
     } catch (err: any) {

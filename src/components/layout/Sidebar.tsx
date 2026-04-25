@@ -21,12 +21,11 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "../../utils/cn";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../hooks/auth/useAuth";
 import { NAV_ICONS } from "../../layouts/NavIcon";
 import { useCurrentSubscription } from "../../hooks/subscription/useSubscription";
 import { getRoleDisplayName } from "../../utils/roleUtils";
-import { useSelector } from "react-redux";
-import { RootState } from "../../store";
+import { useFarms } from "../../hooks/farms/useFarms";
 import { ConfirmModal } from "../ui/ConfirmModal";
 
 interface SidebarProps {
@@ -82,7 +81,7 @@ export default function Sidebar({
   const { user, currentFarmId, logout } = useAuth();
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
-  const farmSummary = useSelector((state: RootState) => state.farm.farmSummary);
+  const { farmSummary } = useFarms();
   const { data: currentSubscription, isLoading: loadingSub } = useCurrentSubscription();
 
   const handleLogout = () => {

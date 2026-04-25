@@ -2,12 +2,10 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { useDispatch, useSelector } from "react-redux";
+import { useWarehouses } from "@/hooks/warehouses/useWarehouses";
+import { usePlots } from "@/hooks/plots/usePlots";
 import { X, Loader2, Warehouse, Info } from "lucide-react";
 import LocationPickerMap from "./LocationPickerMap";
-import { createWarehouse } from "../../store/warehouseSlice";
-import { fetchPlots } from "../../store/plotSlice";
-import type { AppDispatch, RootState } from "../../store";
 import { Modal } from "../ui/Modal";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -23,16 +21,15 @@ interface Props {
 }
 
 export function CreateWarehouseModal({ farmId, isOpen, onClose, onSuccess }: Props) {
-  const dispatch = useDispatch<AppDispatch>();
-  const { submitting } = useSelector((state: RootState) => state.warehouse);
-  const { plots } = useSelector((state: RootState) => state.plot);
+  const { createWarehouse, submitting } = useWarehouses();
+  const { plots, fetchPlots } = usePlots();
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     if (isOpen && farmId) {
-      dispatch(fetchPlots(farmId));
+      fetchPlots(farmId);
     }
-  }, [dispatch, isOpen, farmId]);
+  }, [fetchPlots, isOpen, farmId]);
 
 
   const {
@@ -65,7 +62,7 @@ export function CreateWarehouseModal({ farmId, isOpen, onClose, onSuccess }: Pro
 
   const onSubmit = async (data: CreateWarehouseFormValues) => {
     try {
-      await dispatch(createWarehouse({ farmId, data })).unwrap();
+      await createWarehouse(farmId, data).unwrap();
       toast.success("Tạo kho hàng thành công!");
       handleClose();
       onSuccess?.();

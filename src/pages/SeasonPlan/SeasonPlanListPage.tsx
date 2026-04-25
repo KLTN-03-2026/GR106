@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '../../store';
+import { useAuth } from '../../hooks/auth/useAuth';
+import { useSeasonPlans } from '../../hooks/seasonPlans/useSeasonPlans';
+import { usePlots } from '../../hooks/plots/usePlots';
+import { useCrops } from '../../hooks/crops/useCrops';
 import { SeasonPlan, PlanStatus, StatusObject } from '../../types/seasonPlan';
-import { fetchPlans, createPlan, removePlan } from '../../store/seasonPlanSlice';
-import { fetchPlots } from '../../store/plotSlice';
-import { fetchCrops } from '../../store/cropSlice';
 import { canEditPlan } from '../../utils/seasonPlanUtils';
 import { Search, Calendar, Loader2, Info, CheckCircle2, AlertCircle, Trash2, ArrowLeft } from 'lucide-react';
 import { Modal } from '../../components/ui/Modal';
@@ -13,18 +12,15 @@ import { cn } from '../../utils/cn';
 import { Button } from '../../components/ui/button';
 import { CreatePlanModal } from './components/CreatePlanModal';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
-import { useAuth } from '../../hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import { getRolesFromToken } from '../../utils/jwt';
 
 export function SeasonPlanListPage() {
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
-
-  // Redux State — get currentFarmId instead of URL param
-  const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
-  const { plans, loading, error } = useSelector((state: RootState) => state.seasonPlan);
-  const { user, accessToken } = useAuth();
+  const { currentFarmId, user, accessToken } = useAuth();
+  const { plans, loading, error, fetchPlans, createPlan, deletePlan: removePlan } = useSeasonPlans();
+  const { fetchPlots } = usePlots();
+  const { fetchCrops } = useCrops();
 
   // Kiểm tra quyền
   const canEdit = canEditPlan(user?.role, accessToken);
@@ -36,9 +32,9 @@ export function SeasonPlanListPage() {
 
   useEffect(() => {
     if (accessToken) {
-      dispatch(fetchPlans());
+      fetchPlans();
     }
-  }, [dispatch, accessToken]);
+  }, [fetchPlans, accessToken]);
 
   const farmPlans = plans.filter((p: SeasonPlan) => p.farmId === currentFarmId || p.farmId === '');
 
@@ -72,10 +68,10 @@ export function SeasonPlanListPage() {
 
   useEffect(() => {
     if (isCreateModalOpen && currentFarmId) {
-      dispatch(fetchPlots(currentFarmId));
-      dispatch(fetchCrops());
+      fetchPlots(currentFarmId);
+      fetchCrops();
     }
-  }, [isCreateModalOpen, dispatch, currentFarmId]);
+  }, [isCreateModalOpen, fetchPlots, fetchCrops, currentFarmId]);
 
   const filteredPlans = farmPlans.filter((p: SeasonPlan) => {
     const matchesStatus = statusFilter === 'ALL' || p.status === statusFilter;
@@ -86,7 +82,7 @@ export function SeasonPlanListPage() {
   const handleCreatePlan = async (newPlanData: any) => {
     console.log('[SeasonPlanListPage] handleCreatePlan called with:', newPlanData);
     try {
-      await dispatch(createPlan(newPlanData)).unwrap();
+      await createPlan(newPlanData).unwrap();
       console.log('[SeasonPlanListPage] createPlan succeeded');
       setIsCreateModalOpen(false);
     } catch (err: any) {
@@ -127,7 +123,7 @@ export function SeasonPlanListPage() {
 
     setDeleteConfirm(prev => ({ ...prev, isDeleting: true }));
     try {
-      await dispatch(removePlan(deleteConfirm.planId)).unwrap();
+      await removePlan(deleteConfirm.planId).unwrap();
       setDeleteConfirm({ isOpen: false, planId: null, isDeleting: false });
     } catch (err: any) {
       setDeleteConfirm(prev => ({ ...prev, isDeleting: false, isOpen: false }));
@@ -258,7 +254,7 @@ export function SeasonPlanListPage() {
             <Button
               variant="outline"
               className="mt-4 border-red-200 text-red-600 hover:bg-red-50"
-              onClick={() => dispatch(fetchPlans())}
+              onClick={() => fetchPlans()}
             >
               Thử lại
             </Button>

@@ -11,11 +11,8 @@ import {
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useDispatch, useSelector } from 'react-redux';
-import { createFarm } from '../../store/farmSlice';
-import { FarmState } from '../../store/farmSlice';
-import { createFarmSchema, CreateFarmInput } from '../../schemas/farmSchemas';
-import { RootState, AppDispatch } from '../../store';
+import { useFarms } from '@/hooks/farms/useFarms';
+import { createFarmSchema, type CreateFarmInput } from '../../schemas/farmSchemas';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 
@@ -26,8 +23,7 @@ interface CreateFarmModalProps {
 }
 
 export function CreateFarmModal({ isOpen, onClose, onSuccess }: CreateFarmModalProps) {
-  const dispatch = useDispatch<AppDispatch>();
-  const { loading } = useSelector((state: RootState) => state.farm as FarmState);
+  const { createFarm, loading } = useFarms();
   const [isSuccess, setIsSuccess] = useState(false);
 
   const {
@@ -40,9 +36,8 @@ export function CreateFarmModal({ isOpen, onClose, onSuccess }: CreateFarmModalP
   });
 
   const onSubmit = async (data: CreateFarmInput) => {
-    const resultAction = await dispatch(createFarm(data));
-    
-    if (createFarm.fulfilled.match(resultAction)) {
+    try {
+      await createFarm(data).unwrap();
       setIsSuccess(true);
       toast.success('Khởi tạo trang trại thành công!');
       setTimeout(() => {
@@ -51,10 +46,8 @@ export function CreateFarmModal({ isOpen, onClose, onSuccess }: CreateFarmModalP
         onClose();
         if (onSuccess) onSuccess();
       }, 2000);
-    } else {
-      toast.error(typeof resultAction.payload === 'string' 
-        ? resultAction.payload 
-        : 'Có lỗi xảy ra khi tạo trang trại');
+    } catch (err: any) {
+      toast.error(err?.message || 'Có lỗi xảy ra khi tạo trang trại');
     }
   };
 

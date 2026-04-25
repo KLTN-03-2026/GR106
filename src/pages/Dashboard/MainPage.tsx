@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '../../store';
-import { useAuth } from '../../hooks/useAuth';
-import { fetchPlots, clearPlots } from '../../store/plotSlice';
-import { fetchCrops, fetchCropTypes } from '../../store/cropSlice';
+import { useAuth } from '../../hooks/auth/useAuth';
+import { usePlots } from '../../hooks/plots/usePlots';
+import { useCrops } from '../../hooks/crops/useCrops';
 import {
   StatCard,
   WeatherCard,
@@ -16,32 +14,30 @@ import {
 } from "../../components/dashboard";
 
 /**
- * Hook lấy số liệu tổng hợp từ Redux Store thay vì Mock Timer
+ * Hook lấy số liệu tổng hợp từ Redux Store
  */
 function useDashboardData(farmId?: string) {
-  const dispatch = useDispatch<AppDispatch>();
-  const { hubToken } = useSelector((state: RootState) => state.auth);
+  const { accessToken } = useAuth();
   const [isSyncing, setIsSyncing] = useState(false);
   
-  // Lấy dữ liệu từ store
-  const { plots, aggregateStats, loading: plotsLoading } = useSelector((state: RootState) => state.plot);
-  const { crops, cropTypes, loading: cropsLoading, cropTypesLoading } = useSelector((state: RootState) => state.crop);
+  const { plots, aggregateStats, loading: plotsLoading, fetchPlots, clearPlots } = usePlots();
+  const { crops, cropTypes, loading: cropsLoading, cropTypesLoading, fetchCrops, fetchCropTypes } = useCrops();
 
   useEffect(() => {
     // 1. Luôn load danh mục cây trồng và loại cây (Global)
-    dispatch(fetchCrops());
-    dispatch(fetchCropTypes());
+    fetchCrops();
+    fetchCropTypes();
 
     if (farmId) {
       // 2a. CHẾ ĐỘ TRANG TRẠI: Load lô đất của farm này
-      dispatch(fetchPlots(farmId));
+      fetchPlots(farmId);
       setIsSyncing(false);
     } else {
-      // 2b. CHẾ ĐỘ HUB: Không quét nền tự động để tránh redundant requests
-      dispatch(clearPlots());
+      // 2b. CHẾ ĐỘ HUB: Xóa plots hiện tại
+      clearPlots();
       setIsSyncing(false);
     }
-  }, [farmId, dispatch, hubToken]);
+  }, [farmId, fetchCrops, fetchCropTypes, fetchPlots, clearPlots, accessToken]);
 
   const isLoading = (farmId && plotsLoading) || cropsLoading || cropTypesLoading || isSyncing;
 

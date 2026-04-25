@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
-import { X, UserPlus, Mail, Users, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
-import { Modal } from '../ui/Modal'
-import { cn } from '../../utils/cn'
-import { memberService } from '../../services/members/memberService'
-import { inviteMember } from '../../store/memberSlice'
-import type { AppDispatch } from '../../store'
+import { useMembers } from '@/hooks/members/useMembers';
+import { X, UserPlus, Mail, Users, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Modal } from '../ui/Modal';
+import { cn } from '../../utils/cn';
+import { memberService } from '../../services/members/memberService';
 import { inviteMemberSchema } from '../../schemas/memberSchemas'
 
 interface FarmRole {
@@ -23,7 +21,7 @@ interface InviteModalProps {
 
 export function InviteModal({ isOpen, onClose }: InviteModalProps) {
   const { farmId } = useParams<{ farmId: string }>()
-  const dispatch = useDispatch<AppDispatch>()
+  const { inviteMember } = useMembers()
   const [email, setEmail] = useState('')
   const [selectedRoleId, setSelectedRoleId] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -64,7 +62,7 @@ export function InviteModal({ isOpen, onClose }: InviteModalProps) {
 
     try {
       setIsSubmitting(true)
-      await dispatch(inviteMember({ farmId, payload: validation.data })).unwrap()
+      await inviteMember(farmId, validation.data).unwrap()
       toast.success('Đã gửi lời mời đến ' + email)
       handleClose()
     } catch (err: any) {

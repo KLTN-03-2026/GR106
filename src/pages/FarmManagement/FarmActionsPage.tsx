@@ -10,9 +10,7 @@ import {
   Trees,
   Trash2
 } from 'lucide-react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchFarmsSummary, deleteFarm } from '../../store/farmSlice';
-import { RootState, AppDispatch } from '../../store';
+import { useFarms } from '@/hooks/farms/useFarms';
 import { EditFarmModal } from '../../components/farm/EditFarmModal';
 import { MemberCondensedList } from '../../components/members/MemberCondensedList';
 import { toast } from 'sonner';
@@ -21,15 +19,13 @@ import { ConfirmModal } from '../../components/ui/ConfirmModal';
 const FarmActionsPage: React.FC = () => {
     const { farmId } = useParams<{ farmId: string }>();
     const navigate = useNavigate();
-    const dispatch = useDispatch<AppDispatch>();
-    
-    const { farmSummary } = useSelector((state: RootState) => state.farm);
+    const { farmSummary, fetchFarmsSummary, deleteFarm } = useFarms();
     
     React.useEffect(() => {
         if (farmSummary.length === 0) {
-            dispatch(fetchFarmsSummary());
+            fetchFarmsSummary();
         }
-    }, [dispatch, farmSummary.length]);
+    }, [fetchFarmsSummary, farmSummary.length]);
 
     const farm = farmSummary.find(f => f.farmId === farmId);
     const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
@@ -41,7 +37,7 @@ const FarmActionsPage: React.FC = () => {
         
         setIsDeleting(true);
         try {
-            await dispatch(deleteFarm(farmId)).unwrap();
+            await deleteFarm(farmId).unwrap();
             toast.success("Xóa trang trại thành công");
             
             navigate('/farms');
@@ -191,7 +187,7 @@ const FarmActionsPage: React.FC = () => {
                 isOpen={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}
                 farm={farm}
-                onSuccess={() => dispatch(fetchFarmsSummary())}
+                onSuccess={() => fetchFarmsSummary()}
             />
 
             <ConfirmModal 

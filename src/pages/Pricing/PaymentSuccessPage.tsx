@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store';
-import { refreshSubscription } from '@/store/authSlice';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { getPaymentResultService } from '@/services/payment';
 import { PaymentResult } from '@/types/payment/payment';
 import { formatCurrency, formatTime } from '@/utils/format';
@@ -12,8 +10,7 @@ import { formatCurrency, formatTime } from '@/utils/format';
 const PaymentSuccessPage: React.FC = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const dispatch = useDispatch();
-    const { currentFarmId } = useSelector((state: RootState) => state.auth);
+    const { currentFarmId, refreshSubscription } = useAuth();
     const [data, setData] = useState<PaymentResult | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -30,7 +27,7 @@ const PaymentSuccessPage: React.FC = () => {
                 setData(res.data);
 
                 if (res.data?.status === 'SUCCESS') {
-                    dispatch(refreshSubscription());
+                    refreshSubscription();
                 } else if (res.data?.status === 'FAILED') {
                     navigate(`/payment/result?order=${orderCode}`);
                 }
@@ -42,7 +39,7 @@ const PaymentSuccessPage: React.FC = () => {
         };
 
         fetchData();
-    }, [orderCode, dispatch, navigate]);
+    }, [orderCode, refreshSubscription, navigate]);
 
     if (loading) {
         return (

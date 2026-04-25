@@ -8,13 +8,11 @@ import {
   Loader2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useDispatch, useSelector } from 'react-redux';
+import { useFarms } from '@/hooks/farms/useFarms';
 import { Button } from '../ui/button';
 import { cn } from '../../utils/cn';
-import { useAuth } from '../../hooks/useAuth';
-import { fetchFarmsSummary } from '../../store/farmSlice';
-import { RootState, AppDispatch } from '../../store';
-import { FarmSummary } from '../../types/farm';
+import { useAuth } from '../../hooks/auth/useAuth';
+import { type FarmSummary } from '../../types/farm';
 
 interface FarmSwitcherProps {
   onAddClick?: () => void;
@@ -22,19 +20,17 @@ interface FarmSwitcherProps {
 
 export default function FarmSwitcher({ onAddClick }: FarmSwitcherProps) {
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
   const { user } = useAuth();
-  
-  const { farmSummary, loading } = useSelector((state: RootState) => state.farm);
+  const { farmSummary, loading, fetchFarmsSummary } = useFarms();
   
   const [isOpen, setIsOpen] = useState(false);
   const [selectedFarm, setSelectedFarm] = useState<FarmSummary | null>(null);
 
   useEffect(() => {
     if (farmSummary.length === 0) {
-      dispatch(fetchFarmsSummary());
+      fetchFarmsSummary();
     }
-  }, [dispatch, farmSummary.length]);
+  }, [fetchFarmsSummary, farmSummary.length]);
 
   // Set default selected farm once data is loaded
   useEffect(() => {

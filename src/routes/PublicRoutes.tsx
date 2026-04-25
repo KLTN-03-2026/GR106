@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, Outlet, useSearchParams } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../hooks/auth/useAuth';
 
 export const PublicRoutes: React.FC = () => {
   const { isAuthenticated } = useAuth();

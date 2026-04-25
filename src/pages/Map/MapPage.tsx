@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '../../store';
-import { fetchPlots, createPlot, updatePlot, deletePlot } from '../../store/plotSlice';
-import { fetchWarehouses } from '../../store/warehouseSlice';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { usePlots } from '@/hooks/plots/usePlots';
+import { useWarehouses } from '@/hooks/warehouses/useWarehouses';
 import { Plot, GeoPoint, Geometry } from '../../types/plot';
 import { Warehouse } from '../../types/warehouse/warehouse';
 import { toast } from 'sonner';
@@ -26,11 +25,9 @@ export function MapPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const dispatch = useDispatch<AppDispatch>();
-
-  const currentFarmId = useSelector((state: RootState) => state.auth.currentFarmId);
-  const { plots } = useSelector((state: RootState) => state.plot);
-  const { warehouses } = useSelector((state: RootState) => state.warehouse);
+  const { currentFarmId } = useAuth();
+  const { plots, fetchPlots, createPlot, updatePlot, deletePlot } = usePlots();
+  const { warehouses, fetchWarehouses } = useWarehouses();
   const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | null>(null);
 
@@ -67,9 +64,9 @@ export function MapPage() {
   }
 
   useEffect(() => {
-    dispatch(fetchPlots(currentFarmId));
-    dispatch(fetchWarehouses(currentFarmId));
-  }, [dispatch, currentFarmId]);
+    fetchPlots(currentFarmId);
+    fetchWarehouses(currentFarmId);
+  }, [fetchPlots, fetchWarehouses, currentFarmId]);
 
   useEffect(() => {
     if (locationState?.preloadPlot) {
@@ -162,12 +159,12 @@ export function MapPage() {
   const handleCreatePlotFromMap = async (plotData: any) => {
     if (!currentFarmId) return;
     try {
-      await dispatch(createPlot({ farmId: currentFarmId, plotData })).unwrap();
+      await createPlot(currentFarmId, plotData).unwrap();
       toast.success('Tạo lô đất mới thành công');
       setIsCreateModalOpen(false);
       setMode('none');
       setCurrentPath([]);
-      dispatch(fetchPlots(currentFarmId));
+      fetchPlots(currentFarmId);
     } catch (err: any) {
       toast.error(err.message || 'Không thể tạo lô đất');
     }
@@ -186,27 +183,21 @@ export function MapPage() {
       const isClearDescription =
         selectedPlot.description != null && selectedPlot.description.trim() === '';
       try {
-        const result = await dispatch(
-          updatePlot({
-            farmId: currentFarmId,
-            plotId: selectedPlot.id,
-            plotData: {
-              name: selectedPlot.name,
-              status: selectedPlot.status,
-              geometry,
-              ...(isClearDescription
-                ? { isClearDescription: true }
-                : { description: selectedPlot.description }),
-            },
-          })
-        ).unwrap();
+        const result = await updatePlot(currentFarmId, selectedPlot.id, {
+          name: selectedPlot.name,
+          status: selectedPlot.status,
+          geometry,
+          ...(isClearDescription
+            ? { isClearDescription: true }
+            : { description: selectedPlot.description }),
+        }).unwrap();
         toast.success('Cập nhật ranh giới lô đất thành công');
         setSelectedPlot(result);
         setMode('none');
         setCurrentPath([]);
         setOverlappingPlotName(null);
         pathToSaveRef.current = [];
-        dispatch(fetchPlots(currentFarmId));
+        fetchPlots(currentFarmId);
       } catch (err: any) {
         toast.error(err.message || 'Lỗi cập nhật ranh giới');
       }
@@ -282,16 +273,12 @@ export function MapPage() {
     setIsDeleteModalOpen(false);
     if (!selectedPlot) return;
     try {
-      const result = await dispatch(updatePlot({
-        farmId: currentFarmId,
-        plotId: selectedPlot.id,
-        plotData: { isClearGeometry: true },
-      })).unwrap();
+      const result = await updatePlot(currentFarmId, selectedPlot.id, { isClearGeometry: true }).unwrap();
       toast.success('Đã xóa ranh giới lô đất');
       setSelectedPlot(result);
       setMode('none');
       setCurrentPath([]);
-      dispatch(fetchPlots(currentFarmId));
+      fetchPlots(currentFarmId);
     } catch (err: any) {
       toast.error(err.message || 'Lỗi khi xóa ranh giới');
     }
@@ -304,7 +291,7 @@ export function MapPage() {
   const handleConfirmDeletePlot = async () => {
     if (!currentFarmId || !plotToDelete) return;
     try {
-      await dispatch(deletePlot({ farmId: currentFarmId, plotId: plotToDelete.id })).unwrap();
+      await deletePlot(currentFarmId, plotToDelete.id).unwrap();
       toast.success(`Đã xóa lô đất "${plotToDelete.name}"`);
       if (selectedPlot?.id === plotToDelete.id) {
         setSelectedPlot(null);
@@ -312,7 +299,7 @@ export function MapPage() {
         setCurrentPath([]);
       }
       setPlotToDelete(null);
-      dispatch(fetchPlots(currentFarmId));
+      fetchPlots(currentFarmId);
     } catch (err: any) {
       toast.error(err.message || 'Không thể xóa lô đất');
     }
@@ -323,23 +310,17 @@ export function MapPage() {
     try {
       const isClearDescription =
         updatedPlot.description != null && updatedPlot.description.trim() === '';
-      const result = await dispatch(
-        updatePlot({
-          farmId: currentFarmId,
-          plotId: updatedPlot.id,
-          plotData: {
-            name: updatedPlot.name,
-            status: updatedPlot.status,
-            ...(isClearDescription
-              ? { isClearDescription: true }
-              : { description: updatedPlot.description }),
-          },
-        }),
-      ).unwrap();
+      const result = await updatePlot(currentFarmId, updatedPlot.id, {
+        name: updatedPlot.name,
+        status: updatedPlot.status,
+        ...(isClearDescription
+          ? { isClearDescription: true }
+          : { description: updatedPlot.description }),
+      }).unwrap();
       toast.success('Cập nhật thông tin lô đất thành công');
       setEditingPlot(null);
       setSelectedPlot(result);
-      dispatch(fetchPlots(currentFarmId));
+      fetchPlots(currentFarmId);
     } catch (err: any) {
       toast.error(err.message || 'Không thể cập nhật thông tin lô đất');
     }

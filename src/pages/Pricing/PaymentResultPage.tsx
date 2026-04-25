@@ -5,15 +5,12 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Clock, XCircle, ChevronLeft, ArrowRight, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store';
-import { refreshSubscription } from '@/store/authSlice';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 const PaymentResultPage = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const dispatch = useDispatch();
-    const { currentFarmId } = useSelector((state: RootState) => state.auth);
+    const { currentFarmId, refreshSubscription } = useAuth();
     const [data, setData] = useState<PaymentResult | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -32,7 +29,7 @@ const PaymentResultPage = () => {
                 const res = await getPaymentResultService.getPaymentResult(orderCode);
                 setData(res.data);
                 if (res.data?.status === 'SUCCESS') {
-                    dispatch(refreshSubscription());
+                    refreshSubscription();
                 }
             } catch (err) {
                 console.error(err);
@@ -42,7 +39,7 @@ const PaymentResultPage = () => {
         };
 
         fetchData();
-    }, [orderCode, dispatch]);
+    }, [orderCode, refreshSubscription]);
 
     if (loading) {
         return (

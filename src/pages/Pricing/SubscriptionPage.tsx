@@ -3,8 +3,7 @@ import { createPaymentService } from '@/services/payment';
 import { getSubscriptionPlansService } from '@/services/subscription';
 import { BillingCycle } from '@/types/payment/payment';
 import { SubscriptionPlan } from '@/types/subscription/subscription';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -12,7 +11,7 @@ import { executePaymentSchema } from '@/schemas/paymentSchemas';
 
 const SubscriptionPage = () => {
     const { farmId: urlFarmId } = useParams<{ farmId: string }>();
-    const { currentFarmId } = useSelector((state: RootState) => state.auth);
+    const { currentFarmId } = useAuth();
 
     const [billing, setBilling] = useState<BillingCycle>('MONTHLY');
     const [selectedPlan, setSelectedPlan] = useState<string | null>(null);

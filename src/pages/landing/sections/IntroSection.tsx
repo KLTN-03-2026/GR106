@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowUpRightIcon, LeafIcon, BarChart2Icon } from "lucide-react";
-import { useReveal } from "@/hooks/useReveal";
+import { useReveal } from "@/hooks/reveal/useReveal";
 import { Button } from "@/components/ui/button";
 import CornIntro from "@/assets/Corn-intro.png";
 
