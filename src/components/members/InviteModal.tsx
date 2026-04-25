@@ -8,6 +8,7 @@ import { cn } from '../../utils/cn'
 import { memberService } from '../../services/members/memberService'
 import { inviteMember } from '../../store/memberSlice'
 import type { AppDispatch } from '../../store'
+import { inviteMemberSchema } from '../../schemas/memberSchemas'
 
 interface FarmRole {
   id: string
@@ -25,7 +26,6 @@ export function InviteModal({ isOpen, onClose }: InviteModalProps) {
   const dispatch = useDispatch<AppDispatch>()
   const [email, setEmail] = useState('')
   const [selectedRoleId, setSelectedRoleId] = useState<string>('')
-  const [emailError, setEmailError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [roles, setRoles] = useState<FarmRole[]>([])
   const [loadingRoles, setLoadingRoles] = useState(true)
@@ -51,20 +51,20 @@ export function InviteModal({ isOpen, onClose }: InviteModalProps) {
     fetchRoles()
   }, [isOpen])
 
-  const validateEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setEmailError('')
 
-    if (!email.trim()) { setEmailError('Vui lòng nhập địa chỉ email'); return }
-    if (!validateEmail(email)) { setEmailError('Định dạng email không hợp lệ'); return }
-    if (!selectedRoleId) { toast.error('Vui lòng chọn vai trò'); return }
+    const validation = inviteMemberSchema.safeParse({ email, roleId: selectedRoleId })
+    if (!validation.success) {
+      toast.error(validation.error.errors[0].message)
+      return
+    }
+
     if (!farmId) { toast.error('Không tìm thấy thông tin trang trại'); return }
 
     try {
       setIsSubmitting(true)
-      await dispatch(inviteMember({ farmId, payload: { email, roleId: selectedRoleId } })).unwrap()
+      await dispatch(inviteMember({ farmId, payload: validation.data })).unwrap()
       toast.success('Đã gửi lời mời đến ' + email)
       handleClose()
     } catch (err: any) {
@@ -77,7 +77,6 @@ export function InviteModal({ isOpen, onClose }: InviteModalProps) {
   const handleClose = () => {
     setEmail('')
     setSelectedRoleId(roles[0]?.id ?? '')
-    setEmailError('')
     setIsSubmitting(false)
     onClose()
   }
@@ -132,14 +131,10 @@ export function InviteModal({ isOpen, onClose }: InviteModalProps) {
               type="email"
               id="email"
               value={email}
-              onChange={e => { setEmail(e.target.value); setEmailError('') }}
-              className={cn(
-                "w-full px-3 py-2 text-sm border rounded-lg bg-gray-50 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-all",
-                emailError ? 'border-red-400 bg-red-50/30' : 'border-gray-200'
-              )}
+              onChange={e => setEmail(e.target.value)}
+              className="w-full px-3 py-2 text-sm border rounded-lg bg-gray-50 text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-900 transition-all border-gray-200"
               placeholder="email@gmail.com"
             />
-            {emailError && <p className="mt-1.5 text-[11px] text-red-500">{emailError}</p>}
           </div>
 
           {/* Role */}

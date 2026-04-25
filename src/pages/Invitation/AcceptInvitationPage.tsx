@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Loader2, CheckCircle2, XCircle, Eye, EyeOff, Sprout } from 'lucide-react'
 import { axiosInstance } from '../../config/axios'
+import { loginSchema } from '../../schemas/authSchemas'
 
 type Phase = 'loading' | 'login-required' | 'accepting' | 'success' | 'error'
 
@@ -79,8 +80,9 @@ export function AcceptInvitationPage() {
         e.preventDefault()
         setLoginError('')
 
-        if (!email.trim() || !password.trim()) {
-            setLoginError('Vui lòng nhập đầy đủ thông tin')
+        const validation = loginSchema.safeParse({ email, password })
+        if (!validation.success) {
+            setLoginError(validation.error.errors[0].message)
             return
         }
 

@@ -7,24 +7,7 @@ import { Loader2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { authService } from '../../../services/auth/authService';
 import { useAuth } from '../../../hooks/useAuth';
-const changePasswordSchema = z.
-object({
-  currentPassword: z.string().min(1, 'Mật khẩu hiện tại là bắt buộc'),
-  newPassword: z.
-  string().
-  min(8, 'Mật khẩu phải có ít nhất 8 ký tự').
-  regex(/[A-Z]/, 'Mật khẩu phải chứa ít nhất 1 chữ hoa').
-  regex(/[0-9]/, 'Mật khẩu phải chứa ít nhất 1 số'),
-  confirmPassword: z.string().min(1, 'Vui lòng xác nhận mật khẩu')
-}).
-refine((data) => data.newPassword === data.confirmPassword, {
-  message: 'Mật khẩu xác nhận không khớp',
-  path: ['confirmPassword']
-}).
-refine((data) => data.currentPassword !== data.newPassword, {
-  message: 'Mật khẩu mới phải khác mật khẩu hiện tại',
-  path: ['newPassword']
-});
+import { changePasswordSchema } from '../../../schemas/authSchemas';
 type ChangePasswordValues = z.infer<typeof changePasswordSchema>;
 export const ChangePasswordForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);

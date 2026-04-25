@@ -3,6 +3,7 @@ import { X, Info, Loader2, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../../../components/ui/button';
 import { DateInput } from '../../../components/ui/DateInput';
+import { createPhaseSchema } from '../../../schemas/seasonPlanSchemas';
 
 interface CreatePhaseModalProps {
   isOpen: boolean;
@@ -26,8 +27,6 @@ export function CreatePhaseModal({
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [startStatus, setStartStatus] = useState<'empty' | 'valid' | 'invalid'>('empty');
-  const [endStatus, setEndStatus] = useState<'empty' | 'valid' | 'invalid'>('empty');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -35,8 +34,6 @@ export function CreatePhaseModal({
       setName(initialData?.name || '');
       setStartDate(initialData?.startDate || '');
       setEndDate(initialData?.endDate || '');
-      setStartStatus(initialData?.startDate ? 'valid' : 'empty');
-      setEndStatus(initialData?.endDate ? 'valid' : 'empty');
       setError('');
     }
   }, [isOpen, initialData]);
@@ -45,38 +42,21 @@ export function CreatePhaseModal({
     e.preventDefault();
     setError('');
 
-    if (!name.trim()) {
-      setError('Vui lòng nhập tên giai đoạn');
-      return;
-    }
+    const validation = createPhaseSchema.safeParse({
+      name,
+      startDate,
+      endDate,
+    });
 
-    if (startStatus === 'invalid') {
-      setError('Ngày bắt đầu không đúng định dạng dd/mm/yyyy');
-      return;
-    }
-    if (!startDate) {
-      setError('Vui lòng nhập ngày bắt đầu');
-      return;
-    }
-
-    if (endStatus === 'invalid') {
-      setError('Ngày kết thúc không đúng định dạng dd/mm/yyyy');
-      return;
-    }
-    if (!endDate) {
-      setError('Vui lòng nhập ngày kết thúc');
-      return;
-    }
-
-    if (new Date(startDate) > new Date(endDate)) {
-      setError('Ngày kết thúc phải sau hoặc bằng ngày bắt đầu');
+    if (!validation.success) {
+      setError(validation.error.errors[0].message);
       return;
     }
 
     onSave({
-      name: name.trim(),
-      startDate,
-      endDate,
+      name: validation.data.name,
+      startDate: validation.data.startDate,
+      endDate: validation.data.endDate,
     });
   };
 
@@ -129,16 +109,14 @@ export function CreatePhaseModal({
 
               <div className="grid grid-cols-2 gap-4">
                 <DateInput
-                  label="Bắt đầu"
+                  label="Ngày bắt đầu"
                   value={startDate}
                   onChange={setStartDate}
-                  onStatusChange={setStartStatus}
                 />
                 <DateInput
-                  label="Kết thúc"
+                  label="Ngày kết thúc"
                   value={endDate}
                   onChange={setEndDate}
-                  onStatusChange={setEndStatus}
                 />
               </div>
             </div>

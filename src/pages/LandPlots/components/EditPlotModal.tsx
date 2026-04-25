@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { XIcon, AlertCircleIcon, InfoIcon } from 'lucide-react'
 import { Plot } from '../../../types/plot'
+import { updatePlotSchema } from '../../../schemas/plotSchemas'
 
 interface EditPlotModalProps {
   isOpen: boolean
@@ -35,17 +36,22 @@ export function EditPlotModal({
     e.preventDefault()
     setError('')
 
-    // Validation
-    if (!name.trim()) {
-      setError('Vui lòng nhập tên lô đất')
+    const validation = updatePlotSchema.safeParse({
+      name,
+      status,
+      description
+    })
+
+    if (!validation.success) {
+      setError(validation.error.errors[0].message)
       return
     }
 
     onSave({
       ...plot,
-      name: name.trim(),
-      description: description.trim(),
-      status: status as 'ACTIVE' | 'INACTIVE',
+      name: validation.data.name || '',
+      description: validation.data.description || '',
+      status: (validation.data.status as 'ACTIVE' | 'INACTIVE') || 'ACTIVE',
     })
   }
 

@@ -8,19 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { authService } from '../../../services/auth/authService';
 
-const resetPasswordSchema = z
-  .object({
-    password: z
-      .string()
-      .min(8, 'Mật khẩu phải có ít nhất 8 ký tự')
-      .regex(/[A-Z]/, 'Mật khẩu phải chứa ít nhất 1 chữ hoa')
-      .regex(/[0-9]/, 'Mật khẩu phải chứa ít nhất 1 số'),
-    confirmPassword: z.string().min(1, 'Vui lòng xác nhận mật khẩu'),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Mật khẩu xác nhận không khớp',
-    path: ['confirmPassword'],
-  });
+import { resetPasswordSchema } from '../../../schemas/authSchemas';
 
 type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
 

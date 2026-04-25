@@ -7,6 +7,7 @@ import type { AppDispatch, RootState } from '../../store'
 import { fetchSkus, createSku, deleteSku } from '../../store/skuSlice'
 import { useAuth } from '../../hooks/useAuth'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
+import { createSkuSchema } from '../../schemas/skuSchemas'
 
 export function SKUListPage() {
   const { farmId } = useParams<{ farmId: string }>()
@@ -42,7 +43,18 @@ export function SKUListPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!farmId || !newSku.sku) return
+    
+    const validation = createSkuSchema.safeParse({
+      sku: newSku.sku,
+      description: newSku.description
+    })
+
+    if (!validation.success) {
+      toast.error(validation.error.errors[0].message)
+      return
+    }
+
+    if (!farmId) return
     
     setSubmitting(true)
     try {

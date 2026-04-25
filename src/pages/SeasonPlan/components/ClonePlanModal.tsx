@@ -5,6 +5,7 @@ import { SeasonPlan } from '../../../types/seasonPlan';
 import { clonePlanLogic } from '../../../utils/seasonPlanUtils';
 import { Button } from '../../../components/ui/button';
 import { DateInput } from '../../../components/ui/DateInput';
+import { clonePlanSchema } from '../../../schemas/seasonPlanSchemas';
 
 interface ClonePlanModalProps {
   isOpen: boolean;
@@ -20,7 +21,6 @@ export function ClonePlanModal({
   plan,
 }: ClonePlanModalProps) {
   const [newStartDate, setNewStartDate] = useState('');
-  const [startStatus, setStartStatus] = useState<'empty' | 'valid' | 'invalid'>('empty');
   const [newName, setNewName] = useState('');
   const [error, setError] = useState('');
 
@@ -29,7 +29,6 @@ export function ClonePlanModal({
     if (plan && isOpen) {
       setNewName(`Bản sao của ${plan.name}`);
       setNewStartDate(new Date().toISOString().split('T')[0]);
-      setStartStatus('valid');
     }
   }, [plan, isOpen]);
 
@@ -37,23 +36,18 @@ export function ClonePlanModal({
     e.preventDefault();
     setError('');
 
-    if (!newName.trim()) {
-      setError('Vui lòng nhập tên kế hoạch mới');
-      return;
-    }
+    const validation = clonePlanSchema.safeParse({
+      newName,
+      newStartDate,
+    });
 
-    if (startStatus === 'invalid') {
-      setError('Ngày bắt đầu không đúng định dạng dd/mm/yyyy');
-      return;
-    }
-
-    if (!newStartDate) {
-      setError('Vui lòng nhập ngày bắt đầu');
+    if (!validation.success) {
+      setError(validation.error.errors[0].message);
       return;
     }
 
     if (plan) {
-      const clonedPlan = clonePlanLogic(plan, newName.trim(), newStartDate);
+      const clonedPlan = clonePlanLogic(plan, validation.data.newName, validation.data.newStartDate);
       onClone(clonedPlan);
       onClose();
     }
@@ -108,7 +102,6 @@ export function ClonePlanModal({
                 label="Ngày bắt đầu mới"
                 value={newStartDate}
                 onChange={setNewStartDate}
-                onStatusChange={setStartStatus}
               />
               <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 px-1">Tất cả các giai đoạn sẽ tự động lùi theo ngày này</p>
             </div>

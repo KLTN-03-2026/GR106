@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { XIcon, AlertCircleIcon } from 'lucide-react'
 import { Plot, Geometry } from '../../../types/plot'
 import { PlotDrawingMap, PlotDrawingMapHandle } from './PlotDrawingMap'
+import { createPlotSchema } from '../../../schemas/plotSchemas'
 
 interface CreatePlotModalProps {
   isOpen: boolean
@@ -44,13 +45,14 @@ export function CreatePlotModal({
     setError('')
     setWarning('')
 
-    if (!name.trim()) {
-      setError('Vui lòng nhập tên lô đất')
-      return
-    }
+    const validation = createPlotSchema.safeParse({
+      name,
+      geometry,
+      description
+    })
 
-    if (!geometry) {
-      setError('Vui lòng vẽ ranh giới lô đất trên bản đồ')
+    if (!validation.success) {
+      setError(validation.error.errors[0].message)
       return
     }
 
@@ -63,9 +65,9 @@ export function CreatePlotModal({
     }
 
     onSave({
-      plotName: name.trim(),
-      geometry,
-      ...(description.trim() ? { description: description.trim() } : {}),
+      plotName: validation.data.name,
+      geometry: validation.data.geometry,
+      ...(validation.data.description ? { description: validation.data.description } : {}),
     })
 
     handleClose()

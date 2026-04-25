@@ -9,25 +9,7 @@ import { useDispatch } from 'react-redux';
 import { authService } from '../../../services/auth/authService';
 import { farmService } from '../../../services/farm/farmService';
 import { setCredentials } from '../../../store/authSlice';
-const registerSchema = z.
-object({
-  fullName: z.string().min(1, 'Họ tên là bắt buộc'),
-  email: z.
-  string().
-  min(1, 'Email là bắt buộc').
-  email('Định dạng email không hợp lệ'),
-  password: z.
-  string().
-  min(8, 'Mật khẩu phải có ít nhất 8 ký tự').
-  regex(/[A-Z]/, 'Mật khẩu phải chứa ít nhất 1 chữ hoa').
-  regex(/[0-9]/, 'Mật khẩu phải chứa ít nhất 1 số'),
-  confirmPassword: z.string().min(1, 'Vui lòng xác nhận mật khẩu'),
-  farmName: z.string().min(1, 'Tên trang trại là bắt buộc')
-}).
-refine((data) => data.password === data.confirmPassword, {
-  message: 'Mật khẩu xác nhận không khớp',
-  path: ['confirmPassword']
-});
+import { registerSchema } from '../../../schemas/authSchemas';
 type RegisterFormValues = z.infer<typeof registerSchema>;
 export const RegisterForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);

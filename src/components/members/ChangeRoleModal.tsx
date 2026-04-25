@@ -8,6 +8,7 @@ import { memberService } from '../../services/members/memberService'
 import { Member, FarmRole } from '../../types/member'
 import { changeMemberRole } from '../../store/memberSlice'
 import type { AppDispatch } from '../../store'
+import { changeRoleSchema } from '../../schemas/memberSchemas'
 
 interface ChangeRoleModalProps {
   isOpen: boolean
@@ -49,7 +50,14 @@ export function ChangeRoleModal({ isOpen, onClose, member }: ChangeRoleModalProp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!farmId || !selectedRoleId) return
+    
+    const validation = changeRoleSchema.safeParse({ roleId: selectedRoleId })
+    if (!validation.success) {
+      toast.error(validation.error.errors[0].message)
+      return
+    }
+
+    if (!farmId) return
 
     try {
       setIsSubmitting(true)
@@ -57,7 +65,7 @@ export function ChangeRoleModal({ isOpen, onClose, member }: ChangeRoleModalProp
         changeMemberRole({
           farmId,
           memberId: member.userId,
-          payload: { roleId: selectedRoleId },
+          payload: validation.data,
         }),
       ).unwrap()
       toast.success('Đã thay đổi vai trò thành công')

@@ -13,6 +13,7 @@ import { fetchSuppliers } from '../../store/supplierSlice'
 import { fetchSkus } from '../../store/skuSlice'
 import { fetchUnits } from '../../store/unitSlice'
 import { useAuth } from '../../hooks/useAuth'
+import { createWarehouseItemSchema } from '../../schemas/warehouseItemSchemas'
 
 export function WarehouseDetailPage() {
   const { farmId, warehouseId } = useParams<{ farmId: string; warehouseId: string }>()
@@ -78,11 +79,18 @@ export function WarehouseDetailPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    const validation = createWarehouseItemSchema.safeParse(formData)
+    if (!validation.success) {
+      toast.error(validation.error.errors[0].message)
+      return
+    }
+
     if (!farmId || !warehouseId) return
     
     setSubmitting(true)
     try {
-      await dispatch(createWarehouseItem({ farmId, warehouseId, itemData: formData })).unwrap()
+      await dispatch(createWarehouseItem({ farmId, warehouseId, itemData: validation.data })).unwrap()
       toast.success('Đã thêm vật tư mới')
       setIsModalOpen(false)
       setFormData({ name: '', unitId: '', stock: 0, sku: '', supplierCode: '', unitPrice: 0, minStockQty: 0 })

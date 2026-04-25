@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import { CreateSeasonPlanRequest } from '../../../types/seasonPlan';
+import { createPlanRequestSchema } from '../../../schemas/seasonPlanSchemas';
 import { Button } from '../../../components/ui/button';
 import { DateInput } from '../../../components/ui/DateInput';
 
@@ -42,8 +43,16 @@ export function CreatePlanModal({
     e.preventDefault();
     setError('');
 
-    if (!cropId || !startDate || !name || !endDate) {
-      setError('Vui lòng điền đầy đủ các thông tin bắt buộc');
+    const validation = createPlanRequestSchema.safeParse({
+      cropId,
+      name,
+      startDate,
+      endDate,
+      note: '',
+    });
+
+    if (!validation.success) {
+      setError(validation.error.errors[0].message);
       return;
     }
 
@@ -51,11 +60,11 @@ export function CreatePlanModal({
     if (!crop) return;
 
     onSave({
-      name,
-      cropId,
-      startDate,
-      endDate,
-      note: '', 
+      name: validation.data.name,
+      cropId: validation.data.cropId,
+      startDate: validation.data.startDate,
+      endDate: validation.data.endDate,
+      note: validation.data.note || '', 
     });
 
     // Reset

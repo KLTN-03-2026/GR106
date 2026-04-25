@@ -29,6 +29,8 @@ import { SeasonPlan, Phase, Task, StatusObject } from '../../../types/seasonPlan
 import { Plot } from '../../../types/plot/plot';
 import { cn } from '../../../utils/cn';
 import { DateInput } from '../../../components/ui/DateInput';
+import { toast } from 'sonner';
+import { createTaskSchema } from '../../../schemas/seasonPlanSchemas';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -370,14 +372,24 @@ export function PlanDetailPanel({
 
   // ── Add task ──
   const handleAddTaskSubmit = () => {
-    if (sel.type !== 'PHASE' || !newTaskName.trim()) return;
-    onAddTask(plan.id, sel.phase.id, {
-      name: newTaskName.trim(),
-      description: newTaskDesc.trim(),
+    if (sel.type !== 'PHASE') return;
+
+    const payload = {
+      name: newTaskName,
+      description: newTaskDesc,
       startDate: newTaskStart || sel.phase.startDate,
       endDate: newTaskEnd || sel.phase.endDate,
       plotId: newTaskPlotId,
-    });
+    };
+
+    const validation = createTaskSchema.safeParse(payload);
+    if (!validation.success) {
+      toast.error(validation.error.errors[0].message);
+      return;
+    }
+
+    onAddTask(plan.id, sel.phase.id, validation.data as any);
+    
     setNewTaskName(''); setNewTaskDesc('');
     setNewTaskStart(''); setNewTaskEnd('');
     setIsAddingTask(false);

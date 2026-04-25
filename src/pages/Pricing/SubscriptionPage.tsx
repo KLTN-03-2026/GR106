@@ -8,6 +8,7 @@ import { RootState } from '@/store';
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { executePaymentSchema } from '@/schemas/paymentSchemas';
 
 const SubscriptionPage = () => {
     const { farmId: urlFarmId } = useParams<{ farmId: string }>();
@@ -48,9 +49,13 @@ const SubscriptionPage = () => {
     const executePayment = async () => {
         const farmId = urlFarmId || currentFarmId;
 
-        if (!selectedPlan) return;
-        if (!farmId) {
-            setError('Không xác định được trang trại cần nâng cấp. Vui lòng quay lại trang quản lý.');
+        const validation = executePaymentSchema.safeParse({
+            selectedPlan,
+            farmId
+        });
+
+        if (!validation.success) {
+            setError(validation.error.errors[0].message);
             return;
         }
 
@@ -59,9 +64,9 @@ const SubscriptionPage = () => {
 
         try {
             const res = await createPaymentService.createPayment({
-                subscriptionPlanId: selectedPlan,
+                subscriptionPlanId: validation.data.selectedPlan,
                 billingCycle: billing,
-                farmId: farmId || undefined
+                farmId: validation.data.farmId
             });
 
             const formData = res.data.formData;

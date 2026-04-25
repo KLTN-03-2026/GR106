@@ -7,6 +7,7 @@ import type { AppDispatch, RootState } from '../../store'
 import { fetchSuppliers, createSupplier, deleteSupplier } from '../../store/supplierSlice'
 import { useAuth } from '../../hooks/useAuth'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
+import { createSupplierSchema } from '../../schemas/supplierSchemas'
 
 export function SupplierListPage() {
   const { farmId } = useParams<{ farmId: string }>()
@@ -42,7 +43,18 @@ export function SupplierListPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!farmId || !newSupplier.code || !newSupplier.name) return
+    
+    const validation = createSupplierSchema.safeParse({
+      supplierCode: newSupplier.code,
+      name: newSupplier.name
+    })
+
+    if (!validation.success) {
+      toast.error(validation.error.errors[0].message)
+      return
+    }
+
+    if (!farmId) return
     
     setSubmitting(true)
     try {

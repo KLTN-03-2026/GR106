@@ -92,10 +92,32 @@ export const addPlanPlotsResponseSchema = apiResponseSchema(z.object({
 
 // Schema cho Payload tạo Plan mới
 export const createPlanRequestSchema = z.object({
-  cropId: z.string().uuid('Vui lòng chọn cây trồng'),
-  name: z.string().min(1, 'Tên kế hoạch không được để trống'),
-  startDate: z.string().min(1, 'Vui lòng chọn ngày bắt đầu'),
-  endDate: z.string().min(1, 'Vui lòng chọn ngày kết thúc'),
+  cropId: z.string().min(1, 'Vui lòng chọn cây trồng mục tiêu'),
+  name: z.string().trim().min(1, 'Vui lòng nhập tên kế hoạch'),
+  startDate: z.string().min(1, 'Vui lòng nhập ngày bắt đầu hợp lệ (dd/mm/yyyy)'),
+  endDate: z.string().min(1, 'Vui lòng nhập ngày kết thúc hợp lệ (dd/mm/yyyy)'),
   note: z.string().optional(),
+});
+
+// Schema cho Payload tạo Phase mới
+export const createPhaseSchema = z.object({
+  name: z.string().trim().min(1, 'Vui lòng nhập tên giai đoạn'),
+  startDate: z.string().min(1, 'Vui lòng nhập ngày bắt đầu hợp lệ (dd/mm/yyyy)'),
+  endDate: z.string().min(1, 'Vui lòng nhập ngày kết thúc hợp lệ (dd/mm/yyyy)'),
+});
+
+// Schema cho Payload clone Plan
+export const clonePlanSchema = z.object({
+  newName: z.string().trim().min(1, 'Vui lòng nhập tên kế hoạch mới'),
+  newStartDate: z.string().min(1, 'Vui lòng nhập ngày bắt đầu hợp lệ (dd/mm/yyyy)'),
+});
+
+// Schema cho Payload tạo Task mới
+export const createTaskSchema = z.object({
+  name: z.string().trim().min(1, 'Vui lòng nhập tên công việc'),
+  description: z.string().optional(),
+  startDate: z.string().min(1, 'Vui lòng nhập ngày bắt đầu'),
+  endDate: z.string().min(1, 'Vui lòng nhập ngày kết thúc'),
+  plotId: z.string().min(1, 'Vui lòng chọn lô đất'),
 });
 

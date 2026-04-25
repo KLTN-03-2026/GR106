@@ -68,9 +68,11 @@ export function DateInput({
     if (digits.length === 0) {
       setInternalStatus('empty');
       onStatusChange?.('empty');
+      onChange('');
     } else if (digits.length < 8) {
       setInternalStatus('empty'); // Hoặc 'partial' nếu muốn
       onStatusChange?.('empty');
+      onChange('');
     } else {
       const day = digits.slice(0, 2);
       const month = digits.slice(2, 4);
@@ -88,6 +90,7 @@ export function DateInput({
       } else {
         setInternalStatus('invalid');
         onStatusChange?.('invalid');
+        onChange('');
       }
     }
   };
