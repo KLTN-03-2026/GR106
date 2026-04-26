@@ -37,6 +37,7 @@ export const useAuth = () => {
   return {
     isAuthenticated: auth.isAuthenticated,
     accessToken: auth.accessToken,
+    hubToken: auth.hubToken,
     user,
     currentFarmId: auth.currentFarmId,
     

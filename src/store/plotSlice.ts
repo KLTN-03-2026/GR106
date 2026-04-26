@@ -73,6 +73,19 @@ export const deletePlot = createAsyncThunk(
   }
 );
 
+// Async Thunk để lấy số liệu tổng hợp toàn hệ thống (Dành cho HUB)
+export const fetchAggregateStats = createAsyncThunk(
+  'plot/fetchAggregateStats',
+  async (hubToken: string, { rejectWithValue }) => {
+    try {
+      const { dashboardService } = await import('../services/dashboard/dashboardService');
+      return await dashboardService.fetchAggregateStats(hubToken);
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || error.message || 'Lỗi khi lấy số liệu tổng hợp');
+    }
+  }
+);
+
 
 import { logout } from './authSlice';
 const plotSlice = createSlice({
@@ -149,6 +162,22 @@ const plotSlice = createSlice({
         state.plots = state.plots.filter((p) => p.id !== action.payload);
       })
       .addCase(deletePlot.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // fetchAggregateStats
+      .addCase(fetchAggregateStats.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAggregateStats.fulfilled, (state, action) => {
+        state.loading = false;
+        state.aggregateStats = {
+          totalPlots: action.payload.totalPlots,
+          totalArea: action.payload.totalArea,
+        };
+      })
+      .addCase(fetchAggregateStats.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

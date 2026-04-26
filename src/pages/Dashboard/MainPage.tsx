@@ -17,10 +17,10 @@ import {
  * Hook lấy số liệu tổng hợp từ Redux Store
  */
 function useDashboardData(farmId?: string) {
-  const { accessToken } = useAuth();
+  const { hubToken } = useAuth();
   const [isSyncing, setIsSyncing] = useState(false);
   
-  const { plots, aggregateStats, loading: plotsLoading, fetchPlots, clearPlots } = usePlots();
+  const { plots, aggregateStats, loading: plotsLoading, fetchPlots, clearPlots, fetchAggregateStats } = usePlots();
   const { crops, cropTypes, loading: cropsLoading, cropTypesLoading, fetchCrops, fetchCropTypes } = useCrops();
 
   useEffect(() => {
@@ -33,19 +33,22 @@ function useDashboardData(farmId?: string) {
       fetchPlots(farmId);
       setIsSyncing(false);
     } else {
-      // 2b. CHẾ ĐỘ HUB: Xóa plots hiện tại
+      // 2b. CHẾ ĐỘ HUB: Xóa plots hiện tại và load số liệu tổng hợp
       clearPlots();
+      if (hubToken) {
+        fetchAggregateStats(hubToken);
+      }
       setIsSyncing(false);
     }
-  }, [farmId, fetchCrops, fetchCropTypes, fetchPlots, clearPlots, accessToken]);
+  }, [farmId, fetchCrops, fetchCropTypes, fetchPlots, clearPlots, fetchAggregateStats, hubToken]);
 
   const isLoading = (farmId && plotsLoading) || cropsLoading || cropTypesLoading || isSyncing;
 
   return {
     stats: {
-      totalPlots: plots.length > 0 ? plots.length : aggregateStats.totalPlots,
+      totalPlots: farmId ? plots.length : aggregateStats.totalPlots,
       totalCrops: cropTypes.length, 
-      totalArea: plots.length > 0 
+      totalArea: farmId 
         ? plots.reduce((acc, p) => acc + (Number(p.areaHa) || 0), 0)
         : aggregateStats.totalArea,
       totalPlants: crops.length,

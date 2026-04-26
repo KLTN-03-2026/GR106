@@ -8,7 +8,8 @@ import {
   clearPlotError,
   setAggregateStats,
   setPlots,
-  clearPlots
+  clearPlots,
+  fetchAggregateStats
 } from '../../store/plotSlice';
 import { CreatePlotInput, UpdatePlotInput, Plot } from '../../types/plot/plot';
 import { useCallback } from 'react';
@@ -38,5 +39,6 @@ export const usePlots = () => {
     setAggregateStats: useCallback((stats: any) => dispatch(setAggregateStats(stats)), [dispatch]),
     setPlots: useCallback((plots: Plot[]) => dispatch(setPlots(plots)), [dispatch]),
     clearPlots: useCallback(() => dispatch(clearPlots()), [dispatch]),
+    fetchAggregateStats: useCallback((hubToken: string) => dispatch(fetchAggregateStats(hubToken)), [dispatch]),
   };
 };
