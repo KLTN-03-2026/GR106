@@ -37,11 +37,11 @@ import { canEditPlan } from '../../utils/seasonPlanUtils';
 import { fetchPlots } from '../../store/plotSlice';
 import { fetchCrops } from '../../store/cropSlice';
 
-import { PlanTimeline } from './components/PlanTimeline';
-import { CreatePlanModal } from './components/CreatePlanModal';
-import { ClonePlanModal } from './components/ClonePlanModal';
-import { PlanDetailPanel } from './components/PlanDetailPanel';
-import { CreatePhaseModal } from './components/CreatePhaseModal';
+import { PlanTimeline } from '@/components/season-plan/PlanTimeline';
+import { CreatePlanModal } from '@/components/season-plan/CreatePlanModal';
+import { ClonePlanModal } from '@/components/season-plan/ClonePlanModal';
+import { PlanDetailPanel } from '@/components/season-plan/PlanDetailPanel';
+import { CreatePhaseModal } from '@/components/season-plan/CreatePhaseModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

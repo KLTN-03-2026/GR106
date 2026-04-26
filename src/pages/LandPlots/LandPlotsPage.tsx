@@ -5,12 +5,12 @@ import { usePlots } from '@/hooks/plots/usePlots';
 import { toast } from 'sonner';
 import { LayoutGridIcon, PlusIcon, ArrowLeft } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
-import { PlotTable } from './components/PlotTable';
-import { PlotCard } from './components/PlotCard';
-import { PlotFilters } from './components/PlotFilters';
-import { CreatePlotModal } from './components/CreatePlotModal';
-import { EditPlotModal } from './components/EditPlotModal';
-import { DeletePlotDialog } from './components/DeletePlotDialog';
+import { PlotTable } from '@/components/land-plots/PlotTable';
+import { PlotCard } from '@/components/land-plots/PlotCard';
+import { PlotFilters } from '@/components/land-plots/PlotFilters';
+import { CreatePlotModal } from '@/components/land-plots/CreatePlotModal';
+import { EditPlotModal } from '@/components/land-plots/EditPlotModal';
+import { DeletePlotDialog } from '@/components/land-plots/DeletePlotDialog';
 import { Plot } from '@/types/plot';
 
 export function LandPlotsPage() {
@@ -102,18 +102,6 @@ export function LandPlotsPage() {
       state: {
         selectedPlotId: plot.id,
         preloadPlot: plot,
-        source: 'land-plots',
-      },
-    });
-  };
-
-  const handleEditBoundary = (plot: Plot) => {
-    fetchPlots(currentFarmId);
-    navigate(`/farms/${currentFarmId}/map?plotId=${plot.id}&mode=editing&source=land-plots`, {
-      state: {
-        selectedPlotId: plot.id,
-        preloadPlot: plot,
-        mode: 'editing',
         source: 'land-plots',
       },
     });

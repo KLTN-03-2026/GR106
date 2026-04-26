@@ -10,7 +10,7 @@ import { Search, Calendar, Loader2, Info, CheckCircle2, AlertCircle, Trash2, Arr
 import { Modal } from '../../components/ui/Modal';
 import { cn } from '../../utils/cn';
 import { Button } from '../../components/ui/button';
-import { CreatePlanModal } from './components/CreatePlanModal';
+import { CreatePlanModal } from '@/components/season-plan/CreatePlanModal';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { Navigate } from 'react-router-dom';
 import { getRolesFromToken } from '../../utils/jwt';

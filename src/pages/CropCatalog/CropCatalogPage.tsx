@@ -7,9 +7,9 @@ import { getRolesFromToken } from '../../utils/jwt';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Navigate } from 'react-router-dom';
-import { CropList } from './components/CropList';
-import { CropForm } from './components/CropForm';
-import { QuickAddCropTypeModal } from './components/QuickAddCropTypeModal';
+import { CropList } from '@/components/crop-catalog/CropList';
+import { CropForm } from '@/components/crop-catalog/CropForm';
+import { QuickAddCropTypeModal } from '@/components/crop-catalog/QuickAddCropTypeModal';
 import { CreateCropTypeRequest } from '../../types/crop';
 
 export const CropCatalogPage: React.FC = () => {

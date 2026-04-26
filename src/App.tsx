@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 
 import { Toaster } from 'sonner';
 import { AppRoutes } from './routes/AppRoutes';
-import { LoadingPage } from './components/ui/LoadingPage';
+import { LoadingPage } from '@/components/ui/LoadingPage';
 import { GoogleMapsProvider } from './providers/GoogleMapsProvider';
 
 export function App() {

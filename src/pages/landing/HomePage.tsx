@@ -1,9 +1,9 @@
 import React from "react";
 import { Navbar } from "@/components/layout/Navbar";
-import HeroSection from "./sections/HeroSection";
-import IntroSection from "./sections/IntroSection";
-import ServicesSection from "./sections/ServicesSection";
-import ContactSection from "./sections/ContactSection";
+import HeroSection from "@/components/landing/HeroSection";
+import IntroSection from "@/components/landing/IntroSection";
+import ServicesSection from "@/components/landing/ServicesSection";
+import ContactSection from "@/components/landing/ContactSection";
 import CornBackground from "@/assets/Corn-Background.png";
 
 class HomePage extends React.Component {

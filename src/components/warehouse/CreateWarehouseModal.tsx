@@ -1,17 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+
 import { toast } from "sonner";
 import { useWarehouses } from "@/hooks/warehouses/useWarehouses";
-import { usePlots } from "@/hooks/plots/usePlots";
 import { X, Loader2, Warehouse, Info } from "lucide-react";
 import LocationPickerMap from "./LocationPickerMap";
-import { Modal } from "../ui/Modal";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Textarea } from "../ui/textarea";
+import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
-import { createWarehouseSchema, type CreateWarehouseFormValues } from "../../schemas/warehouseSchemas";
+import { createWarehouseSchema, type CreateWarehouseFormValues } from "@/schemas/warehouseSchemas";
 
 interface Props {
   farmId: string;
@@ -22,15 +22,7 @@ interface Props {
 
 export function CreateWarehouseModal({ farmId, isOpen, onClose, onSuccess }: Props) {
   const { createWarehouse, submitting } = useWarehouses();
-  const { plots, fetchPlots } = usePlots();
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-
-  useEffect(() => {
-    if (isOpen && farmId) {
-      fetchPlots(farmId);
-    }
-  }, [fetchPlots, isOpen, farmId]);
-
 
   const {
     register,
@@ -47,17 +39,10 @@ export function CreateWarehouseModal({ farmId, isOpen, onClose, onSuccess }: Pro
     }
   });
 
-  const handleLocationChange = (coords: { lat: number; lng: number } | null) => {
+  const handleLocationChange = (coords: { lat: number; lng: number }) => {
     setLocation(coords);
-    if (coords) {
-      setValue("latitude", coords.lat, { shouldValidate: true });
-      setValue("longitude", coords.lng, { shouldValidate: true });
-    } else {
-      // @ts-ignore
-      setValue("latitude", undefined, { shouldValidate: true });
-      // @ts-ignore
-      setValue("longitude", undefined, { shouldValidate: true });
-    }
+    setValue("latitude", coords.lat, { shouldValidate: true });
+    setValue("longitude", coords.lng, { shouldValidate: true });
   };
 
   const onSubmit = async (data: CreateWarehouseFormValues) => {
@@ -152,7 +137,7 @@ export function CreateWarehouseModal({ farmId, isOpen, onClose, onSuccess }: Pro
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
                 Vị trí tọa độ <span className="text-rose-500">*</span>
               </label>
-              <LocationPickerMap value={location} onChange={handleLocationChange} plots={plots} />
+              <LocationPickerMap value={location} onChange={handleLocationChange} />
               {(errors.latitude || errors.longitude) && (
                 <p className="mt-1 text-[10px] font-bold text-rose-500 flex items-center gap-1">
                    <Info size={10} /> Vui lòng click chọn vị trí trên bản đồ

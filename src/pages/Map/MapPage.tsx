@@ -9,16 +9,16 @@ import { toast } from 'sonner';
 import { ArrowLeft, Map as MapIcon } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
-import { FarmMap, FarmMapHandle } from './components/FarmMap';
-import { DrawingToolbar, DrawingMode } from './components/DrawingToolbar';
-import { BoundaryConfirmDialog } from './components/BoundaryConfirmDialog';
-import { DeleteBoundaryDialog } from './components/DeleteBoundaryDialog';
-import { CreatePlotModal } from '../LandPlots/components/CreatePlotModal';
-import { EditPlotModal } from '../LandPlots/components/EditPlotModal';
-import { MapSidebar } from './components/MapSidebar';
-import { MapCanvas } from './components/MapCanvas';
-import { MapHint } from './components/MapHint';
-import { DeletePlotDialog } from './components/DeletePlotDialog';
+import { FarmMap, FarmMapHandle } from '@/components/map/FarmMap';
+import { DrawingToolbar, DrawingMode } from '@/components/map/DrawingToolbar';
+import { BoundaryConfirmDialog } from '@/components/map/BoundaryConfirmDialog';
+import { DeleteBoundaryDialog } from '@/components/map/DeleteBoundaryDialog';
+import { CreatePlotModal } from '@/components/land-plots/CreatePlotModal';
+import { EditPlotModal } from '@/components/land-plots/EditPlotModal';
+import { MapSidebar } from '@/components/map/MapSidebar';
+import { MapCanvas } from '@/components/map/MapCanvas';
+import { MapHint } from '@/components/map/MapHint';
+import { DeletePlotDialog } from '@/components/map/DeletePlotDialog';
 import { isSelfIntersecting, polygonsOverlap, getPlotPath } from '../../utils/plotUtils';
 
 export function MapPage() {

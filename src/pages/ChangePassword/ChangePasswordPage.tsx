@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChangePasswordForm } from './components/ChangePasswordForm';
+import { ChangePasswordForm } from '@/components/auth/ChangePasswordForm';
 import { motion } from 'framer-motion';
 
 export const ChangePasswordPage: React.FC = () => {

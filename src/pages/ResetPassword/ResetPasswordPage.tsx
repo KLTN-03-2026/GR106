@@ -1,6 +1,6 @@
 import React from 'react';
 import { AuthLayout } from '../../components/AuthLayout';
-import { ResetPasswordForm } from './components/ResetPasswordForm';
+import { ResetPasswordForm } from '@/components/auth/ResetPasswordForm';
 export const ResetPasswordPage: React.FC = () => {
   return (
     <AuthLayout
