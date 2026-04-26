@@ -1,8 +1,11 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useDispatch, useSelector } from 'react-redux';
 import { CreateFarmInput } from '../../types/farm';
 import { farmService } from '../../services/farm/farmService';
 import { axiosInstance } from '../../config/axios';
+import { AppDispatch, RootState } from '../../store';
+import { clearFarmState, setFarmSummarySnapshot, setFarmsSnapshot } from '../../store/farmSlice';
 
 const FARM_KEYS = {
   all: ['farms'] as const,
@@ -14,6 +17,8 @@ const withUnwrap = <T,>(promise: Promise<T>) =>
   Object.assign(promise, { unwrap: () => promise });
 
 export const useFarms = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const farmBridge = useSelector((state: RootState) => state.farm);
   const queryClient = useQueryClient();
   const [manualError, setManualError] = useState<unknown>(null);
 
@@ -103,9 +108,21 @@ export const useFarms = () => {
     deleteFarmMutation.error,
   ]);
 
+  useEffect(() => {
+    if (farmsQuery.data) {
+      dispatch(setFarmsSnapshot(farmsQuery.data));
+    }
+  }, [dispatch, farmsQuery.data]);
+
+  useEffect(() => {
+    if (farmSummaryQuery.data) {
+      dispatch(setFarmSummarySnapshot(farmSummaryQuery.data));
+    }
+  }, [dispatch, farmSummaryQuery.data]);
+
   return {
-    farms: farmsQuery.data ?? [],
-    farmSummary: farmSummaryQuery.data ?? [],
+    farms: farmsQuery.data ?? farmBridge.farmsSnapshot,
+    farmSummary: farmSummaryQuery.data ?? farmBridge.farmSummarySnapshot,
     currentFarm: null,
     loading,
     error,
@@ -124,6 +141,7 @@ export const useFarms = () => {
     clearData: useCallback(() => {
       queryClient.removeQueries({ queryKey: FARM_KEYS.all });
       setManualError(null);
-    }, [queryClient]),
+      dispatch(clearFarmState());
+    }, [queryClient, dispatch]),
   };
 };

@@ -1,7 +1,10 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useDispatch, useSelector } from 'react-redux';
 import { CreateSeasonPlanRequest, SeasonPlan, Task } from '../../types/seasonPlan';
 import { seasonPlanService } from '../../services/seasonplan/seasonPlanService';
+import { AppDispatch, RootState } from '../../store';
+import { setPlansSnapshot, setSelectedPlanId } from '../../store/seasonPlanSlice';
 
 const PLAN_KEYS = {
   all: ['season-plans'] as const,
@@ -12,6 +15,8 @@ const withUnwrap = <T,>(promise: Promise<T>) =>
   Object.assign(promise, { unwrap: () => promise });
 
 export const useSeasonPlans = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const seasonPlanBridge = useSelector((state: RootState) => state.seasonPlan);
   const queryClient = useQueryClient();
 
   const plansQuery = useQuery({
@@ -65,8 +70,14 @@ export const useSeasonPlans = () => {
     [plansQuery.error, createPlanMutation.error, deletePlanMutation.error, updatePlanTimeMutation.error],
   );
 
+  useEffect(() => {
+    if (plansQuery.data) {
+      dispatch(setPlansSnapshot(plansQuery.data));
+    }
+  }, [dispatch, plansQuery.data]);
+
   return {
-    plans: plansQuery.data ?? [],
+    plans: plansQuery.data ?? seasonPlanBridge.plansSnapshot,
     loading,
     createLoading,
     error,
@@ -175,8 +186,9 @@ export const useSeasonPlans = () => {
     addPlanToState: useCallback(
       (plan: SeasonPlan) => {
         updatePlansCache((prev) => [...prev, plan]);
+        dispatch(setSelectedPlanId(plan.id));
       },
-      [updatePlansCache],
+      [updatePlansCache, dispatch],
     ),
     updatePhaseTime: useCallback(
       (planId: string, stageId: string, data: { startDate: string; endDate: string }) =>

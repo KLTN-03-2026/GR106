@@ -1,7 +1,10 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useDispatch, useSelector } from 'react-redux';
 import { CreateCropRequest, CreateCropTypeRequest } from '../../types/crop';
 import { cropService } from '../../services/crop/cropService';
+import { AppDispatch, RootState } from '../../store';
+import { clearCropState, setCropsSnapshot, setCropTypesSnapshot } from '../../store/cropSlice';
 
 const CROP_KEYS = {
   all: ['crops'] as const,
@@ -13,6 +16,8 @@ const withUnwrap = <T,>(promise: Promise<T>) =>
   Object.assign(promise, { unwrap: () => promise });
 
 export const useCrops = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const cropBridge = useSelector((state: RootState) => state.crop);
   const queryClient = useQueryClient();
 
   const cropsQuery = useQuery({
@@ -82,9 +87,21 @@ export const useCrops = () => {
     ],
   );
 
+  useEffect(() => {
+    if (cropsQuery.data) {
+      dispatch(setCropsSnapshot(cropsQuery.data));
+    }
+  }, [dispatch, cropsQuery.data]);
+
+  useEffect(() => {
+    if (cropTypesQuery.data) {
+      dispatch(setCropTypesSnapshot(cropTypesQuery.data));
+    }
+  }, [dispatch, cropTypesQuery.data]);
+
   return {
-    crops: cropsQuery.data ?? [],
-    cropTypes: cropTypesQuery.data ?? [],
+    crops: cropsQuery.data ?? cropBridge.cropsSnapshot,
+    cropTypes: cropTypesQuery.data ?? cropBridge.cropTypesSnapshot,
     loading,
     cropTypesLoading,
     error,
@@ -108,6 +125,8 @@ export const useCrops = () => {
       [createCropTypeMutation],
     ),
     deleteCropType: useCallback((id: string) => withUnwrap(deleteCropTypeMutation.mutateAsync(id)), [deleteCropTypeMutation]),
-    clearError: useCallback(() => undefined, []),
+    clearError: useCallback(() => {
+      dispatch(clearCropState());
+    }, [dispatch]),
   };
 };
