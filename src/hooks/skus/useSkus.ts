@@ -1,30 +1,81 @@
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState, AppDispatch } from '../../store';
-import { 
-  fetchSkus, 
-  createSku, 
-  deleteSku,
-} from '../../store/skuSlice';
+import { useCallback, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreateSkuDto } from '../../types/sku/sku';
-import { useCallback } from 'react';
+import { axiosInstance } from '../../config/axios';
+
+const SKU_KEYS = {
+  byFarm: (farmId: string) => ['skus', farmId] as const,
+};
+
+const withUnwrap = <T,>(promise: Promise<T>) =>
+  Object.assign(promise, { unwrap: () => promise });
 
 export const useSkus = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { skus, loading, error } = useSelector(
-    (state: RootState) => state.sku
-  );
+  const queryClient = useQueryClient();
+  const [farmId, setFarmId] = useState<string | null>(null);
+
+  const skusQuery = useQuery({
+    queryKey: farmId ? SKU_KEYS.byFarm(farmId) : ['skus', 'inactive'],
+    queryFn: async () => {
+      const res = await axiosInstance.get(`/api/v1/farms/${farmId as string}/skus`);
+      return res.data.data ?? [];
+    },
+    enabled: Boolean(farmId),
+  });
+
+  const createSkuMutation = useMutation({
+    mutationFn: async ({ farmId: targetFarmId, data }: { farmId: string; data: CreateSkuDto }) => {
+      const res = await axiosInstance.post(`/api/v1/farms/${targetFarmId}/skus`, data);
+      return res.data.data;
+    },
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: SKU_KEYS.byFarm(variables.farmId) });
+    },
+  });
+
+  const deleteSkuMutation = useMutation({
+    mutationFn: async ({ farmId: targetFarmId, sku }: { farmId: string; sku: string }) => {
+      await axiosInstance.delete(`/api/v1/farms/${targetFarmId}/skus/${sku}`);
+      return sku;
+    },
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: SKU_KEYS.byFarm(variables.farmId) });
+    },
+  });
+
+  const loading = skusQuery.isLoading || skusQuery.isFetching || createSkuMutation.isPending || deleteSkuMutation.isPending;
+  const error = useMemo(() => skusQuery.error ?? createSkuMutation.error ?? deleteSkuMutation.error ?? null, [
+    skusQuery.error,
+    createSkuMutation.error,
+    deleteSkuMutation.error,
+  ]);
 
   return {
-    // State
-    skus,
+    skus: skusQuery.data ?? [],
     loading,
     error,
-
-    // Actions
-    fetchSkus: useCallback((farmId: string) => dispatch(fetchSkus(farmId)), [dispatch]),
-    createSku: useCallback((farmId: string, data: CreateSkuDto) => 
-      dispatch(createSku({ farmId, data })), [dispatch]),
-    deleteSku: useCallback((farmId: string, sku: string) => 
-      dispatch(deleteSku({ farmId, sku })), [dispatch]),
+    fetchSkus: useCallback(
+      (farmIdValue: string) => {
+        setFarmId(farmIdValue);
+        return withUnwrap(
+          queryClient.fetchQuery({
+            queryKey: SKU_KEYS.byFarm(farmIdValue),
+            queryFn: async () => {
+              const res = await axiosInstance.get(`/api/v1/farms/${farmIdValue}/skus`);
+              return res.data.data ?? [];
+            },
+          }),
+        );
+      },
+      [queryClient],
+    ),
+    createSku: useCallback(
+      (farmIdValue: string, data: CreateSkuDto) => withUnwrap(createSkuMutation.mutateAsync({ farmId: farmIdValue, data })),
+      [createSkuMutation],
+    ),
+    deleteSku: useCallback(
+      (farmIdValue: string, sku: string) => withUnwrap(deleteSkuMutation.mutateAsync({ farmId: farmIdValue, sku })),
+      [deleteSkuMutation],
+    ),
   };
 };

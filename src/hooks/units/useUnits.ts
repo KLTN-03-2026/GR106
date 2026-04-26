@@ -1,23 +1,35 @@
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState, AppDispatch } from '../../store';
-import { 
-  fetchUnits, 
-} from '../../store/unitSlice';
 import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { unitService } from '../../services/unit/unitService';
+
+const UNIT_KEYS = {
+  list: ['units', 'list'] as const,
+};
+
+const withUnwrap = <T,>(promise: Promise<T>) =>
+  Object.assign(promise, { unwrap: () => promise });
 
 export const useUnits = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { units, loading, error } = useSelector(
-    (state: RootState) => state.unit
-  );
+  const queryClient = useQueryClient();
+  const unitsQuery = useQuery({
+    queryKey: UNIT_KEYS.list,
+    queryFn: async () => (await unitService.getUnits()).data ?? [],
+    enabled: false,
+  });
 
   return {
-    // State
-    units,
-    loading,
-    error,
-
-    // Actions
-    fetchUnits: useCallback(() => dispatch(fetchUnits()), [dispatch]),
+    units: unitsQuery.data ?? [],
+    loading: unitsQuery.isLoading || unitsQuery.isFetching,
+    error: unitsQuery.error ?? null,
+    fetchUnits: useCallback(
+      () =>
+        withUnwrap(
+          queryClient.fetchQuery({
+            queryKey: UNIT_KEYS.list,
+            queryFn: async () => (await unitService.getUnits()).data ?? [],
+          }),
+        ),
+      [queryClient],
+    ),
   };
 };

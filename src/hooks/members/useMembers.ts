@@ -1,46 +1,155 @@
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState, AppDispatch } from '../../store';
-import { 
-  fetchMembers, 
-  fetchInvitations,
-  inviteMember, 
-  cancelInvitation,
-  removeMember, 
-  changeMemberRole,
-} from '../../store/memberSlice';
+import { useCallback, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { InviteMemberRequest, ChangeRoleRequest } from '../../types/member';
-import { useCallback } from 'react';
+import { memberService } from '../../services/members/memberService';
+
+const MEMBER_KEYS = {
+  all: ['members'] as const,
+  members: (farmId: string) => ['members', farmId] as const,
+  invitations: (farmId: string) => ['members', farmId, 'invitations'] as const,
+};
+
+const withUnwrap = <T,>(promise: Promise<T>) =>
+  Object.assign(promise, { unwrap: () => promise });
 
 export const useMembers = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { 
-    members, 
-    invitations, 
-    loadingMembers, 
-    loadingInvitations, 
-    submitting, 
-    error 
-  } = useSelector((state: RootState) => state.member);
+  const queryClient = useQueryClient();
+  const [farmId, setFarmId] = useState<string | null>(null);
+
+  const membersQuery = useQuery({
+    queryKey: farmId ? MEMBER_KEYS.members(farmId) : ['members', 'inactive'],
+    queryFn: async () => (await memberService.getMembers(farmId as string)).data ?? [],
+    enabled: Boolean(farmId),
+  });
+
+  const invitationsQuery = useQuery({
+    queryKey: farmId ? MEMBER_KEYS.invitations(farmId) : ['members', 'invitations', 'inactive'],
+    queryFn: async () => (await memberService.getInvitations(farmId as string)).data ?? [],
+    enabled: Boolean(farmId),
+  });
+
+  const inviteMutation = useMutation({
+    mutationFn: async ({ farmId: targetFarmId, payload }: { farmId: string; payload: InviteMemberRequest }) => {
+      await memberService.inviteMember(targetFarmId, payload);
+      return targetFarmId;
+    },
+    onSuccess: (targetFarmId) => {
+      void queryClient.invalidateQueries({ queryKey: MEMBER_KEYS.members(targetFarmId) });
+      void queryClient.invalidateQueries({ queryKey: MEMBER_KEYS.invitations(targetFarmId) });
+    },
+  });
+
+  const cancelInvitationMutation = useMutation({
+    mutationFn: async ({ farmId: targetFarmId, invitationId }: { farmId: string; invitationId: string }) => {
+      await memberService.cancelInvitation(targetFarmId, invitationId);
+      return { farmId: targetFarmId, invitationId };
+    },
+    onSuccess: ({ farmId: targetFarmId }) => {
+      void queryClient.invalidateQueries({ queryKey: MEMBER_KEYS.invitations(targetFarmId) });
+    },
+  });
+
+  const removeMemberMutation = useMutation({
+    mutationFn: async ({ farmId: targetFarmId, memberId }: { farmId: string; memberId: string }) => {
+      await memberService.removeMember(targetFarmId, memberId);
+      return { farmId: targetFarmId, memberId };
+    },
+    onSuccess: ({ farmId: targetFarmId }) => {
+      void queryClient.invalidateQueries({ queryKey: MEMBER_KEYS.members(targetFarmId) });
+    },
+  });
+
+  const changeMemberRoleMutation = useMutation({
+    mutationFn: async ({
+      farmId: targetFarmId,
+      memberId,
+      payload,
+    }: {
+      farmId: string;
+      memberId: string;
+      payload: ChangeRoleRequest;
+    }) => {
+      await memberService.changeRole(targetFarmId, memberId, payload);
+      return { farmId: targetFarmId, memberId };
+    },
+    onSuccess: ({ farmId: targetFarmId }) => {
+      void queryClient.invalidateQueries({ queryKey: MEMBER_KEYS.members(targetFarmId) });
+    },
+  });
+
+  const error = useMemo(
+    () =>
+      membersQuery.error ??
+      invitationsQuery.error ??
+      inviteMutation.error ??
+      cancelInvitationMutation.error ??
+      removeMemberMutation.error ??
+      changeMemberRoleMutation.error ??
+      null,
+    [
+      membersQuery.error,
+      invitationsQuery.error,
+      inviteMutation.error,
+      cancelInvitationMutation.error,
+      removeMemberMutation.error,
+      changeMemberRoleMutation.error,
+    ],
+  );
 
   return {
-    // State
-    members,
-    invitations,
-    loadingMembers,
-    loadingInvitations,
-    submitting,
+    members: membersQuery.data ?? [],
+    invitations: invitationsQuery.data ?? [],
+    loadingMembers: membersQuery.isLoading || membersQuery.isFetching,
+    loadingInvitations: invitationsQuery.isLoading || invitationsQuery.isFetching,
+    submitting:
+      inviteMutation.isPending ||
+      cancelInvitationMutation.isPending ||
+      removeMemberMutation.isPending ||
+      changeMemberRoleMutation.isPending,
     error,
-
-    // Actions
-    fetchMembers: useCallback((farmId: string) => dispatch(fetchMembers(farmId)), [dispatch]),
-    fetchInvitations: useCallback((farmId: string) => dispatch(fetchInvitations(farmId)), [dispatch]),
-    inviteMember: useCallback((farmId: string, payload: InviteMemberRequest) => 
-      dispatch(inviteMember({ farmId, payload })), [dispatch]),
-    cancelInvitation: useCallback((farmId: string, invitationId: string) => 
-      dispatch(cancelInvitation({ farmId, invitationId })), [dispatch]),
-    removeMember: useCallback((farmId: string, memberId: string) => 
-      dispatch(removeMember({ farmId, memberId })), [dispatch]),
-    changeMemberRole: useCallback((farmId: string, memberId: string, payload: ChangeRoleRequest) => 
-      dispatch(changeMemberRole({ farmId, memberId, payload })), [dispatch]),
+    fetchMembers: useCallback(
+      (farmIdValue: string) => {
+        setFarmId(farmIdValue);
+        return withUnwrap(
+          queryClient.fetchQuery({
+            queryKey: MEMBER_KEYS.members(farmIdValue),
+            queryFn: async () => (await memberService.getMembers(farmIdValue)).data ?? [],
+          }),
+        );
+      },
+      [queryClient],
+    ),
+    fetchInvitations: useCallback(
+      (farmIdValue: string) => {
+        setFarmId(farmIdValue);
+        return withUnwrap(
+          queryClient.fetchQuery({
+            queryKey: MEMBER_KEYS.invitations(farmIdValue),
+            queryFn: async () => (await memberService.getInvitations(farmIdValue)).data ?? [],
+          }),
+        );
+      },
+      [queryClient],
+    ),
+    inviteMember: useCallback(
+      (farmIdValue: string, payload: InviteMemberRequest) =>
+        withUnwrap(inviteMutation.mutateAsync({ farmId: farmIdValue, payload })),
+      [inviteMutation],
+    ),
+    cancelInvitation: useCallback(
+      (farmIdValue: string, invitationId: string) =>
+        withUnwrap(cancelInvitationMutation.mutateAsync({ farmId: farmIdValue, invitationId })),
+      [cancelInvitationMutation],
+    ),
+    removeMember: useCallback(
+      (farmIdValue: string, memberId: string) =>
+        withUnwrap(removeMemberMutation.mutateAsync({ farmId: farmIdValue, memberId })),
+      [removeMemberMutation],
+    ),
+    changeMemberRole: useCallback(
+      (farmIdValue: string, memberId: string, payload: ChangeRoleRequest) =>
+        withUnwrap(changeMemberRoleMutation.mutateAsync({ farmId: farmIdValue, memberId, payload })),
+      [changeMemberRoleMutation],
+    ),
   };
 };

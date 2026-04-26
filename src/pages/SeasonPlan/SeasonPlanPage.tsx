@@ -34,8 +34,6 @@ import { cn } from '../../utils/cn';
 import { Button } from '../../components/ui/button';
 import { useAuth } from '../../hooks/auth/useAuth';
 import { canEditPlan } from '../../utils/seasonPlanUtils';
-import { fetchPlots } from '../../store/plotSlice';
-import { fetchCrops } from '../../store/cropSlice';
 
 import { PlanTimeline } from '@/components/season-plan/PlanTimeline';
 import { CreatePlanModal } from '@/components/season-plan/CreatePlanModal';

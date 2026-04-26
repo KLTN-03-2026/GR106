@@ -1,11 +1,7 @@
-import { useEffect, useState, useCallback, useRef } from "react";
-import axios from "axios";
+import { useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { WeatherData, UseWeatherState } from "../../types/weather";
-import { ENV } from "../../config/env";
-import { translateWeather } from "../../utils/weatherUtils";
-
-const WEATHER_API_KEY = ENV.WEATHER_KEY;
-const WEATHER_API_BASE_URL = "https://api.openweathermap.org/data/2.5/weather";
+import { fetchWeather } from "../../services/weather/weatherService";
 
 const DEFAULT_LAT = 16.0678;
 const DEFAULT_LON = 108.2208;
@@ -25,142 +21,73 @@ const DEFAULT_WEATHER_DATA: WeatherData = {
 };
 
 export const useWeather = (): UseWeatherState => {
-  const [state, setState] = useState<UseWeatherState>({
-    data: null,
-    loading: true,
-    error: null,
-    refetch: () => {},
-  });
+  const weatherQuery = useQuery({
+    queryKey: ["weather", "current-location"],
+    queryFn: async () => {
+      const getPosition = () =>
+        new Promise<{ lat: number; lon: number }>((resolve) => {
+          if (!navigator.geolocation) {
+            resolve({ lat: DEFAULT_LAT, lon: DEFAULT_LON });
+            return;
+          }
 
-  const abortControllerRef = useRef<AbortController | null>(null);
+          navigator.geolocation.getCurrentPosition(
+            (position) =>
+              resolve({
+                lat: position.coords.latitude,
+                lon: position.coords.longitude,
+              }),
+            () => resolve({ lat: DEFAULT_LAT, lon: DEFAULT_LON }),
+            { timeout: 10000, maximumAge: 60000 },
+          );
+        });
 
-  const fetchWeather = useCallback(async (lat: number, lon: number) => {
-    abortControllerRef.current?.abort();
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
+      const { lat, lon } = await getPosition();
+      const data = await fetchWeather(lat, lon);
 
-    setState((prev) => ({ ...prev, loading: true, error: null }));
-
-    try {
-      const response = await axios.get(WEATHER_API_BASE_URL, {
-        params: {
-          lat,
-          lon,
-          appid: WEATHER_API_KEY,
-          units: "metric",
-        },
-        signal: controller.signal,
-      });
-
-      const { data } = response;
-      const weatherCondition = data.weather[0].main;
-      const mainCondition = weatherCondition.toLowerCase();
-      const currentHumidity = data.main.humidity;
-
-      const isRain =
-        ["Rain", "Drizzle", "Thunderstorm"].includes(weatherCondition) ||
-        data.main.rain !== undefined;
-
-      const isHighHumidity = currentHumidity >= 80;
-
-      let condition: WeatherData['condition'] = 'other';
-      if (mainCondition.includes('rain') || mainCondition.includes('drizzle') || mainCondition.includes('thunderstorm')) {
-        condition = 'rain';
-      } else if (mainCondition.includes('clear')) {
-        condition = 'clear';
-      } else if (mainCondition.includes('cloud')) {
-        condition = 'clouds';
-      }
-
-      const weatherData: WeatherData = {
-        temp: Math.round(data.main.temp),
-        tempMin: Math.round(data.main.temp_min),
-        tempMax: Math.round(data.main.temp_max),
-        humidity: currentHumidity,
-        windSpeed: Math.round(data.wind.speed * 10) / 10,
-        description: translateWeather(weatherCondition),
-        isRainy: isRain,
-        isHighHumidity,
-        icon: data.weather[0].icon,
-        name: data.name,
-        condition
+      const normalized: WeatherData = {
+        ...data,
+        tempMin: data.tempMin ?? DEFAULT_WEATHER_DATA.tempMin,
+        tempMax: data.tempMax ?? DEFAULT_WEATHER_DATA.tempMax,
       };
 
-      console.log("🌦️ Weather Data Fetched:", weatherData);
-
-      if (!controller.signal.aborted) {
-        // Lưu vào cache
-        sessionStorage.setItem("weather_cache", JSON.stringify({
-          data: weatherData,
-          timestamp: Date.now()
-        }));
-
-        setState((prev) => ({
-          ...prev,
-          data: weatherData,
-          loading: false,
-          error: null,
-        }));
-      }
-    } catch (err: unknown) {
-      if (axios.isCancel(err)) return;
-
-      console.error(" Failed to fetch weather:", err);
-      const errorMessage =
-        err instanceof Error ? err.message : "Không thể tải dữ liệu thời tiết";
-
-      if (!controller.signal.aborted) {
-        setState((prev) => ({
-          ...prev,
-          data: DEFAULT_WEATHER_DATA,
-          loading: false,
-          error: errorMessage,
-        }));
-      }
-    }
-  }, []);
-
-  const getLocationAndFetchWeather = useCallback(() => {
-    // 1. Kiểm tra cache trong sessionStorage
-    const cached = sessionStorage.getItem("weather_cache");
-    if (cached) {
+      sessionStorage.setItem(
+        "weather_cache",
+        JSON.stringify({ data: normalized, timestamp: Date.now() }),
+      );
+      return normalized;
+    },
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    retry: 0,
+    initialData: () => {
+      const cached = sessionStorage.getItem("weather_cache");
+      if (!cached) return undefined;
       try {
-        const { data, timestamp } = JSON.parse(cached);
-        // Nếu cache chưa quá 30 phút, dùng luôn
+        const { data, timestamp } = JSON.parse(cached) as {
+          data: WeatherData;
+          timestamp: number;
+        };
         if (Date.now() - timestamp < 30 * 60 * 1000) {
-          console.log("🌦️ Using cached weather data");
-          setState({
-            data,
-            loading: false,
-            error: null,
-            refetch: getLocationAndFetchWeather
-          });
-          return;
+          return data;
         }
-      } catch (e) {
-        console.warn("Weather cache parse failed");
+      } catch {
+        return undefined;
       }
-    }
+      return undefined;
+    },
+  });
 
-    if (!navigator.geolocation) {
-      fetchWeather(DEFAULT_LAT, DEFAULT_LON);
-      return;
-    }
+  const refetch = useCallback(() => {
+    void weatherQuery.refetch();
+  }, [weatherQuery]);
 
-    navigator.geolocation.getCurrentPosition(
-      (position) =>
-        fetchWeather(position.coords.latitude, position.coords.longitude),
-      () => fetchWeather(DEFAULT_LAT, DEFAULT_LON),
-      { timeout: 10000, maximumAge: 60000 },
-    );
-  }, [fetchWeather]);
-
-  useEffect(() => {
-    getLocationAndFetchWeather();
-    return () => abortControllerRef.current?.abort();
-  }, [getLocationAndFetchWeather]);
-
-  return { ...state, refetch: getLocationAndFetchWeather };
+  return {
+    data: weatherQuery.data ?? DEFAULT_WEATHER_DATA,
+    loading: weatherQuery.isLoading || weatherQuery.isFetching,
+    error: weatherQuery.error instanceof Error ? weatherQuery.error.message : null,
+    refetch,
+  };
 };
 
 export default useWeather;

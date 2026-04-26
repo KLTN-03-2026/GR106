@@ -1,36 +1,113 @@
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState, AppDispatch } from '../../store';
-import { 
-  fetchCrops, 
-  fetchCropTypes, 
-  createCrop, 
-  createCropType, 
-  deleteCropType,
-  clearCropError 
-} from '../../store/cropSlice';
+import { useCallback, useMemo } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreateCropRequest, CreateCropTypeRequest } from '../../types/crop';
-import { useCallback } from 'react';
+import { cropService } from '../../services/crop/cropService';
+
+const CROP_KEYS = {
+  all: ['crops'] as const,
+  crops: ['crops', 'list'] as const,
+  cropTypes: ['crops', 'types'] as const,
+};
+
+const withUnwrap = <T,>(promise: Promise<T>) =>
+  Object.assign(promise, { unwrap: () => promise });
 
 export const useCrops = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { crops, cropTypes, loading, cropTypesLoading, error } = useSelector(
-    (state: RootState) => state.crop
+  const queryClient = useQueryClient();
+
+  const cropsQuery = useQuery({
+    queryKey: CROP_KEYS.crops,
+    queryFn: async () => {
+      const response = await cropService.getCrops();
+      return response.data ?? [];
+    },
+    enabled: false,
+  });
+
+  const cropTypesQuery = useQuery({
+    queryKey: CROP_KEYS.cropTypes,
+    queryFn: async () => {
+      const response = await cropService.getCropTypes();
+      return response.data ?? [];
+    },
+    enabled: false,
+  });
+
+  const createCropMutation = useMutation({
+    mutationFn: async (data: CreateCropRequest) => {
+      const response = await cropService.createCrop(data);
+      return response.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: CROP_KEYS.crops });
+    },
+  });
+
+  const createCropTypeMutation = useMutation({
+    mutationFn: async (data: CreateCropTypeRequest) => {
+      const response = await cropService.createCropType(data);
+      return response.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: CROP_KEYS.cropTypes });
+    },
+  });
+
+  const deleteCropTypeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await cropService.deleteCropType(id);
+      return id;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: CROP_KEYS.cropTypes });
+    },
+  });
+
+  const loading = cropsQuery.isLoading || cropsQuery.isFetching || createCropMutation.isPending;
+  const cropTypesLoading = cropTypesQuery.isLoading || cropTypesQuery.isFetching;
+  const error = useMemo(
+    () =>
+      cropsQuery.error ??
+      cropTypesQuery.error ??
+      createCropMutation.error ??
+      createCropTypeMutation.error ??
+      deleteCropTypeMutation.error ??
+      null,
+    [
+      cropsQuery.error,
+      cropTypesQuery.error,
+      createCropMutation.error,
+      createCropTypeMutation.error,
+      deleteCropTypeMutation.error,
+    ],
   );
 
   return {
-    // State
-    crops,
-    cropTypes,
+    crops: cropsQuery.data ?? [],
+    cropTypes: cropTypesQuery.data ?? [],
     loading,
     cropTypesLoading,
     error,
-
-    // Actions
-    fetchCrops: useCallback(() => dispatch(fetchCrops()), [dispatch]),
-    fetchCropTypes: useCallback(() => dispatch(fetchCropTypes()), [dispatch]),
-    createCrop: useCallback((data: CreateCropRequest) => dispatch(createCrop(data)), [dispatch]),
-    createCropType: useCallback((data: CreateCropTypeRequest) => dispatch(createCropType(data)), [dispatch]),
-    deleteCropType: useCallback((id: string) => dispatch(deleteCropType(id)), [dispatch]),
-    clearError: useCallback(() => dispatch(clearCropError()), [dispatch]),
+    fetchCrops: useCallback(
+      () => withUnwrap(queryClient.fetchQuery({ queryKey: CROP_KEYS.crops, queryFn: async () => (await cropService.getCrops()).data ?? [] })),
+      [queryClient],
+    ),
+    fetchCropTypes: useCallback(
+      () =>
+        withUnwrap(
+          queryClient.fetchQuery({
+            queryKey: CROP_KEYS.cropTypes,
+            queryFn: async () => (await cropService.getCropTypes()).data ?? [],
+          }),
+        ),
+      [queryClient],
+    ),
+    createCrop: useCallback((data: CreateCropRequest) => withUnwrap(createCropMutation.mutateAsync(data)), [createCropMutation]),
+    createCropType: useCallback(
+      (data: CreateCropTypeRequest) => withUnwrap(createCropTypeMutation.mutateAsync(data)),
+      [createCropTypeMutation],
+    ),
+    deleteCropType: useCallback((id: string) => withUnwrap(deleteCropTypeMutation.mutateAsync(id)), [deleteCropTypeMutation]),
+    clearError: useCallback(() => undefined, []),
   };
 };
