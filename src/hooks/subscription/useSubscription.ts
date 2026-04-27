@@ -8,7 +8,8 @@ import { FarmSubscription } from '@/types/subscription/subscription';
 /**
  * Hook để lấy lịch sử đăng ký gói của trang trại hiện tại
  */
-export const useSubscriptionHistory = () => {
+export const useSubscriptionHistory = (options?: { enabled?: boolean }) => {
+  const enabled = options?.enabled ?? true;
   const { currentFarmId, subscriptionVersion } = useSelector((state: RootState) => state.auth);
   const historyQuery = useQuery({
     queryKey: ['subscription', 'history', currentFarmId, subscriptionVersion],
@@ -19,7 +20,7 @@ export const useSubscriptionHistory = () => {
       }
       return res.data ?? [];
     },
-    enabled: Boolean(currentFarmId),
+    enabled: Boolean(currentFarmId) && enabled,
   });
 
   const refresh = useCallback(() => {
@@ -37,7 +38,8 @@ export const useSubscriptionHistory = () => {
 /**
  * Hook để lấy gói đăng ký hiện tại đang hoạt động của trang trại
  */
-export const useCurrentSubscription = () => {
+export const useCurrentSubscription = (options?: { enabled?: boolean }) => {
+  const enabled = options?.enabled ?? true;
   const { currentFarmId, subscriptionVersion } = useSelector((state: RootState) => state.auth);
   const currentQuery = useQuery({
     queryKey: ['subscription', 'current', currentFarmId, subscriptionVersion],
@@ -48,7 +50,7 @@ export const useCurrentSubscription = () => {
       }
       return res.data ?? null;
     },
-    enabled: Boolean(currentFarmId),
+    enabled: Boolean(currentFarmId) && enabled,
   });
 
   const refresh = useCallback(() => {

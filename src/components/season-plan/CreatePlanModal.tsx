@@ -19,7 +19,7 @@ export function CreatePlanModal({
   onClose,
   onSave,
 }: CreatePlanModalProps) {
-  const { crops, loading: cropsLoading } = useCrops();
+  const { crops, fetchCrops, loading: cropsLoading } = useCrops();
   const { createLoading: planLoading } = useSeasonPlans();
 
   const [cropId, setCropId] = useState('');
@@ -27,6 +27,12 @@ export function CreatePlanModal({
   const [endDate, setEndDate] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchCrops();
+    }
+  }, [isOpen, fetchCrops]);
 
   // Auto-generate name and suggest end date
   useEffect(() => {

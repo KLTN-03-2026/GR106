@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSeasonPlans } from '../../hooks/seasonPlans/useSeasonPlans';
-import { usePlots } from '../../hooks/plots/usePlots';
-import { useCrops } from '../../hooks/crops/useCrops';
 import { SeasonPlan, PlanStatus, Task } from '../../types/seasonPlan';
 import {
   Search,
@@ -132,9 +130,6 @@ export function SeasonPlanPage() {
     addPlanToState
   } = useSeasonPlans();
   
-  const { plots } = usePlots();
-  useCrops();
-  
   const { user, accessToken } = useAuth();
   const canEdit = canEditPlan(user?.role, accessToken);
 
@@ -184,24 +179,8 @@ export function SeasonPlanPage() {
   // ── Effects ───────────────────────────────────────────────────────────────
   useEffect(() => {
     fetchPlans();
-    if (farmId) {
-      fetchPlots(farmId);
-    }
-    fetchCrops();
-  }, [fetchPlans, fetchPlots, fetchCrops, accessToken, farmId]);
+  }, [fetchPlans, accessToken]);
 
-  useEffect(() => {
-    if (isCreateModalOpen && farmId) {
-      fetchPlots(farmId);
-      fetchCrops();
-    }
-  }, [isCreateModalOpen, fetchPlots, fetchCrops, farmId]);
-
-
-
-  // Auto-switch to timeline tab when viewing a single plan
-  // Reset khi chuyển plan
-  // Chỉ auto-open panel khi lần đầu vào trang (currentPlan?.id thay đổi)
   useEffect(() => {
     if (currentPlan) {
       setActiveTab('timeline');
@@ -745,7 +724,6 @@ export function SeasonPlanPage() {
             <PlanDetailPanel
               isOpen={!!selectedItem}
               selection={selectedData}
-              plots={plots}
               onClose={() => {
                 setSelectedItem(null);
               }}

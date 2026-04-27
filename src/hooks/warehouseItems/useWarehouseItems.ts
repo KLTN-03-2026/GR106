@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
-import { CreateWarehouseItemDto } from '../../types/warehouseItem/warehouseItem';
+import { CreateWarehouseItemDto, WarehouseItem } from '../../types/warehouseItem/warehouseItem';
 import { axiosInstance } from '../../config/axios';
 import { AppDispatch, RootState } from '../../store';
 import { setWarehouseItemsSnapshot } from '../../store/warehouseItemSlice';
@@ -28,13 +28,13 @@ export const useWarehouseItems = () => {
       queryState.farmId && queryState.warehouseId
         ? ITEM_KEYS.byWarehouse(queryState.farmId, queryState.warehouseId)
         : ['warehouse-items', 'inactive'],
-    queryFn: async () => {
+    queryFn: async (): Promise<WarehouseItem[]> => {
       const res = await axiosInstance.get(
         `/api/v1/farms/${queryState.farmId as string}/warehouses/${queryState.warehouseId as string}/items`,
       );
       return res.data.data ?? [];
     },
-    enabled: Boolean(queryState.farmId && queryState.warehouseId),
+    enabled: false,
   });
 
   const createItemMutation = useMutation({
@@ -69,12 +69,12 @@ export const useWarehouseItems = () => {
     loading: itemsQuery.isLoading || itemsQuery.isFetching || createItemMutation.isPending,
     error,
     fetchItems: useCallback(
-      (farmId: string, warehouseId: string) => {
+      (farmId: string, warehouseId: string): Promise<WarehouseItem[]> => {
         setQueryState({ farmId, warehouseId });
         return withUnwrap(
           queryClient.fetchQuery({
             queryKey: ITEM_KEYS.byWarehouse(farmId, warehouseId),
-            queryFn: async () => {
+            queryFn: async (): Promise<WarehouseItem[]> => {
               const res = await axiosInstance.get(`/api/v1/farms/${farmId}/warehouses/${warehouseId}/items`);
               return res.data.data ?? [];
             },
@@ -84,11 +84,11 @@ export const useWarehouseItems = () => {
       [queryClient],
     ),
     fetchAllItems: useCallback(
-      (farmId: string) =>
+      (farmId: string): Promise<WarehouseItem[]> =>
         withUnwrap(
           queryClient.fetchQuery({
             queryKey: ITEM_KEYS.allByFarm(farmId),
-            queryFn: async () => {
+            queryFn: async (): Promise<WarehouseItem[]> => {
               const res = await axiosInstance.get(`/api/v1/farms/${farmId}/warehouses/items`);
               return res.data.data ?? [];
             },

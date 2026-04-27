@@ -14,6 +14,11 @@ import { useUnits } from '../../hooks/units/useUnits'
 import { useWarehouses } from '../../hooks/warehouses/useWarehouses'
 import { useFarms } from '../../hooks/farms/useFarms'
 import { createWarehouseItemSchema } from '../../schemas/warehouseItemSchemas'
+import { WarehouseItem } from '../../types/warehouseItem/warehouseItem'
+import { Unit } from '../../types/unit/unit'
+import { Sku } from '../../types/sku/sku'
+import { Supplier } from '../../types/supplier/supplier'
+import { FarmSummary } from '../../types/farm/farm'
 
 export function WarehouseDetailPage() {
   const { farmId, warehouseId } = useParams<{ farmId: string; warehouseId: string }>()
@@ -46,31 +51,37 @@ export function WarehouseDetailPage() {
   })
 
   const canManage = useMemo(() => {
-    const currentFarm = farmSummary.find((f: any) => f.farmId === farmId)
+    const currentFarm = farmSummary.find((f: FarmSummary) => f.farmId === farmId)
     const myFarmRole = currentFarm?.myRole?.toLowerCase() || user?.role
     return ['owner', 'manager', 'admin'].includes(myFarmRole || '')
   }, [farmSummary, farmId, user])
 
   const lowStockCount = useMemo(() => 
-    items.filter(item => item.stock <= (item.minStockQty || 0)).length,
+    items.filter((item: WarehouseItem) => item.stock <= (item.minStockQty || 0)).length,
     [items]
   )
 
   const totalInventoryValue = useMemo(() => 
-    items.reduce((acc, item) => acc + (item.stock * (item.unitPrice || 0)), 0),
+    items.reduce((acc: number, item: WarehouseItem) => acc + (item.stock * (item.unitPrice || 0)), 0),
     [items]
   )
 
   useEffect(() => {
     if (farmId && warehouseId) {
       fetchItems(farmId, warehouseId)
+    }
+  }, [fetchItems, farmId, warehouseId])
+
+  // On-demand fetching for modal data
+  useEffect(() => {
+    if (isModalOpen && farmId) {
       fetchSuppliers(farmId)
       fetchSkus(farmId)
       fetchUnits()
     }
-  }, [fetchItems, fetchSuppliers, fetchSkus, fetchUnits, farmId, warehouseId])
+  }, [isModalOpen, farmId, fetchSuppliers, fetchSkus, fetchUnits])
 
-  const filteredItems = items.filter(item => 
+  const filteredItems = items.filter((item: WarehouseItem) => 
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.sku.sku.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -219,7 +230,7 @@ export function WarehouseDetailPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {filteredItems.map((item) => (
+                  {filteredItems.map((item: WarehouseItem) => (
                     <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-4">
@@ -301,7 +312,7 @@ export function WarehouseDetailPage() {
                       className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium"
                     >
                       <option value="">Chọn đơn vị</option>
-                      {units.map(u => <option key={u.id} value={u.id}>{u.name} ({u.code})</option>)}
+                      {units.map((u: Unit) => <option key={u.id} value={u.id}>{u.name} ({u.code})</option>)}
                     </select>
                   </div>
 
@@ -314,7 +325,7 @@ export function WarehouseDetailPage() {
                       className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium font-mono"
                     >
                       <option value="">Chọn mã SKU</option>
-                      {skus.map(s => <option key={s.sku} value={s.sku}>{s.sku}</option>)}
+                      {skus.map((s: Sku) => <option key={s.sku} value={s.sku}>{s.sku}</option>)}
                     </select>
                   </div>
 
@@ -327,7 +338,7 @@ export function WarehouseDetailPage() {
                       className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium"
                     >
                       <option value="">Chọn nhà cung cấp</option>
-                      {suppliers.map(s => <option key={s.code} value={s.code}>{s.name}</option>)}
+                      {suppliers.map((s: Supplier) => <option key={s.code} value={s.code}>{s.name}</option>)}
                     </select>
                   </div>
 

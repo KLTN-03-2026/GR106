@@ -25,7 +25,7 @@ export const useSuppliers = () => {
       const res = await axiosInstance.get(`/api/v1/farms/${farmId as string}/suppliers`);
       return res.data.data ?? [];
     },
-    enabled: Boolean(farmId),
+    enabled: false,
   });
 
   const createSupplierMutation = useMutation({

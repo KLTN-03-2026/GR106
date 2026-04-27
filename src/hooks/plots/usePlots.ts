@@ -26,13 +26,13 @@ export const usePlots = () => {
   const plotsQuery = useQuery({
     queryKey: activeFarmId ? PLOT_KEYS.byFarm(activeFarmId) : ['plots', 'inactive'],
     queryFn: async () => plotService.getPlots(),
-    enabled: Boolean(activeFarmId),
+    enabled: false,
   });
 
   const aggregateQuery = useQuery({
     queryKey: activeHubToken ? PLOT_KEYS.aggregate(activeHubToken) : ['plots', 'aggregate', 'inactive'],
     queryFn: async () => dashboardService.fetchAggregateStats(activeHubToken as string),
-    enabled: Boolean(activeHubToken),
+    enabled: false,
   });
 
   const createPlotMutation = useMutation({

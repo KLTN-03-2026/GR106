@@ -26,9 +26,11 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SeasonPlan, Phase, Task, StatusObject } from '@/types/seasonPlan';
-import { Plot } from '@/types/plot/plot';
-import { cn } from '@/utils/cn';
 import { DateInput } from '@/components/ui/DateInput';
+import { cn } from '@/utils/cn';
+import { usePlots } from '@/hooks/plots/usePlots';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
 import { toast } from 'sonner';
 import { createTaskSchema } from '@/schemas/seasonPlanSchemas';
 
@@ -48,7 +50,6 @@ interface PlanDetailPanelProps {
   onUpdateTask: (planId: string, phaseId: string, task: Task, originalTask?: Task) => void;
   onSelectPhase: (planId: string, phaseId: string) => void;
   onSelectTask: (planId: string, phaseId: string, taskId: string) => void;
-  plots: Plot[];
   onDeletePlan?: (planId: string) => void;
   onDeletePhase?: (planId: string, phaseId: string) => void;
   onDeleteTask?: (planId: string, phaseId: string, taskId: string) => void;
@@ -144,7 +145,6 @@ function InlineText({
     : <input className={cls} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} />;
 }
 
-/** Status select that looks like a Jira status lozenge */
 function StatusSelect({ value, options, onChange, canEdit }: {
   value: string;
   options: { code: string; label: string }[];
@@ -219,7 +219,6 @@ export function PlanDetailPanel({
   onUpdateTask,
   onSelectPhase,
   onSelectTask,
-  plots,
   onDeletePlan,
   onDeletePhase,
   onDeleteTask,
@@ -227,6 +226,10 @@ export function PlanDetailPanel({
   onAddPlots,
   canEdit = false,
 }: PlanDetailPanelProps) {
+  const { plots, fetchPlots } = usePlots();
+  const { selectedFarmId: farmId } = useSelector((state: RootState) => state.farm);
+
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [activeTab, setActiveTab] = useState<'INFO' | 'MEMBERS' | 'MATERIALS'>('INFO');
@@ -247,6 +250,14 @@ export function PlanDetailPanel({
   const [showAddPlot, setShowAddPlot] = useState(false);
   const [selectedPlotIds, setSelectedPlotIds] = useState<string[]>([]);
   const [loadingAddPlot, setLoadingAddPlot] = useState(false);
+
+  // Fetch plots only when "Add Plot" modal is shown
+  useEffect(() => {
+    if (showAddPlot && farmId) {
+      fetchPlots(farmId);
+    }
+  }, [showAddPlot, farmId, fetchPlots]);
+
   // SAU (đã sửa)
   useEffect(() => {
     setActiveSelection(selection);

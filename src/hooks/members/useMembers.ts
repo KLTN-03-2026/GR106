@@ -24,13 +24,13 @@ export const useMembers = () => {
   const membersQuery = useQuery({
     queryKey: farmId ? MEMBER_KEYS.members(farmId) : ['members', 'inactive'],
     queryFn: async () => (await memberService.getMembers(farmId as string)).data ?? [],
-    enabled: Boolean(farmId),
+    enabled: false,
   });
 
   const invitationsQuery = useQuery({
     queryKey: farmId ? MEMBER_KEYS.invitations(farmId) : ['members', 'invitations', 'inactive'],
     queryFn: async () => (await memberService.getInvitations(farmId as string)).data ?? [],
-    enabled: Boolean(farmId),
+    enabled: false,
   });
 
   const inviteMutation = useMutation({

@@ -82,7 +82,9 @@ export default function Sidebar({
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const { farmSummary } = useFarms();
-  const { data: currentSubscription, isLoading: loadingSub } = useCurrentSubscription();
+  const { data: currentSubscription, isLoading: loadingSub } = useCurrentSubscription({
+    enabled: active === 'subscription',
+  });
 
   const handleLogout = () => {
     setIsSettingsModalOpen(false);
