@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/auth/useAuth';
 import { useSeasonPlans } from '../../hooks/seasonPlans/useSeasonPlans';
-import { usePlots } from '../../hooks/plots/usePlots';
 import { useCrops } from '../../hooks/crops/useCrops';
 import { SeasonPlan, PlanStatus, StatusObject } from '../../types/seasonPlan';
 import { canEditPlan } from '../../utils/seasonPlanUtils';
@@ -19,7 +18,6 @@ export function SeasonPlanListPage() {
   const navigate = useNavigate();
   const { currentFarmId, user, accessToken } = useAuth();
   const { plans, loading, error, fetchPlans, createPlan, deletePlan: removePlan } = useSeasonPlans();
-  const { fetchPlots } = usePlots();
   const { fetchCrops } = useCrops();
 
   // Kiểm tra quyền
@@ -67,11 +65,10 @@ export function SeasonPlanListPage() {
   });
 
   useEffect(() => {
-    if (isCreateModalOpen && currentFarmId) {
-      fetchPlots(currentFarmId);
+    if (isCreateModalOpen) {
       fetchCrops();
     }
-  }, [isCreateModalOpen, fetchPlots, fetchCrops, currentFarmId]);
+  }, [isCreateModalOpen, fetchCrops]);
 
   const filteredPlans = farmPlans.filter((p: SeasonPlan) => {
     const matchesStatus = statusFilter === 'ALL' || p.status === statusFilter;

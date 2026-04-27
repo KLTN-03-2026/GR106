@@ -97,7 +97,6 @@ export function LandPlotsPage() {
   };
 
   const handleViewMap = (plot: Plot) => {
-    fetchPlots(currentFarmId);
     navigate(`/farms/${currentFarmId}/map?plotId=${plot.id}&source=land-plots`, {
       state: {
         selectedPlotId: plot.id,

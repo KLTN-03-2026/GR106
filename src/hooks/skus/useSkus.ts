@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
-import { CreateSkuDto } from '../../types/sku/sku';
+import { CreateSkuDto, Sku } from '../../types/sku/sku';
 import { axiosInstance } from '../../config/axios';
 import { AppDispatch, RootState } from '../../store';
 import { setSkusSnapshot } from '../../store/skuSlice';
@@ -21,7 +21,7 @@ export const useSkus = () => {
 
   const skusQuery = useQuery({
     queryKey: farmId ? SKU_KEYS.byFarm(farmId) : ['skus', 'inactive'],
-    queryFn: async () => {
+    queryFn: async (): Promise<Sku[]> => {
       const res = await axiosInstance.get(`/api/v1/farms/${farmId as string}/skus`);
       return res.data.data ?? [];
     },
@@ -66,12 +66,12 @@ export const useSkus = () => {
     loading,
     error,
     fetchSkus: useCallback(
-      (farmIdValue: string) => {
+      (farmIdValue: string): Promise<Sku[]> => {
         setFarmId(farmIdValue);
         return withUnwrap(
           queryClient.fetchQuery({
             queryKey: SKU_KEYS.byFarm(farmIdValue),
-            queryFn: async () => {
+            queryFn: async (): Promise<Sku[]> => {
               const res = await axiosInstance.get(`/api/v1/farms/${farmIdValue}/skus`);
               return res.data.data ?? [];
             },

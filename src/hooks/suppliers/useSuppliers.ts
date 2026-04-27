@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
-import { CreateSupplierDto } from '../../types/supplier/supplier';
+import { CreateSupplierDto, Supplier } from '../../types/supplier/supplier';
 import { axiosInstance } from '../../config/axios';
 import { AppDispatch, RootState } from '../../store';
 import { setSuppliersSnapshot } from '../../store/supplierSlice';
@@ -21,7 +21,7 @@ export const useSuppliers = () => {
 
   const suppliersQuery = useQuery({
     queryKey: farmId ? SUPPLIER_KEYS.byFarm(farmId) : ['suppliers', 'inactive'],
-    queryFn: async () => {
+    queryFn: async (): Promise<Supplier[]> => {
       const res = await axiosInstance.get(`/api/v1/farms/${farmId as string}/suppliers`);
       return res.data.data ?? [];
     },
@@ -66,12 +66,12 @@ export const useSuppliers = () => {
     loading,
     error,
     fetchSuppliers: useCallback(
-      (farmIdValue: string) => {
+      (farmIdValue: string): Promise<Supplier[]> => {
         setFarmId(farmIdValue);
         return withUnwrap(
           queryClient.fetchQuery({
             queryKey: SUPPLIER_KEYS.byFarm(farmIdValue),
-            queryFn: async () => {
+            queryFn: async (): Promise<Supplier[]> => {
               const res = await axiosInstance.get(`/api/v1/farms/${farmIdValue}/suppliers`);
               return res.data.data ?? [];
             },

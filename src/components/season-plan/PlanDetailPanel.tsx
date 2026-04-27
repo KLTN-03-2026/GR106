@@ -23,12 +23,14 @@ import {
   Paperclip,
   Edit2,
   Save,
+  Loader2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SeasonPlan, Phase, Task, StatusObject } from '@/types/seasonPlan';
 import { DateInput } from '@/components/ui/DateInput';
 import { cn } from '@/utils/cn';
 import { usePlots } from '@/hooks/plots/usePlots';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { toast } from 'sonner';
@@ -226,8 +228,9 @@ export function PlanDetailPanel({
   onAddPlots,
   canEdit = false,
 }: PlanDetailPanelProps) {
-  const { plots, fetchPlots } = usePlots();
-  const { selectedFarmId: farmId } = useSelector((state: RootState) => state.farm);
+  const { plots, fetchPlots, loading } = usePlots();
+  const { currentFarmId } = useAuth();
+  const { selectedFarmId } = useSelector((state: RootState) => state.farm);
 
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -251,12 +254,17 @@ export function PlanDetailPanel({
   const [selectedPlotIds, setSelectedPlotIds] = useState<string[]>([]);
   const [loadingAddPlot, setLoadingAddPlot] = useState(false);
 
-  // Fetch plots only when "Add Plot" modal is shown
+  const targetFarmId =
+    activeSelection?.plan?.farmId ||
+    selection?.plan?.farmId ||
+    currentFarmId ||
+    selectedFarmId;
+
   useEffect(() => {
-    if (showAddPlot && farmId) {
-      fetchPlots(farmId);
+    if (showAddPlot && targetFarmId) {
+      fetchPlots(targetFarmId);
     }
-  }, [showAddPlot, farmId, fetchPlots]);
+  }, [showAddPlot, targetFarmId, fetchPlots]);
 
   // SAU (đã sửa)
   useEffect(() => {
@@ -1010,7 +1018,11 @@ export function PlanDetailPanel({
                     <h3 className="text-[14px] font-bold mb-3">Thêm lô đất</h3>
 
                     <div className="max-h-[200px] overflow-y-auto space-y-1">
-                      {plots.map(p => {
+                      {plots.length === 0 && !loading ? (
+                        <div className="py-4 text-center">
+                          <p className="text-[12px] text-slate-400 font-medium">Không tìm thấy lô đất nào</p>
+                        </div>
+                      ) : plots.map(p => {
                         const checked = selectedPlotIds.includes(p.id);
 
                         return (
@@ -1033,6 +1045,11 @@ export function PlanDetailPanel({
                           </label>
                         );
                       })}
+                      {loading && (
+                        <div className="py-4 flex justify-center">
+                          <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex gap-2 mt-4">

@@ -41,12 +41,18 @@ export const CropCatalogPage: React.FC = () => {
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
 
   useEffect(() => {
-    if (currentFarmId || isAdmin) {
-      // Tải cả danh mục cây trồng và loại cây trồng
-      fetchCropTypes();
+    if (!(currentFarmId || isAdmin)) return;
+
+    if (activeTab === 'crops') {
       fetchCrops();
+      fetchCropTypes();
+      return;
     }
-  }, [fetchCropTypes, fetchCrops, currentFarmId, isAdmin]);
+
+    if (activeTab === 'types') {
+      fetchCropTypes();
+    }
+  }, [fetchCropTypes, fetchCrops, currentFarmId, isAdmin, activeTab]);
 
   useEffect(() => {
     if (error) {

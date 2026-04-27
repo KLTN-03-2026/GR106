@@ -7,6 +7,8 @@ import { useSkus } from '../../hooks/skus/useSkus'
 import { useFarms } from '../../hooks/farms/useFarms'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { createSkuSchema } from '../../schemas/skuSchemas'
+import { Sku } from '../../types/sku/sku'
+import { FarmSummary } from '../../types/farm/farm'
 
 export function SKUListPage() {
   const { farmId } = useParams<{ farmId: string }>()
@@ -24,7 +26,7 @@ export function SKUListPage() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   const canManage = useMemo(() => {
-    const currentFarm = farmSummary.find((f: any) => f.farmId === farmId)
+    const currentFarm = farmSummary.find((f: FarmSummary) => f.farmId === farmId)
     const myFarmRole = currentFarm?.myRole?.toLowerCase() || user?.role
     return ['owner', 'manager', 'admin'].includes(myFarmRole || '')
   }, [farmSummary, farmId, user])
@@ -33,7 +35,7 @@ export function SKUListPage() {
     if (farmId) fetchSkus(farmId)
   }, [fetchSkus, farmId])
 
-  const filteredSkus = skus.filter(s => 
+  const filteredSkus = skus.filter((s: Sku) => 
     s.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.description.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -143,7 +145,7 @@ export function SKUListPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredSkus.map((s) => (
+            {filteredSkus.map((s: Sku) => (
               <div key={s.sku} className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-4">

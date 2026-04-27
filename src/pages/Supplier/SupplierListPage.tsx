@@ -7,6 +7,8 @@ import { useSuppliers } from '../../hooks/suppliers/useSuppliers'
 import { useFarms } from '../../hooks/farms/useFarms'
 import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { createSupplierSchema } from '../../schemas/supplierSchemas'
+import { Supplier } from '../../types/supplier/supplier'
+import { FarmSummary } from '../../types/farm/farm'
 
 export function SupplierListPage() {
   const { farmId } = useParams<{ farmId: string }>()
@@ -24,7 +26,7 @@ export function SupplierListPage() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   const canManage = useMemo(() => {
-    const currentFarm = farmSummary.find((f: any) => f.farmId === farmId)
+    const currentFarm = farmSummary.find((f: FarmSummary) => f.farmId === farmId)
     const myFarmRole = currentFarm?.myRole?.toLowerCase() || user?.role
     return ['owner', 'manager', 'admin'].includes(myFarmRole || '')
   }, [farmSummary, farmId, user])
@@ -33,7 +35,7 @@ export function SupplierListPage() {
     if (farmId) fetchSuppliers(farmId)
   }, [fetchSuppliers, farmId])
 
-  const filteredSuppliers = suppliers.filter(s => 
+  const filteredSuppliers = suppliers.filter((s: Supplier) => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.code.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -143,7 +145,7 @@ export function SupplierListPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredSuppliers.map((s) => (
+            {filteredSuppliers.map((s: Supplier) => (
               <div key={s.code} className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm hover:shadow-md transition-all group">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-4">
