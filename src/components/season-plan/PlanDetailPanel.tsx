@@ -437,13 +437,13 @@ export function PlanDetailPanel({
       return;
     }
 
-    const isDuplicateWarehouseItem = (taskMaterials ?? []).some(
-      (material) => material.warehouseItem.id === validation.data.warehouseItemId,
-    );
-    if (isDuplicateWarehouseItem) {
-      toast.error('Vật tư này đã tồn tại trong công việc');
-      return;
-    }
+    // const isDuplicateWarehouseItem = (taskMaterials ?? []).some(
+    //   (material) => material.warehouseItem.id === validation.data.warehouseItemId,
+    // );
+    // if (isDuplicateWarehouseItem) {
+    //   toast.error('Vật tư này đã tồn tại trong công việc');
+    //   return;
+    // }
 
     try {
       await addMaterial(validation.data);
