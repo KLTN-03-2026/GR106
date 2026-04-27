@@ -102,6 +102,9 @@ public enum ErrorCode {
     SKU_NOT_FOUND(404,"Không tìm thấy mã vật tư" , HttpStatus.NOT_FOUND),
     TASK_IS_TERMINAL(409,"Công việc đã kết thúc" ,HttpStatus.CONFLICT ),
     TASK_MATERIAL_ALREADY_EXISTS(409, "Vật tư này đã được thêm vào task, vui lòng cập nhật số lượng thay vì thêm mới",  HttpStatus.CONFLICT ),
+    INSUFFICIENT_STOCK_FOR_PLAN(409, "Số lượng tồn kho không đủ cho kế hoạch", HttpStatus.CONFLICT),
+
+
     ;
 
 

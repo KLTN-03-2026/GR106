@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+// SupplierService.java
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -30,40 +31,60 @@ public class SupplierService {
     SupplierMapper supplierMapper;
     FarmRepository farmRepository;
     SecurityUtils securityUtils;
-
     WarehouseItemRepository warehouseItemRepository;
 
     @Transactional(readOnly = true)
     public List<SupplierResponse> getSuppliers() {
-        return supplierMapper.toSupplierResponses(supplierRepository.findAll());
+        UUID farmId = securityUtils.getCurrentFarmId();
+        return supplierMapper.toSupplierResponses(
+                supplierRepository.findAllByFarm_Id(farmId)
+        );
     }
 
     @Transactional
     public SupplierResponse createSupplier(CreateSupplierRequest request) {
         UUID farmId = securityUtils.getCurrentFarmId();
 
-        FarmEntity farm = farmRepository.getReferenceById(farmId);
-
-        if (supplierRepository.existsBySupplierCodeAndFarm_Id(request.getSupplierCode(), farmId)) {
+        if (supplierRepository.existsBySupplierCodeAndFarm_Id(request.getSupplierCode(), farmId))
             throw new AppException(ErrorCode.SUPPLIER_ALREADY_EXISTS);
-        }
 
-        SupplierEntity supplierEntity = new SupplierEntity();
-        supplierEntity.setSupplierCode(request.getSupplierCode());
-        supplierEntity.setName(request.getName());
-        supplierEntity.setCreatedAt(Instant.now());
-        supplierEntity.setFarm(farm);
+        SupplierEntity supplier = new SupplierEntity();
+        supplier.setSupplierCode(request.getSupplierCode());
+        supplier.setName(request.getName());
+        supplier.setFarm(farmRepository.getReferenceById(farmId));
 
-        return supplierMapper.toSupplierResponse(supplierRepository.save(supplierEntity));
+        return supplierMapper.toSupplierResponse(supplierRepository.save(supplier));
     }
 
     @Transactional
-    public void deleteSupplier(String supplierCode) {
+    public void deleteSupplier(UUID supplierId) {
         UUID farmId = securityUtils.getCurrentFarmId();
 
-        if(warehouseItemRepository.existsBySupplierCodeAndFarm_Id(supplierCode,farmId))
+        SupplierEntity supplier = supplierRepository.findById(supplierId)
+                .orElseThrow(() -> new AppException(ErrorCode.SUPPLIER_NOT_FOUND));
+
+        if (!supplier.getFarm().getId().equals(farmId))
+            throw new AppException(ErrorCode.FORBIDDEN);
+
+        if (warehouseItemRepository.existsBySupplierId(supplierId))
             throw new AppException(ErrorCode.SUPPLIER_IS_USING);
 
-        supplierRepository.deleteBySupplierCode(supplierCode);
+        supplierRepository.delete(supplier);
     }
+
+//    @Transactional
+//    public SupplierResponse updateSupplier(UUID supplierId, UpdateSupplierRequest request) {
+//        UUID farmId = securityUtils.getCurrentFarmId();
+//
+//        SupplierEntity supplier = supplierRepository.findById(supplierId)
+//                .orElseThrow(() -> new AppException(ErrorCode.SUPPLIER_NOT_FOUND));
+//
+//        if (!supplier.getFarm().getId().equals(farmId))
+//            throw new AppException(ErrorCode.FORBIDDEN);
+//
+//        if (request.getName() != null)
+//            supplier.setName(request.getName());
+//
+//        return supplierMapper.toSupplierResponse(supplierRepository.save(supplier));
+//    }
 }

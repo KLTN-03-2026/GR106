@@ -18,10 +18,12 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+// WarehouseItemService.java
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class WarehouseItemService {
+
     WarehouseRepository warehouseRepository;
     WarehouseItemRepository warehouseItemRepository;
     SupplierRepository supplierRepository;
@@ -30,9 +32,7 @@ public class WarehouseItemService {
     FarmRepository farmRepository;
     UserRepository userRepository;
     SecurityUtils securityUtils;
-
-    WarehouseItemMapper  warehouseItemMapper;
-
+    WarehouseItemMapper warehouseItemMapper;
 
     @Transactional(readOnly = true)
     public List<WarehouseItemResponse> getAllWarehouseItemByFarm(UUID farmId) {
@@ -41,60 +41,64 @@ public class WarehouseItemService {
 
     @Transactional(readOnly = true)
     public List<WarehouseItemResponse> getAllWarehouseItemByWarehouse(UUID warehouseId) {
-        return warehouseItemMapper.toResponses(warehouseItemRepository.findAllByWarehouse_Id(warehouseId));
+        return warehouseItemMapper.toResponses(
+                warehouseItemRepository.findAllByWarehouse_Id(warehouseId)
+        );
     }
 
     @Transactional
-    public WarehouseItemResponse createWarehouseItem(UUID warehouseId, CreateWarehouseItemRequest request){
+    public WarehouseItemResponse createWarehouseItem(UUID warehouseId,
+                                                     CreateWarehouseItemRequest request) {
         UUID userId = securityUtils.getCurrentUserId();
         UUID farmId = securityUtils.getCurrentFarmId();
 
-        UserEntity user = userRepository.getReferenceById(userId);
-        FarmEntity farm = farmRepository.getReferenceById(farmId);
-
-        if(warehouseItemRepository.existsBySkuAndWarehouse_Id(request.getSku(), warehouseId)){
-            throw new AppException(ErrorCode.SKU_IS_USING);
-        }
-
-        WarehouseEntity warehouse = warehouseRepository
-                .findById(warehouseId)
+        // Validate warehouse thuộc farm
+        WarehouseEntity warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND));
 
-        UnitEntity unit = unitRepository
-                .findById(request.getUnitId())
-                .orElseThrow(() -> new AppException(ErrorCode.UNIT_NOT_FOUND));
+        if (!warehouse.getFarm().getId().equals(farmId))
+            throw new AppException(ErrorCode.FORBIDDEN);
 
-        SupplierEntity supplier = null;
-        if (request.getSupplierCode() != null && !request.getSupplierCode().isBlank()) {
-            supplier = supplierRepository
-                    .findById(request.getSupplierCode())
-                    .orElseThrow(() -> new AppException(ErrorCode.SUPPLIER_NOT_FOUND));
-        }
+        // Validate SKU không duplicate trong cùng warehouse
+        if (warehouseItemRepository.existsBySkuAndWarehouse_Id(request.getSku(), warehouseId))
+            throw new AppException(ErrorCode.SKU_IS_USING);
 
-
-
-        SkuEntity sku = skuRepository
-                .findById(request.getSku())
-                .orElseThrow(()-> new AppException(ErrorCode.SKU_NOT_FOUND));
-
-        if(warehouseItemRepository.existsByNameAndWarehouse_Id(request.getName(),warehouseId))
+        // Validate name không duplicate trong cùng warehouse
+        if (warehouseItemRepository.existsByNameAndWarehouse_Id(request.getName(), warehouseId))
             throw new AppException(ErrorCode.WAREHOUSE_ITEM_ALREADY_EXISTS);
 
-        WarehouseItemEntity warehouseItemEntity = new WarehouseItemEntity();
-        warehouseItemEntity.setStock(request.getStock());
-        warehouseItemEntity.setWarehouse(warehouse);
-        warehouseItemEntity.setUnit(unit);
-        warehouseItemEntity.setSku(sku);
-        warehouseItemEntity.setCreatedBy(user);
-        warehouseItemEntity.setFarm(farm);
-        warehouseItemEntity.setCreatedAt(Instant.now());
-        warehouseItemEntity.setName(request.getName());
-        warehouseItemEntity.setSupplier(supplier);
-        warehouseItemEntity.setUnitPrice(request.getUnitPrice());
-        warehouseItemEntity.setMinStockQty(request.getMinStockQty());
+        // Validate SKU tồn tại và thuộc farm
+        SkuEntity sku = skuRepository.findById(request.getSku())
+                .orElseThrow(() -> new AppException(ErrorCode.SKU_NOT_FOUND));
 
+        if (!sku.getFarm().getId().equals(farmId))
+            throw new AppException(ErrorCode.FORBIDDEN);
 
+        // Validate unit
+        UnitEntity unit = unitRepository.findById(request.getUnitId())
+                .orElseThrow(() -> new AppException(ErrorCode.UNIT_NOT_FOUND));
 
-        return warehouseItemMapper.toResponse(warehouseItemRepository.save(warehouseItemEntity));
+        // Supplier optional
+        SupplierEntity supplier = null;
+        if (request.getSupplierId() != null) {
+            supplier = supplierRepository.findById(request.getSupplierId())
+                    .orElseThrow(() -> new AppException(ErrorCode.SUPPLIER_NOT_FOUND));
+
+            if (!supplier.getFarm().getId().equals(farmId))
+                throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        WarehouseItemEntity item = new WarehouseItemEntity();
+        item.setWarehouse(warehouse);
+        item.setFarm(farmRepository.getReferenceById(farmId));
+        item.setCreatedBy(userRepository.getReferenceById(userId));
+        item.setName(request.getName());
+        item.setSku(sku);
+        item.setUnit(unit);
+        item.setSupplier(supplier);
+        item.setUnitPrice(request.getUnitPrice());
+        item.setMinStockQty(request.getMinStockQty());
+
+        return warehouseItemMapper.toResponse(warehouseItemRepository.save(item));
     }
 }

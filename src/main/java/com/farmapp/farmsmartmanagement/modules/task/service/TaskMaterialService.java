@@ -51,10 +51,11 @@ public class TaskMaterialService {
                 .findByIdAndStageIdAndPlanId(taskId,stageId,planId)
                 .orElseThrow(()->new AppException(ErrorCode.TASK_NOT_FOUND));
 
+        // Vật tư là nullable = true
         WarehouseItemEntity warehouseItem = null;
         if(request.getWarehouseItemId()!=null){
             warehouseItem = warehouseItemRepository
-                    .findByIdAndFarmId(request.getWarehouseItemId(), farmId)
+                    .findByIdAndFarm_Id(request.getWarehouseItemId(), farmId)
                     .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_ITEM_NOT_FOUND));
 
             if(taskMaterialRepository.existsByTask_IdAndWarehouseItem_Id(task.getId(), request.getWarehouseItemId()))
@@ -64,13 +65,16 @@ public class TaskMaterialService {
         if(task.getStatus().getIsTerminal().equals(true))
             throw new AppException(ErrorCode.TASK_IS_TERMINAL);
 
+        // Kiểm tra số lượng vật tư có đủ?
+        boolean sufficient = warehouseItemRepository
+                .isStockSufficientForPlanning(
+                        request.getWarehouseItemId(),
+                        farmId,
+                        request.getPlannedQty()
+                );
 
-        // Cần phải kiểm tra số lượng vật tư dự kiến
-        // work_log_material JOIN work_logs JOIN tasks -> SUM used_qty
-        // task_materials -> SUM planned_qty
-        // planned_qty - used_qty = hover_qty
-        // lấy số lượng warehouse_items - hover_qty = available_qty
-        // Nếu available_qty > request.getPlanned_qty() =>>>> CREATE // ELSE =>> THROW ERR
+        if (!sufficient)
+            throw new AppException(ErrorCode.INSUFFICIENT_STOCK_FOR_PLAN);
 
         TaskMaterialEntity taskMaterial = new TaskMaterialEntity();
         taskMaterial.setTask(task);
@@ -79,6 +83,7 @@ public class TaskMaterialService {
 
         return taskMaterialMapper.toResponse(taskMaterialRepository.save(taskMaterial));
     }
+
 
 
 

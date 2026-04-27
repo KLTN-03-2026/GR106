@@ -1,26 +1,33 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.time.Instant;
+import java.util.UUID;
 
+// SupplierEntity.java
 @Entity
 @Table(name = "suppliers")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SupplierEntity {
 
     @Id
-    @Column(name = "supplier_code", length = 100)
-    String supplierCode; // khóa chính
+    @GeneratedValue
+    @UuidGenerator
+    UUID id;
 
-    @Column(name = "name", nullable = false, unique = true, length = 200)
+    @Column(name = "supplier_code", nullable = false, length = 100)
+    String supplierCode;
+
+    @Column(name = "name", nullable = false, length = 200)
     String name;
 
     @CreationTimestamp
@@ -30,5 +37,4 @@ public class SupplierEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "farm_id", nullable = false)
     FarmEntity farm;
-
 }

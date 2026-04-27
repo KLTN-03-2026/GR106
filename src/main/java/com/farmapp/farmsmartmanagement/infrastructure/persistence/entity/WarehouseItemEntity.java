@@ -10,6 +10,7 @@ import org.hibernate.annotations.UuidGenerator;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+// WarehouseItemEntity.java
 @Entity
 @Table(name = "warehouse_items")
 @Getter
@@ -36,16 +37,12 @@ public class WarehouseItemEntity extends BaseEntity {
     @Column(name = "name", nullable = false)
     String name;
 
-    @Digits(integer = 13, fraction = 2)
-            @Column(name = "stock", nullable = false)
-    BigDecimal stock;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sku", nullable = false)
     SkuEntity sku;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "supplier_code",nullable = false,unique = true)
+    @JoinColumn(name = "supplier_id")
     SupplierEntity supplier;
 
     @ManyToOne(fetch = FetchType.LAZY)

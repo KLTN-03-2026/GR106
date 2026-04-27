@@ -33,7 +33,6 @@ public class CreateWarehouseItemRequest {
     @Min(value = 0,message = "Đơn giá mua không thể âm")
     BigDecimal unitPrice;
 
-    @Size(max = 100,message = "Mã nhà cung cấp vượt quá giá trị lưu trữ")
     UUID supplierId;
 
     @Digits(integer = 10, fraction = 3, message = "Tồn kho tối thiểu vượt giá trị lưu trữ")
