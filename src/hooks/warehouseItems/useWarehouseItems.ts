@@ -1,10 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDispatch, useSelector } from 'react-redux';
 import { CreateWarehouseItemDto, WarehouseItem } from '../../types/warehouseItem/warehouseItem';
 import { axiosInstance } from '../../config/axios';
-import { AppDispatch, RootState } from '../../store';
-import { setWarehouseItemsSnapshot } from '../../store/warehouseItemSlice';
 
 const ITEM_KEYS = {
   allByFarm: (farmId: string) => ['warehouse-items', farmId, 'all'] as const,
@@ -15,8 +12,6 @@ const withUnwrap = <T,>(promise: Promise<T>) =>
   Object.assign(promise, { unwrap: () => promise });
 
 export const useWarehouseItems = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const warehouseItemBridge = useSelector((state: RootState) => state.warehouseItem);
   const queryClient = useQueryClient();
   const [queryState, setQueryState] = useState<{ farmId: string | null; warehouseId: string | null }>({
     farmId: null,
@@ -58,14 +53,8 @@ export const useWarehouseItems = () => {
 
   const error = useMemo(() => itemsQuery.error ?? createItemMutation.error ?? null, [itemsQuery.error, createItemMutation.error]);
 
-  useEffect(() => {
-    if (itemsQuery.data) {
-      dispatch(setWarehouseItemsSnapshot(itemsQuery.data));
-    }
-  }, [dispatch, itemsQuery.data]);
-
   return {
-    items: itemsQuery.data ?? warehouseItemBridge.warehouseItemsSnapshot,
+    items: itemsQuery.data ?? [],
     loading: itemsQuery.isLoading || itemsQuery.isFetching || createItemMutation.isPending,
     error,
     fetchItems: useCallback(

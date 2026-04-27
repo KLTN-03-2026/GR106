@@ -30,11 +30,14 @@ import { SeasonPlan, Phase, Task, StatusObject } from '@/types/seasonPlan';
 import { DateInput } from '@/components/ui/DateInput';
 import { cn } from '@/utils/cn';
 import { usePlots } from '@/hooks/plots/usePlots';
+import { useWarehouseItems } from '@/hooks/warehouseItems/useWarehouseItems';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { toast } from 'sonner';
 import { createTaskSchema } from '@/schemas/seasonPlanSchemas';
+import { createTaskMaterialSchema } from '@/schemas/taskMaterialSchemas';
+import { TaskMaterial } from '@/types/taskMaterial';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,14 +60,14 @@ interface PlanDetailPanelProps {
   onDeleteTask?: (planId: string, phaseId: string, taskId: string) => void;
   onClone?: (plan: SeasonPlan) => void;
   onAddPlots?: (planId: string, plotIds: string[]) => void;
+  onFetchTaskMaterials?: (planId: string, stageId: string, taskId: string) => Promise<void>;
+  onAddTaskMaterial?: (
+    planId: string,
+    stageId: string,
+    taskId: string,
+    payload: { plannedQty: number; warehouseItemId: string },
+  ) => Promise<void>;
   canEdit?: boolean;
-}
-
-interface Material {
-  id: string;
-  name: string;
-  quantity: number;
-  unit?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -226,9 +229,12 @@ export function PlanDetailPanel({
   onDeleteTask,
   onClone,
   onAddPlots,
+  onFetchTaskMaterials,
+  onAddTaskMaterial,
   canEdit = false,
 }: PlanDetailPanelProps) {
   const { plots, fetchPlots, loading } = usePlots();
+  const { fetchAllItems, items: warehouseItems } = useWarehouseItems();
   const { currentFarmId } = useAuth();
   const { selectedFarmId } = useSelector((state: RootState) => state.farm);
 
@@ -253,6 +259,10 @@ export function PlanDetailPanel({
   const [showAddPlot, setShowAddPlot] = useState(false);
   const [selectedPlotIds, setSelectedPlotIds] = useState<string[]>([]);
   const [loadingAddPlot, setLoadingAddPlot] = useState(false);
+  const [materialsLoading, setMaterialsLoading] = useState(false);
+  const [addingMaterial, setAddingMaterial] = useState(false);
+  const [selectedWarehouseItemId, setSelectedWarehouseItemId] = useState('');
+  const [plannedQty, setPlannedQty] = useState<number>(0);
 
   const targetFarmId =
     activeSelection?.plan?.farmId ||
@@ -265,6 +275,51 @@ export function PlanDetailPanel({
       fetchPlots(targetFarmId);
     }
   }, [showAddPlot, targetFarmId, fetchPlots]);
+
+  useEffect(() => {
+    const loadTaskMaterials = async () => {
+      if (
+        !isOpen ||
+        activeTab !== 'MATERIALS' ||
+        !activeSelection ||
+        activeSelection.type !== 'TASK' ||
+        !onFetchTaskMaterials
+      ) {
+        return;
+      }
+
+      try {
+        setMaterialsLoading(true);
+        await onFetchTaskMaterials(activeSelection.plan.id, activeSelection.phase.id, activeSelection.task.id);
+      } finally {
+        setMaterialsLoading(false);
+      }
+    };
+
+    void loadTaskMaterials();
+  }, [isOpen, activeTab, activeSelection, onFetchTaskMaterials]);
+
+  useEffect(() => {
+    const loadWarehouseItems = async () => {
+      if (
+        !isOpen ||
+        activeTab !== 'MATERIALS' ||
+        !activeSelection ||
+        activeSelection.type !== 'TASK' ||
+        !targetFarmId
+      ) {
+        return;
+      }
+
+      try {
+        await fetchAllItems(targetFarmId);
+      } catch (error) {
+        console.error('Không tải được vật tư kho:', error);
+      }
+    };
+
+    void loadWarehouseItems();
+  }, [isOpen, activeTab, activeSelection, targetFarmId, fetchAllItems]);
 
   // SAU (đã sửa)
   useEffect(() => {
@@ -412,6 +467,44 @@ export function PlanDetailPanel({
     setNewTaskName(''); setNewTaskDesc('');
     setNewTaskStart(''); setNewTaskEnd('');
     setIsAddingTask(false);
+  };
+
+  const handleAddMaterial = async () => {
+    if (!activeSelection || activeSelection.type !== 'TASK' || !onAddTaskMaterial) return;
+
+    const payload = {
+      warehouseItemId: selectedWarehouseItemId,
+      plannedQty,
+    };
+    const validation = createTaskMaterialSchema.safeParse(payload);
+    if (!validation.success) {
+      toast.error(validation.error.errors[0].message);
+      return;
+    }
+
+    const isDuplicateWarehouseItem = (activeSelection.task.materials ?? []).some(
+      (material) => material.warehouseItem.id === validation.data.warehouseItemId,
+    );
+    if (isDuplicateWarehouseItem) {
+      toast.error('Vật tư này đã tồn tại trong công việc');
+      return;
+    }
+
+    try {
+      setAddingMaterial(true);
+      await onAddTaskMaterial(
+        activeSelection.plan.id,
+        activeSelection.phase.id,
+        activeSelection.task.id,
+        validation.data,
+      );
+      setSelectedWarehouseItemId('');
+      setPlannedQty(0);
+    } catch (error) {
+      console.error('Lỗi thêm vật tư:', error);
+    } finally {
+      setAddingMaterial(false);
+    }
   };
 
   // ── Type label & icon ──
@@ -943,15 +1036,19 @@ export function PlanDetailPanel({
                   {/* MATERIALS tab */}
                   {activeTab === 'MATERIALS' && (
                     <div className="space-y-2">
-                      {sel.task.materials?.length ? (
-                        sel.task.materials.map((mat: Material) => (
+                      {materialsLoading ? (
+                        <div className="py-4 flex justify-center">
+                          <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+                        </div>
+                      ) : sel.task.materials?.length ? (
+                        sel.task.materials.map((mat: TaskMaterial) => (
                           <div key={mat.id} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100">
                             <div className="flex items-center gap-2">
                               <Package size={13} className="text-slate-400" />
-                              <span className="text-[12px] font-medium text-slate-700">{mat.name}</span>
+                              <span className="text-[12px] font-medium text-slate-700">{mat.warehouseItem.name}</span>
                             </div>
                             <span className="text-[11px] font-bold text-indigo-600">
-                              {mat.quantity} {mat.unit ?? 'đơn vị'}
+                              {mat.plannedQty} {mat.warehouseItem.unit?.name ?? 'đơn vị'}
                             </span>
                           </div>
                         ))
@@ -959,6 +1056,39 @@ export function PlanDetailPanel({
                         <div className="py-8 flex flex-col items-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
                           <Package size={22} className="text-slate-300 mb-2" />
                           <p className="text-[11px] font-bold text-slate-400">Chưa có vật tư</p>
+                        </div>
+                      )}
+                      {canEdit && (
+                        <div className="p-2.5 bg-white border border-slate-200 rounded-lg space-y-2 mt-2">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Thêm vật tư cho công việc</p>
+                          <select
+                            value={selectedWarehouseItemId}
+                            onChange={(e) => setSelectedWarehouseItemId(e.target.value)}
+                            className="w-full px-2 py-1.5 text-[12px] bg-slate-50 border border-slate-200 rounded-md outline-none focus:border-indigo-400"
+                          >
+                            <option value="">Chọn vật tư kho...</option>
+                            {warehouseItems.map((item) => (
+                              <option key={item.id} value={item.id}>
+                                {item.name}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={plannedQty}
+                            onChange={(e) => setPlannedQty(Number(e.target.value) || 0)}
+                            placeholder="Số lượng kế hoạch"
+                            className="w-full px-2 py-1.5 text-[12px] bg-slate-50 border border-slate-200 rounded-md outline-none focus:border-indigo-400"
+                          />
+                          <button
+                            onClick={handleAddMaterial}
+                            disabled={addingMaterial}
+                            className="w-full py-1.5 text-[12px] bg-indigo-600 text-white rounded-md disabled:opacity-40"
+                          >
+                            {addingMaterial ? 'Đang thêm...' : 'Thêm vật tư'}
+                          </button>
                         </div>
                       )}
                       <div className="flex gap-2 p-2.5 bg-indigo-50 border border-indigo-100 rounded-lg mt-2">

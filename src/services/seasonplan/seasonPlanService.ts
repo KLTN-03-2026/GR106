@@ -8,7 +8,7 @@ import {
   getTasksResponseSchema,
   createTaskResponseSchema,
   getPlanPlotsResponseSchema,
-  addPlanPlotsResponseSchema
+  addPlanPlotsResponseSchema,
 } from '../../schemas/seasonPlanSchemas';
 
 /**
@@ -120,6 +120,7 @@ export const seasonPlanService = {
   async deleteTask(planId: string, stageId: string, taskId: string): Promise<void> {
     await axiosInstance.delete(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}`);
   },
+
 
   /**
    * Cập nhật thông tin kế hoạch

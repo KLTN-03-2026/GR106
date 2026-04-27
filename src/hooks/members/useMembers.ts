@@ -1,10 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDispatch, useSelector } from 'react-redux';
 import { InviteMemberRequest, ChangeRoleRequest } from '../../types/member';
 import { memberService } from '../../services/members/memberService';
-import { AppDispatch, RootState } from '../../store';
-import { setInvitationsSnapshot, setMembersSnapshot } from '../../store/memberSlice';
 
 const MEMBER_KEYS = {
   all: ['members'] as const,
@@ -16,8 +13,6 @@ const withUnwrap = <T,>(promise: Promise<T>) =>
   Object.assign(promise, { unwrap: () => promise });
 
 export const useMembers = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const memberBridge = useSelector((state: RootState) => state.member);
   const queryClient = useQueryClient();
   const [farmId, setFarmId] = useState<string | null>(null);
 
@@ -101,21 +96,9 @@ export const useMembers = () => {
     ],
   );
 
-  useEffect(() => {
-    if (membersQuery.data) {
-      dispatch(setMembersSnapshot(membersQuery.data));
-    }
-  }, [dispatch, membersQuery.data]);
-
-  useEffect(() => {
-    if (invitationsQuery.data) {
-      dispatch(setInvitationsSnapshot(invitationsQuery.data));
-    }
-  }, [dispatch, invitationsQuery.data]);
-
   return {
-    members: membersQuery.data ?? memberBridge.membersSnapshot,
-    invitations: invitationsQuery.data ?? memberBridge.invitationsSnapshot,
+    members: membersQuery.data ?? [],
+    invitations: invitationsQuery.data ?? [],
     loadingMembers: membersQuery.isLoading || membersQuery.isFetching,
     loadingInvitations: invitationsQuery.isLoading || invitationsQuery.isFetching,
     submitting:

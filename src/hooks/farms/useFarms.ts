@@ -1,11 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDispatch, useSelector } from 'react-redux';
 import { CreateFarmInput } from '../../types/farm';
 import { farmService } from '../../services/farm/farmService';
 import { axiosInstance } from '../../config/axios';
-import { AppDispatch, RootState } from '../../store';
-import { clearFarmState, setFarmSummarySnapshot, setFarmsSnapshot } from '../../store/farmSlice';
 
 const FARM_KEYS = {
   all: ['farms'] as const,
@@ -17,8 +14,6 @@ const withUnwrap = <T,>(promise: Promise<T>) =>
   Object.assign(promise, { unwrap: () => promise });
 
 export const useFarms = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const farmBridge = useSelector((state: RootState) => state.farm);
   const queryClient = useQueryClient();
   const [manualError, setManualError] = useState<unknown>(null);
 
@@ -108,40 +103,27 @@ export const useFarms = () => {
     deleteFarmMutation.error,
   ]);
 
-  useEffect(() => {
-    if (farmsQuery.data) {
-      dispatch(setFarmsSnapshot(farmsQuery.data));
-    }
-  }, [dispatch, farmsQuery.data]);
-
-  useEffect(() => {
-    if (farmSummaryQuery.data) {
-      dispatch(setFarmSummarySnapshot(farmSummaryQuery.data));
-    }
-  }, [dispatch, farmSummaryQuery.data]);
-
   return {
-    farms: farmsQuery.data ?? farmBridge.farmsSnapshot,
-    farmSummary: farmSummaryQuery.data ?? farmBridge.farmSummarySnapshot,
+    farms: farmsQuery.data ?? [],
+    farmSummary: farmSummaryQuery.data ?? [],
     currentFarm: null,
     loading,
     error,
-    fetchFarms: useCallback(() => withUnwrap(farmsQuery.refetch().then((res) => res.data ?? [])), [farmsQuery]),
+    fetchFarms: useCallback(() => withUnwrap(farmsQuery.refetch().then((res) => res.data ?? [])), [farmsQuery.refetch]),
     fetchFarmsSummary: useCallback(
       () => withUnwrap(farmSummaryQuery.refetch().then((res) => res.data ?? [])),
-      [farmSummaryQuery],
+      [farmSummaryQuery.refetch],
     ),
-    createFarm: useCallback((data: CreateFarmInput) => withUnwrap(createFarmMutation.mutateAsync(data)), [createFarmMutation]),
+    createFarm: useCallback((data: CreateFarmInput) => withUnwrap(createFarmMutation.mutateAsync(data)), [createFarmMutation.mutateAsync]),
     updateFarm: useCallback(
       (farmId: string, data: { name: string; description: string }) =>
         withUnwrap(updateFarmMutation.mutateAsync({ farmId, data })),
-      [updateFarmMutation],
+      [updateFarmMutation.mutateAsync],
     ),
-    deleteFarm: useCallback((id: string) => withUnwrap(deleteFarmMutation.mutateAsync(id)), [deleteFarmMutation]),
+    deleteFarm: useCallback((id: string) => withUnwrap(deleteFarmMutation.mutateAsync(id)), [deleteFarmMutation.mutateAsync]),
     clearData: useCallback(() => {
       queryClient.removeQueries({ queryKey: FARM_KEYS.all });
       setManualError(null);
-      dispatch(clearFarmState());
-    }, [queryClient, dispatch]),
+    }, [queryClient]),
   };
 };

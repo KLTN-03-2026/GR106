@@ -9,6 +9,61 @@ export const axiosInstance = axios.create({
   }
 });
 
+type UnknownRecord = Record<string, unknown>;
+
+const isRecord = (value: unknown): value is UnknownRecord =>
+  typeof value === 'object' && value !== null;
+
+const pickString = (value: unknown): string | null =>
+  typeof value === 'string' && value.trim() ? value.trim() : null;
+
+const extractApiMessage = (payload: unknown): string | null => {
+  if (!isRecord(payload)) return null;
+
+  const directMessage = pickString(payload.message);
+  if (directMessage) return directMessage;
+
+  // Common nested formats: { data: { message: ... } } or { error: { message: ... } }
+  const nestedData = payload.data;
+  if (isRecord(nestedData)) {
+    const nestedMessage = pickString(nestedData.message);
+    if (nestedMessage) return nestedMessage;
+  }
+
+  const nestedError = payload.error;
+  if (isRecord(nestedError)) {
+    const nestedErrorMessage = pickString(nestedError.message);
+    if (nestedErrorMessage) return nestedErrorMessage;
+  }
+
+  // Validation errors: { errors: [{ message: "..." }] } | { errors: { field: "..." } }
+  const errors = payload.errors;
+  if (Array.isArray(errors)) {
+    const messages = errors
+      .map((item) => (isRecord(item) ? pickString(item.message) : pickString(item)))
+      .filter((item): item is string => Boolean(item));
+    if (messages.length > 0) return messages.join('; ');
+  }
+  if (isRecord(errors)) {
+    const messages = Object.values(errors)
+      .map((item) => (Array.isArray(item) ? item.map(pickString).filter(Boolean).join(', ') : pickString(item)))
+      .filter((item): item is string => Boolean(item));
+    if (messages.length > 0) return messages.join('; ');
+  }
+
+  return null;
+};
+
+const buildFallbackMessage = (error: any): string => {
+  const method = (error?.config?.method ?? 'request').toString().toUpperCase();
+  const url = error?.config?.url ?? 'unknown-endpoint';
+  const status = error?.response?.status;
+
+  if (status) return `Yeu cau ${method} ${url} that bai (HTTP ${status})`;
+  if (error?.request) return `Khong nhan duoc phan hoi tu server cho ${method} ${url}`;
+  return `Khong the thuc hien yeu cau ${method} ${url}`;
+};
+
 // Request interceptor to add the access token
 axiosInstance.interceptors.request.use(
   (config) => {
@@ -32,7 +87,16 @@ axiosInstance.interceptors.request.use(
 
 // Response interceptor to handle token expiration (401 error)
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const apiMessage = extractApiMessage(response?.data);
+    if (apiMessage) {
+      (response as any).apiMessage = apiMessage;
+      if (isRecord(response.data)) {
+        (response.data as UnknownRecord).__apiMessage = apiMessage;
+      }
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
@@ -81,12 +145,11 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    // Tự động trích xuất message từ server response nếu có
-    if (error.response?.data?.message) {
-      error.message = error.response.data.message;
-    } else if (error.data?.message) {
-      error.message = error.data.message;
-    }
+    // Ưu tiên message từ API response; nếu không có thì fallback theo request context
+    const responseMessage = extractApiMessage(error?.response?.data);
+    const requestMessage = extractApiMessage(error?.data);
+    const finalMessage = responseMessage ?? requestMessage ?? buildFallbackMessage(error);
+    error.message = finalMessage;
 
     return Promise.reject(error);
   }

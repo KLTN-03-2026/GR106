@@ -1,10 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDispatch, useSelector } from 'react-redux';
 import { CreateSupplierDto, Supplier } from '../../types/supplier/supplier';
 import { axiosInstance } from '../../config/axios';
-import { AppDispatch, RootState } from '../../store';
-import { setSuppliersSnapshot } from '../../store/supplierSlice';
 
 const SUPPLIER_KEYS = {
   byFarm: (farmId: string) => ['suppliers', farmId] as const,
@@ -14,8 +11,6 @@ const withUnwrap = <T,>(promise: Promise<T>) =>
   Object.assign(promise, { unwrap: () => promise });
 
 export const useSuppliers = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const supplierBridge = useSelector((state: RootState) => state.supplier);
   const queryClient = useQueryClient();
   const [farmId, setFarmId] = useState<string | null>(null);
 
@@ -55,14 +50,8 @@ export const useSuppliers = () => {
     [suppliersQuery.error, createSupplierMutation.error, deleteSupplierMutation.error],
   );
 
-  useEffect(() => {
-    if (suppliersQuery.data) {
-      dispatch(setSuppliersSnapshot(suppliersQuery.data));
-    }
-  }, [dispatch, suppliersQuery.data]);
-
   return {
-    suppliers: suppliersQuery.data ?? supplierBridge.suppliersSnapshot,
+    suppliers: suppliersQuery.data ?? [],
     loading,
     error,
     fetchSuppliers: useCallback(

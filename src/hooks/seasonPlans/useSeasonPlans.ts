@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDispatch, useSelector } from 'react-redux';
 import { CreateSeasonPlanRequest, SeasonPlan, Task } from '../../types/seasonPlan';
 import { seasonPlanService } from '../../services/seasonplan/seasonPlanService';
-import { AppDispatch, RootState } from '../../store';
-import { setPlansSnapshot, setSelectedPlanId } from '../../store/seasonPlanSlice';
+import { taskMaterialService } from '../../services/taskMaterial/taskMaterialService';
+import { AddTaskMaterialRequest, TaskMaterial } from '../../types/taskMaterial';
 
 const PLAN_KEYS = {
   all: ['season-plans'] as const,
@@ -15,8 +14,6 @@ const withUnwrap = <T,>(promise: Promise<T>) =>
   Object.assign(promise, { unwrap: () => promise });
 
 export const useSeasonPlans = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const seasonPlanBridge = useSelector((state: RootState) => state.seasonPlan);
   const queryClient = useQueryClient();
 
   const plansQuery = useQuery({
@@ -70,14 +67,8 @@ export const useSeasonPlans = () => {
     [plansQuery.error, createPlanMutation.error, deletePlanMutation.error, updatePlanTimeMutation.error],
   );
 
-  useEffect(() => {
-    if (plansQuery.data) {
-      dispatch(setPlansSnapshot(plansQuery.data));
-    }
-  }, [dispatch, plansQuery.data]);
-
   return {
-    plans: plansQuery.data ?? seasonPlanBridge.plansSnapshot,
+    plans: plansQuery.data ?? [],
     loading,
     createLoading,
     error,
@@ -186,9 +177,8 @@ export const useSeasonPlans = () => {
     addPlanToState: useCallback(
       (plan: SeasonPlan) => {
         updatePlansCache((prev) => [...prev, plan]);
-        dispatch(setSelectedPlanId(plan.id));
       },
-      [updatePlansCache, dispatch],
+      [updatePlansCache],
     ),
     updatePhaseTime: useCallback(
       (planId: string, stageId: string, data: { startDate: string; endDate: string }) =>
@@ -337,6 +327,68 @@ export const useSeasonPlans = () => {
               ),
             );
             return { planId, stageId, taskId };
+          }),
+        ),
+      [updatePlansCache],
+    ),
+    fetchTaskMaterials: useCallback(
+      (planId: string, stageId: string, taskId: string) =>
+        withUnwrap(
+          taskMaterialService.getTaskMaterials(planId, stageId, taskId).then((materials) => {
+            updatePlansCache((prev) =>
+              prev.map((p) =>
+                p.id === planId
+                  ? {
+                      ...p,
+                      phases: p.phases.map((ph) =>
+                        ph.id === stageId
+                          ? {
+                              ...ph,
+                              tasks: (ph.tasks ?? []).map((t) => (t.id === taskId ? { ...t, materials } : t)),
+                            }
+                          : ph,
+                      ),
+                    }
+                  : p,
+              ),
+            );
+            return { planId, stageId, taskId, materials };
+          }),
+        ),
+      [updatePlansCache],
+    ),
+    addTaskMaterial: useCallback(
+      (
+        planId: string,
+        stageId: string,
+        taskId: string,
+        payload: AddTaskMaterialRequest,
+      ) =>
+        withUnwrap(
+          taskMaterialService.addTaskMaterial(planId, stageId, taskId, payload).then((material: TaskMaterial) => {
+            updatePlansCache((prev) =>
+              prev.map((p) =>
+                p.id === planId
+                  ? {
+                      ...p,
+                      phases: p.phases.map((ph) =>
+                        ph.id === stageId
+                          ? {
+                              ...ph,
+                              tasks: (ph.tasks ?? []).map((t) => {
+                                if (t.id !== taskId) return t;
+                                const current = t.materials ?? [];
+                                if (current.some((m) => m.id === material.id)) return t;
+                                return { ...t, materials: [...current, material] };
+                              }),
+                            }
+                          : ph,
+                      ),
+                    }
+                  : p,
+              ),
+            );
+            return { planId, stageId, taskId, material };
           }),
         ),
       [updatePlansCache],

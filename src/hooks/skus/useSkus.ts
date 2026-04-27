@@ -1,10 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDispatch, useSelector } from 'react-redux';
 import { CreateSkuDto, Sku } from '../../types/sku/sku';
 import { axiosInstance } from '../../config/axios';
-import { AppDispatch, RootState } from '../../store';
-import { setSkusSnapshot } from '../../store/skuSlice';
 
 const SKU_KEYS = {
   byFarm: (farmId: string) => ['skus', farmId] as const,
@@ -14,8 +11,6 @@ const withUnwrap = <T,>(promise: Promise<T>) =>
   Object.assign(promise, { unwrap: () => promise });
 
 export const useSkus = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const skuBridge = useSelector((state: RootState) => state.sku);
   const queryClient = useQueryClient();
   const [farmId, setFarmId] = useState<string | null>(null);
 
@@ -55,14 +50,8 @@ export const useSkus = () => {
     deleteSkuMutation.error,
   ]);
 
-  useEffect(() => {
-    if (skusQuery.data) {
-      dispatch(setSkusSnapshot(skusQuery.data));
-    }
-  }, [dispatch, skusQuery.data]);
-
   return {
-    skus: skusQuery.data ?? skuBridge.skusSnapshot,
+    skus: skusQuery.data ?? [],
     loading,
     error,
     fetchSkus: useCallback(

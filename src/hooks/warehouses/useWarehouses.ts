@@ -1,10 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDispatch, useSelector } from 'react-redux';
 import { CreateWarehouseRequest } from '../../types/warehouse/warehouse';
 import { warehouseService } from '../../services/warehouse/warehouseService';
-import { AppDispatch, RootState } from '../../store';
-import { clearWarehouseState, setWarehousesSnapshot } from '../../store/warehouseSlice';
 
 const WAREHOUSE_KEYS = {
   byFarm: (farmId: string) => ['warehouses', farmId] as const,
@@ -14,8 +11,6 @@ const withUnwrap = <T,>(promise: Promise<T>) =>
   Object.assign(promise, { unwrap: () => promise });
 
 export const useWarehouses = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const warehouseBridge = useSelector((state: RootState) => state.warehouse);
   const queryClient = useQueryClient();
   const [farmId, setFarmId] = useState<string | null>(null);
 
@@ -52,14 +47,8 @@ export const useWarehouses = () => {
     [warehousesQuery.error, createWarehouseMutation.error, deleteWarehouseMutation.error],
   );
 
-  useEffect(() => {
-    if (warehousesQuery.data) {
-      dispatch(setWarehousesSnapshot(warehousesQuery.data));
-    }
-  }, [dispatch, warehousesQuery.data]);
-
   return {
-    warehouses: warehousesQuery.data ?? warehouseBridge.warehousesSnapshot,
+    warehouses: warehousesQuery.data ?? [],
     loading,
     submitting,
     error,
@@ -85,8 +74,6 @@ export const useWarehouses = () => {
         withUnwrap(deleteWarehouseMutation.mutateAsync({ farmId: farmIdValue, warehouseId })),
       [deleteWarehouseMutation],
     ),
-    clearError: useCallback(() => {
-      dispatch(clearWarehouseState());
-    }, [dispatch]),
+    clearError: useCallback(() => undefined, []),
   };
 };

@@ -28,7 +28,7 @@ export function WarehouseDetailPage() {
   const { suppliers, fetchSuppliers } = useSuppliers()
   const { skus, fetchSkus } = useSkus()
   const { units, fetchUnits } = useUnits()
-  const { warehouses } = useWarehouses()
+  const { warehouses, fetchWarehouses } = useWarehouses()
   const { farmSummary } = useFarms()
   const { user } = useAuth()
 
@@ -70,10 +70,10 @@ export function WarehouseDetailPage() {
   useEffect(() => {
     if (farmId && warehouseId) {
       fetchItems(farmId, warehouseId)
+      fetchWarehouses(farmId)
     }
-  }, [fetchItems, farmId, warehouseId])
+  }, [fetchItems, fetchWarehouses, farmId, warehouseId])
 
-  // On-demand fetching for modal data
   useEffect(() => {
     if (isModalOpen && farmId) {
       fetchSuppliers(farmId)
@@ -276,41 +276,43 @@ export function WarehouseDetailPage() {
         </div>
       </div>
 
-      {/* Entry Modal */}
+      {/* Entry Modal — compact to fit viewport */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-            <div className="p-10">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h2 className="text-3xl font-black text-slate-900 tracking-tight">Nhập vật tư mới</h2>
-                  <p className="text-slate-500 font-medium mt-1">Điền đầy đủ thông tin để lưu vào kho</p>
-                </div>
-                <div className="p-4 bg-emerald-50 rounded-2xl text-emerald-600">
-                  <Package size={32} />
-                </div>
+          <div className="bg-white w-full max-w-xl rounded-[28px] shadow-2xl animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-100 shrink-0">
+              <div>
+                <h2 className="text-lg font-black text-slate-900 tracking-tight">Nhập vật tư mới</h2>
+                <p className="text-slate-500 font-medium text-xs mt-0.5">Điền đầy đủ thông tin để lưu vào kho</p>
               </div>
+              <div className="p-2.5 bg-emerald-50 rounded-xl text-emerald-600">
+                <Package size={22} />
+              </div>
+            </div>
 
-              <form onSubmit={handleCreate} className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
+            {/* Scrollable form body */}
+            <div className="overflow-y-auto flex-1 px-6 py-4">
+              <form id="create-item-form" onSubmit={handleCreate} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5 ml-1">Tên vật tư / Phân bón / Thuốc</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Tên vật tư / Phân bón / Thuốc</label>
                     <input
                       required
                       value={formData.name}
                       onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
-                      className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-sm"
                       placeholder="VD: Phân bón NPK 20-20-15"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5 ml-1">Đơn vị tính</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Đơn vị tính</label>
                     <select
                       required
                       value={formData.unitId}
                       onChange={e => setFormData(p => ({ ...p, unitId: e.target.value }))}
-                      className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-sm"
                     >
                       <option value="">Chọn đơn vị</option>
                       {units.map((u: Unit) => <option key={u.id} value={u.id}>{u.name} ({u.code})</option>)}
@@ -318,12 +320,12 @@ export function WarehouseDetailPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5 ml-1">Mã SKU</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Mã SKU</label>
                     <select
                       required
                       value={formData.sku}
                       onChange={e => setFormData(p => ({ ...p, sku: e.target.value }))}
-                      className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium font-mono"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-sm font-mono"
                     >
                       <option value="">Chọn mã SKU</option>
                       {skus.map((s: Sku) => <option key={s.sku} value={s.sku}>{s.sku}</option>)}
@@ -331,12 +333,12 @@ export function WarehouseDetailPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5 ml-1">Nhà cung cấp</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nhà cung cấp</label>
                     <select
                       required
                       value={formData.supplierCode}
                       onChange={e => setFormData(p => ({ ...p, supplierCode: e.target.value }))}
-                      className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-sm"
                     >
                       <option value="">Chọn nhà cung cấp</option>
                       {suppliers.map((s: Supplier) => <option key={s.code} value={s.code}>{s.name}</option>)}
@@ -344,63 +346,75 @@ export function WarehouseDetailPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5 ml-1">Số lượng tồn kho ban đầu</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Số lượng tồn ban đầu</label>
                     <input
-                      type="number"
+                      type="text"
                       required
-                      min="0"
-                      value={formData.stock}
-                      onChange={e => setFormData(p => ({ ...p, stock: Number(e.target.value) }))}
-                      className="w-full px-5 py-4 bg-emerald-50/30 border border-emerald-100 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-black text-emerald-600"
+                      value={formData.stock === 0 ? '' : formData.stock.toLocaleString('vi-VN')}
+                      onChange={e => {
+                        const rawValue = e.target.value.replace(/\D/g, '');
+                        setFormData(p => ({ ...p, stock: rawValue === '' ? 0 : Number(rawValue) }));
+                      }}
+                      className="w-full px-4 py-3 bg-emerald-50/30 border border-emerald-100 rounded-xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-black text-emerald-600 text-sm"
                       placeholder="0"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5 ml-1">Đơn giá (VNĐ)</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Đơn giá (VNĐ)</label>
                     <input
-                      type="number"
+                      type="text"
                       required
-                      value={formData.unitPrice}
-                      onChange={e => setFormData(p => ({ ...p, unitPrice: Number(e.target.value) }))}
-                      className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-black"
+                      value={formData.unitPrice === 0 ? '' : formData.unitPrice.toLocaleString('vi-VN')}
+                      onChange={e => {
+                        const rawValue = e.target.value.replace(/\D/g, '');
+                        setFormData(p => ({ ...p, unitPrice: rawValue === '' ? 0 : Number(rawValue) }));
+                      }}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-black text-sm"
+                      placeholder="0"
                     />
                   </div>
 
                   <div className="col-span-2">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5 ml-1">Tồn kho tối thiểu (Cảnh báo)</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Tồn kho tối thiểu (Cảnh báo)</label>
                     <input
-                      type="number"
+                      type="text"
                       required
-                      value={formData.minStockQty}
-                      onChange={e => setFormData(p => ({ ...p, minStockQty: Number(e.target.value) }))}
-                      className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-black text-rose-600"
+                      value={formData.minStockQty === 0 ? '' : formData.minStockQty.toLocaleString('vi-VN')}
+                      onChange={e => {
+                        const rawValue = e.target.value.replace(/\D/g, '');
+                        setFormData(p => ({ ...p, minStockQty: rawValue === '' ? 0 : Number(rawValue) }));
+                      }}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-black text-rose-600 text-sm"
+                      placeholder="0"
                     />
                   </div>
                 </div>
-
-                <div className="flex gap-4 pt-6">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="flex-1 px-8 py-4 border-2 border-slate-100 text-slate-500 font-black rounded-2xl hover:bg-slate-50 transition-all uppercase tracking-widest text-xs"
-                  >
-                    Hủy bỏ
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="flex-1 px-8 py-4 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 transition-all disabled:opacity-50 flex items-center justify-center gap-3 uppercase tracking-widest text-xs shadow-xl shadow-emerald-200"
-                  >
-                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                      <>
-                        <Plus size={18} />
-                        Xác nhận nhập kho
-                      </>
-                    )}
-                  </button>
-                </div>
               </form>
+            </div>
+
+            {/* Sticky footer buttons */}
+            <div className="flex gap-3 px-6 py-4 border-t border-slate-100 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="flex-1 px-6 py-3 border-2 border-slate-100 text-slate-500 font-black rounded-xl hover:bg-slate-50 transition-all uppercase tracking-widest text-xs"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="submit"
+                form="create-item-form"
+                disabled={isSubmitting}
+                className="flex-1 px-6 py-3 bg-emerald-600 text-white font-black rounded-xl hover:bg-emerald-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 uppercase tracking-widest text-xs shadow-lg shadow-emerald-200"
+              >
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                  <>
+                    <Plus size={16} />
+                    Xác nhận nhập kho
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

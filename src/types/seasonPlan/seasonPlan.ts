@@ -1,3 +1,5 @@
+import type { TaskMaterial } from '../taskMaterial';
+
 export interface StatusObject {
   id: string;
   code: string;
@@ -31,7 +33,7 @@ export interface Task {
   createdAt?: string;
   // Local/Extended fields for resource management
   assignedMembers?: string[];
-  materials?: { id: string; name: string; quantity: number }[];
+  materials?: TaskMaterial[];
 }
 
 export interface Phase {

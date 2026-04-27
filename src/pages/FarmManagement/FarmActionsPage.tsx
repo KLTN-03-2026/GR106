@@ -15,6 +15,8 @@ import { EditFarmModal } from '../../components/farm/EditFarmModal';
 import { MemberCondensedList } from '../../components/members/MemberCondensedList';
 import { toast } from 'sonner';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
+import { FarmSummary } from '../../types/farm/farm';
+import { extractErrorMessage } from '../../utils/errorUtils';
 
 const FarmActionsPage: React.FC = () => {
     const { farmId } = useParams<{ farmId: string }>();
@@ -22,12 +24,10 @@ const FarmActionsPage: React.FC = () => {
     const { farmSummary, fetchFarmsSummary, deleteFarm } = useFarms();
     
     React.useEffect(() => {
-        if (farmSummary.length === 0) {
-            fetchFarmsSummary();
-        }
-    }, [fetchFarmsSummary, farmSummary.length]);
+        fetchFarmsSummary();
+    }, []); // Run once on mount to avoid infinite loops
 
-    const farm = farmSummary.find(f => f.farmId === farmId);
+    const farm = farmSummary.find((f: FarmSummary) => f.farmId === farmId);
     const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
     const [isDeleting, setIsDeleting] = React.useState(false);
@@ -43,9 +43,7 @@ const FarmActionsPage: React.FC = () => {
             navigate('/farms');
         } catch (error: any) {
             console.error("Lỗi khi xóa farm:", error);
-            // Xử lý lỗi linh hoạt: ưu tiên error.message, sau đó đến bản thân error nếu là string
-            const errorMessage = error?.message || (typeof error === 'string' ? error : "Không thể xóa trang trại. Vui lòng thử lại sau.");
-            toast.error(errorMessage);
+            toast.error(extractErrorMessage(error));
         } finally {
             setIsDeleting(false);
             setIsDeleteModalOpen(false);

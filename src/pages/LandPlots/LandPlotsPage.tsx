@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { usePlots } from '@/hooks/plots/usePlots';
+import { Plot, CreatePlotInput } from '@/types/plot/plot';
+import { extractErrorMessage } from '../../utils/errorUtils';
 import { toast } from 'sonner';
 import { LayoutGridIcon, PlusIcon, ArrowLeft } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
@@ -11,7 +13,6 @@ import { PlotFilters } from '@/components/land-plots/PlotFilters';
 import { CreatePlotModal } from '@/components/land-plots/CreatePlotModal';
 import { EditPlotModal } from '@/components/land-plots/EditPlotModal';
 import { DeletePlotDialog } from '@/components/land-plots/DeletePlotDialog';
-import { Plot } from '@/types/plot';
 
 export function LandPlotsPage() {
   const navigate = useNavigate();
@@ -50,7 +51,7 @@ export function LandPlotsPage() {
   }, [plots, searchTerm, statusFilter]);
 
   // Handlers cho CRUD
-  const handleCreatePlot = async (plotData: any) => {
+  const handleCreatePlot = async (plotData: CreatePlotInput) => {
     if (!currentFarmId) return;
     try {
       await createPlot(currentFarmId, plotData).unwrap();
@@ -58,7 +59,7 @@ export function LandPlotsPage() {
       toast.success('Tạo lô đất mới thành công');
       fetchPlots(currentFarmId);
     } catch (err: any) {
-      toast.error(err.message || 'Không thể tạo lô đất');
+      toast.error(extractErrorMessage(err));
     }
   };
 
@@ -79,7 +80,7 @@ export function LandPlotsPage() {
       toast.success('Cập nhật thông tin lô đất thành công');
       fetchPlots(currentFarmId);
     } catch (err: any) {
-      toast.error(err.message || 'Không thể cập nhật lô đất');
+      toast.error(extractErrorMessage(err));
     }
   };
 

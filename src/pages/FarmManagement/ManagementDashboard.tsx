@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { farmService } from '../../services/farm/farmService';
 import { CreateFarmModal } from '../../components/farm';
 import { getRoleDisplayName } from '../../utils/roleUtils';
+import { FarmSummary } from '../../types/farm/farm';
 
 export function ManagementDashboardPage() {
   const navigate = useNavigate();
@@ -24,20 +25,14 @@ export function ManagementDashboardPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  // Tự động xóa farm context khi vào trang danh sách farm
+  // Tự động xóa farm context và fetch dữ liệu khi vào trang danh sách farm
   useEffect(() => {
     clearFarmContext();
-  }, [clearFarmContext]);
-
-  useEffect(() => {
-    // Chỉ fetch nếu chưa có dữ liệu để tránh race-condition với việc xóa farm
-    if (farmSummary.length === 0) {
-      fetchFarmsSummary();
-    }
-  }, [fetchFarmsSummary, farmSummary.length]);
+    fetchFarmsSummary();
+  }, []); // Run once on mount to avoid infinite loops with state updates
 
 
-  const handleSelectFarm = async (farm: any) => {
+  const handleSelectFarm = async (farm: FarmSummary) => {
     try {
       const res = await farmService.selectFarm(farm.farmId);
       if (res.success && res.data.farmToken) {

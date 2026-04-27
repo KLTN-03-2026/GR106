@@ -127,7 +127,7 @@ export function SeasonPlanPage() {
     updatePhaseTime, fetchTasks, createTask: createSeasonTask,
     updateTask: updateSeasonTask, updateTaskTime, deleteTask: removeSeasonTask,
     addPlotsToPlan, optimisticallyUpdatePhaseTime, optimisticallyUpdateTaskTime,
-    addPlanToState
+    addPlanToState, fetchTaskMaterials, addTaskMaterial
   } = useSeasonPlans();
 
   const { user, accessToken } = useAuth();
@@ -481,6 +481,27 @@ export function SeasonPlanPage() {
     }
   };
 
+  const handleFetchTaskMaterials = async (planId: string, stageId: string, taskId: string) => {
+    try {
+      await fetchTaskMaterials(planId, stageId, taskId).unwrap();
+    } catch (err: any) {
+      showError('Lỗi tải vật tư công việc', err);
+    }
+  };
+
+  const handleAddTaskMaterial = async (
+    planId: string,
+    stageId: string,
+    taskId: string,
+    payload: { plannedQty: number; warehouseItemId: string },
+  ) => {
+    try {
+      await addTaskMaterial(planId, stageId, taskId, payload).unwrap();
+    } catch (err: any) {
+      showError('Lỗi thêm vật tư công việc', err);
+    }
+  };
+
   // ── Selected data resolver ────────────────────────────────────────────────
   const getSelectedData = () => {
     if (!selectedItem) return null;
@@ -747,6 +768,8 @@ export function SeasonPlanPage() {
               onDeletePlan={handleDeletePlan}
               onClone={p => setCloneSourcePlan(p)}
               onAddPlots={handleAddPlotsToPlan}
+              onFetchTaskMaterials={handleFetchTaskMaterials}
+              onAddTaskMaterial={handleAddTaskMaterial}
               canEdit={canEdit}
             />
           </>

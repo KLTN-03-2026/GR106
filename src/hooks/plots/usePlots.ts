@@ -1,11 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDispatch, useSelector } from 'react-redux';
 import { CreatePlotInput, UpdatePlotInput, Plot } from '../../types/plot/plot';
 import { plotService } from '../../services/plots/plotService';
 import { dashboardService } from '../../services/dashboard/dashboardService';
-import { AppDispatch, RootState } from '../../store';
-import { clearPlotState, setAggregateStatsSnapshot, setPlotsSnapshot } from '../../store/plotSlice';
 
 const PLOT_KEYS = {
   all: ['plots'] as const,
@@ -17,8 +14,6 @@ const withUnwrap = <T,>(promise: Promise<T>) =>
   Object.assign(promise, { unwrap: () => promise });
 
 export const usePlots = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const plotBridge = useSelector((state: RootState) => state.plot);
   const queryClient = useQueryClient();
   const [activeFarmId, setActiveFarmId] = useState<string | null>(null);
   const [activeHubToken, setActiveHubToken] = useState<string | null>(null);
@@ -83,31 +78,14 @@ export const usePlots = () => {
     ],
   );
 
-  useEffect(() => {
-    if (plotsQuery.data) {
-      dispatch(setPlotsSnapshot(plotsQuery.data));
-    }
-  }, [dispatch, plotsQuery.data]);
-
-  useEffect(() => {
-    if (aggregateQuery.data) {
-      dispatch(
-        setAggregateStatsSnapshot({
-          totalPlots: aggregateQuery.data.totalPlots,
-          totalArea: aggregateQuery.data.totalArea,
-        }),
-      );
-    }
-  }, [dispatch, aggregateQuery.data]);
-
   return {
-    plots: plotsQuery.data ?? plotBridge.plotsSnapshot,
+    plots: plotsQuery.data ?? [],
     aggregateStats: aggregateQuery.data
       ? {
           totalPlots: aggregateQuery.data.totalPlots,
           totalArea: aggregateQuery.data.totalArea,
         }
-      : plotBridge.aggregateStatsSnapshot,
+      : { totalPlots: 0, totalArea: 0 },
     loading,
     error,
     fetchPlots: useCallback(
@@ -132,12 +110,7 @@ export const usePlots = () => {
       [deletePlotMutation],
     ),
     clearError: useCallback(() => undefined, []),
-    setAggregateStats: useCallback(
-      (stats: { totalPlots: number; totalArea: number }) => {
-        dispatch(setAggregateStatsSnapshot(stats));
-      },
-      [dispatch],
-    ),
+    setAggregateStats: useCallback((_: { totalPlots: number; totalArea: number }) => undefined, []),
     setPlots: useCallback((plots: Plot[]) => {
       if (!activeFarmId) return;
       queryClient.setQueryData(PLOT_KEYS.byFarm(activeFarmId), plots);
@@ -145,8 +118,7 @@ export const usePlots = () => {
     clearPlots: useCallback(() => {
       if (!activeFarmId) return;
       queryClient.removeQueries({ queryKey: PLOT_KEYS.byFarm(activeFarmId) });
-      dispatch(clearPlotState());
-    }, [activeFarmId, queryClient, dispatch]),
+    }, [activeFarmId, queryClient]),
     fetchAggregateStats: useCallback(
       (hubToken: string) => {
         setActiveHubToken(hubToken);

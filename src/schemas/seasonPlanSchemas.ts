@@ -77,6 +77,7 @@ export const createStageResponseSchema = apiResponseSchema(apiPlanStageSchema);
 export const getTasksResponseSchema = apiResponseSchema(z.array(apiTaskSchema));
 export const createTaskResponseSchema = apiResponseSchema(apiTaskSchema);
 
+
 // Schema for Plan Plot assignments
 export const planPlotSchema = z.object({
   plotId: z.string().uuid(),
@@ -120,4 +121,6 @@ export const createTaskSchema = z.object({
   endDate: z.string().min(1, 'Vui lòng nhập ngày kết thúc'),
   plotId: z.string().min(1, 'Vui lòng chọn lô đất'),
 });
+
+
 
