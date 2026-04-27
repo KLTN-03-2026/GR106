@@ -32,6 +32,7 @@ import { cn } from '@/utils/cn';
 import { usePlots } from '@/hooks/plots/usePlots';
 import { useWarehouseItems } from '@/hooks/warehouseItems/useWarehouseItems';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { useTaskMaterials } from '@/hooks/taskMaterials/useTaskMaterials';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { toast } from 'sonner';
@@ -60,13 +61,6 @@ interface PlanDetailPanelProps {
   onDeleteTask?: (planId: string, phaseId: string, taskId: string) => void;
   onClone?: (plan: SeasonPlan) => void;
   onAddPlots?: (planId: string, plotIds: string[]) => void;
-  onFetchTaskMaterials?: (planId: string, stageId: string, taskId: string) => Promise<void>;
-  onAddTaskMaterial?: (
-    planId: string,
-    stageId: string,
-    taskId: string,
-    payload: { plannedQty: number; warehouseItemId: string },
-  ) => Promise<void>;
   canEdit?: boolean;
 }
 
@@ -229,20 +223,32 @@ export function PlanDetailPanel({
   onDeleteTask,
   onClone,
   onAddPlots,
-  onFetchTaskMaterials,
-  onAddTaskMaterial,
   canEdit = false,
 }: PlanDetailPanelProps) {
-  const { plots, fetchPlots, loading } = usePlots();
-  const { fetchAllItems, items: warehouseItems } = useWarehouseItems();
   const { currentFarmId } = useAuth();
   const { selectedFarmId } = useSelector((state: RootState) => state.farm);
+  const targetFarmId = currentFarmId || selectedFarmId;
+  const { plots, fetchPlots, loading } = usePlots();
+  const { items: warehouseItems } = useWarehouseItems(targetFarmId);
 
+  const [activeTab, setActiveTab] = useState<'INFO' | 'MEMBERS' | 'MATERIALS'>('INFO');
+  const [activeSelection, setActiveSelection] = useState(selection);
+
+  // Use dedicated hook for materials management
+  const {
+    materials: taskMaterials,
+    loading: isMaterialsQueryLoading,
+    adding: isAddingMaterial,
+    addMaterial
+  } = useTaskMaterials(
+    activeSelection?.plan.id,
+    activeSelection?.type === 'TASK' ? (activeSelection as any).phase.id : undefined,
+    activeSelection?.type === 'TASK' ? (activeSelection as any).task.id : undefined,
+    isOpen && activeTab === 'MATERIALS' && activeSelection?.type === 'TASK'
+  );
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
-  const [activeTab, setActiveTab] = useState<'INFO' | 'MEMBERS' | 'MATERIALS'>('INFO');
-  const [activeSelection, setActiveSelection] = useState(selection);
   const [isEditing, setIsEditing] = useState(false);
   const [tempPlan, setTempPlan] = useState<SeasonPlan | null>(null);
   const [tempPhase, setTempPhase] = useState<Phase | null>(null);
@@ -255,73 +261,22 @@ export function PlanDetailPanel({
   const [newTaskEnd, setNewTaskEnd] = useState('');
   const [newTaskPlotId, setNewTaskPlotId] = useState('');
 
-
   const [showAddPlot, setShowAddPlot] = useState(false);
   const [selectedPlotIds, setSelectedPlotIds] = useState<string[]>([]);
   const [loadingAddPlot, setLoadingAddPlot] = useState(false);
-  const [materialsLoading, setMaterialsLoading] = useState(false);
-  const [addingMaterial, setAddingMaterial] = useState(false);
   const [selectedWarehouseItemId, setSelectedWarehouseItemId] = useState('');
-  const [plannedQty, setPlannedQty] = useState<number>(0);
+  const [plannedQty, setPlannedQty] = useState<string>('');
 
-  const targetFarmId =
-    activeSelection?.plan?.farmId ||
-    selection?.plan?.farmId ||
-    currentFarmId ||
-    selectedFarmId;
 
   useEffect(() => {
+
+
     if (showAddPlot && targetFarmId) {
       fetchPlots(targetFarmId);
     }
   }, [showAddPlot, targetFarmId, fetchPlots]);
 
-  useEffect(() => {
-    const loadTaskMaterials = async () => {
-      if (
-        !isOpen ||
-        activeTab !== 'MATERIALS' ||
-        !activeSelection ||
-        activeSelection.type !== 'TASK' ||
-        !onFetchTaskMaterials
-      ) {
-        return;
-      }
 
-      try {
-        setMaterialsLoading(true);
-        await onFetchTaskMaterials(activeSelection.plan.id, activeSelection.phase.id, activeSelection.task.id);
-      } finally {
-        setMaterialsLoading(false);
-      }
-    };
-
-    void loadTaskMaterials();
-  }, [isOpen, activeTab, activeSelection, onFetchTaskMaterials]);
-
-  useEffect(() => {
-    const loadWarehouseItems = async () => {
-      if (
-        !isOpen ||
-        activeTab !== 'MATERIALS' ||
-        !activeSelection ||
-        activeSelection.type !== 'TASK' ||
-        !targetFarmId
-      ) {
-        return;
-      }
-
-      try {
-        await fetchAllItems(targetFarmId);
-      } catch (error) {
-        console.error('Không tải được vật tư kho:', error);
-      }
-    };
-
-    void loadWarehouseItems();
-  }, [isOpen, activeTab, activeSelection, targetFarmId, fetchAllItems]);
-
-  // SAU (đã sửa)
   useEffect(() => {
     setActiveSelection(selection);
     setIsEditing(false); // Reset edit mode on selection change
@@ -463,14 +418,14 @@ export function PlanDetailPanel({
     }
 
     onAddTask(plan.id, sel.phase.id, validation.data as any);
-    
+
     setNewTaskName(''); setNewTaskDesc('');
     setNewTaskStart(''); setNewTaskEnd('');
     setIsAddingTask(false);
   };
 
   const handleAddMaterial = async () => {
-    if (!activeSelection || activeSelection.type !== 'TASK' || !onAddTaskMaterial) return;
+    if (!activeSelection || activeSelection.type !== 'TASK') return;
 
     const payload = {
       warehouseItemId: selectedWarehouseItemId,
@@ -482,7 +437,7 @@ export function PlanDetailPanel({
       return;
     }
 
-    const isDuplicateWarehouseItem = (activeSelection.task.materials ?? []).some(
+    const isDuplicateWarehouseItem = (taskMaterials ?? []).some(
       (material) => material.warehouseItem.id === validation.data.warehouseItemId,
     );
     if (isDuplicateWarehouseItem) {
@@ -491,19 +446,13 @@ export function PlanDetailPanel({
     }
 
     try {
-      setAddingMaterial(true);
-      await onAddTaskMaterial(
-        activeSelection.plan.id,
-        activeSelection.phase.id,
-        activeSelection.task.id,
-        validation.data,
-      );
+      await addMaterial(validation.data);
       setSelectedWarehouseItemId('');
-      setPlannedQty(0);
+      setPlannedQty('');
+      toast.success('Thêm vật tư thành công');
     } catch (error) {
       console.error('Lỗi thêm vật tư:', error);
-    } finally {
-      setAddingMaterial(false);
+      toast.error('Không thể thêm vật tư');
     }
   };
 
@@ -1036,12 +985,12 @@ export function PlanDetailPanel({
                   {/* MATERIALS tab */}
                   {activeTab === 'MATERIALS' && (
                     <div className="space-y-2">
-                      {materialsLoading ? (
+                      {isMaterialsQueryLoading ? (
                         <div className="py-4 flex justify-center">
                           <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
                         </div>
-                      ) : sel.task.materials?.length ? (
-                        sel.task.materials.map((mat: TaskMaterial) => (
+                      ) : taskMaterials?.length ? (
+                        taskMaterials.map((mat: TaskMaterial) => (
                           <div key={mat.id} className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg border border-slate-100">
                             <div className="flex items-center gap-2">
                               <Package size={13} className="text-slate-400" />
@@ -1061,40 +1010,66 @@ export function PlanDetailPanel({
                       {canEdit && (
                         <div className="p-2.5 bg-white border border-slate-200 rounded-lg space-y-2 mt-2">
                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Thêm vật tư cho công việc</p>
-                          <select
-                            value={selectedWarehouseItemId}
-                            onChange={(e) => setSelectedWarehouseItemId(e.target.value)}
-                            className="w-full px-2 py-1.5 text-[12px] bg-slate-50 border border-slate-200 rounded-md outline-none focus:border-indigo-400"
-                          >
-                            <option value="">Chọn vật tư kho...</option>
-                            {warehouseItems.map((item) => (
-                              <option key={item.id} value={item.id}>
-                                {item.name}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="relative">
+                            <select
+                              value={selectedWarehouseItemId}
+                              onChange={(e) => setSelectedWarehouseItemId(e.target.value)}
+                              className="w-full px-2 py-1.5 text-[12px] bg-slate-50 border border-slate-200 rounded-md outline-none focus:border-indigo-400 appearance-none pr-6"
+                            >
+                              <option value="">Chọn vật tư kho...</option>
+                              {warehouseItems.map((item) => (
+                                <option key={item.id} value={item.id}>
+                                  {item.name} — Tồn: {item.stock != null ? item.stock.toLocaleString('vi-VN') : '0'}
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                          </div>
+
+                          {/* Badge tồn kho cho item đang chọn */}
+                          {selectedWarehouseItemId && (() => {
+                            const selected = warehouseItems.find(i => i.id === selectedWarehouseItemId);
+                            if (!selected) return null;
+                            const stock = selected.stock ?? 0;
+                            const isLow = stock <= (selected.minStockQty ?? 0);
+                            return (
+                              <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-md border text-[11px] font-medium ${isLow ? 'bg-rose-50 border-rose-100 text-rose-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                                }`}>
+                                <span className="truncate">{selected.name}</span>
+                                <span className="font-bold ml-2 shrink-0">
+                                  Tồn: {stock.toLocaleString('vi-VN')}
+                                </span>
+                              </div>
+                            );
+                          })()}
                           <input
-                            type="number"
-                            min={0}
-                            step="0.01"
+                            type="text"
                             value={plannedQty}
-                            onChange={(e) => setPlannedQty(Number(e.target.value) || 0)}
-                            placeholder="Số lượng kế hoạch"
+                            onChange={(e) => {
+                              const value = e.target.value;
+
+                              // Cho nhập số + dấu chấm
+                              if (/^\d*\.?\d*$/.test(value)) {
+                                setPlannedQty(value);
+                              }
+                            }}
+                            placeholder="Nhập số lượng"
                             className="w-full px-2 py-1.5 text-[12px] bg-slate-50 border border-slate-200 rounded-md outline-none focus:border-indigo-400"
                           />
+
                           <button
                             onClick={handleAddMaterial}
-                            disabled={addingMaterial}
+                            disabled={isAddingMaterial}
                             className="w-full py-1.5 text-[12px] bg-indigo-600 text-white rounded-md disabled:opacity-40"
                           >
-                            {addingMaterial ? 'Đang thêm...' : 'Thêm vật tư'}
+                            {isAddingMaterial ? 'Đang thêm...' : 'Thêm vật tư'}
                           </button>
                         </div>
                       )}
                       <div className="flex gap-2 p-2.5 bg-indigo-50 border border-indigo-100 rounded-lg mt-2">
                         <CheckCircle2 size={13} className="text-indigo-500 shrink-0 mt-0.5" />
                         <p className="text-[11px] text-indigo-800 leading-relaxed">
-                          Tự động trừ tồn kho khi xuất vật tư từ module kho.
+                          Tự động trừ tồn kho khi xuất vật tư từ kho.
                         </p>
                       </div>
                     </div>

@@ -38,7 +38,7 @@ export const addTaskMaterialResponseSchema = apiResponseSchema(apiTaskMaterialSc
 
 export const createTaskMaterialSchema = z.object({
   warehouseItemId: z.string().uuid('Vui lòng chọn vật tư hợp lệ'),
-  plannedQty: z
+  plannedQty: z.coerce
     .number({ invalid_type_error: 'Số lượng kế hoạch phải là số' })
     .positive('Số lượng kế hoạch phải lớn hơn 0')
     .finite('Số lượng kế hoạch không hợp lệ'),

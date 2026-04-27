@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreateWarehouseItemDto, WarehouseItem } from '../../types/warehouseItem/warehouseItem';
 import { axiosInstance } from '../../config/axios';
@@ -11,43 +11,74 @@ const ITEM_KEYS = {
 const withUnwrap = <T,>(promise: Promise<T>) =>
   Object.assign(promise, { unwrap: () => promise });
 
-export const useWarehouseItems = () => {
+export const useWarehouseItems = (farmId?: string | null, warehouseId?: string | null) => {
   const queryClient = useQueryClient();
-  const [queryState, setQueryState] = useState<{ farmId: string | null; warehouseId: string | null }>({
-    farmId: null,
-    warehouseId: null,
-  });
 
   const itemsQuery = useQuery({
-    queryKey:
-      queryState.farmId && queryState.warehouseId
-        ? ITEM_KEYS.byWarehouse(queryState.farmId, queryState.warehouseId)
+    queryKey: warehouseId && farmId
+      ? ITEM_KEYS.byWarehouse(farmId, warehouseId)
+      : farmId
+        ? ITEM_KEYS.allByFarm(farmId)
         : ['warehouse-items', 'inactive'],
     queryFn: async (): Promise<WarehouseItem[]> => {
-      const res = await axiosInstance.get(
-        `/api/v1/farms/${queryState.farmId as string}/warehouses/${queryState.warehouseId as string}/items`,
-      );
-      return res.data.data ?? [];
+      if (!farmId) return [];
+      if (warehouseId) {
+        const res = await axiosInstance.get(`/api/v1/farms/${farmId}/warehouses/${warehouseId}/items`);
+        return res.data.data ?? [];
+      }
+      
+      // Nếu không có warehouseId, lấy tất cả kho và cộng dồn tồn kho
+      try {
+        const whRes = await axiosInstance.get(`/api/v1/farms/${farmId}/warehouses`);
+        const warehouses = whRes.data.data ?? [];
+        if (warehouses.length === 0) return [];
+
+        const itemsPromises = warehouses.map((wh: any) =>
+          axiosInstance.get(`/api/v1/farms/${farmId}/warehouses/${wh.id}/items`)
+            .then(r => r.data.data ?? [])
+            .catch(() => [])
+        );
+
+        const allResults = await Promise.all(itemsPromises);
+        const flatItems: WarehouseItem[] = allResults.flat();
+
+        const aggregated = flatItems.reduce((acc: Record<string, WarehouseItem>, item) => {
+          const key = item.id;
+          if (!acc[key]) {
+            acc[key] = { ...item };
+          } else {
+            acc[key].stock += (item.stock || 0);
+          }
+          return acc;
+        }, {});
+
+        return Object.values(aggregated);
+      } catch (err) {
+        console.error("Lỗi cộng dồn tồn kho:", err);
+        const res = await axiosInstance.get(`/api/v1/farms/${farmId}/warehouses/items`);
+        return res.data.data ?? [];
+      }
     },
-    enabled: false,
+    enabled: !!farmId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const createItemMutation = useMutation({
     mutationFn: async ({
-      farmId,
-      warehouseId,
+      fId,
+      wId,
       itemData,
     }: {
-      farmId: string;
-      warehouseId: string;
+      fId: string;
+      wId: string;
       itemData: CreateWarehouseItemDto;
     }) => {
-      const res = await axiosInstance.post(`/api/v1/farms/${farmId}/warehouses/${warehouseId}/items`, itemData);
+      const res = await axiosInstance.post(`/api/v1/farms/${fId}/warehouses/${wId}/items`, itemData);
       return res.data.data;
     },
     onSuccess: (_, variables) => {
-      void queryClient.invalidateQueries({ queryKey: ITEM_KEYS.byWarehouse(variables.farmId, variables.warehouseId) });
-      void queryClient.invalidateQueries({ queryKey: ITEM_KEYS.allByFarm(variables.farmId) });
+      void queryClient.invalidateQueries({ queryKey: ITEM_KEYS.byWarehouse(variables.fId, variables.wId) });
+      void queryClient.invalidateQueries({ queryKey: ITEM_KEYS.allByFarm(variables.fId) });
     },
   });
 
@@ -58,13 +89,12 @@ export const useWarehouseItems = () => {
     loading: itemsQuery.isLoading || itemsQuery.isFetching || createItemMutation.isPending,
     error,
     fetchItems: useCallback(
-      (farmId: string, warehouseId: string): Promise<WarehouseItem[]> => {
-        setQueryState({ farmId, warehouseId });
+      (fId: string, wId: string): Promise<WarehouseItem[]> => {
         return withUnwrap(
           queryClient.fetchQuery({
-            queryKey: ITEM_KEYS.byWarehouse(farmId, warehouseId),
+            queryKey: ITEM_KEYS.byWarehouse(fId, wId),
             queryFn: async (): Promise<WarehouseItem[]> => {
-              const res = await axiosInstance.get(`/api/v1/farms/${farmId}/warehouses/${warehouseId}/items`);
+              const res = await axiosInstance.get(`/api/v1/farms/${fId}/warehouses/${wId}/items`);
               return res.data.data ?? [];
             },
           }),
@@ -73,21 +103,22 @@ export const useWarehouseItems = () => {
       [queryClient],
     ),
     fetchAllItems: useCallback(
-      (farmId: string): Promise<WarehouseItem[]> =>
-        withUnwrap(
+      (fId: string): Promise<WarehouseItem[]> => {
+        return withUnwrap(
           queryClient.fetchQuery({
-            queryKey: ITEM_KEYS.allByFarm(farmId),
+            queryKey: ITEM_KEYS.allByFarm(fId),
             queryFn: async (): Promise<WarehouseItem[]> => {
-              const res = await axiosInstance.get(`/api/v1/farms/${farmId}/warehouses/items`);
+              const res = await axiosInstance.get(`/api/v1/farms/${fId}/warehouses/items`);
               return res.data.data ?? [];
             },
           }),
-        ),
+        );
+      },
       [queryClient],
     ),
     createItem: useCallback(
-      (farmId: string, warehouseId: string, itemData: CreateWarehouseItemDto) =>
-        withUnwrap(createItemMutation.mutateAsync({ farmId, warehouseId, itemData })),
+      (fId: string, wId: string, itemData: CreateWarehouseItemDto) =>
+        withUnwrap(createItemMutation.mutateAsync({ fId, wId, itemData })),
       [createItemMutation],
     ),
   };

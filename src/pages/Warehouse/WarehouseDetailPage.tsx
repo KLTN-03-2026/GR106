@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { 
   Package, Plus, Loader2, Search, Filter, 
   Trash2, Edit2, AlertCircle,
-  ChevronRight, Building, Tag, Layers
+  ChevronRight, Building, Tag, Layers, ArrowLeft
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '../../hooks/auth/useAuth'
@@ -24,7 +24,7 @@ import { extractErrorMessage } from '../../utils/errorUtils'
 export function WarehouseDetailPage() {
   const { farmId, warehouseId } = useParams<{ farmId: string; warehouseId: string }>()
   const navigate = useNavigate()
-  const { items, loading, fetchItems, createItem } = useWarehouseItems()
+  const { items, loading, fetchItems, createItem } = useWarehouseItems(farmId, warehouseId)
   const { suppliers, fetchSuppliers } = useSuppliers()
   const { skus, fetchSkus } = useSkus()
   const { units, fetchUnits } = useUnits()
@@ -179,7 +179,7 @@ export function WarehouseDetailPage() {
             </div>
             <div className="text-left">
               <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Giá trị tồn kho</p>
-              <h3 className="text-2xl font-black text-slate-900">{totalInventoryValue.toLocaleString()}</h3>
+              <h3 className="text-2xl font-black text-slate-900">{totalInventoryValue.toLocaleString('vi-VN')}</h3>
             </div>
           </div>
         </div>
@@ -216,6 +216,14 @@ export function WarehouseDetailPage() {
               </div>
               <h3 className="text-xl font-bold text-slate-800">Kho hàng trống</h3>
               <p className="text-sm text-slate-400 mt-2 max-w-xs mx-auto">Chưa có vật tư nào được ghi nhận trong kho này.</p>
+              
+              <button
+                onClick={() => navigate(`/farms/${farmId}/warehouses`)}
+                className="mt-8 flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-600 font-black rounded-2xl hover:bg-slate-200 transition-all active:scale-95 text-xs uppercase tracking-widest"
+              >
+                <ArrowLeft size={18} />
+                Quay lại danh sách kho
+              </button>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -249,7 +257,7 @@ export function WarehouseDetailPage() {
                       </td>
                       <td className="px-8 py-5 text-right">
                         <span className={`text-sm font-black ${item.stock <= (item.minStockQty || 0) ? 'text-rose-600' : 'text-slate-900'}`}>
-                          {item.stock.toLocaleString()}
+                          {item.stock != null ? item.stock.toLocaleString('vi-VN') : '—'}
                         </span>
                       </td>
                       <td className="px-8 py-5">
@@ -259,7 +267,7 @@ export function WarehouseDetailPage() {
                         </div>
                       </td>
                       <td className="px-8 py-5 text-right">
-                        <span className="text-sm font-black text-slate-900">{item.unitPrice?.toLocaleString()}</span>
+                        <span className="text-sm font-black text-slate-900">{item.unitPrice != null ? item.unitPrice.toLocaleString('vi-VN') : '—'}</span>
                       </td>
                       <td className="px-8 py-5">
                         <div className="flex items-center justify-center gap-2">
