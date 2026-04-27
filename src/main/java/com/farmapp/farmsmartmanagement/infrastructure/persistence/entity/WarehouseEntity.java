@@ -17,7 +17,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@SQLRestriction("deleted_at IS NULL")
 public class WarehouseEntity extends BaseEntity {
 
     @Id
