@@ -105,7 +105,8 @@ public enum ErrorCode {
     INSUFFICIENT_STOCK_FOR_PLAN(409, "Số lượng tồn kho không đủ cho kế hoạch", HttpStatus.CONFLICT),
 
 
-    WAREHOUSE_LOCATION_ALREADY_EXISTS(409,"Vị trí trong kho đã tồn tại" ,HttpStatus.CONFLICT );
+    WAREHOUSE_LOCATION_ALREADY_EXISTS(409,"Vị trí trong kho đã tồn tại" ,HttpStatus.CONFLICT ),
+    WAREHOUSE_LOCATION_NOT_FOUND(404,"Vị trí này không tồn tại trong kho" ,HttpStatus.NOT_FOUND );
 
 
 

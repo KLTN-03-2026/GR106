@@ -80,6 +80,11 @@ public class WarehouseService {
     }
 
     @Transactional
+    public void deleteWarehouseLocation(UUID warehouseId, UUID warehouseLocationId) {
+        warehouseLocationRepository.deleteByIdAndWarehouse_Id(warehouseLocationId, warehouseId);
+    }
+
+    @Transactional
     @PreAuthorize("hasAuthority('warehouse:manage')")
     public WarehouseResponse createWarehouse(UUID farmId, CreateWarehouseRequest request) {
 

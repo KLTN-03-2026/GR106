@@ -48,14 +48,6 @@ public class WarehouseTransactionEntity {
     @JoinColumn(name = "to_location_id")
     WarehouseLocationEntity toLocation;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "from_warehouse_id")
-    WarehouseEntity fromWarehouse;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "to_warehouse_id")
-    WarehouseEntity toWarehouse;
-
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "type", nullable = false)

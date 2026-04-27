@@ -1,6 +1,7 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.WarehouseItemEntity;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -38,10 +39,10 @@ public interface WarehouseItemRepository extends JpaRepository<WarehouseItemEnti
     """)
     boolean existsBySkuAndWarehouse_Id(String sku, UUID warehouseId);
 
-    @EntityGraph(attributePaths = {"warehouse", "sku", "supplier","warehouseStock"})
+    @EntityGraph(attributePaths = {"warehouse", "sku", "supplier"})
     List<WarehouseItemEntity> findAllByWarehouse_Id(UUID warehouseId);
 
-    @EntityGraph(attributePaths = {"warehouse", "sku", "supplier", "warehouseStock"})
+    @EntityGraph(attributePaths = {"warehouse", "sku", "supplier"})
     Optional<WarehouseItemEntity> findByIdAndFarm_Id(UUID id, UUID farmId);
 
     @Query(value = """
@@ -74,4 +75,6 @@ public interface WarehouseItemRepository extends JpaRepository<WarehouseItemEnti
             @Param("farmId") UUID farmId,
             @Param("neededQty") BigDecimal neededQty
     );
+
+    boolean existsByIdAndWarehouse_Id(@NotNull(message = "Vui lòng chọn vị trí trong kho") UUID toLocationId, UUID warehouseId);
 }

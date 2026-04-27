@@ -12,6 +12,8 @@ import java.util.UUID;
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class CreateWarehouseItemRequest {
+    @NotNull(message = "Vui lòng chọn vị trí trong kho")
+    UUID toLocationId;
 
     @NotNull(message = "Đơn vị không được để trống")
     UUID unitId;

@@ -19,17 +19,10 @@ public interface WarehouseItemMapper {
     @Mapping(source = "unit", target = "unit")
     @Mapping(source = "sku", target = "sku")
     @Mapping(source = "createdBy", target = "createdBy")
-    @Mapping(source = "warehouseStocks", target = "stock", qualifiedByName = "mapStock")
+    @Mapping(target = "stock", ignore = true)
     WarehouseItemResponse toResponse(WarehouseItemEntity entity);
 
     List<WarehouseItemResponse> toResponses(List<WarehouseItemEntity> entities);
 
-    @Named("mapStock")
-    default BigDecimal mapStock(List<WarehouseStockEntity> stocks) {
-        if (stocks == null || stocks.isEmpty()) return BigDecimal.ZERO;
-        return stocks.stream()
-                .map(WarehouseStockEntity::getQtyOnHand)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
 }
 

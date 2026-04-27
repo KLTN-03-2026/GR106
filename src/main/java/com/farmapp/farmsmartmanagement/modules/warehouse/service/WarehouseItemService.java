@@ -9,15 +9,19 @@ import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.CreateWarehouseItemRequest;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.response.WarehouseItemResponse;
 import com.farmapp.farmsmartmanagement.modules.warehouse.mapper.WarehouseItemMapper;
+import jakarta.persistence.EntityManager;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 // WarehouseItemService.java
 @Service
@@ -34,8 +38,10 @@ public class WarehouseItemService {
     UserRepository userRepository;
     SecurityUtils securityUtils;
     WarehouseItemMapper warehouseItemMapper;
-
+    WarehouseLocationRepository warehouseLocationRepository;
+    WarehouseStockRepository warehouseStockRepository;
     WarehouseTransactionRepository warehouseTransactionRepository;
+    EntityManager entityManager;
 
     @Transactional(readOnly = true)
     public List<WarehouseItemResponse> getAllWarehouseItemByFarm(UUID farmId) {
@@ -44,9 +50,28 @@ public class WarehouseItemService {
 
     @Transactional(readOnly = true)
     public List<WarehouseItemResponse> getAllWarehouseItemByWarehouse(UUID warehouseId) {
-        return warehouseItemMapper.toResponses(
-                warehouseItemRepository.findAllByWarehouse_Id(warehouseId)
-        );
+        List<WarehouseItemEntity> items = warehouseItemRepository
+                .findAllByWarehouse_Id(warehouseId);
+
+        if (items.isEmpty()) return List.of();
+
+        // 1 query lấy stock của tất cả items
+        List<UUID> itemIds = items.stream().map(WarehouseItemEntity::getId).toList();
+        Map<UUID, BigDecimal> stockMap = warehouseStockRepository
+                .sumQtyByItemIds(itemIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (UUID) row[0],
+                        row -> (BigDecimal) row[1]
+                ));
+
+        return items.stream()
+                .map(item -> {
+                    WarehouseItemResponse response = warehouseItemMapper.toResponse(item);
+                    response.setStock(stockMap.getOrDefault(item.getId(), BigDecimal.ZERO));
+                    return response;
+                })
+                .toList();
     }
 
     @Transactional
@@ -106,13 +131,16 @@ public class WarehouseItemService {
             item.setMinStockQty(request.getMinStockQty());
         item = warehouseItemRepository.save(item);
 
+        WarehouseLocationEntity location = warehouseLocationRepository
+                .findByIdAndWarehouse_Id(request.getToLocationId(), warehouseId)
+                .orElseThrow(()-> new AppException(ErrorCode.WAREHOUSE_LOCATION_NOT_FOUND));
+
         WarehouseTransactionEntity transaction = new WarehouseTransactionEntity();
             transaction.setFarm(farm);
             transaction.setWarehouse(warehouse);
             transaction.setWarehouseItem(item);
             transaction.setFromLocation(null);
-            transaction.setToLocation(null);
-            transaction.setToWarehouse(warehouse);
+            transaction.setToLocation(location);
             transaction.setType(WarehouseTxnType.IMPORT_MANUAL);
             transaction.setQtyChange(request.getStock());
             transaction.setRefTransfer(null);
@@ -122,10 +150,20 @@ public class WarehouseItemService {
             transaction.setPerformedBy(user);
         transaction.setNotes("IMPORT WAREHOUSE ITEM MANUAL");
 
+
+
         warehouseTransactionRepository.save(transaction);
 
+// Flush để trigger fn_update_stock chạy trên DB
+        entityManager.flush();
 
+// Query stock sau khi trigger đã chạy
+        BigDecimal totalStock = warehouseStockRepository
+                .sumQtyByWarehouseItemId(item.getId());
 
-        return warehouseItemMapper.toResponse(item);
+        WarehouseItemResponse response = warehouseItemMapper.toResponse(item);
+        response.setStock(totalStock);
+
+        return response;
     }
 }

@@ -81,4 +81,15 @@ public class WarehouseController {
                 warehouseService.findAllWarehousesLocationsByWarehouseId(warehouseId)
         );
     }
+
+    @GetMapping("/api/v1/farms/{farmId}/warehouses/{warehouseId}/locations/{locationId}")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<Void>> deleteWarehouseLocation(
+            @PathVariable("farmId") UUID farmId,
+            @PathVariable("warehouseId") UUID warehouseId,
+            @PathVariable("locationId") UUID locationId
+    ){
+        warehouseService.deleteWarehouseLocation(warehouseId, locationId);
+        return ResponseUtil.noContent();
+    }
 }
