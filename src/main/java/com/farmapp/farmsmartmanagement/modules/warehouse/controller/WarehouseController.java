@@ -3,7 +3,9 @@ package com.farmapp.farmsmartmanagement.modules.warehouse.controller;
 import com.farmapp.farmsmartmanagement.common.annotation.RequiresFarmToken;
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
 import com.farmapp.farmsmartmanagement.common.response.ResponseUtil;
+import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.CreateWarehouseLocationRequest;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.CreateWarehouseRequest;
+import com.farmapp.farmsmartmanagement.modules.warehouse.dto.response.WarehouseLocationResponse;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.response.WarehouseResponse;
 import com.farmapp.farmsmartmanagement.modules.warehouse.service.WarehouseService;
 import jakarta.validation.Valid;
@@ -54,5 +56,29 @@ public class WarehouseController {
         warehouseService.deleteWarehouse(farmId, warehouseId);
 
         return ResponseUtil.noContent();
+    }
+
+
+    @PostMapping("/api/v1/farms/{farmId}/warehouses/{warehouseId}/locations")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<WarehouseLocationResponse>> createWarehouseLocation(
+            @PathVariable("farmId") UUID farmId,
+            @PathVariable("warehouseId") UUID warehouseId,
+            @RequestBody @Valid CreateWarehouseLocationRequest request
+    ){
+        return ResponseUtil.created(
+                warehouseService.createWarehouseLocation(warehouseId, request)
+        );
+    }
+
+    @GetMapping("/api/v1/farms/{farmId}/warehouses/{warehouseId}/locations")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<List<WarehouseLocationResponse>>> getAllWarehouseLocationsByWarehouseId(
+            @PathVariable("farmId") UUID farmId,
+            @PathVariable("warehouseId") UUID warehouseId
+    ){
+        return ResponseUtil.success(
+                warehouseService.findAllWarehousesLocationsByWarehouseId(warehouseId)
+        );
     }
 }

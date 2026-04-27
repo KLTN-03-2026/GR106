@@ -8,6 +8,7 @@ import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 // WarehouseItemEntity.java
@@ -29,6 +30,9 @@ public class WarehouseItemEntity extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "warehouse_id", nullable = false)
     WarehouseEntity warehouse;
+
+    @OneToMany(mappedBy = "warehouseItem", fetch = FetchType.LAZY)
+    List<WarehouseStockEntity> warehouseStocks;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "farm_id", nullable = false)

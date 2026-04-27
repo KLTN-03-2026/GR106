@@ -7,12 +7,17 @@ import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.FarmEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.UserEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.WarehouseEntity;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.WarehouseLocationEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.FarmRepository;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.UserRepository;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.WarehouseLocationRepository;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.WarehouseRepository;
+import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.CreateWarehouseLocationRequest;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.CreateWarehouseRequest;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.UpdateWarehouseRequest;
+import com.farmapp.farmsmartmanagement.modules.warehouse.dto.response.WarehouseLocationResponse;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.response.WarehouseResponse;
+import com.farmapp.farmsmartmanagement.modules.warehouse.mapper.WarehouseLocationMapper;
 import com.farmapp.farmsmartmanagement.modules.warehouse.mapper.WarehouseMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +43,9 @@ public class WarehouseService {
 
     WarehouseMapper warehouseMapper;
 
+    WarehouseLocationRepository warehouseLocationRepository;
+    WarehouseLocationMapper  warehouseLocationMapper;
+
     SecurityUtils securityUtils;
 
 
@@ -45,6 +53,30 @@ public class WarehouseService {
         return warehouseMapper.toResponses(
                 warehouseRepository.findAll()
         );
+    }
+
+    public List<WarehouseLocationResponse> findAllWarehousesLocationsByWarehouseId(UUID warehouseId) {
+        return warehouseLocationMapper.toResponses(warehouseLocationRepository.findAll());
+    }
+
+    @Transactional
+    public WarehouseLocationResponse createWarehouseLocation(UUID warehouseId, CreateWarehouseLocationRequest request){
+        FarmEntity farm = farmRepository.getReferenceById(securityUtils.getCurrentFarmId());
+        WarehouseEntity warehouse = warehouseRepository
+                .findById(warehouseId)
+                .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND));
+        if(warehouseLocationRepository.existsByCodeAndWarehouse_Id(request.getCode(), warehouse.getId()))
+            throw new AppException(ErrorCode.WAREHOUSE_LOCATION_ALREADY_EXISTS);
+
+        WarehouseLocationEntity warehouseLocation = new  WarehouseLocationEntity();
+        warehouseLocation.setWarehouse(warehouse);
+        warehouseLocation.setFarm(farm);
+        warehouseLocation.setCode(request.getCode());
+        warehouseLocation.setName(request.getName());
+        warehouseLocation.setActive(true);
+        warehouseLocation.setCreatedAt(Instant.now());
+
+        return warehouseLocationMapper.toResponse(warehouseLocationRepository.save(warehouseLocation));
     }
 
     @Transactional
@@ -88,4 +120,5 @@ public class WarehouseService {
         // Soft delete
         warehouse.setDeletedAt(Instant.now());
     }
+
 }

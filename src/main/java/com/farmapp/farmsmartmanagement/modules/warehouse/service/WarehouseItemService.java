@@ -3,6 +3,7 @@ package com.farmapp.farmsmartmanagement.modules.warehouse.service;
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
+import com.farmapp.farmsmartmanagement.domain.enums.WarehouseTxnType;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.CreateWarehouseItemRequest;
@@ -34,6 +35,8 @@ public class WarehouseItemService {
     SecurityUtils securityUtils;
     WarehouseItemMapper warehouseItemMapper;
 
+    WarehouseTransactionRepository warehouseTransactionRepository;
+
     @Transactional(readOnly = true)
     public List<WarehouseItemResponse> getAllWarehouseItemByFarm(UUID farmId) {
         return warehouseItemMapper.toResponses(warehouseItemRepository.findAll());
@@ -51,6 +54,9 @@ public class WarehouseItemService {
                                                      CreateWarehouseItemRequest request) {
         UUID userId = securityUtils.getCurrentUserId();
         UUID farmId = securityUtils.getCurrentFarmId();
+
+        FarmEntity farm = farmRepository.getReferenceById(farmId);
+        UserEntity user = userRepository.getReferenceById(userId);
 
         // Validate warehouse thuộc farm
         WarehouseEntity warehouse = warehouseRepository.findById(warehouseId)
@@ -89,16 +95,37 @@ public class WarehouseItemService {
         }
 
         WarehouseItemEntity item = new WarehouseItemEntity();
-        item.setWarehouse(warehouse);
-        item.setFarm(farmRepository.getReferenceById(farmId));
-        item.setCreatedBy(userRepository.getReferenceById(userId));
-        item.setName(request.getName());
-        item.setSku(sku);
-        item.setUnit(unit);
-        item.setSupplier(supplier);
-        item.setUnitPrice(request.getUnitPrice());
-        item.setMinStockQty(request.getMinStockQty());
+            item.setWarehouse(warehouse);
+            item.setFarm(farm);
+            item.setCreatedBy(user);
+            item.setName(request.getName());
+            item.setSku(sku);
+            item.setUnit(unit);
+            item.setSupplier(supplier);
+            item.setUnitPrice(request.getUnitPrice());
+            item.setMinStockQty(request.getMinStockQty());
+        item = warehouseItemRepository.save(item);
 
-        return warehouseItemMapper.toResponse(warehouseItemRepository.save(item));
+        WarehouseTransactionEntity transaction = new WarehouseTransactionEntity();
+            transaction.setFarm(farm);
+            transaction.setWarehouse(warehouse);
+            transaction.setWarehouseItem(item);
+            transaction.setFromLocation(null);
+            transaction.setToLocation(null);
+            transaction.setToWarehouse(warehouse);
+            transaction.setType(WarehouseTxnType.IMPORT_MANUAL);
+            transaction.setQtyChange(request.getStock());
+            transaction.setRefTransfer(null);
+            transaction.setRefWorkLog(null);
+            transaction.setRefTask(null);
+            transaction.setRefHarvestId(null);
+            transaction.setPerformedBy(user);
+        transaction.setNotes("IMPORT WAREHOUSE ITEM MANUAL");
+
+        warehouseTransactionRepository.save(transaction);
+
+
+
+        return warehouseItemMapper.toResponse(item);
     }
 }

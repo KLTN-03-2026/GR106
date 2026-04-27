@@ -38,10 +38,10 @@ public interface WarehouseItemRepository extends JpaRepository<WarehouseItemEnti
     """)
     boolean existsBySkuAndWarehouse_Id(String sku, UUID warehouseId);
 
-    @EntityGraph(attributePaths = {"warehouse", "sku", "supplier"})
+    @EntityGraph(attributePaths = {"warehouse", "sku", "supplier","warehouseStock"})
     List<WarehouseItemEntity> findAllByWarehouse_Id(UUID warehouseId);
 
-    @EntityGraph(attributePaths = {"warehouse", "sku", "supplier"})
+    @EntityGraph(attributePaths = {"warehouse", "sku", "supplier", "warehouseStock"})
     Optional<WarehouseItemEntity> findByIdAndFarm_Id(UUID id, UUID farmId);
 
     @Query(value = """
@@ -53,7 +53,6 @@ public interface WarehouseItemRepository extends JpaRepository<WarehouseItemEnti
             JOIN tasks t
                 ON t.id = tm.task_id
                 AND t.farm_id = :farmId
-                AND t.deleted_at IS NULL
             LEFT JOIN work_logs wl
                 ON wl.task_id = t.id
             LEFT JOIN work_log_materials wlm
