@@ -9,6 +9,7 @@ import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { createSupplierSchema } from '../../schemas/supplierSchemas'
 import { Supplier } from '../../types/supplier/supplier'
 import { FarmSummary } from '../../types/farm/farm'
+import { extractErrorMessage } from '../../utils/errorUtils'
 
 export function SupplierListPage() {
   const { farmId } = useParams<{ farmId: string }>()
@@ -62,7 +63,7 @@ export function SupplierListPage() {
       setIsModalOpen(false)
       setNewSupplier({ code: '', name: '' })
     } catch (err: any) {
-      toast.error(err || 'Không thể thêm nhà cung cấp')
+      toast.error(extractErrorMessage(err))
     } finally {
       setSubmitting(false)
     }
@@ -81,7 +82,7 @@ export function SupplierListPage() {
       toast.success('Đã xóa nhà cung cấp')
       setIsDeleteConfirmOpen(false)
     } catch (err: any) {
-      toast.error(err || 'Không thể xóa nhà cung cấp')
+      toast.error(extractErrorMessage(err))
     } finally {
       setIsDeleting(false)
       setSupplierToDelete(null)

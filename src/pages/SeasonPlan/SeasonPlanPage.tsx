@@ -120,16 +120,16 @@ export function SeasonPlanPage() {
   const { farmId, planId } = useParams<{ farmId: string; planId?: string }>();
   const navigate = useNavigate();
 
-  const { 
-    plans, loading, error, 
+  const {
+    plans, loading, error,
     fetchPlans, createPlan, deletePlan: removePlan, updatePlanTime,
-    fetchStages, fetchPlanPlots, createPhase, deletePhase: removePhase, updatePhase, 
-    updatePhaseTime, fetchTasks, createTask: createSeasonTask, 
-    updateTask: updateSeasonTask, updateTaskTime, deleteTask: removeSeasonTask, 
+    fetchStages, fetchPlanPlots, createPhase, deletePhase: removePhase, updatePhase,
+    updatePhaseTime, fetchTasks, createTask: createSeasonTask,
+    updateTask: updateSeasonTask, updateTaskTime, deleteTask: removeSeasonTask,
     addPlotsToPlan, optimisticallyUpdatePhaseTime, optimisticallyUpdateTaskTime,
     addPlanToState
   } = useSeasonPlans();
-  
+
   const { user, accessToken } = useAuth();
   const canEdit = canEditPlan(user?.role, accessToken);
 
@@ -208,7 +208,7 @@ export function SeasonPlanPage() {
   const extractErrorMessage = (err: any): string => {
     if (typeof err === 'string') return err;
     if (Array.isArray(err)) return err.map(e => e.message || JSON.stringify(e)).join(', ');
-    
+
     // Handle error object from standard ApiResponse
     if (err.message && typeof err.message === 'string') {
       if (err.data && typeof err.data === 'object' && !Array.isArray(err.data)) {
@@ -224,7 +224,7 @@ export function SeasonPlanPage() {
         return err.data.map((e: any) => e.message || e.code || JSON.stringify(e)).join('; ');
       return err.message || err.code || JSON.stringify(err.data);
     }
-    
+
     return err.message || 'Có lỗi xảy ra';
   };
 
@@ -256,8 +256,8 @@ export function SeasonPlanPage() {
       const original = plans.find(p => p.id === updatedPlan.id);
       if (!original) return;
 
-      const isDateChanged = 
-        original.startDate !== updatedPlan.startDate || 
+      const isDateChanged =
+        original.startDate !== updatedPlan.startDate ||
         original.endDate !== updatedPlan.endDate;
 
       // Cập nhật ngày bắt đầu và kết thúc → PUT /api/v1/plans/{planId}/time
@@ -354,10 +354,10 @@ export function SeasonPlanPage() {
 
     setPhaseModalTargetPlanId(planId);
     // Để trống để người dùng tự nhập ngày theo đúng yêu cầu
-    setPhaseModalInitialData({ 
-      name: '', 
-      startDate: '', 
-      endDate: '' 
+    setPhaseModalInitialData({
+      name: '',
+      startDate: '',
+      endDate: ''
     });
     setIsCreatePhaseModalOpen(true);
   };
@@ -394,13 +394,13 @@ export function SeasonPlanPage() {
 
     let plotId = data.plotId;
     if (!plotId && plan.plots?.length) plotId = plan.plots[0].plotId;
-    
+
     if (!plotId) {
-      setNotification({ 
-        isOpen: true, 
-        type: 'error', 
-        title: 'Thiếu thông tin lô đất', 
-        message: 'Kế hoạch này chưa được gán lô đất nào. Vui lòng gán lô đất cho kế hoạch trước khi tạo công việc.' 
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        title: 'Thiếu thông tin lô đất',
+        message: 'Kế hoạch này chưa được gán lô đất nào. Vui lòng gán lô đất cho kế hoạch trước khi tạo công việc.'
       });
       return;
     }
@@ -452,11 +452,11 @@ export function SeasonPlanPage() {
     const plan = plans.find(p => p.id === planId);
     const plotId = task.plotId || (plan?.plots?.length ? plan.plots[0].plotId : undefined);
     if (!plotId) {
-      setNotification({ 
-        isOpen: true, 
-        type: 'error', 
-        title: 'Thiếu thông tin lô đất', 
-        message: 'Công việc này thiếu thông tin lô đất và kế hoạch không có lô đất mặc định.' 
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        title: 'Thiếu thông tin lô đất',
+        message: 'Công việc này thiếu thông tin lô đất và kế hoạch không có lô đất mặc định.'
       });
       return;
     }

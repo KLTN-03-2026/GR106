@@ -19,6 +19,7 @@ import { Unit } from '../../types/unit/unit'
 import { Sku } from '../../types/sku/sku'
 import { Supplier } from '../../types/supplier/supplier'
 import { FarmSummary } from '../../types/farm/farm'
+import { extractErrorMessage } from '../../utils/errorUtils'
 
 export function WarehouseDetailPage() {
   const { farmId, warehouseId } = useParams<{ farmId: string; warehouseId: string }>()
@@ -104,7 +105,7 @@ export function WarehouseDetailPage() {
       setIsModalOpen(false)
       setFormData({ name: '', unitId: '', stock: 0, sku: '', supplierCode: '', unitPrice: 0, minStockQty: 0 })
     } catch (err: any) {
-      toast.error(err || 'Không thể thêm vật tư')
+      toast.error(extractErrorMessage(err))
     } finally {
       setIsSubmitting(false)
     }

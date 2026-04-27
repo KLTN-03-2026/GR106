@@ -81,6 +81,13 @@ axiosInstance.interceptors.response.use(
       }
     }
 
+    // Tự động trích xuất message từ server response nếu có
+    if (error.response?.data?.message) {
+      error.message = error.response.data.message;
+    } else if (error.data?.message) {
+      error.message = error.data.message;
+    }
+
     return Promise.reject(error);
   }
 );
