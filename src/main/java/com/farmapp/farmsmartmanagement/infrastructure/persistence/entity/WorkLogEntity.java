@@ -1,0 +1,63 @@
+package com.farmapp.farmsmartmanagement.infrastructure.persistence.entity;
+
+import com.farmapp.farmsmartmanagement.domain.enums.WorkLogType;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.UUID;
+
+
+
+@Entity
+@Table(name = "work_logs",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"task_id", "employee_id", "work_date", "shift_id"}))
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class WorkLogEntity {
+
+    @Id
+    @GeneratedValue
+    @Column(columnDefinition = "uuid")
+    UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "task_id", nullable = false)
+    TaskEntity task;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "farm_id", nullable = false)
+    FarmEntity farm;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", nullable = false)
+    UserEntity employee;
+
+    @Column(name = "work_date", nullable = false)
+    LocalDate workDate;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shift_id")
+    WorkShiftEntity shift;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", nullable = false)
+    WorkLogType type = WorkLogType.NORMAL;
+
+    @Column(name = "is_overtime", nullable = false)
+    boolean isOvertime = false;
+
+    @Column(name = "notes")
+    String notes;
+
+    @Column(name = "locked_at")
+    Instant lockedAt;
+
+    @Column(name = "created_at", nullable = false)
+    Instant createdAt = Instant.now();
+}

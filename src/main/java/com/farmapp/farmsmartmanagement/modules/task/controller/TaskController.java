@@ -1,13 +1,13 @@
-package com.farmapp.farmsmartmanagement.modules.plan.controller.task;
+package com.farmapp.farmsmartmanagement.modules.task.controller;
 
 import com.farmapp.farmsmartmanagement.common.annotation.RequiresFarmToken;
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
 import com.farmapp.farmsmartmanagement.common.response.ResponseUtil;
-import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreateTaskRequest;
-import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdateTaskRequest;
-import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdateTaskTimeRequest;
-import com.farmapp.farmsmartmanagement.modules.plan.dto.response.TaskResponse;
-import com.farmapp.farmsmartmanagement.modules.plan.service.task.TaskService;
+import com.farmapp.farmsmartmanagement.modules.task.dto.request.CreateTaskRequest;
+import com.farmapp.farmsmartmanagement.modules.task.dto.request.UpdateTaskRequest;
+import com.farmapp.farmsmartmanagement.modules.task.dto.request.UpdateTaskTimeRequest;
+import com.farmapp.farmsmartmanagement.modules.task.dto.response.TaskResponse;
+import com.farmapp.farmsmartmanagement.modules.task.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;

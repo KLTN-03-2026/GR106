@@ -1,7 +1,7 @@
-package com.farmapp.farmsmartmanagement.modules.plan.mapper;
+package com.farmapp.farmsmartmanagement.modules.task.mapper;
 
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskMaterialEntity;
-import com.farmapp.farmsmartmanagement.modules.plan.dto.response.TaskMaterialResponse;
+import com.farmapp.farmsmartmanagement.modules.task.dto.response.TaskMaterialResponse;
 import org.mapstruct.Mapper;
 
 import java.util.List;

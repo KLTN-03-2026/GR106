@@ -1,6 +1,6 @@
-package com.farmapp.farmsmartmanagement.modules.plan.dto.response;
+package com.farmapp.farmsmartmanagement.modules.task.dto.response;
 
-import com.farmapp.farmsmartmanagement.modules.warehouse.dto.response.WarehouseItemResponse;
+import com.farmapp.farmsmartmanagement.modules.plan.dto.response.WarehouseItemSummaryResponse;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;

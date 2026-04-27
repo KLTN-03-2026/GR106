@@ -1,8 +1,8 @@
-package com.farmapp.farmsmartmanagement.modules.plan.mapper;
+package com.farmapp.farmsmartmanagement.modules.task.mapper;
 
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskEntity;
-import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdateTaskRequest;
-import com.farmapp.farmsmartmanagement.modules.plan.dto.response.TaskResponse;
+import com.farmapp.farmsmartmanagement.modules.task.dto.request.UpdateTaskRequest;
+import com.farmapp.farmsmartmanagement.modules.task.dto.response.TaskResponse;
 import org.mapstruct.*;
 
 import java.util.List;

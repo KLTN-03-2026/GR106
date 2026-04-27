@@ -1,4 +1,4 @@
-package com.farmapp.farmsmartmanagement.modules.plan.dto.request;
+package com.farmapp.farmsmartmanagement.modules.task.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.AssertTrue;

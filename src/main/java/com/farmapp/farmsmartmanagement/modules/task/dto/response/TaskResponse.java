@@ -1,4 +1,4 @@
-package com.farmapp.farmsmartmanagement.modules.plan.dto.response;
+package com.farmapp.farmsmartmanagement.modules.task.dto.response;
 
 import lombok.AccessLevel;
 import lombok.Builder;

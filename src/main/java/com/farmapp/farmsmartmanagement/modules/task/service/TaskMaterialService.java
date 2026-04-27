@@ -1,16 +1,15 @@
-package com.farmapp.farmsmartmanagement.modules.plan.service.task;
+package com.farmapp.farmsmartmanagement.modules.task.service;
 
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.FarmEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskMaterialEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.WarehouseItemEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
-import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreateTaskMaterialRequest;
-import com.farmapp.farmsmartmanagement.modules.plan.dto.response.TaskMaterialResponse;
-import com.farmapp.farmsmartmanagement.modules.plan.mapper.TaskMaterialMapper;
+import com.farmapp.farmsmartmanagement.modules.task.dto.request.CreateTaskMaterialRequest;
+import com.farmapp.farmsmartmanagement.modules.task.dto.response.TaskMaterialResponse;
+import com.farmapp.farmsmartmanagement.modules.task.mapper.TaskMaterialMapper;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;

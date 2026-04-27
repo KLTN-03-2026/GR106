@@ -2,7 +2,6 @@ package com.farmapp.farmsmartmanagement.modules.plan.mapper;
 
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanStageEntity;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdatePlanStageRequest;
-import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdateTaskRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlanStageResponse;
 import org.mapstruct.*;
 
