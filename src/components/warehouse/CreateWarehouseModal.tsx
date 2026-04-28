@@ -140,7 +140,7 @@ export function CreateWarehouseModal({ farmId, isOpen, onClose, onSuccess }: Pro
               <LocationPickerMap value={location} onChange={handleLocationChange} />
               {(errors.latitude || errors.longitude) && (
                 <p className="mt-1 text-[10px] font-bold text-rose-500 flex items-center gap-1">
-                   <Info size={10} /> Vui lòng click chọn vị trí trên bản đồ
+                  <Info size={10} /> Vui lòng click chọn vị trí trên bản đồ
                 </p>
               )}
             </div>
@@ -161,7 +161,7 @@ export function CreateWarehouseModal({ farmId, isOpen, onClose, onSuccess }: Pro
             form="create-warehouse-form"
             type="submit"
             variant="dark-olive"
-            disabled={submitting || !location}
+            disabled={submitting}
             className="flex-[2] rounded-2xl h-[54px] font-bold flex items-center justify-center gap-2 shadow-lg"
           >
             {submitting ? (

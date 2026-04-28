@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { 
-  Package, Plus, Loader2, Search, Filter, 
+import {
+  Package, Plus, Loader2, Search, Filter,
   Trash2, Edit2, AlertCircle,
   ChevronRight, Building, Tag, Layers, ArrowLeft
 } from 'lucide-react'
@@ -35,9 +35,9 @@ export function WarehouseDetailPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
-  const currentWarehouse = useMemo(() => 
-    warehouses.find(w => w.id === warehouseId), 
+
+  const currentWarehouse = useMemo(() =>
+    warehouses.find(w => w.id === warehouseId),
     [warehouses, warehouseId]
   )
 
@@ -57,12 +57,12 @@ export function WarehouseDetailPage() {
     return ['owner', 'manager', 'admin'].includes(myFarmRole || '')
   }, [farmSummary, farmId, user])
 
-  const lowStockCount = useMemo(() => 
+  const lowStockCount = useMemo(() =>
     items.filter((item: WarehouseItem) => item.stock <= (item.minStockQty || 0)).length,
     [items]
   )
 
-  const totalInventoryValue = useMemo(() => 
+  const totalInventoryValue = useMemo(() =>
     items.reduce((acc: number, item: WarehouseItem) => acc + (item.stock * (item.unitPrice || 0)), 0),
     [items]
   )
@@ -82,14 +82,14 @@ export function WarehouseDetailPage() {
     }
   }, [isModalOpen, farmId, fetchSuppliers, fetchSkus, fetchUnits])
 
-  const filteredItems = items.filter((item: WarehouseItem) => 
+  const filteredItems = items.filter((item: WarehouseItem) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.sku.sku.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     const validation = createWarehouseItemSchema.safeParse(formData)
     if (!validation.success) {
       toast.error(validation.error.errors[0].message)
@@ -97,7 +97,7 @@ export function WarehouseDetailPage() {
     }
 
     if (!farmId || !warehouseId) return
-    
+
     try {
       setIsSubmitting(true)
       await createItem(farmId, warehouseId, validation.data).unwrap()
@@ -162,7 +162,7 @@ export function WarehouseDetailPage() {
               <h3 className="text-2xl font-black text-slate-900">{items.length}</h3>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm flex items-center gap-5">
             <div className="w-14 h-14 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600">
               <AlertCircle size={24} />
@@ -216,7 +216,7 @@ export function WarehouseDetailPage() {
               </div>
               <h3 className="text-xl font-bold text-slate-800">Kho hàng trống</h3>
               <p className="text-sm text-slate-400 mt-2 max-w-xs mx-auto">Chưa có vật tư nào được ghi nhận trong kho này.</p>
-              
+
               <button
                 onClick={() => navigate(`/farms/${farmId}/warehouses`)}
                 className="mt-8 flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-600 font-black rounded-2xl hover:bg-slate-200 transition-all active:scale-95 text-xs uppercase tracking-widest"
@@ -343,7 +343,6 @@ export function WarehouseDetailPage() {
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nhà cung cấp</label>
                     <select
-                      required
                       value={formData.supplierCode}
                       onChange={e => setFormData(p => ({ ...p, supplierCode: e.target.value }))}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-medium text-sm"
@@ -372,7 +371,6 @@ export function WarehouseDetailPage() {
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Đơn giá (VNĐ)</label>
                     <input
                       type="text"
-                      required
                       value={formData.unitPrice === 0 ? '' : formData.unitPrice.toLocaleString('vi-VN')}
                       onChange={e => {
                         const rawValue = e.target.value.replace(/\D/g, '');
@@ -387,7 +385,6 @@ export function WarehouseDetailPage() {
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Tồn kho tối thiểu (Cảnh báo)</label>
                     <input
                       type="text"
-                      required
                       value={formData.minStockQty === 0 ? '' : formData.minStockQty.toLocaleString('vi-VN')}
                       onChange={e => {
                         const rawValue = e.target.value.replace(/\D/g, '');
