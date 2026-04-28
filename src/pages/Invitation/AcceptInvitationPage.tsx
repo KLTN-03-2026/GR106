@@ -8,6 +8,8 @@ import { useDispatch } from 'react-redux'
 import { loginSuccess } from '../../store/authSlice'
 import { authService } from '../../services/auth/authService'
 
+
+
 // Trong component, thêm sau useNavigate
 
 
@@ -83,7 +85,6 @@ export function AcceptInvitationPage() {
             setPhase('error')
         }
     }
-
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoginError('')
@@ -113,6 +114,8 @@ export function AcceptInvitationPage() {
             setIsLoggingIn(false)
         }
     }
+
+
 
     return (
         <div className="min-h-screen bg-[#f5f4f0] flex flex-col items-center justify-center p-4 font-['DM_Sans',sans-serif]">
