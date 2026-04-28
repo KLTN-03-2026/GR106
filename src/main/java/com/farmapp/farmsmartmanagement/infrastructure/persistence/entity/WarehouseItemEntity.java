@@ -11,7 +11,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
-// WarehouseItemEntity.java
 @Entity
 @Table(name = "warehouse_items")
 @Getter

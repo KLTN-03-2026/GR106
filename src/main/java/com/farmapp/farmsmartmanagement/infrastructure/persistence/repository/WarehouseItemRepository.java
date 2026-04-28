@@ -39,10 +39,10 @@ public interface WarehouseItemRepository extends JpaRepository<WarehouseItemEnti
     """)
     boolean existsBySkuAndWarehouse_Id(String sku, UUID warehouseId);
 
-    @EntityGraph(attributePaths = {"warehouse", "sku", "supplier"})
+    @EntityGraph(attributePaths = {"warehouse", "sku", "supplier", "unit", "createdBy"})
     List<WarehouseItemEntity> findAllByWarehouse_Id(UUID warehouseId);
 
-    @EntityGraph(attributePaths = {"warehouse", "sku", "supplier"})
+    @EntityGraph(attributePaths = {"warehouse", "sku", "supplier", "unit", "createdBy"})
     Optional<WarehouseItemEntity> findByIdAndFarm_Id(UUID id, UUID farmId);
 
     @Query(value = """

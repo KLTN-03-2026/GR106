@@ -44,13 +44,13 @@ public class SupplierController {
         );
     }
 
-    @DeleteMapping("/api/v1/farms/{farmId}/suppliers/{supplierCode}")
+    @DeleteMapping("/api/v1/farms/{farmId}/suppliers/{supplierId}")
     @RequiresFarmToken
     public ResponseEntity<ApiResponse<Void>> deleteSupplier(
             @PathVariable("farmId") UUID farmId,
-            @PathVariable("supplierCode") UUID supplierCode
+            @PathVariable("supplierCode") UUID supplierId
     ){
-        supplierService.deleteSupplier(supplierCode);
+        supplierService.deleteSupplier(supplierId);
         return ResponseUtil.noContent();
     }
 }

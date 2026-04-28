@@ -52,6 +52,7 @@ public class SupplierService {
         supplier.setSupplierCode(request.getSupplierCode());
         supplier.setName(request.getName());
         supplier.setFarm(farmRepository.getReferenceById(farmId));
+        supplier.setCreatedAt(Instant.now());
 
         return supplierMapper.toSupplierResponse(supplierRepository.save(supplier));
     }

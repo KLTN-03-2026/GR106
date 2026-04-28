@@ -35,7 +35,6 @@ public class WarehouseController {
         );
     }
 
-
     @PostMapping("/api/v1/farms/{farmId}/warehouses")
     @RequiresFarmToken
     public ResponseEntity<ApiResponse<WarehouseResponse>> createWarehouse(
