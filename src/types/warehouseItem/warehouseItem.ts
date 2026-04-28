@@ -45,6 +45,6 @@ export interface CreateWarehouseItemDto {
   stock: number;
   sku: string;
   unitPrice: number;
-  supplierCode: string;
+  supplierId: string;
   minStockQty: number;
 }
