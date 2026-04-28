@@ -6,7 +6,7 @@ import React, {
   useCallback,
 } from 'react';
 import { SeasonPlan, Phase, Task } from '@/types/seasonPlan';
-import {ChevronDown, Plus, Trash2, GripVertical } from 'lucide-react';
+import { ChevronDown, Plus, Trash2, GripVertical } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import {
   addDays,
@@ -74,12 +74,8 @@ function getMonday(d: Date): Date {
   return result;
 }
 
-// ─── AnimatedRow: wrapper that smoothly expands/collapses a single row ────────
-//
-// Technique: the outer div always stays in the DOM (no conditional render).
-// We animate `height` from 0 → ROW_H and `opacity` 0 → 1 via CSS transition.
-// This avoids layout jumps and gives a butter-smooth accordion effect.
-//
+// ─── AnimatedRow ──────────────────────────────────────────────────────────────
+
 interface AnimatedRowProps {
   visible: boolean;
   rowHeight: number;
@@ -96,8 +92,6 @@ function AnimatedRow({ visible, rowHeight, children, className, style }: Animate
         height: visible ? rowHeight : 0,
         opacity: visible ? 1 : 0,
         overflow: 'hidden',
-        // Use cubic-bezier for a natural spring-like feel:
-        // height eases out quickly, opacity slightly trails for depth
         transition: visible
           ? 'height 220ms cubic-bezier(0.4,0,0.2,1), opacity 180ms ease-out 40ms'
           : 'height 200ms cubic-bezier(0.4,0,1,1), opacity 140ms ease-in',
@@ -178,15 +172,22 @@ export function PlanTimeline({
   const scrollBarRef = useRef<HTMLDivElement>(null);
   const sidebarBodyRef = useRef<HTMLDivElement>(null);
 
-  // ── Auto-expand ──────────────────────────────────────────────────────────
+  // ── Auto-expand: chỉ chạy 1 lần khi preExpandedPlanId xuất hiện lần đầu
+  //    và plans đã load xong. Dùng ref để tránh chạy lại khi plans cập nhật.
+  // ──────────────────────────────────────────────────────────────────────────
+  const autoExpandDoneRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (preExpandedPlanId && plans.length > 0) {
-      const plan = plans.find(p => p.id === preExpandedPlanId);
-      if (plan) {
-        setExpandedPlans(new Set([preExpandedPlanId]));
-        setExpandedPhases(new Set(plan.phases.map(ph => ph.id)));
-      }
-    }
+    // Chỉ expand nếu chưa từng expand cho planId này
+    if (!preExpandedPlanId || plans.length === 0) return;
+    if (autoExpandDoneRef.current === preExpandedPlanId) return;
+
+    const plan = plans.find(p => p.id === preExpandedPlanId);
+    if (!plan) return;
+
+    autoExpandDoneRef.current = preExpandedPlanId;
+    setExpandedPlans(prev => new Set([...prev, preExpandedPlanId]));
+    // Không tự expand phases — để user kiểm soát
   }, [preExpandedPlanId, plans]);
 
   // ── Pixels per day ───────────────────────────────────────────────────────
@@ -383,6 +384,8 @@ export function PlanTimeline({
     e.stopPropagation();
     setExpandedPlans(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
+
+  // FIX BUG 1 & 2: togglePhase chỉ toggle, không làm gì khác
   const togglePhase = (id: string, planId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setExpandedPhases(p => {
@@ -391,6 +394,7 @@ export function PlanTimeline({
         n.delete(id);
       } else {
         n.add(id);
+        // Gọi callback nếu cần fetch tasks, nhưng KHÔNG reset state expand
         if (onExpandPhase) onExpandPhase(planId, id);
       }
       return n;
@@ -572,10 +576,6 @@ export function PlanTimeline({
   };
 
   // ── Row list ─────────────────────────────────────────────────────────────
-  // ⚡ KEY CHANGE: We now build ALL rows (phases + tasks) regardless of expand state.
-  // Visibility is controlled by the AnimatedRow wrapper (height 0 ↔ ROW_H).
-  // This keeps DOM stable → smooth CSS transitions, no layout flash.
-  // ──────────────────────────────────────────────────────────────────────────
   interface Row {
     type: 'plan' | 'phase' | 'task';
     id: string;
@@ -583,9 +583,8 @@ export function PlanTimeline({
     phaseId?: string;
     depth: number;
     item: any;
-    // Visibility flags (computed from expand state)
-    visibleInPlan: boolean;   // shown when parent plan is expanded (or single plan)
-    visibleInPhase: boolean;  // shown when parent phase is also expanded (tasks only)
+    visibleInPlan: boolean;
+    visibleInPhase: boolean;
   }
 
   const rows = useMemo((): Row[] => {
@@ -616,7 +615,8 @@ export function PlanTimeline({
     return list;
   }, [plans, expandedPlans, expandedPhases]);
 
-  // visible = both parent plan expanded AND parent phase expanded (for tasks)
+  // FIX BUG 1 & 2: visible = visibleInPlan AND visibleInPhase (for tasks)
+  // Phase rows are always visible when plan is expanded (visibleInPhase is always true for them)
   const isRowVisible = (r: Row) =>
     r.type === 'task' ? r.visibleInPlan && r.visibleInPhase : r.visibleInPlan;
 
@@ -625,26 +625,6 @@ export function PlanTimeline({
   const HEADER_TOP_H = 28;
   const HEADER_SUB_H = 28;
   const HEADER_H = HEADER_TOP_H + HEADER_SUB_H;
-
-  // ── Total visible height for Gantt canvas (drives scrollHeight) ───────────
-  // We still need to compute a "real" height for the canvas.
-  // Since AnimatedRow sets height=0 on hidden rows, the absolute-positioned
-  // canvas needs a manual height. We track it via a running y counter.
-  //
-  // But wait — the sidebar uses AnimatedRow (flow layout, height drives spacing).
-  // The Gantt canvas uses absolute positioning per row index.
-  //
-  // ➜ Solution: use the SAME AnimatedRow approach for the Gantt canvas too,
-  //   BUT keep each row as a flex child (not absolute), and use `top: <accumulated>`
-  //   via a CSS custom property trick.
-  //
-  // Actually the cleaner approach: keep the absolute-y approach but derive `top`
-  // from a running accumulator that accounts for hidden rows having height=0.
-  // We precompute `rowTops` so each Gantt row knows its absolute top.
-  //
-  // For animated rows, the top changes as heights animate. Since CSS transitions
-  // handle that automatically when we use flow layout, we switch the Gantt canvas
-  // to flow layout too (just like sidebar), wrapping each row in an AnimatedRow.
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
@@ -754,11 +734,6 @@ export function PlanTimeline({
       <div className="flex flex-1 min-h-0 overflow-hidden">
 
         {/* ── Sidebar ── */}
-        {/*
-          ✅ Uses flow layout + AnimatedRow per row.
-          Hidden rows take height:0 so the sidebar scrollHeight shrinks naturally.
-          The ref still syncs scrollTop with gantt canvas.
-        */}
         <div
           ref={sidebarBodyRef}
           className="flex-shrink-0 overflow-y-auto z-20 bg-white flex flex-col"
@@ -806,6 +781,7 @@ export function PlanTimeline({
             }
 
             if (r.type === 'phase') {
+              // FIX BUG 3: expanded state phải đọc từ expandedPhases, không phải expandedPlans
               const expanded = expandedPhases.has(r.id);
               return (
                 <AnimatedRow key={r.id} visible={visible} rowHeight={ROW_H}>
@@ -819,6 +795,8 @@ export function PlanTimeline({
                   >
                     <button
                       className="p-0.5 mr-1.5 text-slate-300 hover:text-indigo-500 flex-shrink-0 transition-transform duration-200"
+                      // FIX BUG 3: rotate dựa trên `expanded` (= expandedPhases.has(r.id))
+                      // expanded=true → mũi tên xuống (0deg), expanded=false → mũi tên phải (-90deg)
                       style={{ transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}
                       onClick={e => togglePhase(r.id, r.planId, e)}
                     >
@@ -892,23 +870,14 @@ export function PlanTimeline({
         </div>
 
         {/* ── Gantt canvas ── */}
-        {/*
-          ✅ Switched from absolute-positioned rows to flow layout via AnimatedRow.
-          This keeps the canvas height in sync with sidebar naturally.
-          The inner container still has a min-width = totalWidth so the
-          horizontal scroll works correctly.
-          Each row is position:relative so bars (absolute within them) still work.
-        */}
         <div
           ref={ganttBodyRef}
           className="flex-1 overflow-auto relative"
           style={{ scrollbarWidth: 'none' }}
           onScroll={onBodyScroll}
         >
-          {/* Full-width scrollable canvas */}
           <div style={{ width: totalWidth, minHeight: 300, position: 'relative' }}>
 
-            {/* ── Background decorations (absolute, full height) ── */}
             {/* Weekend shading */}
             {timeScale === 'weeks' && dayCells
               .filter(c => c.isWeekend && c.date.getDay() === 6)
@@ -960,7 +929,7 @@ export function PlanTimeline({
               </div>
             )}
 
-            {/* ── Rows — flow layout via AnimatedRow ── */}
+            {/* ── Gantt rows ── */}
             {rows.map((r) => {
               const visible = isRowVisible(r);
               const isSelected = selectedId === r.id;
