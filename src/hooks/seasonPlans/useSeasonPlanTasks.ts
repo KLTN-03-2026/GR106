@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
-import { SeasonPlan, Task } from '../../types/seasonPlan';
-import { seasonPlanService } from '../../services/seasonplan/seasonPlanService';
+import { SeasonPlan } from '../../types/seasonPlan';
+import { seasonPlanTaskService, CreateTaskRequest, UpdateTaskRequest } from '../../services/seasonplan/seasonPlanTaskService';
 import { withUnwrap } from './seasonPlanShared';
 
 interface UseSeasonPlanTasksProps {
@@ -13,7 +13,7 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
     fetchTasks: useCallback(
       (planId: string, stageId: string) =>
         withUnwrap(
-          seasonPlanService.getTasks(planId, stageId).then((tasks) => {
+          seasonPlanTaskService.getTasks(planId, stageId).then((tasks) => {
             updatePlansCache((prev) =>
               prev.map((p) =>
                 p.id === planId
@@ -30,9 +30,9 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
       [updatePlansCache],
     ),
     createTask: useCallback(
-      (planId: string, stageId: string, data: unknown) =>
+      (planId: string, stageId: string, data: CreateTaskRequest) =>
         withUnwrap(
-          seasonPlanService.createTask(planId, stageId, data).then((task) => {
+          seasonPlanTaskService.createTask(planId, stageId, data).then((task) => {
             updatePlansCache((prev) =>
               prev.map((p) =>
                 p.id === planId
@@ -51,9 +51,9 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
       [updatePlansCache],
     ),
     updateTask: useCallback(
-      (planId: string, stageId: string, taskId: string, data: Partial<Task>) =>
+      (planId: string, stageId: string, taskId: string, data: UpdateTaskRequest) =>
         withUnwrap(
-          seasonPlanService.updateTask(planId, stageId, taskId, data).then((task) => {
+          seasonPlanTaskService.updateTask(planId, stageId, taskId, data).then((task) => {
             updatePlansCache((prev) =>
               prev.map((p) =>
                 p.id === planId
@@ -79,7 +79,7 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
     updateTaskTime: useCallback(
       (planId: string, stageId: string, taskId: string, data: { startDate: string; endDate: string }) =>
         withUnwrap(
-          seasonPlanService.updateTaskTime(planId, stageId, taskId, data).then((task) => {
+          seasonPlanTaskService.updateTaskTime(planId, stageId, taskId, data).then((task) => {
             updatePlansCache((prev) =>
               prev.map((p) =>
                 p.id === planId
@@ -105,7 +105,7 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
     deleteTask: useCallback(
       (planId: string, stageId: string, taskId: string) =>
         withUnwrap(
-          seasonPlanService.deleteTask(planId, stageId, taskId).then(() => {
+          seasonPlanTaskService.deleteTask(planId, stageId, taskId).then(() => {
             updatePlansCache((prev) =>
               prev.map((p) =>
                 p.id === planId

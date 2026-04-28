@@ -2,11 +2,11 @@ import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Package, Plus, Loader2, Search,
-  Trash2, Edit2, AlertCircle,
-  ChevronRight, Building, Layers,
-  MapPin, ToggleLeft, ToggleRight, Grid3X3, List, X, Hash,
-  ArrowUpRight, TrendingDown, Boxes, Warehouse,
-  MoreHorizontal, CheckCircle2, Clock, Tag
+  Trash2, Edit2,
+  ChevronRight, Building,
+  MapPin, Grid3X3, List, X,
+  TrendingDown, Boxes, Warehouse,
+  CheckCircle2, Clock, Tag
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '../../hooks/auth/useAuth'
@@ -17,7 +17,7 @@ import { useUnits } from '../../hooks/units/useUnits'
 import { useWarehouses } from '../../hooks/warehouses/useWarehouses'
 import { useFarms } from '../../hooks/farms/useFarms'
 import { createWarehouseItemSchema } from '../../schemas/warehouseItemSchemas'
-import { WarehouseItem } from '../../types/warehouseItem/warehouseItem'
+import { WarehouseItem, CreateWarehouseItemDto } from '../../types/warehouseItem/warehouseItem'
 import { Unit } from '../../types/unit/unit'
 import { Sku } from '../../types/sku/sku'
 import { Supplier } from '../../types/supplier/supplier'
@@ -38,7 +38,7 @@ const LOCATION_COLORS = [
 ]
 
 // ── Small reusable modal wrapper ──────────────────────────────────────────────
-function Modal({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+function Modal({ children }: { children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
@@ -148,7 +148,16 @@ export function WarehouseDetailPage() {
     if (!farmId || !warehouseId) return
     try {
       setIsSubmitting(true)
-      await createItem(farmId, warehouseId, validation.data).unwrap()
+      const payload: CreateWarehouseItemDto = {
+        name: validation.data.name,
+        unitId: validation.data.unitId,
+        stock: validation.data.stock,
+        sku: validation.data.sku,
+        unitPrice: validation.data.unitPrice ?? 0,
+        minStockQty: validation.data.minStockQty ?? 0,
+        supplierId: validation.data.supplierId || "",
+      }
+      await createItem(farmId, warehouseId, payload).unwrap()
       toast.success('Đã thêm vật tư mới')
       setIsItemModalOpen(false)
       setItemForm({ name: '', unitId: '', stock: 0, sku: '', supplierId: '', unitPrice: 0, minStockQty: 0, toLocationId: '' })
@@ -557,7 +566,7 @@ export function WarehouseDetailPage() {
 
       {/* ══ MODAL: Tạo vật tư ══ */}
       {isItemModalOpen && (
-        <Modal onClose={() => setIsItemModalOpen(false)}>
+        <Modal>
           <ModalHeader title="Nhập vật tư mới" subtitle="Điền thông tin vật tư cần nhập kho" onClose={() => setIsItemModalOpen(false)} />
 
           <div className="overflow-y-auto flex-1 px-6 py-5">
@@ -636,7 +645,7 @@ export function WarehouseDetailPage() {
 
       {/* ══ MODAL: Tạo vị trí ══ */}
       {isLocationModalOpen && (
-        <Modal onClose={() => setIsLocationModalOpen(false)}>
+        <Modal>
           <ModalHeader title="Tạo vị trí kho" subtitle="Kệ, ô chứa, khu vực, ..." onClose={() => setIsLocationModalOpen(false)} />
 
           <form id="create-location-form" onSubmit={handleCreateLocation} className="px-6 py-5 space-y-4">

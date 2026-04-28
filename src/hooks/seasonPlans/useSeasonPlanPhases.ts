@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { SeasonPlan } from '../../types/seasonPlan';
-import { seasonPlanService } from '../../services/seasonplan/seasonPlanService';
+import { seasonPlanPhaseService } from '../../services/seasonplan/seasonPlanPhaseService';
 import { withUnwrap } from './seasonPlanShared';
 
 interface UseSeasonPlanPhasesProps {
@@ -13,7 +13,7 @@ export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesPro
     fetchStages: useCallback(
       (planId: string) =>
         withUnwrap(
-          seasonPlanService.getStages(planId).then((phases) => {
+          seasonPlanPhaseService.getStages(planId).then((phases) => {
             updatePlansCache((prev) => prev.map((p) => (p.id === planId ? { ...p, phases } : p)));
             return { planId, phases };
           }),
@@ -23,7 +23,7 @@ export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesPro
     createPhase: useCallback(
       (planId: string, data: { name: string; startDate: string; endDate: string }) =>
         withUnwrap(
-          seasonPlanService.createStage(planId, data).then((phase) => {
+          seasonPlanPhaseService.createStage(planId, data).then((phase) => {
             updatePlansCache((prev) =>
               prev.map((p) => (p.id === planId ? { ...p, phases: [...(p.phases ?? []), phase] } : p)),
             );
@@ -35,7 +35,7 @@ export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesPro
     deletePhase: useCallback(
       (planId: string, stageId: string) =>
         withUnwrap(
-          seasonPlanService.deleteStage(planId, stageId).then(() => {
+          seasonPlanPhaseService.deleteStage(planId, stageId).then(() => {
             updatePlansCache((prev) =>
               prev.map((p) =>
                 p.id === planId ? { ...p, phases: p.phases.filter((ph) => ph.id !== stageId) } : p,
@@ -49,7 +49,7 @@ export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesPro
     updatePhase: useCallback(
       (planId: string, stageId: string, data: { name: string; startDate: string; endDate: string }) =>
         withUnwrap(
-          seasonPlanService.updateStage(planId, stageId, data).then((phase) => {
+          seasonPlanPhaseService.updateStage(planId, stageId, data).then((phase) => {
             updatePlansCache((prev) =>
               prev.map((p) =>
                 p.id === planId
@@ -65,7 +65,7 @@ export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesPro
     updatePhaseTime: useCallback(
       (planId: string, stageId: string, data: { startDate: string; endDate: string }) =>
         withUnwrap(
-          seasonPlanService.updateStageTime(planId, stageId, data).then((phase) => {
+          seasonPlanPhaseService.updateStageTime(planId, stageId, data).then((phase) => {
             updatePlansCache((prev) =>
               prev.map((p) =>
                 p.id === planId

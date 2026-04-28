@@ -3,10 +3,6 @@ import { SeasonPlan, CreateSeasonPlanRequest } from '../../types/seasonPlan';
 import {
   getPlansResponseSchema,
   createPlanResponseSchema,
-  getStagesResponseSchema,
-  createStageResponseSchema,
-  getTasksResponseSchema,
-  createTaskResponseSchema,
   getPlanPlotsResponseSchema,
   addPlanPlotsResponseSchema,
 } from '../../schemas/seasonPlanSchemas';
@@ -69,57 +65,7 @@ export const seasonPlanService = {
     return addPlanPlotsResponseSchema.parse(response.data).data;
   },
 
-  // --- STAGE APIs ---
 
-  async getStages(planId: string): Promise<any[]> {
-    const response = await axiosInstance.get(`/api/v1/plans/${planId}/stages`);
-    return getStagesResponseSchema.parse(response.data).data;
-  },
-
-  async createStage(planId: string, data: { name: string; startDate: string; endDate: string }): Promise<any> {
-    const response = await axiosInstance.post(`/api/v1/plans/${planId}/stages`, data);
-    return createStageResponseSchema.parse(response.data).data;
-  },
-
-  async deleteStage(planId: string, stageId: string): Promise<void> {
-    await axiosInstance.delete(`/api/v1/plans/${planId}/stages/${stageId}`);
-  },
-
-  async updateStage(planId: string, stageId: string, data: { name: string; startDate: string; endDate: string }): Promise<any> {
-    const response = await axiosInstance.patch(`/api/v1/plans/${planId}/stages/${stageId}`, data);
-    return createStageResponseSchema.parse(response.data).data;
-  },
-
-  async updateStageTime(planId: string, stageId: string, data: { startDate: string; endDate: string }): Promise<any> {
-    const response = await axiosInstance.put(`/api/v1/plans/${planId}/stages/${stageId}/time`, data);
-    return createStageResponseSchema.parse(response.data).data;
-  },
-
-  // --- TASK APIs ---
-
-  async getTasks(planId: string, stageId: string): Promise<any[]> {
-    const response = await axiosInstance.get(`/api/v1/plans/${planId}/stages/${stageId}/tasks`);
-    return getTasksResponseSchema.parse(response.data).data;
-  },
-
-  async createTask(planId: string, stageId: string, data: any): Promise<any> {
-    const response = await axiosInstance.post(`/api/v1/plans/${planId}/stages/${stageId}/tasks`, data);
-    return createTaskResponseSchema.parse(response.data).data;
-  },
-
-  async updateTask(planId: string, stageId: string, taskId: string, data: any): Promise<any> {
-    const response = await axiosInstance.patch(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}`, data);
-    return createTaskResponseSchema.parse(response.data).data;
-  },
-
-  async updateTaskTime(planId: string, stageId: string, taskId: string, data: { startDate: string; endDate: string }): Promise<any> {
-    const response = await axiosInstance.put(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}/time`, data);
-    return createTaskResponseSchema.parse(response.data).data;
-  },
-
-  async deleteTask(planId: string, stageId: string, taskId: string): Promise<void> {
-    await axiosInstance.delete(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}`);
-  },
 
 
   /**
