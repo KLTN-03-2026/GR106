@@ -3,6 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Loader2, CheckCircle2, XCircle, Eye, EyeOff, Sprout } from 'lucide-react'
 import { axiosInstance } from '../../config/axios'
 import { loginSchema } from '../../schemas/authSchemas'
+// Thêm vào imports
+import { useDispatch } from 'react-redux'
+import { loginSuccess } from '../../store/authSlice'
+import { authService } from '../../services/auth/authService'
+
+// Trong component, thêm sau useNavigate
+
 
 type Phase = 'loading' | 'login-required' | 'accepting' | 'success' | 'error'
 
@@ -22,6 +29,7 @@ const ROLE_LABEL: Record<string, string> = {
 export function AcceptInvitationPage() {
     const { invitationId } = useParams<{ invitationId: string }>()
     const navigate = useNavigate()
+    const dispatch = useDispatch()
 
     const [phase, setPhase] = useState<Phase>('loading')
     const [invitation, setInvitation] = useState<InvitationInfo | null>(null)
@@ -88,13 +96,15 @@ export function AcceptInvitationPage() {
 
         try {
             setIsLoggingIn(true)
-            const res = await axiosInstance.post('/api/v1/auth/login', { email, password })
-            if (res.data.success) {
-                const { accessToken } = res.data.data
-                sessionStorage.setItem('access_token', accessToken)
-                axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
-                // Sau khi login → accept
+            const response = await authService.login({ email, password })
+
+            if (response.success && response.data.accessToken) {
+                // Dispatch vào Redux — giống hệt useLogin hook
+                dispatch(loginSuccess(response.data))
+                // Sau khi store có auth → accept invitation
                 await doAccept()
+            } else {
+                setLoginError('Email hoặc mật khẩu không đúng')
             }
         } catch (err: any) {
             setLoginError(err.response?.data?.message || 'Email hoặc mật khẩu không đúng')
