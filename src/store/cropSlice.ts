@@ -1,12 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-interface CropState {
-  // Server data for crops and crop types is managed by React Query.
-  // This slice keeps only local UI state when needed.
-}
+type CropState = Record<string, never>;
 
-const initialState: CropState = {
-};
+const initialState: CropState = {};
 
 const cropSlice = createSlice({
   name: 'crop',

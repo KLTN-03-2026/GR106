@@ -1,12 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-interface PlotState {
-  // Server data for plots is managed by React Query.
-  // This slice keeps only local UI state when needed.
-}
+type PlotState = Record<string, never>;
 
-const initialState: PlotState = {
-};
+const initialState: PlotState = {};
 
 const plotSlice = createSlice({
   name: 'plot',
