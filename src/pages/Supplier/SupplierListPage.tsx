@@ -36,14 +36,14 @@ export function SupplierListPage() {
     if (farmId) fetchSuppliers(farmId)
   }, [fetchSuppliers, farmId])
 
-  const filteredSuppliers = suppliers.filter((s: Supplier) => 
+  const filteredSuppliers = suppliers.filter((s: Supplier) =>
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.code.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     const validation = createSupplierSchema.safeParse({
       supplierCode: newSupplier.code,
       name: newSupplier.name
@@ -55,7 +55,7 @@ export function SupplierListPage() {
     }
 
     if (!farmId) return
-    
+
     setSubmitting(true)
     try {
       await createSupplier(farmId, { supplierCode: newSupplier.code, name: newSupplier.name }).unwrap()
@@ -69,8 +69,8 @@ export function SupplierListPage() {
     }
   }
 
-  const handleDeleteClick = (code: string) => {
-    setSupplierToDelete(code)
+  const handleDeleteClick = (id: string) => {
+    setSupplierToDelete(id)
     setIsDeleteConfirmOpen(true)
   }
 
@@ -94,7 +94,7 @@ export function SupplierListPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4 bg-white p-6 transition-all duration-300">
         <div className="flex items-center gap-6 w-full text-left">
-          <button 
+          <button
             onClick={() => navigate(`/farms/${farmId}/actions`)}
             className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-all font-bold text-xs shrink-0"
           >
@@ -160,7 +160,7 @@ export function SupplierListPage() {
                   </div>
                   {canManage && (
                     <button
-                      onClick={() => handleDeleteClick(s.code)}
+                      onClick={() => handleDeleteClick(s.id)}
                       className="p-2 text-slate-300 hover:text-rose-500 transition-colors"
                     >
                       <Trash2 size={16} />

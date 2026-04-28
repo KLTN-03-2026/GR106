@@ -1,3 +1,4 @@
+
 import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreateSupplierDto, Supplier } from '../../types/supplier/supplier';
@@ -34,9 +35,9 @@ export const useSuppliers = () => {
   });
 
   const deleteSupplierMutation = useMutation({
-    mutationFn: async ({ farmId: targetFarmId, supplierCode }: { farmId: string; supplierCode: string }) => {
-      await axiosInstance.delete(`/api/v1/farms/${targetFarmId}/suppliers/${supplierCode}`);
-      return supplierCode;
+    mutationFn: async ({ farmId: targetFarmId, supplierId }: { farmId: string; supplierId: string }) => {
+      await axiosInstance.delete(`/api/v1/farms/${targetFarmId}/suppliers/${supplierId}`);
+      return supplierId;
     },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: SUPPLIER_KEYS.byFarm(variables.farmId) });
@@ -75,8 +76,8 @@ export const useSuppliers = () => {
       [createSupplierMutation],
     ),
     deleteSupplier: useCallback(
-      (farmIdValue: string, supplierCode: string) =>
-        withUnwrap(deleteSupplierMutation.mutateAsync({ farmId: farmIdValue, supplierCode })),
+      (farmIdValue: string, supplierId: string) =>
+        withUnwrap(deleteSupplierMutation.mutateAsync({ farmId: farmIdValue, supplierId: supplierId })),
       [deleteSupplierMutation],
     ),
   };
