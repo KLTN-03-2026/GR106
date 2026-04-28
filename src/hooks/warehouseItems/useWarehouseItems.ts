@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreateWarehouseItemDto, WarehouseItem } from '../../types/warehouseItem/warehouseItem';
-import { axiosInstance } from '../../config/axios';
+import { warehouseItemService } from '../../services/warehouseItem/warehouseItemService';
 
 const ITEM_KEYS = {
   allByFarm: (farmId: string) => ['warehouse-items', farmId, 'all'] as const,
@@ -23,19 +23,16 @@ export const useWarehouseItems = (farmId?: string | null, warehouseId?: string |
     queryFn: async (): Promise<WarehouseItem[]> => {
       if (!farmId) return [];
       if (warehouseId) {
-        const res = await axiosInstance.get(`/api/v1/farms/${farmId}/warehouses/${warehouseId}/items`);
-        return res.data.data ?? [];
+        return warehouseItemService.getWarehouseItems(farmId, warehouseId);
       }
       
       // Nếu không có warehouseId, lấy tất cả kho và cộng dồn tồn kho
       try {
-        const whRes = await axiosInstance.get(`/api/v1/farms/${farmId}/warehouses`);
-        const warehouses = whRes.data.data ?? [];
+        const warehouses = await warehouseItemService.getFarmWarehouses(farmId);
         if (warehouses.length === 0) return [];
 
         const itemsPromises = warehouses.map((wh: any) =>
-          axiosInstance.get(`/api/v1/farms/${farmId}/warehouses/${wh.id}/items`)
-            .then(r => r.data.data ?? [])
+          warehouseItemService.getWarehouseItems(farmId, wh.id)
             .catch(() => [])
         );
 
@@ -55,8 +52,7 @@ export const useWarehouseItems = (farmId?: string | null, warehouseId?: string |
         return Object.values(aggregated);
       } catch (err) {
         console.error("Lỗi cộng dồn tồn kho:", err);
-        const res = await axiosInstance.get(`/api/v1/farms/${farmId}/warehouses/items`);
-        return res.data.data ?? [];
+        return warehouseItemService.getFarmWarehouseItems(farmId);
       }
     },
     enabled: !!farmId,
@@ -73,8 +69,7 @@ export const useWarehouseItems = (farmId?: string | null, warehouseId?: string |
       wId: string;
       itemData: CreateWarehouseItemDto;
     }) => {
-      const res = await axiosInstance.post(`/api/v1/farms/${fId}/warehouses/${wId}/items`, itemData);
-      return res.data.data;
+      return warehouseItemService.createWarehouseItem(fId, wId, itemData);
     },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: ITEM_KEYS.byWarehouse(variables.fId, variables.wId) });
@@ -94,8 +89,7 @@ export const useWarehouseItems = (farmId?: string | null, warehouseId?: string |
           queryClient.fetchQuery({
             queryKey: ITEM_KEYS.byWarehouse(fId, wId),
             queryFn: async (): Promise<WarehouseItem[]> => {
-              const res = await axiosInstance.get(`/api/v1/farms/${fId}/warehouses/${wId}/items`);
-              return res.data.data ?? [];
+              return warehouseItemService.getWarehouseItems(fId, wId);
             },
           }),
         );
@@ -108,8 +102,7 @@ export const useWarehouseItems = (farmId?: string | null, warehouseId?: string |
           queryClient.fetchQuery({
             queryKey: ITEM_KEYS.allByFarm(fId),
             queryFn: async (): Promise<WarehouseItem[]> => {
-              const res = await axiosInstance.get(`/api/v1/farms/${fId}/warehouses/items`);
-              return res.data.data ?? [];
+              return warehouseItemService.getFarmWarehouseItems(fId);
             },
           }),
         );

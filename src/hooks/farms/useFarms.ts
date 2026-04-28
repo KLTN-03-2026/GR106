@@ -2,7 +2,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreateFarmInput } from '../../types/farm';
 import { farmService } from '../../services/farm/farmService';
-import { axiosInstance } from '../../config/axios';
 
 const FARM_KEYS = {
   all: ['farms'] as const,
@@ -52,12 +51,12 @@ export const useFarms = () => {
         throw new Error('Không thể lấy mã định danh trang trại (Farm Token)');
       }
 
-      const response = await axiosInstance.patch(`/api/v1/farms/${farmId}`, data, {
+      const response = await farmService.updateFarm(farmId, data, {
         headers: {
           Authorization: `Bearer ${selectRes.data.farmToken}`,
         },
       });
-      return response.data?.data;
+      return response.data;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: FARM_KEYS.all });

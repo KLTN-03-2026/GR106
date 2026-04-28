@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreateSupplierDto, Supplier } from '../../types/supplier/supplier';
-import { axiosInstance } from '../../config/axios';
+import { supplierService } from '../../services/supplier/supplierService';
 
 const SUPPLIER_KEYS = {
   byFarm: (farmId: string) => ['suppliers', farmId] as const,
@@ -16,17 +16,13 @@ export const useSuppliers = () => {
 
   const suppliersQuery = useQuery({
     queryKey: farmId ? SUPPLIER_KEYS.byFarm(farmId) : ['suppliers', 'inactive'],
-    queryFn: async (): Promise<Supplier[]> => {
-      const res = await axiosInstance.get(`/api/v1/farms/${farmId as string}/suppliers`);
-      return res.data.data ?? [];
-    },
+    queryFn: async (): Promise<Supplier[]> => supplierService.getSuppliers(farmId as string),
     enabled: false,
   });
 
   const createSupplierMutation = useMutation({
     mutationFn: async ({ farmId: targetFarmId, data }: { farmId: string; data: CreateSupplierDto }) => {
-      const res = await axiosInstance.post(`/api/v1/farms/${targetFarmId}/suppliers`, data);
-      return res.data.data;
+      return supplierService.createSupplier(targetFarmId, data);
     },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: SUPPLIER_KEYS.byFarm(variables.farmId) });
@@ -35,7 +31,7 @@ export const useSuppliers = () => {
 
   const deleteSupplierMutation = useMutation({
     mutationFn: async ({ farmId: targetFarmId, supplierCode }: { farmId: string; supplierCode: string }) => {
-      await axiosInstance.delete(`/api/v1/farms/${targetFarmId}/suppliers/${supplierCode}`);
+      await supplierService.deleteSupplier(targetFarmId, supplierCode);
       return supplierCode;
     },
     onSuccess: (_, variables) => {
@@ -60,10 +56,7 @@ export const useSuppliers = () => {
         return withUnwrap(
           queryClient.fetchQuery({
             queryKey: SUPPLIER_KEYS.byFarm(farmIdValue),
-            queryFn: async (): Promise<Supplier[]> => {
-              const res = await axiosInstance.get(`/api/v1/farms/${farmIdValue}/suppliers`);
-              return res.data.data ?? [];
-            },
+            queryFn: async (): Promise<Supplier[]> => supplierService.getSuppliers(farmIdValue),
           }),
         );
       },

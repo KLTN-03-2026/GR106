@@ -1,3 +1,4 @@
+import { AxiosRequestConfig } from 'axios';
 import { axiosInstance } from '../../config/axios';
 import { ApiResponse } from '../../types/auth';
 import { Farm, CreateFarmRequest } from '../../types/farm';
@@ -47,10 +48,15 @@ export const farmService = {
     return response.data;
   },
 
-  async updateFarm(farmId: string, data: { name: string; description: string }): Promise<ApiResponse<Farm>> {
+  async updateFarm(
+    farmId: string,
+    data: { name: string; description: string },
+    config?: AxiosRequestConfig,
+  ): Promise<ApiResponse<Farm>> {
     const response = await axiosInstance.patch<ApiResponse<Farm>>(
       `/api/v1/farms/${farmId}`,
-      data
+      data,
+      config,
     );
     return response.data;
   },

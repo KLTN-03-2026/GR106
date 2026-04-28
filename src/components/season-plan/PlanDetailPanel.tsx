@@ -31,6 +31,7 @@ import { DateInput } from '@/components/ui/DateInput';
 import { cn } from '@/utils/cn';
 import { usePlots } from '@/hooks/plots/usePlots';
 import { useWarehouseItems } from '@/hooks/warehouseItems/useWarehouseItems';
+import { useWarehouses } from '@/hooks/warehouses/useWarehouses';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useTaskMaterials } from '@/hooks/taskMaterials/useTaskMaterials';
 import { useSelector } from 'react-redux';
@@ -229,7 +230,9 @@ export function PlanDetailPanel({
   const { selectedFarmId } = useSelector((state: RootState) => state.farm);
   const targetFarmId = currentFarmId || selectedFarmId;
   const { plots, fetchPlots, loading } = usePlots();
-  const { items: warehouseItems } = useWarehouseItems(targetFarmId);
+  const { warehouses, fetchWarehouses } = useWarehouses();
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
+  const { items: warehouseItems } = useWarehouseItems(targetFarmId, selectedWarehouseId || null);
 
   const [activeTab, setActiveTab] = useState<'INFO' | 'MEMBERS' | 'MATERIALS'>('INFO');
   const [activeSelection, setActiveSelection] = useState(selection);
@@ -276,10 +279,25 @@ export function PlanDetailPanel({
     }
   }, [showAddPlot, targetFarmId, fetchPlots]);
 
+  useEffect(() => {
+    const isMaterialsTaskOpen =
+      isOpen && activeTab === 'MATERIALS' && activeSelection?.type === 'TASK';
+    if (isMaterialsTaskOpen && targetFarmId) {
+      void fetchWarehouses(targetFarmId);
+    }
+  }, [activeSelection?.type, activeTab, fetchWarehouses, isOpen, targetFarmId]);
+
+  useEffect(() => {
+    setSelectedWarehouseItemId('');
+  }, [selectedWarehouseId]);
+
 
   useEffect(() => {
     setActiveSelection(selection);
     setIsEditing(false); // Reset edit mode on selection change
+    setSelectedWarehouseId('');
+    setSelectedWarehouseItemId('');
+    setPlannedQty('');
     if (selection) {
       const defaultPlot = selection.plan.plots?.[0]?.plotId ?? '';
       setNewTaskPlotId(defaultPlot);
@@ -1012,11 +1030,29 @@ export function PlanDetailPanel({
                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Thêm vật tư cho công việc</p>
                           <div className="relative">
                             <select
-                              value={selectedWarehouseItemId}
-                              onChange={(e) => setSelectedWarehouseItemId(e.target.value)}
+                              value={selectedWarehouseId}
+                              onChange={(e) => setSelectedWarehouseId(e.target.value)}
                               className="w-full px-2 py-1.5 text-[12px] bg-slate-50 border border-slate-200 rounded-md outline-none focus:border-indigo-400 appearance-none pr-6"
                             >
-                              <option value="">Chọn vật tư kho...</option>
+                              <option value="">Chọn kho...</option>
+                              {warehouses.map((warehouse) => (
+                                <option key={warehouse.id} value={warehouse.id}>
+                                  {warehouse.name}
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                          </div>
+                          <div className="relative">
+                            <select
+                              value={selectedWarehouseItemId}
+                              onChange={(e) => setSelectedWarehouseItemId(e.target.value)}
+                              disabled={!selectedWarehouseId}
+                              className="w-full px-2 py-1.5 text-[12px] bg-slate-50 border border-slate-200 rounded-md outline-none focus:border-indigo-400 appearance-none pr-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <option value="">
+                                {selectedWarehouseId ? 'Chọn vật tư kho...' : 'Vui lòng chọn kho trước'}
+                              </option>
                               {warehouseItems.map((item) => (
                                 <option key={item.id} value={item.id}>
                                   {item.name} — Tồn: {item.stock != null ? item.stock.toLocaleString('vi-VN') : '0'}
@@ -1059,7 +1095,7 @@ export function PlanDetailPanel({
 
                           <button
                             onClick={handleAddMaterial}
-                            disabled={isAddingMaterial}
+                            disabled={isAddingMaterial || !selectedWarehouseId}
                             className="w-full py-1.5 text-[12px] bg-indigo-600 text-white rounded-md disabled:opacity-40"
                           >
                             {isAddingMaterial ? 'Đang thêm...' : 'Thêm vật tư'}

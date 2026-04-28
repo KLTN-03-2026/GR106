@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreateSkuDto, Sku } from '../../types/sku/sku';
-import { axiosInstance } from '../../config/axios';
+import { skuService } from '../../services/sku/skuService';
 
 const SKU_KEYS = {
   byFarm: (farmId: string) => ['skus', farmId] as const,
@@ -16,17 +16,13 @@ export const useSkus = () => {
 
   const skusQuery = useQuery({
     queryKey: farmId ? SKU_KEYS.byFarm(farmId) : ['skus', 'inactive'],
-    queryFn: async (): Promise<Sku[]> => {
-      const res = await axiosInstance.get(`/api/v1/farms/${farmId as string}/skus`);
-      return res.data.data ?? [];
-    },
+    queryFn: async (): Promise<Sku[]> => skuService.getSkus(farmId as string),
     enabled: false,
   });
 
   const createSkuMutation = useMutation({
     mutationFn: async ({ farmId: targetFarmId, data }: { farmId: string; data: CreateSkuDto }) => {
-      const res = await axiosInstance.post(`/api/v1/farms/${targetFarmId}/skus`, data);
-      return res.data.data;
+      return skuService.createSku(targetFarmId, data);
     },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: SKU_KEYS.byFarm(variables.farmId) });
@@ -35,7 +31,7 @@ export const useSkus = () => {
 
   const deleteSkuMutation = useMutation({
     mutationFn: async ({ farmId: targetFarmId, sku }: { farmId: string; sku: string }) => {
-      await axiosInstance.delete(`/api/v1/farms/${targetFarmId}/skus/${sku}`);
+      await skuService.deleteSku(targetFarmId, sku);
       return sku;
     },
     onSuccess: (_, variables) => {
@@ -60,10 +56,7 @@ export const useSkus = () => {
         return withUnwrap(
           queryClient.fetchQuery({
             queryKey: SKU_KEYS.byFarm(farmIdValue),
-            queryFn: async (): Promise<Sku[]> => {
-              const res = await axiosInstance.get(`/api/v1/farms/${farmIdValue}/skus`);
-              return res.data.data ?? [];
-            },
+            queryFn: async (): Promise<Sku[]> => skuService.getSkus(farmIdValue),
           }),
         );
       },
