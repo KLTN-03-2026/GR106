@@ -95,6 +95,7 @@ export function AcceptInvitationPage() {
         }
 
         try {
+            console.log('s')
             setIsLoggingIn(true)
             const response = await authService.login({ email, password })
 
