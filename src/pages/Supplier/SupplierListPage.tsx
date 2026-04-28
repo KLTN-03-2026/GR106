@@ -10,6 +10,7 @@ import { createSupplierSchema } from '../../schemas/supplierSchemas'
 import { Supplier } from '../../types/supplier/supplier'
 import { FarmSummary } from '../../types/farm/farm'
 import { extractErrorMessage } from '../../utils/errorUtils'
+import { set } from 'zod'
 
 export function SupplierListPage() {
   const { farmId } = useParams<{ farmId: string }>()
@@ -24,6 +25,7 @@ export function SupplierListPage() {
   const [submitting, setSubmitting] = useState(false)
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
   const [supplierToDelete, setSupplierToDelete] = useState<string | null>(null)
+  const [supplierNameToDelete, setSupplierNameToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
   const canManage = useMemo(() => {
@@ -70,6 +72,7 @@ export function SupplierListPage() {
   }
 
   const handleDeleteClick = (id: string) => {
+    setSupplierNameToDelete(suppliers.find(s => s.id === id)?.name || null)
     setSupplierToDelete(id)
     setIsDeleteConfirmOpen(true)
   }
@@ -227,7 +230,7 @@ export function SupplierListPage() {
         onClose={() => setIsDeleteConfirmOpen(false)}
         onConfirm={handleConfirmDelete}
         title="Xác nhận xóa"
-        message={`Bạn có chắc chắn muốn xóa nhà cung cấp ${supplierToDelete}? Thao tác này không thể hoàn tác.`}
+        message={`Bạn có chắc chắn muốn xóa nhà cung cấp ${supplierNameToDelete}? Thao tác này không thể hoàn tác.`}
         confirmLabel="Xóa ngay"
         loading={isDeleting}
       />
