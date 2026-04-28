@@ -39,9 +39,11 @@ interface FarmMapProps {
 }
 
 const toLatLng = (geometry?: any): google.maps.LatLngLiteral[] => {
-  if (!geometry?.coordinates) return []
+  if (!geometry?.coordinates || !Array.isArray(geometry.coordinates[0])) return []
   try {
-    return geometry.coordinates[0].map((c: number[]) => ({ lng: c[0], lat: c[1] }))
+    return geometry.coordinates[0]
+      .map((c: any) => ({ lng: Number(c[0]), lat: Number(c[1]) }))
+      .filter((p: any) => !isNaN(p.lat) && !isNaN(p.lng))
   } catch { return [] }
 }
 
@@ -334,36 +336,46 @@ export const FarmMap = forwardRef<FarmMapHandle, FarmMapProps>(function FarmMap(
                 clickable: !isDrawing,
               }}
             />
-            {!isBeingEdited && (
-              <Marker
-                position={calculateCentroid(path.map(p => ({ lat: p.lat, lng: p.lng })))}
-                label={{ text: plot.name, color: '#fff', fontSize: '12px', fontWeight: '700' }}
-                icon={{ path: window.google.maps.SymbolPath.CIRCLE, scale: 0 }}
-              />
+            {!isBeingEdited && path.length > 0 && (
+              (() => {
+                const centroid = calculateCentroid(path.map(p => ({ lat: p.lat, lng: p.lng })));
+                if (isNaN(centroid.lat) || isNaN(centroid.lng)) return null;
+                return (
+                  <Marker
+                    key={`label-${plot.id}`}
+                    position={centroid}
+                    label={{ text: plot.name, color: '#fff', fontSize: '12px', fontWeight: '700' }}
+                    icon={{ path: window.google.maps.SymbolPath.CIRCLE, scale: 0 }}
+                  />
+                );
+              })()
             )}
           </Fragment>
         )
       })}
 
       {/* ── 1b. Tất cả kho hàng ── */}
-      {warehouses.map((wh) => (
-        <Marker
-          key={`wh-${wh.id}`}
-          position={{ lat: wh.latitude, lng: wh.longitude }}
-          onClick={() => !isDrawing && onWarehouseSelect(wh)}
-          icon={{
-            url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-            scaledSize: selectedWarehouseId === wh.id ? new window.google.maps.Size(40, 40) : new window.google.maps.Size(32, 32)
-          }}
-          label={{
-            text: wh.name,
-            color: '#fff',
-            fontSize: '11px',
-            fontWeight: 'bold',
-            className: 'mt-8 bg-blue-600/80 px-2 py-0.5 rounded shadow-sm border border-blue-400'
-          }}
-        />
-      ))}
+      {warehouses.map((wh) => {
+        if (isNaN(Number(wh.latitude)) || isNaN(Number(wh.longitude))) return null;
+        return (
+          <Marker
+            key={`wh-${wh.id}`}
+            position={{ lat: Number(wh.latitude), lng: Number(wh.longitude) }}
+            onClick={() => !isDrawing && onWarehouseSelect(wh)}
+            icon={{
+              url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+              scaledSize: selectedWarehouseId === wh.id ? new window.google.maps.Size(40, 40) : new window.google.maps.Size(32, 32)
+            }}
+            label={{
+              text: wh.name,
+              color: '#fff',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              className: 'mt-8 bg-blue-600/80 px-2 py-0.5 rounded shadow-sm border border-blue-400'
+            }}
+          />
+        );
+      })}
 
       {/* ── 2a. DRAWING: segments đã vẽ ── */}
       {isDrawing && !isEditing && currentPath.length >= 2 && (
@@ -435,6 +447,7 @@ export const FarmMap = forwardRef<FarmMapHandle, FarmMapProps>(function FarmMap(
       {/* ── 4a. Popup Lô đất ── */}
       {selectedPlot && !isDrawing && !isEditing && (
         <InfoWindow
+          key={`info-plot-${selectedPlot.id}`}
           position={
             (selectedPlot.geometry ? toLatLng(selectedPlot.geometry)[0] : null) ||
             selectedPlot.boundaries?.[0] || center
@@ -450,9 +463,10 @@ export const FarmMap = forwardRef<FarmMapHandle, FarmMapProps>(function FarmMap(
       )}
 
       {/* ── 4b. Popup Kho hàng ── */}
-      {selectedWarehouse && !isDrawing && !isEditing && (
+      {selectedWarehouse && !isDrawing && !isEditing && !isNaN(Number(selectedWarehouse.latitude)) && !isNaN(Number(selectedWarehouse.longitude)) && (
         <InfoWindow
-          position={{ lat: selectedWarehouse.latitude, lng: selectedWarehouse.longitude }}
+          key={`info-wh-${selectedWarehouse.id}`}
+          position={{ lat: Number(selectedWarehouse.latitude), lng: Number(selectedWarehouse.longitude) }}
           onCloseClick={() => onWarehouseSelect(null)}
         >
           <div className="p-3 min-w-[200px] text-left">
@@ -469,7 +483,7 @@ export const FarmMap = forwardRef<FarmMapHandle, FarmMapProps>(function FarmMap(
               </div>
               <div className="pt-2 border-t border-slate-100">
                  <span className="text-[10px] font-mono font-bold text-slate-400">
-                   {selectedWarehouse.latitude.toFixed(6)}, {selectedWarehouse.longitude.toFixed(6)}
+                   {Number(selectedWarehouse.latitude).toFixed(6)}, {Number(selectedWarehouse.longitude).toFixed(6)}
                  </span>
               </div>
             </div>

@@ -13,6 +13,8 @@ const PLOT_KEYS = {
 const withUnwrap = <T,>(promise: Promise<T>) =>
   Object.assign(promise, { unwrap: () => promise });
 
+const EMPTY_ARRAY: any[] = [];
+
 export const usePlots = () => {
   const queryClient = useQueryClient();
   const [activeFarmId, setActiveFarmId] = useState<string | null>(null);
@@ -79,7 +81,7 @@ export const usePlots = () => {
   );
 
   return {
-    plots: plotsQuery.data ?? [],
+    plots: plotsQuery.data ?? EMPTY_ARRAY,
     aggregateStats: aggregateQuery.data
       ? {
           totalPlots: aggregateQuery.data.totalPlots,

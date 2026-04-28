@@ -455,13 +455,6 @@ export function PlanDetailPanel({
       return;
     }
 
-    // const isDuplicateWarehouseItem = (taskMaterials ?? []).some(
-    //   (material) => material.warehouseItem.id === validation.data.warehouseItemId,
-    // );
-    // if (isDuplicateWarehouseItem) {
-    //   toast.error('Vật tư này đã tồn tại trong công việc');
-    //   return;
-    // }
 
     try {
       await addMaterial(validation.data);
@@ -1062,22 +1055,6 @@ export function PlanDetailPanel({
                             <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                           </div>
 
-                          {/* Badge tồn kho cho item đang chọn */}
-                          {selectedWarehouseItemId && (() => {
-                            const selected = warehouseItems.find(i => i.id === selectedWarehouseItemId);
-                            if (!selected) return null;
-                            const stock = selected.stock ?? 0;
-                            const isLow = stock <= (selected.minStockQty ?? 0);
-                            return (
-                              <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-md border text-[11px] font-medium ${isLow ? 'bg-rose-50 border-rose-100 text-rose-700' : 'bg-emerald-50 border-emerald-100 text-emerald-700'
-                                }`}>
-                                <span className="truncate">{selected.name}</span>
-                                <span className="font-bold ml-2 shrink-0">
-                                  Tồn: {stock.toLocaleString('vi-VN')}
-                                </span>
-                              </div>
-                            );
-                          })()}
                           <input
                             type="text"
                             value={plannedQty}

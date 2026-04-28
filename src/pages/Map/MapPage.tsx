@@ -63,34 +63,39 @@ export function MapPage() {
     return <Navigate to="/farms" replace />;
   }
 
+  // Initial data fetch
   useEffect(() => {
-    fetchPlots(currentFarmId);
-    fetchWarehouses(currentFarmId);
-  }, [fetchPlots, fetchWarehouses, currentFarmId]);
+    if (currentFarmId) {
+      fetchPlots(currentFarmId);
+      fetchWarehouses(currentFarmId);
+    }
+  }, [currentFarmId, fetchPlots, fetchWarehouses]);
 
+  // Sync selected items from location state (one-time or on state change)
   useEffect(() => {
     if (locationState?.preloadPlot) {
-      setSelectedPlot(locationState.preloadPlot);
+      setSelectedPlot(prev => prev?.id === locationState.preloadPlot?.id ? prev : locationState.preloadPlot!);
       if (targetMode === 'editing') {
         handleEditBoundaries(locationState.preloadPlot);
       }
     }
     if (locationState?.preloadWarehouse) {
-      setSelectedWarehouse(locationState.preloadWarehouse);
+      setSelectedWarehouse(prev => prev?.id === locationState.preloadWarehouse?.id ? prev : locationState.preloadWarehouse!);
     }
   }, [locationState?.preloadPlot, locationState?.preloadWarehouse, targetMode]);
 
+  // Sync selection with URL parameters
   useEffect(() => {
     if (targetPlotId && plots.length > 0) {
       const plot = plots.find((p) => p.id === targetPlotId);
       if (plot) {
-        setSelectedPlot(plot);
+        setSelectedPlot(prev => prev?.id === plot.id ? prev : plot);
         setSelectedWarehouse(null);
         if (targetMode === 'editing') {
           handleEditBoundaries(plot);
         } else {
-          setMode('none');
-          setCurrentPath([]);
+          setMode(prev => prev === 'none' ? prev : 'none');
+          setCurrentPath(prev => prev.length === 0 ? prev : []);
         }
       }
       return;
@@ -99,18 +104,21 @@ export function MapPage() {
     if (targetWarehouseId && warehouses.length > 0) {
       const wh = warehouses.find(w => w.id === targetWarehouseId);
       if (wh) {
-        setSelectedWarehouse(wh);
+        setSelectedWarehouse(prev => prev?.id === wh.id ? prev : wh);
         setSelectedPlot(null);
-        setMode('none');
-        setCurrentPath([]);
+        setMode(prev => prev === 'none' ? prev : 'none');
+        setCurrentPath(prev => prev.length === 0 ? prev : []);
       }
       return;
     }
 
-    setSelectedPlot(null);
-    setSelectedWarehouse(null);
-    setMode('none');
-    setCurrentPath([]);
+    // Reset if no target and we have a selection
+    if (!targetPlotId && !targetWarehouseId && (selectedPlot || selectedWarehouse)) {
+      setSelectedPlot(null);
+      setSelectedWarehouse(null);
+      setMode('none');
+      setCurrentPath([]);
+    }
   }, [targetPlotId, targetWarehouseId, targetMode, plots, warehouses]);
 
   const computeArea = (path: GeoPoint[]) => {

@@ -10,6 +10,8 @@ const WAREHOUSE_KEYS = {
 const withUnwrap = <T,>(promise: Promise<T>) =>
   Object.assign(promise, { unwrap: () => promise });
 
+const EMPTY_ARRAY: any[] = [];
+
 export const useWarehouses = () => {
   const queryClient = useQueryClient();
   const [farmId, setFarmId] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export const useWarehouses = () => {
   );
 
   return {
-    warehouses: warehousesQuery.data ?? [],
+    warehouses: warehousesQuery.data ?? EMPTY_ARRAY,
     loading,
     submitting,
     error,
