@@ -72,17 +72,17 @@ public class TaskMaterialController {
 //        );
 //    }
 //
-//    // Xóa vật tư khỏi task
-//    @DeleteMapping("/api/v1/plans/{planId}/stages/{stageId}/tasks/{taskId}/materials/{materialId}")
-//    @RequiresFarmToken
-//    @Operation(summary = "Xóa vật tư khỏi Task", security = @SecurityRequirement(name = "bearerAuth"))
-//    public ResponseEntity<ApiResponse<Void>> delete(
-//            @PathVariable UUID planId,
-//            @PathVariable UUID stageId,
-//            @PathVariable UUID taskId,
-//            @PathVariable UUID materialId
-//    ) {
-//        taskMaterialService.deleteTaskMaterial(taskId, materialId);
-//        return ResponseUtil.noContent();
-//    }
+    // Xóa vật tư khỏi task
+    @DeleteMapping("/api/v1/plans/{planId}/stages/{stageId}/tasks/{taskId}/materials/{materialId}")
+    @RequiresFarmToken
+    @Operation(summary = "Xóa vật tư khỏi Task", security = @SecurityRequirement(name = "bearerAuth"))
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @PathVariable UUID planId,
+            @PathVariable UUID stageId,
+            @PathVariable UUID taskId,
+            @PathVariable UUID materialId
+    ) {
+        taskMaterialService.deleteTaskMaterial(taskId, materialId);
+        return ResponseUtil.noContent();
+    }
 }

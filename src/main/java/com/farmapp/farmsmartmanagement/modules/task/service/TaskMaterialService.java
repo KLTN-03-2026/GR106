@@ -84,6 +84,11 @@ public class TaskMaterialService {
         return taskMaterialMapper.toResponse(taskMaterialRepository.save(taskMaterial));
     }
 
+    @Transactional
+    public void deleteTaskMaterial(UUID taskMaterialId, UUID taskId) {
+        taskMaterialRepository.deleteByIdAndTask_Id(taskMaterialId,taskId);
+    }
+
 
 
 

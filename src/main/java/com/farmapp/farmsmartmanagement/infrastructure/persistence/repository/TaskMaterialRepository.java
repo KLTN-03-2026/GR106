@@ -10,4 +10,6 @@ public interface TaskMaterialRepository extends JpaRepository<TaskMaterialEntity
     boolean existsByTask_IdAndWarehouseItem_Id(UUID id, UUID id1);
 
     List<TaskMaterialEntity> findAllByTask_Id(UUID taskId);
+
+    void deleteByIdAndTask_Id(UUID taskMaterialId, UUID taskId);
 }
