@@ -13,4 +13,6 @@ public class TaskStatusResponse {
     String code;
     String name;
     String color;
+    Boolean isInitial;
+    Boolean isTerminal;
 }
