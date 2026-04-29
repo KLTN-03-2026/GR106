@@ -53,6 +53,8 @@ interface PlanDetailPanelProps {
   onClone?: (plan: SeasonPlan) => void;
   onAddPlots?: (planId: string, plotIds: string[]) => void;
   canEdit?: boolean;
+  phaseStatusOptions?: { code: string; label: string }[];
+  phaseStatusTransitions?: import('@/services/seasonplan/planStageStatusService').PlanStageStatusTransition[];
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -72,6 +74,8 @@ export function PlanDetailPanel({
   onDeleteTask,
   onAddPlots,
   canEdit = false,
+  phaseStatusOptions = [],
+  phaseStatusTransitions = [],
 }: PlanDetailPanelProps) {
   const { currentFarmId } = useAuth();
   const { selectedFarmId } = useSelector((state: RootState) => state.farm);
@@ -402,6 +406,8 @@ export function PlanDetailPanel({
                     setTempPhase={setTempPhase}
                     setTempTask={setTempTask}
                     onSelectPhase={onSelectPhase}
+                    phaseStatusOptions={phaseStatusOptions}
+                    phaseStatusTransitions={phaseStatusTransitions}
                   />
 
                   {sel.type === 'PLAN' && (
@@ -520,13 +526,41 @@ export function PlanDetailPanel({
                   }}
                 />
               )}
-              {activeTab === 'MEMBERS' && sel.type !== 'TASK' && (
+              {activeTab === 'MEMBERS' && sel.type === 'PHASE' && (
+                <div className="px-4 py-3 border-t border-slate-100">
+                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <Users size={11} /> Giao việc theo công việc trong giai đoạn
+                  </p>
+                  {sel.phase.tasks.length > 0 ? (
+                    <div className="space-y-2">
+                      {sel.phase.tasks.map((task) => (
+                        <button
+                          key={task.id}
+                          onClick={() => {
+                            onSelectTask(plan.id, sel.phase.id, task.id);
+                            setActiveTab('MEMBERS');
+                          }}
+                          className="w-full text-left p-3 bg-white border border-slate-100 rounded-xl hover:border-indigo-200 hover:shadow-sm transition-all"
+                        >
+                          <div className="text-[13px] font-bold text-slate-800 truncate">{task.name}</div>
+                          <div className="text-[11px] text-slate-500 mt-1">Bấm để mở giao việc cho công việc này</div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-10 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                      <p className="text-[12px] text-slate-500 font-medium">Giai đoạn này chưa có công việc</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              {activeTab === 'MEMBERS' && sel.type === 'PLAN' && (
                 <div className="flex flex-col items-center justify-center py-20 text-slate-400 px-10 text-center">
                   <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center mb-4">
                     <Users size={24} />
                   </div>
-                  <h3 className="text-[13px] font-bold text-slate-700 mb-1">Chọn một công việc</h3>
-                  <p className="text-[11px] leading-relaxed">Bạn chỉ có thể giao việc cho thành viên khi đang xem chi tiết công việc.</p>
+                  <h3 className="text-[13px] font-bold text-slate-700 mb-1">Chọn một giai đoạn hoặc công việc</h3>
+                  <p className="text-[11px] leading-relaxed">Bạn có thể vào giai đoạn để chọn công việc cần giao việc cho thành viên.</p>
                 </div>
               )}
             </AnimatePresence>

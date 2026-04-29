@@ -32,5 +32,5 @@ export const createTaskAssigneeSchema = z.object({
 });
 
 export const createTaskAssigneesSchema = z.object({
-  userIds: z.array(z.string().uuid('Vui lòng chọn thành viên hợp lệ')).min(2, 'Vui lòng chọn ít nhất 2 thành viên'),
+  userIds: z.array(z.string().uuid('Vui lòng chọn thành viên hợp lệ')),
 });

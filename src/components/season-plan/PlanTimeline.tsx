@@ -550,28 +550,33 @@ export function PlanTimeline({
   // ── Status helpers ────────────────────────────────────────────────────────
   const statusCode = (s: any) => typeof s === 'string' ? s : (s?.code ?? '');
   const statusLabel = (s: any) => {
-    switch (statusCode(s)) {
+    const code = statusCode(s);
+    switch (code) {
       case 'COMPLETED': return 'HOÀN THÀNH';
-      case 'IN_PROGRESS': case 'ACTIVE': return 'ĐANG TIÊN HÀNH';
+      case 'IN_PROGRESS': case 'ACTIVE': return 'ĐANG THỰC HIỆN';
       case 'OVERDUE': return 'QUÁ HẠN';
       case 'ASSIGNED': return 'PHÂN CÔNG';
+      case 'CANCELLED': return 'ĐÃ HỦY';
+      case 'DRAFT': case 'UNASSIGNED': return 'CẦN LÀM';
       default: return 'CẦN LÀM';
     }
   };
   const statusBadgeCls = (s: any) => {
-    const l = statusLabel(s);
-    if (l === 'HOÀN THÀNH') return 'bg-emerald-100 text-emerald-700';
-    if (l === 'ĐANG TIÊN HÀNH') return 'bg-blue-100 text-blue-700';
-    if (l === 'QUÁ HẠN') return 'bg-rose-100 text-rose-700';
-    if (l === 'PHÂN CÔNG') return 'bg-violet-100 text-violet-700';
+    const code = statusCode(s);
+    if (code === 'COMPLETED') return 'bg-emerald-100 text-emerald-700';
+    if (code === 'IN_PROGRESS' || code === 'ACTIVE') return 'bg-blue-100 text-blue-700';
+    if (code === 'OVERDUE') return 'bg-rose-100 text-rose-700';
+    if (code === 'ASSIGNED') return 'bg-violet-100 text-violet-700';
+    if (code === 'CANCELLED') return 'bg-red-100 text-red-600';
     return 'bg-slate-100 text-slate-600';
   };
   const taskBarCls = (s: any) => {
-    const l = statusLabel(s);
-    if (l === 'HOÀN THÀNH') return 'bg-emerald-500';
-    if (l === 'ĐANG TIÊN HÀNH') return 'bg-blue-500';
-    if (l === 'QUÁ HẠN') return 'bg-rose-500';
-    if (l === 'PHÂN CÔNG') return 'bg-violet-500';
+    const code = statusCode(s);
+    if (code === 'COMPLETED') return 'bg-emerald-500';
+    if (code === 'IN_PROGRESS' || code === 'ACTIVE') return 'bg-blue-500';
+    if (code === 'OVERDUE') return 'bg-rose-500';
+    if (code === 'ASSIGNED') return 'bg-violet-500';
+    if (code === 'CANCELLED') return 'bg-red-400';
     return 'bg-slate-400';
   };
 
@@ -825,8 +830,8 @@ export function PlanTimeline({
                   )}
                   onClick={() => onSelect({ type: 'TASK', id: r.id, planId: r.planId, phaseId: r.phaseId })}
                 >
-                  <div className={cn('w-3 h-3 rounded-sm border mr-2 flex items-center justify-center flex-shrink-0', sc === 'HOÀN THÀNH' ? 'bg-indigo-500 border-indigo-500' : 'border-slate-400')}>
-                    {sc === 'HOÀN THÀNH' && (
+                  <div className={cn('w-3 h-3 rounded-sm border mr-2 flex items-center justify-center flex-shrink-0', sc === 'COMPLETED' ? 'bg-emerald-500 border-emerald-500' : 'border-slate-400')}>
+                    {sc === 'COMPLETED' && (
                       <svg width="7" height="7" viewBox="0 0 8 8">
                         <path d="M1 4l2 2 4-3" stroke="white" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
@@ -1017,7 +1022,7 @@ export function PlanTimeline({
                       onClick={e => { e.stopPropagation(); onSelect({ type: 'TASK', id: tk.id, planId: r.planId, phaseId: r.phaseId }); }}
                     >
                       <div className="absolute inset-0 bg-black/20 pointer-events-none"
-                        style={{ width: sc === 'HOÀN THÀNH' ? '100%' : sc === 'ĐANG TIÊN HÀNH' ? '45%' : '0%' }} />
+                        style={{ width: sc === 'COMPLETED' ? '100%' : (sc === 'IN_PROGRESS' || sc === 'ACTIVE') ? '45%' : '0%' }} />
                       {canEdit && (
                         <>
                           <div className="absolute left-0 top-0 bottom-0 w-2 cursor-w-resize z-10"

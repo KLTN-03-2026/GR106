@@ -68,6 +68,8 @@ const NAV_TABS = [
 
 type NavTab = typeof NAV_TABS[number]['key'];
 
+const toLabel = (code: string, name?: string) => name || code;
+
 // ─── Status helpers ───────────────────────────────────────────────────────────
 
 function getStatusLabel(status: PlanStatus | any): string {
@@ -125,7 +127,7 @@ export function SeasonPlanPage() {
     plans, loading, error,
     fetchPlans, createPlan, deletePlan: removePlan, updatePlanTime,
     fetchStages, fetchPlanPlots, createPhase, deletePhase: removePhase, updatePhase,
-    updatePhaseTime, fetchTasks, createTask: createSeasonTask,
+    updatePhaseTime, updatePhaseStatus, fetchPlanStageStatuses, fetchPlanStageStatusTransitions, planStageStatuses, planStageStatusTransitions, fetchTasks, createTask: createSeasonTask,
     updateTask: updateSeasonTask, updateTaskTime, deleteTask: removeSeasonTask,
     addPlotsToPlan, optimisticallyUpdatePhaseTime, optimisticallyUpdateTaskTime,
     addPlanToState
@@ -176,11 +178,23 @@ export function SeasonPlanPage() {
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
   });
+  const phaseStatusOptions = planStageStatuses.map((s) => ({
+    code: s.code,
+    label: toLabel(s.code, s.name),
+  }));
 
   // ── Effects ───────────────────────────────────────────────────────────────
   useEffect(() => {
     fetchPlans();
   }, [fetchPlans, accessToken]);
+
+  useEffect(() => {
+    fetchPlanStageStatuses();
+  }, [fetchPlanStageStatuses]);
+
+  useEffect(() => {
+    fetchPlanStageStatusTransitions();
+  }, [fetchPlanStageStatusTransitions]);
 
   useEffect(() => {
     if (currentPlan) {
@@ -286,7 +300,12 @@ export function SeasonPlanPage() {
     }
   };
 
-  const handleUpdatePhase = async (planId: string, stageId: string, data: { name: string; startDate: string; endDate: string }, originalPhase?: any) => {
+  const handleUpdatePhase = async (
+    planId: string,
+    stageId: string,
+    data: { name: string; startDate: string; endDate: string; statusCode?: string },
+    originalPhase?: any
+  ) => {
     try {
       if (!originalPhase) {
         await updatePhase(planId, stageId, data).unwrap();
@@ -295,6 +314,8 @@ export function SeasonPlanPage() {
 
       const isDateChanged = originalPhase.startDate !== data.startDate || originalPhase.endDate !== data.endDate;
       const isNameChanged = originalPhase.name !== data.name;
+      const originalStatusCode = typeof originalPhase.status === 'string' ? originalPhase.status : originalPhase.status?.code;
+      const isStatusChanged = !!data.statusCode && originalStatusCode !== data.statusCode;
 
       if (isDateChanged) {
         await updatePhaseTime(planId, stageId, { startDate: data.startDate, endDate: data.endDate }).unwrap();
@@ -302,6 +323,28 @@ export function SeasonPlanPage() {
 
       if (isNameChanged) {
         await updatePhase(planId, stageId, data).unwrap();
+      }
+
+      if (isStatusChanged) {
+        let targetStatus = planStageStatuses.find((s) => s.code === data.statusCode);
+        if (!targetStatus) {
+          const refreshedStatuses = await fetchPlanStageStatuses().unwrap();
+          targetStatus = refreshedStatuses.find((s: any) => s.code === data.statusCode);
+        }
+        if (!targetStatus) {
+          const availableCodes = planStageStatuses.map((s) => s.code).join(', ');
+          throw new Error(`Không tìm thấy status "${data.statusCode}" trong danh mục Plan Stage Status. Có sẵn: [${availableCodes}]`);
+        }
+
+        const fromCode = originalStatusCode;
+        const allowed = planStageStatusTransitions.some(
+          (t) => t.fromStatus.code === fromCode && t.toStatus.code === targetStatus.code
+        );
+        if (!allowed) {
+          throw new Error(`Chuyển trạng thái từ "${fromCode}" sang "${targetStatus.code}" không hợp lệ theo transition API.`);
+        }
+
+        await updatePhaseStatus(planId, stageId, targetStatus.id).unwrap();
       }
     } catch (err: any) {
       showError('Lỗi cập nhật giai đoạn', err);
@@ -442,19 +485,38 @@ export function SeasonPlanPage() {
     }
     try {
       if (!originalTask) {
-        await updateSeasonTask(planId, stageId, task.id, { name: task.name, description: task.description || '', startDate: task.startDate, endDate: task.endDate, plotId }).unwrap();
+        await updateSeasonTask(planId, stageId, task.id, {
+          name: task.name,
+          description: task.description || '',
+          startDate: task.startDate,
+          endDate: task.endDate,
+          plotId,
+        }).unwrap();
         return;
       }
 
       const isDateChanged = originalTask.startDate !== task.startDate || originalTask.endDate !== task.endDate;
-      const isNameChanged = originalTask.name !== task.name || originalTask.description !== task.description;
+      // Covers name, description, and plotId changes
+      const isContentChanged =
+        originalTask.name !== task.name ||
+        originalTask.description !== task.description ||
+        originalTask.plotId !== plotId;
 
       if (isDateChanged) {
-        await updateTaskTime(planId, stageId, task.id, { startDate: task.startDate, endDate: task.endDate }).unwrap();
+        await updateTaskTime(planId, stageId, task.id, {
+          startDate: task.startDate,
+          endDate: task.endDate,
+        }).unwrap();
       }
 
-      if (isNameChanged) {
-        await updateSeasonTask(planId, stageId, task.id, { name: task.name, description: task.description || '', startDate: task.startDate, endDate: task.endDate, plotId }).unwrap();
+      if (isContentChanged) {
+        await updateSeasonTask(planId, stageId, task.id, {
+          name: task.name,
+          description: task.description || '',
+          startDate: task.startDate,
+          endDate: task.endDate,
+          plotId,
+        }).unwrap();
       }
     } catch (err: any) {
       showError('Lỗi cập nhật', err);
@@ -713,7 +775,8 @@ export function SeasonPlanPage() {
                 handleUpdatePhase(id, phase.id, {
                   name: phase.name,
                   startDate: phase.startDate,
-                  endDate: phase.endDate
+                  endDate: phase.endDate,
+                  statusCode: typeof phase.status === 'string' ? phase.status : phase.status?.code,
                 }, originalPhase);
               }}
               onDeletePhase={handleDeletePhase}
@@ -728,6 +791,8 @@ export function SeasonPlanPage() {
               onClone={p => setCloneSourcePlan(p)}
               onAddPlots={handleAddPlotsToPlan}
               canEdit={canEdit}
+              phaseStatusOptions={phaseStatusOptions}
+              phaseStatusTransitions={planStageStatusTransitions}
             />
           </>
         )}

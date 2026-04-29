@@ -1,6 +1,7 @@
-import { useCallback } from 'react';
-import { SeasonPlan } from '../../types/seasonPlan';
+import { useCallback, useState } from 'react';
+import { SeasonPlan, StatusObject } from '../../types/seasonPlan';
 import { seasonPlanPhaseService } from '../../services/seasonplan/seasonPlanPhaseService';
+import { planStageStatusService, PlanStageStatusTransition, PlanStageStatusChange } from '../../services/seasonplan/planStageStatusService';
 import { withUnwrap } from './seasonPlanShared';
 
 interface UseSeasonPlanPhasesProps {
@@ -8,7 +9,14 @@ interface UseSeasonPlanPhasesProps {
 }
 
 export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesProps) => {
+  const [planStageStatuses, setPlanStageStatuses] = useState<StatusObject[]>([]);
+  const [planStageStatusTransitions, setPlanStageStatusTransitions] = useState<PlanStageStatusTransition[]>([]);
+  const [planStageStatusHistoriesByStage, setPlanStageStatusHistoriesByStage] = useState<Record<string, PlanStageStatusChange[]>>({});
+
   return {
+    planStageStatuses,
+    planStageStatusTransitions,
+    planStageStatusHistoriesByStage,
     error: null,
     fetchStages: useCallback(
       (planId: string) =>
@@ -95,6 +103,61 @@ export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesPro
           ),
         );
       },
+      [updatePlansCache],
+    ),
+    fetchPlanStageStatuses: useCallback(
+      () =>
+        withUnwrap(
+          planStageStatusService.getPlanStageStatuses().then((statuses) => {
+            setPlanStageStatuses(statuses);
+            return statuses;
+          }),
+        ),
+      [],
+    ),
+    fetchPlanStageStatusTransitions: useCallback(
+      () =>
+        withUnwrap(
+          planStageStatusService.getPlanStageStatusTransitions().then((transitions) => {
+            setPlanStageStatusTransitions(transitions);
+            return transitions;
+          }),
+        ),
+      [],
+    ),
+    fetchStageStatusHistories: useCallback(
+      (planId: string, stageId: string) =>
+        withUnwrap(
+          planStageStatusService.getStageStatusHistories(planId, stageId).then((histories) => {
+            setPlanStageStatusHistoriesByStage((prev) => ({ ...prev, [stageId]: histories }));
+            return histories;
+          }),
+        ),
+      [],
+    ),
+    updatePhaseStatus: useCallback(
+      (planId: string, stageId: string, statusId: string) =>
+        withUnwrap(
+          planStageStatusService.updateStageStatus(planId, stageId, statusId).then((result) => {
+            updatePlansCache((prev) =>
+              prev.map((p) =>
+                p.id === planId
+                  ? {
+                      ...p,
+                      phases: p.phases.map((ph) =>
+                        ph.id === stageId ? { ...ph, status: result.toStatus } : ph,
+                      ),
+                    }
+                  : p,
+              ),
+            );
+            setPlanStageStatusHistoriesByStage((prev) => ({
+              ...prev,
+              [stageId]: [result, ...(prev[stageId] ?? [])],
+            }));
+            return result;
+          }),
+        ),
       [updatePlansCache],
     ),
   };

@@ -73,7 +73,7 @@ export function AcceptInvitationPage() {
             const res = await axiosInstance.post(`/api/v1/invitations/${invitationId}/accept`)
             if (res.data.success) {
                 setPhase('success')
-                setTimeout(() => navigate('/farms'), 2500)
+                setTimeout(() => navigate('/farms'), 4000)
             }
         } catch (err: any) {
             setErrorMsg(err.response?.data?.message || 'Không thể chấp nhận lời mời')

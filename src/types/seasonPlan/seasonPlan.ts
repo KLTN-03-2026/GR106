@@ -37,6 +37,7 @@ export interface Task {
 }
 
 export interface Phase {
+  plotId: string | undefined;
   id: string;
   planId: string;
   name: string;
