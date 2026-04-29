@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,4 +25,13 @@ public interface WarehouseStockRepository extends JpaRepository<WarehouseStockEn
         GROUP BY ws.warehouseItem.id
     """)
     List<Object[]> sumQtyByItemIds(@Param("itemIds") List<UUID> itemIds);
+
+    @Query("""
+        SELECT ws.warehouseItem.id, COALESCE(SUM(ws.qtyOnHand), 0)
+        FROM WarehouseStockEntity ws
+        WHERE ws.warehouseItem.id IN :itemIds
+        AND ws.farm.id = :farmId
+        GROUP BY ws.warehouseItem.id
+    """)
+    List<Object[]> sumQtyByItemIdsAndFarmId(List<UUID> itemIds, UUID farmId);
 }

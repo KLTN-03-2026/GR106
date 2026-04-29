@@ -48,8 +48,43 @@ public class WarehouseItemService {
 
     @Transactional(readOnly = true)
     public List<WarehouseItemResponse> getAllWarehouseItemByFarm(UUID farmId) {
-        return warehouseItemMapper.toResponses(warehouseItemRepository.findAll());
+        List<WarehouseItemEntity> items = warehouseItemRepository
+                .findAllByFarm_Id(farmId);
+
+        if (items.isEmpty()) return List.of();
+
+        // Lấy danh sách id của tất cả item
+        List<UUID> itemIds = items.stream().map(WarehouseItemEntity::getId).toList();
+
+        // Map stock cho từng item
+        Map<UUID, BigDecimal> stockMap = warehouseStockRepository
+                .sumQtyByItemIdsAndFarmId(itemIds, farmId)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (UUID) row[0],
+                        row -> (BigDecimal) row[1]
+                ));
+
+        // Map reservedQty cho từng item
+        Map<UUID, BigDecimal> reservedQtyMap = taskMaterialRepository
+                .sumPlannedQtyGroupByWarehouseItem(itemIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (UUID) row[0],
+                        row -> (BigDecimal) row[1]
+                ));
+
+        // Build response
+        return items.stream()
+                .map(item -> {
+                    WarehouseItemResponse response = warehouseItemMapper.toResponse(item);
+                    response.setStock(stockMap.getOrDefault(item.getId(), BigDecimal.ZERO));
+                    response.setReservedQty(reservedQtyMap.getOrDefault(item.getId(), BigDecimal.ZERO));
+                    return response;
+                })
+                .toList();
     }
+
 
     @Transactional(readOnly = true)
     public List<WarehouseItemResponse> getAllWarehouseItemByWarehouse(UUID warehouseId) {

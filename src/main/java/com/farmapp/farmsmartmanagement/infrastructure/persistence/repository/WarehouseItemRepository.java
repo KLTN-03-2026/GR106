@@ -77,4 +77,7 @@ public interface WarehouseItemRepository extends JpaRepository<WarehouseItemEnti
     );
 
     boolean existsByIdAndWarehouse_Id(@NotNull(message = "Vui lòng chọn vị trí trong kho") UUID toLocationId, UUID warehouseId);
+
+    @EntityGraph(attributePaths = {"warehouse","sku", "supplier", "unit", "createdBy"})
+    List<WarehouseItemEntity> findAllByFarm_Id(UUID farmId);
 }
