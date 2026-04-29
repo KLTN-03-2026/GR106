@@ -71,7 +71,8 @@ export function SeasonPlanListPage() {
   }, [isCreateModalOpen, fetchCrops]);
 
   const filteredPlans = farmPlans.filter((p: SeasonPlan) => {
-    const matchesStatus = statusFilter === 'ALL' || p.status === statusFilter;
+    const planStatusCode = typeof p.status === 'string' ? p.status : p.status?.code;
+    const matchesStatus = statusFilter === 'ALL' || planStatusCode === statusFilter;
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
   });

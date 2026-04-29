@@ -21,6 +21,7 @@ export const plotSchema = z.object({
 // Schema cho Payload tạo Plot mới
 export const createPlotSchema = z.object({
   name: z.string().trim().min(1, 'Vui lòng nhập tên lô đất'),
+  geometry: geometrySchema,
   description: z.string().optional().nullable(),
 });
 

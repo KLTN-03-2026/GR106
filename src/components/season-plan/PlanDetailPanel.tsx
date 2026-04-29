@@ -254,12 +254,8 @@ export function PlanDetailPanel({
   const handleDelete = () => {
     setShowDeleteConfirm(false);
     if (sel.type === 'PLAN') {
-      const code = statusCodeOf(plan.status);
-      if (['ACTIVE', 'READY_TO_HARVEST', 'HARVESTING'].includes(code)) {
-        onUpdatePlan({ ...plan, status: 'CANCELLED' });
-      } else {
-        onDeletePlan?.(plan.id);
-      }
+      // Backend currently exposes DELETE /plans/{planId} for plan removal.
+      onDeletePlan?.(plan.id);
       onClose();
     } else if (sel.type === 'PHASE') {
       onDeletePhase?.(plan.id, sel.phase.id);
