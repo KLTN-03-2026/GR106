@@ -82,7 +82,7 @@ public class TaskMaterialController {
             @PathVariable UUID taskId,
             @PathVariable UUID materialId
     ) {
-        taskMaterialService.deleteTaskMaterial(taskId, materialId);
+        taskMaterialService.deleteTaskMaterial(materialId, taskId);
         return ResponseUtil.noContent();
     }
 }
