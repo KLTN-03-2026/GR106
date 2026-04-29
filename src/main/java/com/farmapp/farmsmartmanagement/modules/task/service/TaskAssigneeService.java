@@ -107,4 +107,9 @@ public class TaskAssigneeService {
                 .toList();
     }
 
+    @Transactional
+    public void deleteAssignee(UUID planId, UUID stageId, UUID taskId, UUID assigneeId) {
+        taskAssigneeRepository.deleteByIdAndPlan_IdAndStage_IdAndTask_Id(assigneeId,planId,stageId,taskId);
+    }
+
 }

@@ -49,4 +49,16 @@ public class TaskAssigneeController {
                 taskAssigneeService.createTaskAssignee(planId, stageId, taskId, request)
         );
     }
+
+    @DeleteMapping("/api/v1/plans/{planId}/stages/{stageId}/tasks/{taskId}/assignees/{assigneeId}")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<Void>> createTaskAssignee(
+            @PathVariable("planId") UUID planId,
+            @PathVariable("stageId") UUID stageId,
+            @PathVariable("taskId") UUID taskId,
+            @PathVariable("assigneeId") UUID assigneeId
+    ){
+        taskAssigneeService.deleteAssignee(planId, stageId, taskId, assigneeId);
+        return ResponseUtil.noContent();
+    }
 }
