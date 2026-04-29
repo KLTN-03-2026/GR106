@@ -5,9 +5,11 @@ import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskAssigneeEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskEntity;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskMaterialEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.UserEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
 import com.farmapp.farmsmartmanagement.modules.task.dto.request.CreateTaskAssigneeRequest;
+import com.farmapp.farmsmartmanagement.modules.task.dto.request.DeleteTaskAssigneeRequest;
 import com.farmapp.farmsmartmanagement.modules.task.dto.response.CreateTaskAssigneeResponse;
 import com.farmapp.farmsmartmanagement.modules.task.dto.response.TaskAssigneeResponse;
 import com.farmapp.farmsmartmanagement.modules.task.mapper.TaskMapper;
@@ -110,9 +112,25 @@ public class TaskAssigneeService {
     }
 
     @Transactional
-    @PreAuthorize("hasAuthorize('task:assign')")
-    public void deleteAssignee(UUID planId, UUID stageId, UUID taskId, UUID assigneeId) {
-        taskAssigneeRepository.deleteByIdAndPlan_IdAndStage_IdAndTask_Id(assigneeId,planId,stageId,taskId);
+    @PreAuthorize("hasAuthority('task:assign')")
+    public TaskAssigneeResponse deleteAssignee(UUID planId, UUID stageId, UUID taskId, UUID assigneeId, DeleteTaskAssigneeRequest request) {
+        TaskAssigneeEntity taskAssignee = taskAssigneeRepository
+                .findById(assigneeId)
+                .orElseThrow(()->new AppException(ErrorCode.TASK_ASSIGNEE_NOT_FOUND));
+
+        taskAssignee.setRemovalReason(request.getRemovalReason()!=null?request.getRemovalReason():"");
+        taskAssignee.setRemovedBy(userRepository.getReferenceById(securityUtils.getCurrentUserId()));
+        taskAssignee.setRemovedAt(Instant.now());
+        taskAssigneeRepository.save(taskAssignee);
+
+        return TaskAssigneeResponse.builder()
+                .id(taskAssignee.getId())
+                .user(userMapper.toUserResponse(taskAssignee.getUser()))
+                .assigneeBy(userMapper.toUserResponse(taskAssignee.getAssignedBy()))
+                .assigneeAt(taskAssignee.getAssignedAt())
+                .removedBy(userMapper.toUserResponse(taskAssignee.getRemovedBy()))
+                .removedAt(taskAssignee.getRemovedAt())
+                .build();
     }
 
 }

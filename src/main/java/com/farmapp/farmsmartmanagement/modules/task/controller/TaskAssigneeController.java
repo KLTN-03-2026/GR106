@@ -5,6 +5,7 @@ import com.farmapp.farmsmartmanagement.common.annotation.RequiresFarmToken;
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
 import com.farmapp.farmsmartmanagement.common.response.ResponseUtil;
 import com.farmapp.farmsmartmanagement.modules.task.dto.request.CreateTaskAssigneeRequest;
+import com.farmapp.farmsmartmanagement.modules.task.dto.request.DeleteTaskAssigneeRequest;
 import com.farmapp.farmsmartmanagement.modules.task.dto.response.CreateTaskAssigneeResponse;
 import com.farmapp.farmsmartmanagement.modules.task.dto.response.TaskAssigneeResponse;
 import com.farmapp.farmsmartmanagement.modules.task.service.TaskAssigneeService;
@@ -52,13 +53,16 @@ public class TaskAssigneeController {
 
     @DeleteMapping("/api/v1/plans/{planId}/stages/{stageId}/tasks/{taskId}/assignees/{assigneeId}")
     @RequiresFarmToken
-    public ResponseEntity<ApiResponse<Void>> createTaskAssignee(
+    public ResponseEntity<ApiResponse<TaskAssigneeResponse>> createTaskAssignee(
             @PathVariable("planId") UUID planId,
             @PathVariable("stageId") UUID stageId,
             @PathVariable("taskId") UUID taskId,
-            @PathVariable("assigneeId") UUID assigneeId
+            @PathVariable("assigneeId") UUID assigneeId,
+            @RequestBody @Valid DeleteTaskAssigneeRequest request
     ){
-        taskAssigneeService.deleteAssignee(planId, stageId, taskId, assigneeId);
-        return ResponseUtil.noContent();
+
+        return ResponseUtil.success(
+                taskAssigneeService.deleteAssignee(planId, stageId, taskId, assigneeId,request)
+        );
     }
 }

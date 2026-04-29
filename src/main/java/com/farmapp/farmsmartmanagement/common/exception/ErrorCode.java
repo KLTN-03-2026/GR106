@@ -108,6 +108,7 @@ public enum ErrorCode {
     WAREHOUSE_LOCATION_ALREADY_EXISTS(409,"Vị trí trong kho đã tồn tại" ,HttpStatus.CONFLICT ),
     WAREHOUSE_LOCATION_NOT_FOUND(404,"Vị trí này không tồn tại trong kho" ,HttpStatus.NOT_FOUND ),
     TASK_ASSIGNEE_ALREADY_USER(409,"Người này đã được gán vào công việc" ,HttpStatus.CONFLICT ),
+    TASK_ASSIGNEE_NOT_FOUND(404,"Không tìm thấy việc được giao" ,HttpStatus.CONFLICT ),
     TASK_STATUS_NOT_FOUND(404,"Không tìm thấy trạng thái công việc" ,HttpStatus.NOT_FOUND ),
     TASK_STATUS_TRANSITION_NOT_FOUND(404,"Không tìm thấy chuyển đổi giữa 2 trạng thái của công việc" ,HttpStatus.NOT_FOUND ),
     PLAN_STAGE_STATUS_NOT_FOUND(404,"Không tìm thấy trạng thái giai đoạn" ,HttpStatus.NOT_FOUND ),
