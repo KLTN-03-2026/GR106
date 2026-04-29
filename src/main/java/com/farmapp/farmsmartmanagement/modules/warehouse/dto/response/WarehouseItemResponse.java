@@ -17,6 +17,8 @@ public class WarehouseItemResponse {
 
     BigDecimal stock;
 
+    BigDecimal reservedQty;
+
     BigDecimal unitPrice;
 
     WarehouseResponse warehouse;

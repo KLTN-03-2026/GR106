@@ -44,6 +44,7 @@ public class WarehouseItemService {
     WarehouseStockRepository warehouseStockRepository;
     WarehouseTransactionRepository warehouseTransactionRepository;
     EntityManager entityManager;
+    TaskMaterialRepository taskMaterialRepository;
 
     @Transactional(readOnly = true)
     public List<WarehouseItemResponse> getAllWarehouseItemByFarm(UUID farmId) {
@@ -67,10 +68,19 @@ public class WarehouseItemService {
                         row -> (BigDecimal) row[1]
                 ));
 
+        Map<UUID, BigDecimal> reservedQtyMap = taskMaterialRepository
+                .sumPlannedQtyGroupByWarehouseItem(itemIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (UUID) row[0],
+                        row -> (BigDecimal) row[1]
+                ));
+
         return items.stream()
                 .map(item -> {
                     WarehouseItemResponse response = warehouseItemMapper.toResponse(item);
                     response.setStock(stockMap.getOrDefault(item.getId(), BigDecimal.ZERO));
+                    response.setReservedQty(reservedQtyMap.getOrDefault(item.getId(), BigDecimal.ZERO));
                     return response;
                 })
                 .toList();
