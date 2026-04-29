@@ -3,6 +3,7 @@ package com.farmapp.farmsmartmanagement.modules.task.mapper;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskEntity;
 import com.farmapp.farmsmartmanagement.modules.task.dto.request.UpdateTaskRequest;
 import com.farmapp.farmsmartmanagement.modules.task.dto.response.TaskResponse;
+import com.farmapp.farmsmartmanagement.modules.task.dto.response.TaskSummaryResponse;
 import org.mapstruct.*;
 
 import java.util.List;
@@ -16,6 +17,8 @@ public interface TaskMapper {
     @Mapping(target = "plotId", source = "plot.id", defaultExpression = "java(null)")
     @Mapping(target = "createdBy", source = "createdBy.id")
     TaskResponse toResponse(TaskEntity task);
+    
+    TaskSummaryResponse toSummaryResponse(TaskEntity task);
 
     List<TaskResponse> toResponses(List<TaskEntity> tasks);
 

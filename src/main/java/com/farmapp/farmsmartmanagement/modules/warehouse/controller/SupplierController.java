@@ -48,7 +48,7 @@ public class SupplierController {
     @RequiresFarmToken
     public ResponseEntity<ApiResponse<Void>> deleteSupplier(
             @PathVariable("farmId") UUID farmId,
-            @PathVariable("supplierCode") UUID supplierId
+            @PathVariable("supplierId") UUID supplierId
     ){
         supplierService.deleteSupplier(supplierId);
         return ResponseUtil.noContent();

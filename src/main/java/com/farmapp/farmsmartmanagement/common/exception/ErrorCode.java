@@ -106,7 +106,8 @@ public enum ErrorCode {
 
 
     WAREHOUSE_LOCATION_ALREADY_EXISTS(409,"Vị trí trong kho đã tồn tại" ,HttpStatus.CONFLICT ),
-    WAREHOUSE_LOCATION_NOT_FOUND(404,"Vị trí này không tồn tại trong kho" ,HttpStatus.NOT_FOUND );
+    WAREHOUSE_LOCATION_NOT_FOUND(404,"Vị trí này không tồn tại trong kho" ,HttpStatus.NOT_FOUND ),
+    TASK_ASSIGNEE_ALREADY_USER(409,"Người này đã được gán vào công việc" ,HttpStatus.CONFLICT );
 
 
 
