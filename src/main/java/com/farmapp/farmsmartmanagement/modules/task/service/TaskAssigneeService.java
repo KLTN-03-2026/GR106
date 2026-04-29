@@ -51,7 +51,7 @@ public class TaskAssigneeService {
     UserMapper userMapper;
 
     @Transactional
-    @PreAuthorize("hasAuthorize('task:assign')")
+    @PreAuthorize("hasAuthority('task:assign')")
     public CreateTaskAssigneeResponse createTaskAssignee(UUID planId, UUID stageId, UUID taskId, CreateTaskAssigneeRequest request) {
         UUID farmId = securityUtils.getCurrentFarmId();
 
