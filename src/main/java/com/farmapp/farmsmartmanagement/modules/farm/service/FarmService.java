@@ -44,6 +44,11 @@ public class FarmService {
     FarmMapper farmMapper;
     SecurityUtils securityUtils;
 
+    PlanStageStatusTransitionRepository planStageStatusTransitionRepository;
+    TaskStatusTransitionRepository taskStatusTransitionRepository;
+    TaskStatusRepository taskStatusRepository;
+    PlanStageStatusRepository planStageStatusRepository;
+
     @PersistenceContext
     EntityManager em;
 
@@ -122,6 +127,10 @@ public class FarmService {
         FarmRoleEntity ownerRole = farmRoleRepository.findByName("OWNER")
                 .orElseThrow(() -> new AppException(ErrorCode.FARM_ROLE_NOT_FOUND));
 
+        // 7. Tạo các chuyển dịch trạng thái mặc định cho farm
+        createDefaultTaskStatusTransitions(farm,ownerRole, now);
+        createDefaultPlanStageStatusTransitions(farm,ownerRole, now);
+
         FarmMemberEntity member = new FarmMemberEntity();
         member.setFarm(farm);
         member.setUser(owner);
@@ -186,4 +195,104 @@ public class FarmService {
 
         farm.setDeletedAt(Instant.now());
     }
+
+    // ---------------- PRIVATE HELPERS ----------------
+
+    private void createDefaultTaskStatusTransitions(FarmEntity farm, FarmRoleEntity farmRole, Instant now) {
+        TaskStatusEntity todo = taskStatusRepository.findByCode("TODO")
+                .orElseThrow(() -> new AppException(ErrorCode.TASK_STATUS_NOT_FOUND));
+        TaskStatusEntity assigned = taskStatusRepository.findByCode("ASSIGNED")
+                .orElseThrow(() -> new AppException(ErrorCode.TASK_STATUS_NOT_FOUND));
+        TaskStatusEntity inProgress = taskStatusRepository.findByCode("IN_PROGRESS")
+                .orElseThrow(() -> new AppException(ErrorCode.TASK_STATUS_NOT_FOUND));
+        TaskStatusEntity done = taskStatusRepository.findByCode("DONE")
+                .orElseThrow(() -> new AppException(ErrorCode.TASK_STATUS_NOT_FOUND));
+        TaskStatusEntity cancelled = taskStatusRepository.findByCode("CANCELLED")
+                .orElseThrow(() -> new AppException(ErrorCode.TASK_STATUS_NOT_FOUND));
+        TaskStatusEntity overdue = taskStatusRepository.findByCode("OVERDUE")
+                .orElseThrow(() -> new AppException(ErrorCode.TASK_STATUS_NOT_FOUND));
+
+        TaskStatusTransitionEntity t1 = new TaskStatusTransitionEntity();
+        t1.setFarm(farm);
+        t1.setFromStatus(todo);
+        t1.setToStatus(assigned);
+        t1.setFarmRole(farmRole);
+        t1.setCreatedAt(now);
+
+        TaskStatusTransitionEntity t2 = new TaskStatusTransitionEntity();
+        t2.setFarm(farm);
+        t2.setFromStatus(assigned);
+        t2.setToStatus(inProgress);
+        t2.setFarmRole(farmRole);
+        t2.setCreatedAt(now);
+
+        TaskStatusTransitionEntity t3 = new TaskStatusTransitionEntity();
+        t3.setFarm(farm);
+        t3.setFromStatus(inProgress);
+        t3.setToStatus(done);
+        t3.setFarmRole(farmRole);
+        t3.setCreatedAt(now);
+
+        TaskStatusTransitionEntity t4 = new TaskStatusTransitionEntity();
+        t4.setFarm(farm);
+        t4.setFromStatus(inProgress);
+        t4.setToStatus(cancelled);
+        t4.setFarmRole(farmRole);
+        t4.setCreatedAt(now);
+
+        TaskStatusTransitionEntity t5 = new TaskStatusTransitionEntity();
+        t5.setFarm(farm);
+        t5.setFromStatus(inProgress);
+        t5.setToStatus(overdue);
+        t5.setFarmRole(farmRole);
+        t5.setCreatedAt(now);
+
+        taskStatusTransitionRepository.saveAll(List.of(t1, t2, t3, t4, t5));
+    }
+
+    private void createDefaultPlanStageStatusTransitions(FarmEntity farm, FarmRoleEntity farmRole, Instant now) {
+        PlanStageStatusEntity notStarted = planStageStatusRepository.findByCode("NOT_STARTED")
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_STATUS_NOT_FOUND));
+        PlanStageStatusEntity inProgress = planStageStatusRepository.findByCode("IN_PROGRESS")
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_STATUS_NOT_FOUND));
+        PlanStageStatusEntity completed = planStageStatusRepository.findByCode("COMPLETED")
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_STATUS_NOT_FOUND));
+        PlanStageStatusEntity skipped = planStageStatusRepository.findByCode("SKIPPED")
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_STATUS_NOT_FOUND));
+        PlanStageStatusEntity cancelled = planStageStatusRepository.findByCode("CANCELLED")
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_STATUS_NOT_FOUND));
+
+        PlanStageStatusTransitionEntity p1 = new PlanStageStatusTransitionEntity();
+        p1.setFarm(farm);
+        p1.setFromStatus(notStarted);
+        p1.setToStatus(inProgress);
+        p1.setFarmRole(farmRole);
+        p1.setCreatedAt(now);
+
+        PlanStageStatusTransitionEntity p2 = new PlanStageStatusTransitionEntity();
+        p2.setFarm(farm);
+        p2.setFromStatus(inProgress);
+        p2.setToStatus(completed);
+        p2.setFarmRole(farmRole);
+        p2.setCreatedAt(now);
+
+        PlanStageStatusTransitionEntity p3 = new PlanStageStatusTransitionEntity();
+        p3.setFarm(farm);
+        p3.setFromStatus(inProgress);
+        p3.setToStatus(skipped);
+        p3.setFarmRole(farmRole);
+        p3.setCreatedAt(now);
+
+        PlanStageStatusTransitionEntity p4 = new PlanStageStatusTransitionEntity();
+        p4.setFarm(farm);
+        p4.setFromStatus(inProgress);
+        p4.setToStatus(cancelled);
+        p4.setFarmRole(farmRole);
+        p4.setCreatedAt(now);
+
+        planStageStatusTransitionRepository.saveAll(List.of(p1, p2, p3, p4));
+    }
+
+
+
 }
