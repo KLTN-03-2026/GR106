@@ -16,6 +16,7 @@ interface MaterialsSectionProps {
   onItemChange: (id: string) => void;
   onQtyChange: (val: string) => void;
   onAdd: () => void;
+  onDelete: (id: string) => void;
 }
 
 export function MaterialsSection({
@@ -31,7 +32,8 @@ export function MaterialsSection({
   onWarehouseChange,
   onItemChange,
   onQtyChange,
-  onAdd
+  onAdd,
+  onDelete
 }: MaterialsSectionProps) {
   return (
     <div className="px-4 py-3 border-t border-slate-100">
@@ -112,7 +114,10 @@ export function MaterialsSection({
                   </div>
                 </div>
                 {canEdit && (
-                  <button className="p-1.5 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all">
+                  <button 
+                    onClick={() => onDelete(m.id)}
+                    className="p-1.5 text-rose-400 hover:text-rose-600 transition-all"
+                  >
                     <Trash2 size={14} />
                   </button>
                 )}

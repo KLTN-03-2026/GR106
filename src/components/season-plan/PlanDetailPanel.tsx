@@ -11,17 +11,21 @@ import { useWarehouseItems } from '@/hooks/warehouseItems/useWarehouseItems';
 import { useWarehouses } from '@/hooks/warehouses/useWarehouses';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useTaskMaterials } from '@/hooks/taskMaterials/useTaskMaterials';
+import { useTaskAssignees } from '@/hooks/taskAssignees/useTaskAssignees';
+import { useMembers } from '@/hooks/members/useMembers';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { toast } from 'sonner';
 import { createTaskSchema } from '@/schemas/seasonPlanSchemas';
 import { createTaskMaterialSchema } from '@/schemas/taskMaterialSchemas';
+import { createTaskAssigneeSchema } from '@/schemas/taskAssigneeSchemas';
 import { extractErrorMessage } from '@/utils/errorUtils';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 import { DetailHeader } from './detail/DetailHeader';
 import { GeneralInfo } from './detail/GeneralInfo';
 import { MaterialsSection } from './detail/MaterialsSection';
+import { AssigneesSection } from './detail/AssigneesSection';
 import { SubTasksSection } from './detail/SubTasksSection';
 import { DeleteConfirmModal } from './detail/DeleteConfirmModal';
 import { PlotManager } from './detail/PlotManager';
@@ -76,6 +80,7 @@ export function PlanDetailPanel({
   const { warehouses, fetchWarehouses } = useWarehouses();
   const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
   const { items: warehouseItems } = useWarehouseItems(targetFarmId, selectedWarehouseId || null);
+  const { members, fetchMembers, loadingMembers } = useMembers();
 
   const [activeTab, setActiveTab] = useState<'INFO' | 'MEMBERS' | 'MATERIALS'>('INFO');
   const [activeSelection, setActiveSelection] = useState(selection);
@@ -85,12 +90,26 @@ export function PlanDetailPanel({
     materials: taskMaterials,
     loading: isMaterialsQueryLoading,
     adding: isAddingMaterial,
-    addMaterial
+    addMaterial,
+    deleteMaterial
   } = useTaskMaterials(
     activeSelection?.plan.id,
     activeSelection?.type === 'TASK' ? (activeSelection as any).phase.id : undefined,
     activeSelection?.type === 'TASK' ? (activeSelection as any).task.id : undefined,
     isOpen && activeTab === 'MATERIALS' && activeSelection?.type === 'TASK'
+  );
+
+  const {
+    assignees: taskAssignees,
+    loading: isAssigneesQueryLoading,
+    adding: isAddingAssignee,
+    addAssignee,
+    deleteAssignee,
+  } = useTaskAssignees(
+    activeSelection?.plan.id,
+    activeSelection?.type === 'TASK' ? (activeSelection as any).phase.id : undefined,
+    activeSelection?.type === 'TASK' ? (activeSelection as any).task.id : undefined,
+    isOpen && activeTab === 'MEMBERS' && activeSelection?.type === 'TASK'
   );
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -112,6 +131,7 @@ export function PlanDetailPanel({
   const [loadingAddPlot, setLoadingAddPlot] = useState(false);
   const [selectedWarehouseItemId, setSelectedWarehouseItemId] = useState('');
   const [plannedQty, setPlannedQty] = useState<string>('');
+  const [selectedAssigneeUserId, setSelectedAssigneeUserId] = useState('');
 
 
   useEffect(() => {
@@ -129,6 +149,14 @@ export function PlanDetailPanel({
   }, [activeSelection?.type, activeTab, fetchWarehouses, isOpen, targetFarmId]);
 
   useEffect(() => {
+    const isMembersTaskOpen =
+      isOpen && activeTab === 'MEMBERS' && activeSelection?.type === 'TASK';
+    if (isMembersTaskOpen && targetFarmId) {
+      void fetchMembers(targetFarmId);
+    }
+  }, [activeSelection?.type, activeTab, fetchMembers, isOpen, targetFarmId]);
+
+  useEffect(() => {
     setSelectedWarehouseItemId('');
   }, [selectedWarehouseId]);
 
@@ -138,6 +166,7 @@ export function PlanDetailPanel({
     setIsEditing(false);
     setSelectedWarehouseId('');
     setSelectedWarehouseItemId('');
+    setSelectedAssigneeUserId('');
     setPlannedQty('');
     if (selection) {
       const defaultPlot = selection.plan.plots?.[0]?.plotId ?? '';
@@ -275,6 +304,25 @@ export function PlanDetailPanel({
       toast.success('Thêm vật tư thành công');
     } catch (error: any) {
       console.error('Lỗi thêm vật tư:', error);
+      toast.error(extractErrorMessage(error));
+    }
+  };
+
+  const handleAddAssigneeSubmit = async () => {
+    if (!activeSelection || activeSelection.type !== 'TASK') return;
+
+    const payload = { userId: selectedAssigneeUserId };
+    const validation = createTaskAssigneeSchema.safeParse(payload);
+    if (!validation.success) {
+      toast.error(validation.error.errors[0].message);
+      return;
+    }
+
+    try {
+      await addAssignee(validation.data);
+      setSelectedAssigneeUserId('');
+      toast.success('Giao việc thành công');
+    } catch (error: any) {
       toast.error(extractErrorMessage(error));
     }
   };
@@ -446,17 +494,39 @@ export function PlanDetailPanel({
                     onItemChange={setSelectedWarehouseItemId}
                     onQtyChange={setPlannedQty}
                     onAdd={handleAddMaterialSubmit}
+                    onDelete={(id) => {
+                      deleteMaterial(id)
+                        .then(() => toast.success('Xóa vật tư thành công'))
+                        .catch((err) => toast.error(extractErrorMessage(err)));
+                    }}
                   />
                 </motion.div>
               )}
 
-              {activeTab === 'MEMBERS' && (
+              {activeTab === 'MEMBERS' && sel.type === 'TASK' && (
+                <AssigneesSection
+                  assignees={taskAssignees}
+                  loading={isAssigneesQueryLoading || loadingMembers}
+                  adding={isAddingAssignee}
+                  canEdit={canEdit}
+                  members={members}
+                  selectedUserId={selectedAssigneeUserId}
+                  onUserChange={setSelectedAssigneeUserId}
+                  onAdd={handleAddAssigneeSubmit}
+                  onDelete={(assigneeId) => {
+                    deleteAssignee(assigneeId)
+                      .then(() => toast.success('Gỡ giao việc thành công'))
+                      .catch((err) => toast.error(extractErrorMessage(err)));
+                  }}
+                />
+              )}
+              {activeTab === 'MEMBERS' && sel.type !== 'TASK' && (
                 <div className="flex flex-col items-center justify-center py-20 text-slate-400 px-10 text-center">
                   <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center mb-4">
                     <Users size={24} />
                   </div>
-                  <h3 className="text-[13px] font-bold text-slate-700 mb-1">Tính năng đang phát triển</h3>
-                  <p className="text-[11px] leading-relaxed">Bạn sẽ sớm có thể giao việc cho các thành viên trong trang trại tại đây.</p>
+                  <h3 className="text-[13px] font-bold text-slate-700 mb-1">Chọn một công việc</h3>
+                  <p className="text-[11px] leading-relaxed">Bạn chỉ có thể giao việc cho thành viên khi đang xem chi tiết công việc.</p>
                 </div>
               )}
             </AnimatePresence>
