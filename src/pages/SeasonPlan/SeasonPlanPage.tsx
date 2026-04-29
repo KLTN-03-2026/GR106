@@ -721,9 +721,9 @@ export function SeasonPlanPage() {
               onUpdateTask={handleUpdateTask}
               onDeleteTask={handleDeleteTask}
               onSelectPhase={(_id, phaseId) =>
-                setSelectedItem({ type: 'PHASE', id: phaseId, planId: planId! })}
+                setSelectedItem({ type: 'PHASE', id: phaseId, planId: _id })}
               onSelectTask={(_pid, stageId, taskId) =>
-                setSelectedItem({ type: 'TASK', id: taskId, phaseId: stageId, planId: planId! })}
+                setSelectedItem({ type: 'TASK', id: taskId, phaseId: stageId, planId: _pid })}
               onDeletePlan={handleDeletePlan}
               onClone={p => setCloneSourcePlan(p)}
               onAddPlots={handleAddPlotsToPlan}
