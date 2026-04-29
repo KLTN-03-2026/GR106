@@ -70,4 +70,12 @@ public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID
     Optional<PlanStageEntity> findByIdAndPlanId(UUID planStageId, UUID planId);
 
     Optional<PlanStageEntity> findByIdAndPlanIdAndPlan_Farm_Id(UUID planStageId, UUID planId, UUID farmId);
+
+    @Query("""
+        SELECT pt FROM PlanStageEntity pt
+        WHERE pt.id = :stageId
+          AND pt.plan.id = :planId
+          AND pt.status.isTerminal = false
+    """)
+    Optional<PlanStageEntity> findByIdAndPlanIdAndStatusIsNotTerminal(UUID stageId, UUID planId);
 }

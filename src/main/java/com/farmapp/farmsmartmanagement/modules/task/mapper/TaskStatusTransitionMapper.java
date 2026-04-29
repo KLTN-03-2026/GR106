@@ -7,8 +7,8 @@ import org.mapstruct.Mapper;
 import java.util.List;
 
 @Mapper(componentModel = "spring")
-public interface TaskTransitionMapper {
+public interface TaskStatusTransitionMapper {
     TaskStatusTransitionResponse toResponse(TaskStatusTransitionEntity entity);
 
-    List<TaskStatusTransitionResponse> toResponse(List<TaskStatusTransitionEntity> entities);
+    List<TaskStatusTransitionResponse> toResponses(List<TaskStatusTransitionEntity> entities);
 }

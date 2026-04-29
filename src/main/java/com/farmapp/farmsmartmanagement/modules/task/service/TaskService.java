@@ -185,8 +185,6 @@ public class TaskService {
 
 
 
-
-
     private boolean hasChanges(TaskEntity entity, UpdateTaskRequest request) {
         return !(Objects.equals(entity.getName(), request.getName())
                 && Objects.equals(entity.getDescription(), request.getDescription())

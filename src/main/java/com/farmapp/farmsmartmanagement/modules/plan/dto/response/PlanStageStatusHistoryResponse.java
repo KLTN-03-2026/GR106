@@ -1,19 +1,20 @@
-package com.farmapp.farmsmartmanagement.modules.task.dto.response;
+package com.farmapp.farmsmartmanagement.modules.plan.dto.response;
 
 import com.farmapp.farmsmartmanagement.modules.user.dto.response.UserResponse;
 import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
 import java.time.Instant;
+import java.util.UUID;
 
-@Data
-@Builder
+@Setter
+@Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class TaskStatusHistoryResponse {
-    TaskStatusResponse fromStatus;
-    TaskStatusResponse toStatus;
+public class PlanStageStatusHistoryResponse {
+    PlanStageStatusResponse fromStatus;
+    PlanStageStatusResponse toStatus;
     UserResponse changedBy;
     Instant changedAt;
 
