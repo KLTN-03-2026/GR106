@@ -1,6 +1,7 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { SeasonPlan } from '../../types/seasonPlan';
 import { seasonPlanTaskService, CreateTaskRequest, UpdateTaskRequest } from '../../services/seasonplan/seasonPlanTaskService';
+import { taskStatusService, TaskStatusTransition, TaskStatusChange, TaskStatusObject } from '../../services/seasonplan/taskStatusService';
 import { withUnwrap } from './seasonPlanShared';
 
 interface UseSeasonPlanTasksProps {
@@ -8,7 +9,14 @@ interface UseSeasonPlanTasksProps {
 }
 
 export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps) => {
+  const [taskStatuses, setTaskStatuses] = useState<TaskStatusObject[]>([]);
+  const [taskStatusTransitions, setTaskStatusTransitions] = useState<TaskStatusTransition[]>([]);
+  const [taskStatusHistoriesByTask, setTaskStatusHistoriesByTask] = useState<Record<string, TaskStatusChange[]>>({});
+
   return {
+    taskStatuses,
+    taskStatusTransitions,
+    taskStatusHistoriesByTask,
     error: null,
     fetchTasks: useCallback(
       (planId: string, stageId: string) =>
@@ -149,6 +157,68 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
           ),
         );
       },
+      [updatePlansCache],
+    ),
+    fetchTaskStatuses: useCallback(
+      () =>
+        withUnwrap(
+          taskStatusService.getTaskStatuses().then((statuses) => {
+            setTaskStatuses(statuses);
+            return statuses;
+          }),
+        ),
+      [],
+    ),
+    fetchTaskStatusTransitions: useCallback(
+      () =>
+        withUnwrap(
+          taskStatusService.getTaskStatusTransitions().then((transitions) => {
+            setTaskStatusTransitions(transitions);
+            return transitions;
+          }),
+        ),
+      [],
+    ),
+    fetchTaskStatusHistories: useCallback(
+      (planId: string, stageId: string, taskId: string) =>
+        withUnwrap(
+          taskStatusService.getTaskStatusHistories(planId, stageId, taskId).then((histories) => {
+            setTaskStatusHistoriesByTask((prev) => ({ ...prev, [taskId]: histories }));
+            return histories;
+          }),
+        ),
+      [],
+    ),
+    updateTaskStatus: useCallback(
+      (planId: string, stageId: string, taskId: string, statusId: string) =>
+        withUnwrap(
+          taskStatusService.updateTaskStatus(planId, stageId, taskId, statusId).then((result) => {
+            updatePlansCache((prev) =>
+              prev.map((p) =>
+                p.id === planId
+                  ? {
+                      ...p,
+                      phases: p.phases.map((ph) =>
+                        ph.id === stageId
+                          ? {
+                              ...ph,
+                              tasks: (ph.tasks ?? []).map((t) =>
+                                t.id === taskId ? { ...t, status: result.toStatus } : t,
+                              ),
+                            }
+                          : ph,
+                      ),
+                    }
+                  : p,
+              ),
+            );
+            setTaskStatusHistoriesByTask((prev) => ({
+              ...prev,
+              [taskId]: [result, ...(prev[taskId] ?? [])],
+            }));
+            return result;
+          }),
+        ),
       [updatePlansCache],
     ),
   };

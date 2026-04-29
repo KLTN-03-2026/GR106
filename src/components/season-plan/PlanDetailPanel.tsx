@@ -55,6 +55,8 @@ interface PlanDetailPanelProps {
   canEdit?: boolean;
   phaseStatusOptions?: { code: string; label: string }[];
   phaseStatusTransitions?: import('@/services/seasonplan/planStageStatusService').PlanStageStatusTransition[];
+  taskStatusOptions?: { code: string; label: string }[];
+  taskStatusTransitions?: any[];
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -76,6 +78,8 @@ export function PlanDetailPanel({
   canEdit = false,
   phaseStatusOptions = [],
   phaseStatusTransitions = [],
+  taskStatusOptions = [],
+  taskStatusTransitions = [],
 }: PlanDetailPanelProps) {
   const { currentFarmId } = useAuth();
   const { selectedFarmId } = useSelector((state: RootState) => state.farm);
@@ -408,6 +412,8 @@ export function PlanDetailPanel({
                     onSelectPhase={onSelectPhase}
                     phaseStatusOptions={phaseStatusOptions}
                     phaseStatusTransitions={phaseStatusTransitions}
+                    taskStatusOptions={taskStatusOptions}
+                    taskStatusTransitions={taskStatusTransitions}
                   />
 
                   {sel.type === 'PLAN' && (

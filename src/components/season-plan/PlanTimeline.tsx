@@ -42,6 +42,8 @@ interface PlanTimelineProps {
   onExpandPhase?: (planId: string, phaseId: string) => void;
   preExpandedPlanId?: string;
   canEdit?: boolean;
+  phaseStatuses?: { code: string; name: string; color?: string }[];
+  taskStatuses?: { code: string; name: string; color?: string }[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -118,6 +120,8 @@ export function PlanTimeline({
   onExpandPhase,
   preExpandedPlanId,
   canEdit = false,
+  phaseStatuses = [],
+  taskStatuses = [],
 }: PlanTimelineProps) {
 
   // ── Sidebar resize ────────────────────────────────────────────────────────
@@ -549,27 +553,51 @@ export function PlanTimeline({
 
   // ── Status helpers ────────────────────────────────────────────────────────
   const statusCode = (s: any) => typeof s === 'string' ? s : (s?.code ?? '');
-  const statusLabel = (s: any) => {
+  
+  // Try to find status from API prop first
+  const getPhaseStatusFromApi = (code: string) => phaseStatuses?.find(ps => ps.code === code);
+  const getTaskStatusFromApi = (code: string) => taskStatuses?.find(ts => ts.code === code);
+
+  const statusLabel = (s: any, isPhase = false, isTask = false) => {
     const code = statusCode(s);
+    if (isPhase) {
+      const apiStatus = getPhaseStatusFromApi(code);
+      if (apiStatus && apiStatus.name) return apiStatus.name;
+    }
+    if (isTask) {
+      const apiStatus = getTaskStatusFromApi(code);
+      if (apiStatus && apiStatus.name) return apiStatus.name;
+    }
     switch (code) {
-      case 'COMPLETED': return 'HOÀN THÀNH';
-      case 'IN_PROGRESS': case 'ACTIVE': return 'ĐANG THỰC HIỆN';
-      case 'OVERDUE': return 'QUÁ HẠN';
-      case 'ASSIGNED': return 'PHÂN CÔNG';
-      case 'CANCELLED': return 'ĐÃ HỦY';
-      case 'DRAFT': case 'UNASSIGNED': return 'CẦN LÀM';
-      default: return 'CẦN LÀM';
+      case 'COMPLETED': return 'Hoàn thành';
+      case 'IN_PROGRESS': case 'ACTIVE': return 'Đang thực hiện';
+      case 'OVERDUE': return 'Trễ hạn';
+      case 'ASSIGNED': return 'Phân công';
+      case 'CANCELLED': return 'Đã hủy';
+      case 'READY_TO_HARVEST': return 'Sẵn sàng thu hoạch';
+      case 'HARVESTING': return 'Đang thu hoạch';
+      case 'NOT_STARTED': return 'Chưa bắt đầu';
+      case 'DRAFT': case 'UNASSIGNED': return 'Nháp';
+      default: return code || 'Nháp';
     }
   };
+
   const statusBadgeCls = (s: any) => {
     const code = statusCode(s);
+    // fallback to dynamic inline styles if color is hex, or just default classes if not
+
+    
     if (code === 'COMPLETED') return 'bg-emerald-100 text-emerald-700';
     if (code === 'IN_PROGRESS' || code === 'ACTIVE') return 'bg-blue-100 text-blue-700';
     if (code === 'OVERDUE') return 'bg-rose-100 text-rose-700';
     if (code === 'ASSIGNED') return 'bg-violet-100 text-violet-700';
     if (code === 'CANCELLED') return 'bg-red-100 text-red-600';
+    if (code === 'READY_TO_HARVEST') return 'bg-lime-100 text-lime-700';
+    if (code === 'HARVESTING') return 'bg-emerald-100 text-emerald-700';
+    if (code === 'NOT_STARTED') return 'bg-slate-100 text-slate-700';
     return 'bg-slate-100 text-slate-600';
   };
+
   const taskBarCls = (s: any) => {
     const code = statusCode(s);
     if (code === 'COMPLETED') return 'bg-emerald-500';
@@ -578,6 +606,47 @@ export function PlanTimeline({
     if (code === 'ASSIGNED') return 'bg-violet-500';
     if (code === 'CANCELLED') return 'bg-red-400';
     return 'bg-slate-400';
+  };
+
+  // Màu thanh Phase dựa theo trạng thái
+  const phaseBarCls = (s: any) => {
+    const code = statusCode(s);
+    if (code === 'COMPLETED') return 'bg-emerald-500';
+    if (code === 'IN_PROGRESS' || code === 'ACTIVE') return 'bg-blue-500';
+    if (code === 'OVERDUE') return 'bg-rose-500';
+    if (code === 'CANCELLED') return 'bg-red-400';
+    if (code === 'READY_TO_HARVEST') return 'bg-lime-500';
+    if (code === 'HARVESTING') return 'bg-teal-500';
+    if (code === 'ASSIGNED') return 'bg-violet-500';
+    if (code === 'NOT_STARTED') return 'bg-slate-400';
+    return 'bg-indigo-500'; // DRAFT / mặc định
+  };
+
+  const phaseBarHoverCls = (s: any) => {
+    const code = statusCode(s);
+    if (code === 'COMPLETED') return 'hover:bg-emerald-600';
+    if (code === 'IN_PROGRESS' || code === 'ACTIVE') return 'hover:bg-blue-600';
+    if (code === 'OVERDUE') return 'hover:bg-rose-600';
+    if (code === 'CANCELLED') return 'hover:bg-red-500';
+    if (code === 'READY_TO_HARVEST') return 'hover:bg-lime-600';
+    if (code === 'HARVESTING') return 'hover:bg-teal-600';
+    if (code === 'ASSIGNED') return 'hover:bg-violet-600';
+    if (code === 'NOT_STARTED') return 'hover:bg-slate-500';
+    return 'hover:bg-indigo-600';
+  };
+
+  // Màu icon Phase trong sidebar
+  const phaseIconBgCls = (s: any) => {
+    const code = statusCode(s);
+    if (code === 'COMPLETED') return 'bg-emerald-500';
+    if (code === 'IN_PROGRESS' || code === 'ACTIVE') return 'bg-blue-500';
+    if (code === 'OVERDUE') return 'bg-rose-500';
+    if (code === 'CANCELLED') return 'bg-red-400';
+    if (code === 'READY_TO_HARVEST') return 'bg-lime-500';
+    if (code === 'HARVESTING') return 'bg-teal-500';
+    if (code === 'ASSIGNED') return 'bg-violet-500';
+    if (code === 'NOT_STARTED') return 'bg-slate-400';
+    return 'bg-indigo-500';
   };
 
   // ── Row list ─────────────────────────────────────────────────────────────
@@ -786,7 +855,6 @@ export function PlanTimeline({
             }
 
             if (r.type === 'phase') {
-              // FIX BUG 3: expanded state phải đọc từ expandedPhases, không phải expandedPlans
               const expanded = expandedPhases.has(r.id);
               return (
                 <AnimatedRow key={r.id} visible={visible} rowHeight={ROW_H}>
@@ -800,19 +868,21 @@ export function PlanTimeline({
                   >
                     <button
                       className="p-0.5 mr-1.5 text-slate-500 hover:text-indigo-500 flex-shrink-0 transition-transform duration-200"
-                      // FIX BUG 3: rotate dựa trên `expanded` (= expandedPhases.has(r.id))
-                      // expanded=true → mũi tên xuống (0deg), expanded=false → mũi tên phải (-90deg)
                       style={{ transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}
                       onClick={e => togglePhase(r.id, r.planId, e)}
                     >
                       <ChevronDown size={14} strokeWidth={3} />
                     </button>
-                    <div className="w-3.5 h-3.5 rounded-sm bg-indigo-500 flex items-center justify-center mr-2 flex-shrink-0">
+                    <div className={cn('w-3.5 h-3.5 rounded-sm flex items-center justify-center mr-2 flex-shrink-0', phaseIconBgCls(r.item.status))}>
                       <svg width="8" height="8" viewBox="0 0 8 8">
                         <path d="M4 1L7 4L4 7M1 4h6" stroke="white" strokeWidth="1.3" fill="none" strokeLinecap="round" />
                       </svg>
                     </div>
                     <span className="truncate text-[12px] font-medium text-slate-700 flex-1 min-w-0">{r.item.name}</span>
+                    <span className={cn('ml-1 flex-shrink-0 text-[9px] px-1.5 py-0.5 rounded font-bold tracking-wide', statusBadgeCls(r.item.status))}
+                          style={getPhaseStatusFromApi(statusCode(r.item.status))?.color ? { backgroundColor: getPhaseStatusFromApi(statusCode(r.item.status))?.color + '20', color: getPhaseStatusFromApi(statusCode(r.item.status))?.color } : {}}>
+                      {statusLabel(r.item.status, true)}
+                    </span>
                   </div>
                 </AnimatedRow>
               );
@@ -839,8 +909,9 @@ export function PlanTimeline({
                   </div>
                   <span className="text-[10px] text-slate-400 mr-1.5 flex-shrink-0 font-mono">{(r.item as any).code ?? ''}</span>
                   <span className="truncate text-[12px] text-slate-700 font-medium flex-1 min-w-0">{r.item.name}</span>
-                  <span className={cn('ml-1 flex-shrink-0 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide', statusBadgeCls(r.item.status))}>
-                    {statusLabel(r.item.status)}
+                  <span className={cn('ml-1 flex-shrink-0 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide', statusBadgeCls(r.item.status))}
+                        style={getTaskStatusFromApi(statusCode(r.item.status))?.color ? { backgroundColor: getTaskStatusFromApi(statusCode(r.item.status))?.color + '20', color: getTaskStatusFromApi(statusCode(r.item.status))?.color } : {}}>
+                    {statusLabel(r.item.status, false, true)}
                   </span>
                 </div>
               </AnimatedRow>
@@ -951,6 +1022,8 @@ export function PlanTimeline({
                 const ph = r.item as Phase;
                 const ps = previewStyle(r.planId, ph.id, 'phase', ph.startDate, ph.endDate);
                 const isDragging = barDrag?.target.kind === 'phase' && (barDrag.target as any).phaseId === ph.id;
+                const barBase = phaseBarCls(ph.status);
+                const barHover = phaseBarHoverCls(ph.status);
                 return (
                   <AnimatedRow key={r.id} visible={visible} rowHeight={ROW_H}>
                     <div
@@ -961,17 +1034,18 @@ export function PlanTimeline({
                       <div
                         className={cn(
                           'absolute flex items-center overflow-hidden rounded-md z-10',
-                          isSelected ? 'bg-indigo-600' : 'bg-indigo-500 hover:bg-indigo-600',
-                          isDragging ? 'opacity-90 ring-2 ring-indigo-300' : '',
+                          getPhaseStatusFromApi(statusCode(ph.status))?.color ? '' : (isSelected ? `${barBase} brightness-110` : `${barBase} ${barHover}`),
+                          isDragging ? 'opacity-90 ring-2 ring-white/40' : '',
                           canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
                         )}
                         style={{
                           ...ps,
+                          backgroundColor: getPhaseStatusFromApi(statusCode(ph.status))?.color,
                           top: '50%',
                           transform: 'translateY(-50%)',
                           height: 24,
                           willChange: 'left, width',
-                          transition: isDragging ? 'none' : 'left .15s ease-out, width .15s ease-out',
+                          transition: isDragging ? 'none' : 'left .15s ease-out, width .15s ease-out, background-color .2s ease',
                         }}
                         onMouseDown={canEdit ? e => startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: ph.id }, 'MOVE', ph.startDate, ph.endDate) : undefined}
                         onClick={e => { e.stopPropagation(); onSelect({ type: 'PHASE', id: ph.id, planId: r.planId }); }}
@@ -982,7 +1056,10 @@ export function PlanTimeline({
                             <span className="w-px h-3 bg-white/60 rounded-full" />
                           </div>
                         )}
-                        <span className="text-[11px] font-semibold text-white px-3 truncate pointer-events-none">{ph.name}</span>
+                        <span className="text-[11px] font-semibold text-white px-3 truncate pointer-events-none flex-1 min-w-0">{ph.name}</span>
+                        <span className="text-[9px] text-white/70 pr-2 flex-shrink-0 pointer-events-none hidden md:block">
+                          {statusLabel(ph.status, true)}
+                        </span>
                         {canEdit && (
                           <div className="absolute right-0 top-0 bottom-0 w-2 cursor-e-resize z-20 flex items-center justify-center hover:bg-white/10"
                             onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: ph.id }, 'RESIZE_RIGHT', ph.startDate, ph.endDate); }}>
@@ -1008,15 +1085,21 @@ export function PlanTimeline({
                     onClick={() => onSelect({ type: 'TASK', id: tk.id, planId: r.planId, phaseId: r.phaseId })}
                   >
                     <div
-                      className={cn('absolute rounded overflow-hidden z-10', taskBarCls(tk.status), isDragging ? 'opacity-90 ring-2 ring-indigo-300' : '', canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer')}
+                      className={cn(
+                        'absolute rounded overflow-hidden z-10',
+                        getTaskStatusFromApi(statusCode(tk.status))?.color ? '' : taskBarCls(tk.status),
+                        isDragging ? 'opacity-90 ring-2 ring-indigo-300' : '',
+                        canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+                      )}
                       style={{
                         ...ps,
+                        backgroundColor: getTaskStatusFromApi(statusCode(tk.status))?.color,
                         top: '50%',
                         transform: 'translateY(-50%)',
                         height: 14,
                         minWidth: 20,
                         willChange: 'left, width',
-                        transition: isDragging ? 'none' : 'left .15s ease-out, width .15s ease-out',
+                        transition: isDragging ? 'none' : 'left .15s ease-out, width .15s ease-out, background-color .2s ease',
                       }}
                       onMouseDown={canEdit ? e => startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tk.id }, 'MOVE', tk.startDate, tk.endDate) : undefined}
                       onClick={e => { e.stopPropagation(); onSelect({ type: 'TASK', id: tk.id, planId: r.planId, phaseId: r.phaseId }); }}

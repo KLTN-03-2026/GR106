@@ -23,6 +23,8 @@ interface GeneralInfoProps {
   onSelectPhase: (planId: string, phaseId: string) => void;
   phaseStatusOptions?: { code: string; label: string }[];
   phaseStatusTransitions?: PlanStageStatusTransition[];
+  taskStatusOptions?: { code: string; label: string }[];
+  taskStatusTransitions?: any[]; // use any or import TaskStatusTransition
 }
 
 export function GeneralInfo({
@@ -37,6 +39,8 @@ export function GeneralInfo({
   onSelectPhase,
   phaseStatusOptions,
   phaseStatusTransitions,
+  taskStatusOptions,
+  taskStatusTransitions,
 }: GeneralInfoProps) {
   const { plan, type } = selection;
 
@@ -58,30 +62,21 @@ export function GeneralInfo({
     return resolvedPhaseStatusOptions.filter(o => validToCodes.has(o.code));
   })();
 
-  // Task status transition map (local logic — no API for task transitions)
-  const TASK_TRANSITIONS: Record<string, string[]> = {
-    'UNASSIGNED': ['ASSIGNED', 'CANCELLED'],
-    'ASSIGNED': ['IN_PROGRESS', 'UNASSIGNED', 'CANCELLED'],
-    'IN_PROGRESS': ['COMPLETED', 'OVERDUE', 'CANCELLED'],
-    'OVERDUE': ['IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
-    'COMPLETED': ['IN_PROGRESS'],
-    'CANCELLED': ['UNASSIGNED'],
-  };
-
-  const allTaskStatusOptions = [
-    { code: 'UNASSIGNED', label: 'Chưa giao' },
-    { code: 'ASSIGNED', label: 'Đã giao việc' },
-    { code: 'IN_PROGRESS', label: 'Đang thực hiện' },
-    { code: 'COMPLETED', label: 'Hoàn thành' },
-    { code: 'OVERDUE', label: 'Trễ hạn' },
-    { code: 'CANCELLED', label: 'Đã hủy' },
-  ];
-
+  const resolvedTaskStatusOptions = taskStatusOptions ?? [];
   const currentTaskStatusCode = statusCodeOf(tempTask?.status ?? selection.task?.status);
+  
   const validTaskOptions = (() => {
-    const allowed = TASK_TRANSITIONS[currentTaskStatusCode] ?? [];
-    const validSet = new Set([currentTaskStatusCode, ...allowed]);
-    return allTaskStatusOptions.filter(o => validSet.has(o.code));
+    if (!taskStatusTransitions || taskStatusTransitions.length === 0) {
+      return resolvedTaskStatusOptions;
+    }
+    const validToCodes = new Set(
+      taskStatusTransitions
+        .filter(t => t.fromStatus.code === currentTaskStatusCode)
+        .map(t => t.toStatus.code)
+    );
+    // Always include current status so chip shows correctly
+    validToCodes.add(currentTaskStatusCode);
+    return resolvedTaskStatusOptions.filter(o => validToCodes.has(o.code));
   })();
 
   return (

@@ -128,7 +128,8 @@ export function SeasonPlanPage() {
     fetchPlans, createPlan, deletePlan: removePlan, updatePlanTime,
     fetchStages, fetchPlanPlots, createPhase, deletePhase: removePhase, updatePhase,
     updatePhaseTime, updatePhaseStatus, fetchPlanStageStatuses, fetchPlanStageStatusTransitions, planStageStatuses, planStageStatusTransitions, fetchTasks, createTask: createSeasonTask,
-    updateTask: updateSeasonTask, updateTaskTime, deleteTask: removeSeasonTask,
+    updateTask: updateSeasonTask, updateTaskTime, updateTaskStatus, deleteTask: removeSeasonTask,
+    fetchTaskStatuses, fetchTaskStatusTransitions, taskStatuses, taskStatusTransitions,
     addPlotsToPlan, optimisticallyUpdatePhaseTime, optimisticallyUpdateTaskTime,
     addPlanToState
   } = useSeasonPlans();
@@ -183,6 +184,11 @@ export function SeasonPlanPage() {
     label: toLabel(s.code, s.name),
   }));
 
+  const taskStatusOptions = taskStatuses.map((s) => ({
+    code: s.code,
+    label: toLabel(s.code, s.name),
+  }));
+
   // ── Effects ───────────────────────────────────────────────────────────────
   useEffect(() => {
     fetchPlans();
@@ -195,6 +201,14 @@ export function SeasonPlanPage() {
   useEffect(() => {
     fetchPlanStageStatusTransitions();
   }, [fetchPlanStageStatusTransitions]);
+
+  useEffect(() => {
+    fetchTaskStatuses();
+  }, [fetchTaskStatuses]);
+
+  useEffect(() => {
+    fetchTaskStatusTransitions();
+  }, [fetchTaskStatusTransitions]);
 
   useEffect(() => {
     if (currentPlan) {
@@ -336,13 +350,8 @@ export function SeasonPlanPage() {
           throw new Error(`Không tìm thấy status "${data.statusCode}" trong danh mục Plan Stage Status. Có sẵn: [${availableCodes}]`);
         }
 
-        const fromCode = originalStatusCode;
-        const allowed = planStageStatusTransitions.some(
-          (t) => t.fromStatus.code === fromCode && t.toStatus.code === targetStatus.code
-        );
-        if (!allowed) {
-          throw new Error(`Chuyển trạng thái từ "${fromCode}" sang "${targetStatus.code}" không hợp lệ theo transition API.`);
-        }
+        // Xóa phần hardcode check transition ở client, để API backend tự validate
+        // và trả về lỗi nếu transition không hợp lệ.
 
         await updatePhaseStatus(planId, stageId, targetStatus.id).unwrap();
       }
@@ -496,11 +505,14 @@ export function SeasonPlanPage() {
       }
 
       const isDateChanged = originalTask.startDate !== task.startDate || originalTask.endDate !== task.endDate;
-      // Covers name, description, and plotId changes
       const isContentChanged =
         originalTask.name !== task.name ||
         originalTask.description !== task.description ||
         originalTask.plotId !== plotId;
+
+      const originalStatusCode = typeof originalTask.status === 'string' ? originalTask.status : (originalTask.status as any)?.code;
+      const newStatusCode = (task as any).statusCode;
+      const isStatusChanged = newStatusCode && originalStatusCode !== newStatusCode;
 
       if (isDateChanged) {
         await updateTaskTime(planId, stageId, task.id, {
@@ -517,6 +529,15 @@ export function SeasonPlanPage() {
           endDate: task.endDate,
           plotId,
         }).unwrap();
+      }
+
+      if (isStatusChanged) {
+        const targetStatus = taskStatuses.find(s => s.code === newStatusCode);
+        if (targetStatus) {
+          await updateTaskStatus(planId, stageId, task.id, targetStatus.id);
+        } else {
+          throw new Error(`Không tìm thấy status "${newStatusCode}" trong danh mục Task Status.`);
+        }
       }
     } catch (err: any) {
       showError('Lỗi cập nhật', err);
@@ -755,8 +776,10 @@ export function SeasonPlanPage() {
                     onDeletePlan={handleDeletePlan}
                     onAddPhase={handleAddPhase}
                     onExpandPhase={handleExpandPhase}
-                    preExpandedPlanId={planId}
+                    preExpandedPlanId={currentPlan ? undefined : String(planId)}
                     canEdit={canEdit}
+                    phaseStatuses={planStageStatuses}
+                    taskStatuses={taskStatuses}
                   />
                 </div>
               )}
@@ -793,6 +816,8 @@ export function SeasonPlanPage() {
               canEdit={canEdit}
               phaseStatusOptions={phaseStatusOptions}
               phaseStatusTransitions={planStageStatusTransitions}
+              taskStatusOptions={taskStatusOptions}
+              taskStatusTransitions={taskStatusTransitions}
             />
           </>
         )}

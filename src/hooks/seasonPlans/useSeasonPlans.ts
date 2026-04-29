@@ -45,5 +45,12 @@ export const useSeasonPlans = () => {
     updateTaskTime: taskPart.updateTaskTime,
     deleteTask: taskPart.deleteTask,
     optimisticallyUpdateTaskTime: taskPart.optimisticallyUpdateTaskTime,
+    taskStatuses: taskPart.taskStatuses,
+    taskStatusTransitions: taskPart.taskStatusTransitions,
+    taskStatusHistoriesByTask: taskPart.taskStatusHistoriesByTask,
+    fetchTaskStatuses: taskPart.fetchTaskStatuses,
+    fetchTaskStatusTransitions: taskPart.fetchTaskStatusTransitions,
+    fetchTaskStatusHistories: taskPart.fetchTaskStatusHistories,
+    updateTaskStatus: taskPart.updateTaskStatus,
   };
 };
