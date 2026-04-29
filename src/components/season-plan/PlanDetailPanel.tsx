@@ -40,6 +40,7 @@ import { toast } from 'sonner';
 import { createTaskSchema } from '@/schemas/seasonPlanSchemas';
 import { createTaskMaterialSchema } from '@/schemas/taskMaterialSchemas';
 import { TaskMaterial } from '@/types/taskMaterial';
+import { extractErrorMessage } from '@/utils/errorUtils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -461,9 +462,9 @@ export function PlanDetailPanel({
       setSelectedWarehouseItemId('');
       setPlannedQty('');
       toast.success('Thêm vật tư thành công');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Lỗi thêm vật tư:', error);
-      toast.error('Không thể thêm vật tư');
+      toast.error(extractErrorMessage(error));
     }
   };
 
