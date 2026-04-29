@@ -46,7 +46,7 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
           AND t.planStage.plan.id = :planId
           AND t.status.isTerminal = false
     """)
-    Optional<TaskEntity> findByIdAndStageIdAndPlanId(
+    Optional<TaskEntity> findByIdAndStageIdAndPlanIdAndStatusIsNotTerminal(
             @Param("taskId") UUID taskId,
             @Param("stageId") UUID stageId,
             @Param("planId") UUID planId
