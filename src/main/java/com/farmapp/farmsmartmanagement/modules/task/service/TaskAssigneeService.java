@@ -16,6 +16,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,6 +49,7 @@ public class TaskAssigneeService {
     UserMapper userMapper;
 
     @Transactional
+    @PreAuthorize("hasAuthorize('task:assign')")
     public CreateTaskAssigneeResponse createTaskAssignee(UUID planId, UUID stageId, UUID taskId, CreateTaskAssigneeRequest request) {
         UUID farmId = securityUtils.getCurrentFarmId();
 
@@ -108,6 +110,7 @@ public class TaskAssigneeService {
     }
 
     @Transactional
+    @PreAuthorize("hasAuthorize('task:assign')")
     public void deleteAssignee(UUID planId, UUID stageId, UUID taskId, UUID assigneeId) {
         taskAssigneeRepository.deleteByIdAndPlan_IdAndStage_IdAndTask_Id(assigneeId,planId,stageId,taskId);
     }
