@@ -8,11 +8,6 @@ import { useDispatch } from 'react-redux'
 import { loginSuccess } from '../../store/authSlice'
 import { authService } from '../../services/auth/authService'
 
-
-
-// Trong component, thêm sau useNavigate
-
-
 type Phase = 'loading' | 'login-required' | 'accepting' | 'success' | 'error'
 
 interface InvitationInfo {
@@ -338,7 +333,7 @@ export function AcceptInvitationPage() {
 
             {/* Footer */}
             <p className="fade-up-3 mt-6 text-[11px] text-[#b0ae a4]" style={{ color: '#b0aea4' }}>
-                © 2025 FarmSmart. Nền tảng quản lý nông trại thông minh.
+                © 2026 FarmSmart. Nền tảng quản lý nông trại thông minh.
             </p>
         </div>
     )
