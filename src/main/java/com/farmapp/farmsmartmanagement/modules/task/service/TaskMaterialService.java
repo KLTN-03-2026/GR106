@@ -48,7 +48,7 @@ public class TaskMaterialService {
         UUID farmId = securityUtils.getCurrentFarmId();
 
         TaskEntity task = taskRepository
-                .findByIdAndStageIdAndPlanId(taskId,stageId,planId)
+                .findByIdAndStageIdAndPlanIdAndStatusIsNotTerminal(taskId,stageId,planId)
                 .orElseThrow(()->new AppException(ErrorCode.TASK_NOT_FOUND));
 
         // Vật tư là nullable = true
