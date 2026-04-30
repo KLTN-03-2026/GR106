@@ -32,10 +32,6 @@ public class WorkLogMaterialEntity {
     @JoinColumn(name = "warehouse_item_id", nullable = false)
     WarehouseItemEntity warehouseItem;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "warehouse_location_id")
-    WarehouseLocationEntity warehouseLocation;
-
     @Column(name = "used_qty", precision = 10, scale = 3, nullable = false)
     BigDecimal usedQty;
 
