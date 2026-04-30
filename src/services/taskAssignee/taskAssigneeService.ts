@@ -33,11 +33,12 @@ export const taskAssigneeService = {
     planId: string,
     stageId: string,
     taskId: string,
-    assigneeId: string
+    assigneeId: string,
+    removalReason: string = 'Removed by assignee manager'
   ): Promise<TaskAssignee> {
     const response = await axiosInstance.delete(
       `/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}/assignees/${assigneeId}`,
-      { data: { removalReason: '' } }
+      { data: { removalReason } }
     );
     const validated = deleteTaskAssigneeResponseSchema.parse(response.data);
     return validated.data;

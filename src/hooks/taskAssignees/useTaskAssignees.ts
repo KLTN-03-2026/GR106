@@ -74,9 +74,9 @@ export const useTaskAssignees = (planId?: string, stageId?: string, taskId?: str
       return withUnwrap(addAssigneeMutation.mutateAsync(data));
     }, [addAssigneeMutation]),
 
-    deleteAssignee: useCallback((assigneeId: string) => {
+    deleteAssignee: useCallback((assigneeId: string, removalReason?: string) => {
       if (!planId || !stageId || !taskId) return Promise.reject(new Error('Missing IDs'));
-      return withUnwrap(taskAssigneeService.deleteTaskAssignee(planId, stageId, taskId, assigneeId).then(() => {
+      return withUnwrap(taskAssigneeService.deleteTaskAssignee(planId, stageId, taskId, assigneeId, removalReason).then(() => {
         queryClient.invalidateQueries({ queryKey: ASSIGNEE_KEYS.task(planId, stageId, taskId) });
       }));
     }, [planId, stageId, taskId, queryClient]),
