@@ -73,7 +73,7 @@ public class FarmSubscriptionService {
         entityManager.createNativeQuery("SET LOCAL app.bypass_rls = 'true'").executeUpdate();
 
         FarmSubscriptionEntity current = farmSubscriptionRepository
-                .findByFarmAndIsCurrent(txn.getFarm(), true)
+                .findCurrentByFarmIdForUpdate(txn.getFarm().getId())
                 .orElseThrow(() -> new AppException(ErrorCode.FARM_SUBSCRIPTION_NOT_FOUND));
 
         SubscriptionPlanEntity defaultPlan = subscriptionPlanRepository.findByName("FREE")
