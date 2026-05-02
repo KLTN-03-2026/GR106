@@ -15,5 +15,10 @@ public interface FarmSubscriptionRepository extends JpaRepository<FarmSubscripti
 
     Optional<FarmSubscriptionEntity> findByFarmAndIsCurrent(FarmEntity farm, Boolean isCurrent);
 
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT fs FROM FarmSubscriptionEntity fs WHERE fs.farm.id = :farmId AND fs.isCurrent = true")
+    Optional<FarmSubscriptionEntity> findCurrentByFarmIdForUpdate(@Param("farmId") UUID farmId);
+
     Collection<FarmSubscriptionEntity> findByFarm_Id(UUID farmId);
 }
