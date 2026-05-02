@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { useSeasonPlanPlans } from './useSeasonPlanPlans';
 import { useSeasonPlanPhases } from './useSeasonPlanPhases';
 import { useSeasonPlanTasks } from './useSeasonPlanTasks';
@@ -8,16 +7,15 @@ export const useSeasonPlans = () => {
   const phasePart = useSeasonPlanPhases({ updatePlansCache: plansPart.updatePlansCache });
   const taskPart = useSeasonPlanTasks({ updatePlansCache: plansPart.updatePlansCache });
 
-  const error = useMemo(
-    () => plansPart.error ?? phasePart.error ?? taskPart.error ?? null,
-    [plansPart.error, phasePart.error, taskPart.error],
-  );
 
   return {
     plans: plansPart.plans,
     loading: plansPart.loading,
     createLoading: plansPart.createLoading,
-    error,
+    error: plansPart.error,
+    createError: plansPart.createError,
+    deleteError: plansPart.deleteError,
+    updatePlanTimeError: plansPart.updatePlanTimeError,
     fetchPlans: plansPart.fetchPlans,
     createPlan: plansPart.createPlan,
     updatePlan: plansPart.updatePlan,

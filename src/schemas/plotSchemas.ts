@@ -11,6 +11,7 @@ export const geometrySchema = z.object({
 // có thê vẽ or không
 export const plotSchema = z.object({
   id: z.string().uuid(),
+  version: z.number().optional(),
   name: z.string(),
   areaHa: z.number().nullish().transform(v => v ?? 0),
   status: z.enum(['ACTIVE', 'INACTIVE']),

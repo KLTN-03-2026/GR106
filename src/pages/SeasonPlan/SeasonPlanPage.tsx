@@ -243,7 +243,7 @@ export function SeasonPlanPage() {
 
       // Cập nhật ngày bắt đầu và kết thúc → PUT /api/v1/plans/{planId}/time
       if (isDateChanged) {
-        await updatePlanTime(updatedPlan.id, updatedPlan.startDate, updatedPlan.endDate).unwrap();
+        await updatePlanTime(updatedPlan.id, updatedPlan.startDate, updatedPlan.endDate, original.version).unwrap();
       }
     } catch (err: any) {
       showError('Lỗi cập nhật kế hoạch', err);
@@ -262,7 +262,11 @@ export function SeasonPlanPage() {
     try {
       // Optimistic UI update so bar does not snap back while waiting for PUT response
       optimisticallyUpdatePhaseTime({ planId, stageId, startDate: data.startDate, endDate: data.endDate });
-      await updatePhaseTime(planId, stageId, data).unwrap();
+      const stageVersion = plans
+        .find((p) => p.id === planId)
+        ?.phases?.find((ph) => ph.id === stageId)
+        ?.version;
+      await updatePhaseTime(planId, stageId, { ...data, version: stageVersion }).unwrap();
       await fetchStages(planId).unwrap();
     } catch (err: any) {
       // Re-sync from server when PUT fails to rollback optimistic state
@@ -279,7 +283,12 @@ export function SeasonPlanPage() {
   ) => {
     try {
       optimisticallyUpdateTaskTime({ planId, stageId, taskId, startDate: data.startDate, endDate: data.endDate });
-      await updateTaskTime(planId, stageId, taskId, data).unwrap();
+      const taskVersion = plans
+        .find((p) => p.id === planId)
+        ?.phases?.find((ph) => ph.id === stageId)
+        ?.tasks?.find((t) => t.id === taskId)
+        ?.version;
+      await updateTaskTime(planId, stageId, taskId, { ...data, version: taskVersion }).unwrap();
     } catch (err: any) {
       // Re-sync from server when PUT fails to rollback optimistic state
       await fetchTasks(planId, stageId);
@@ -305,11 +314,15 @@ export function SeasonPlanPage() {
       const isStatusChanged = !!data.statusCode && originalStatusCode !== data.statusCode;
 
       if (isDateChanged) {
-        await updatePhaseTime(planId, stageId, { startDate: data.startDate, endDate: data.endDate }).unwrap();
+        await updatePhaseTime(planId, stageId, {
+          startDate: data.startDate,
+          endDate: data.endDate,
+          version: originalPhase.version,
+        }).unwrap();
       }
 
       if (isNameChanged) {
-        await updatePhase(planId, stageId, data).unwrap();
+        await updatePhase(planId, stageId, { ...data, version: originalPhase.version }).unwrap();
       }
 
       if (isStatusChanged) {
@@ -437,7 +450,13 @@ export function SeasonPlanPage() {
 
   const handleDeleteTask = async (planId: string, stageId: string, taskId: string) => {
     try {
-      await removeSeasonTask(planId, stageId, taskId).unwrap();
+      const taskVersion = plans
+        .find((p) => p.id === planId)
+        ?.phases?.find((ph) => ph.id === stageId)
+        ?.tasks?.find((t) => t.id === taskId)
+        ?.version;
+
+      await removeSeasonTask(planId, stageId, taskId, taskVersion).unwrap();
       setSelectedItem({ type: 'PHASE', id: stageId, planId });
     } catch (err: any) {   
       showError('Lỗi xóa công việc', err);
@@ -468,6 +487,7 @@ export function SeasonPlanPage() {
     try {
       if (!originalTask) {
         await updateSeasonTask(planId, stageId, task.id, {
+          version: task.version,
           name: task.name,
           description: task.description || '',
           startDate: task.startDate,
@@ -491,11 +511,13 @@ export function SeasonPlanPage() {
         await updateTaskTime(planId, stageId, task.id, {
           startDate: task.startDate,
           endDate: task.endDate,
+          version: originalTask.version,
         }).unwrap();
       }
 
       if (isContentChanged) {
         await updateSeasonTask(planId, stageId, task.id, {
+          version: originalTask.version,
           name: task.name,
           description: task.description || '',
           startDate: task.startDate,

@@ -3,6 +3,7 @@ import { apiResponseSchema } from "./seasonPlanSchemas";
 
 export const warehouseSchema = z.object({
   id: z.string().uuid(),
+  version: z.number().optional(),
   name: z.string(),
   description: z.string().nullable().optional(),
   address: z.string().nullable().optional(),

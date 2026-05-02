@@ -41,6 +41,7 @@ const userSchema = z.object({
 
 export const apiWarehouseItemSchema = z.object({
   id: z.string().uuid(),
+  version: z.number().optional(),
   name: z.string(),
   stock: z.number(),
   reservedQty: z.number(),

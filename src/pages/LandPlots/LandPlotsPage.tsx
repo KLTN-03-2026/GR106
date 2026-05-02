@@ -68,8 +68,10 @@ export function LandPlotsPage() {
     try {
       const isClearDescription =
         updatedPlot.description != null && updatedPlot.description.trim() === '';
+      const version = updatedPlot.version ?? plots.find((p) => p.id === updatedPlot.id)?.version;
 
       await updatePlot(currentFarmId, updatedPlot.id, {
+        version,
         name: updatedPlot.name,
         status: updatedPlot.status,
         ...(isClearDescription

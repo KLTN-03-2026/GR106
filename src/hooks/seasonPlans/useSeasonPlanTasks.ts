@@ -85,7 +85,7 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
       [updatePlansCache],
     ),
     updateTaskTime: useCallback(
-      (planId: string, stageId: string, taskId: string, data: { startDate: string; endDate: string }) =>
+      (planId: string, stageId: string, taskId: string, data: { startDate: string; endDate: string; version?: number }) =>
         withUnwrap(
           seasonPlanTaskService.updateTaskTime(planId, stageId, taskId, data).then((task) => {
             updatePlansCache((prev) =>
@@ -111,9 +111,9 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
       [updatePlansCache],
     ),
     deleteTask: useCallback(
-      (planId: string, stageId: string, taskId: string) =>
+      (planId: string, stageId: string, taskId: string, version?: number) =>
         withUnwrap(
-          seasonPlanTaskService.deleteTask(planId, stageId, taskId).then(() => {
+          seasonPlanTaskService.deleteTask(planId, stageId, taskId, version).then(() => {
             updatePlansCache((prev) =>
               prev.map((p) =>
                 p.id === planId

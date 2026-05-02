@@ -196,8 +196,10 @@ export function MapPage() {
       };
       const isClearDescription =
         selectedPlot.description != null && selectedPlot.description.trim() === '';
+      const selectedPlotVersion = selectedPlot.version ?? plots.find((p) => p.id === selectedPlot.id)?.version;
       try {
         const result = await updatePlot(currentFarmId, selectedPlot.id, {
+          version: selectedPlotVersion,
           name: selectedPlot.name,
           status: selectedPlot.status,
           geometry,
@@ -282,7 +284,8 @@ export function MapPage() {
     setIsDeleteModalOpen(false);
     if (!selectedPlot) return;
     try {
-      const result = await updatePlot(currentFarmId, selectedPlot.id, { isClearGeometry: true }).unwrap();
+      const selectedPlotVersion = selectedPlot.version ?? plots.find((p) => p.id === selectedPlot.id)?.version;
+      const result = await updatePlot(currentFarmId, selectedPlot.id, { version: selectedPlotVersion, isClearGeometry: true }).unwrap();
       toast.success('Đã xóa ranh giới lô đất');
       setSelectedPlot(result);
       setMode('none');
@@ -319,7 +322,9 @@ export function MapPage() {
     try {
       const isClearDescription =
         updatedPlot.description != null && updatedPlot.description.trim() === '';
+      const version = updatedPlot.version ?? plots.find((p) => p.id === updatedPlot.id)?.version;
       const result = await updatePlot(currentFarmId, updatedPlot.id, {
+        version,
         name: updatedPlot.name,
         status: updatedPlot.status,
         ...(isClearDescription

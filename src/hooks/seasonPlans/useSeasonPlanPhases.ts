@@ -55,7 +55,7 @@ export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesPro
       [updatePlansCache],
     ),
     updatePhase: useCallback(
-      (planId: string, stageId: string, data: { name: string; startDate: string; endDate: string }) =>
+      (planId: string, stageId: string, data: { name: string; startDate: string; endDate: string; version?: number }) =>
         withUnwrap(
           seasonPlanPhaseService.updateStage(planId, stageId, data).then((phase) => {
             updatePlansCache((prev) =>
@@ -71,7 +71,7 @@ export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesPro
       [updatePlansCache],
     ),
     updatePhaseTime: useCallback(
-      (planId: string, stageId: string, data: { startDate: string; endDate: string }) =>
+      (planId: string, stageId: string, data: { startDate: string; endDate: string; version?: number }) =>
         withUnwrap(
           seasonPlanPhaseService.updateStageTime(planId, stageId, data).then((phase) => {
             updatePlansCache((prev) =>
