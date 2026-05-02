@@ -15,6 +15,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.annotations.CurrentTimestamp;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +24,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.Timer;
 import java.util.UUID;
 
 @Slf4j
@@ -110,7 +113,6 @@ public class TaskService {
                 .findByIdAndPlanIdAndPlan_Farm_Id(planStageId, planId, farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
 
-        // Validate date với planStage chỉ khi có gửi date
         if (request.getStartDate() != null && request.getEndDate() != null) {
             if (request.getStartDate().isBefore(planStage.getStartDate()) ||
                     request.getEndDate().isAfter(planStage.getEndDate())) {
@@ -121,15 +123,15 @@ public class TaskService {
         TaskEntity task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));
 
-        // Kiểm tra task thuộc đúng planStage
+        // Lớp 1: Bảo vệ lost update giữa các session — client phải gửi đúng version hiện tại
+        if (!task.getVersion().equals(request.getVersion())) {
+            throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
+        }
+
         if (!task.getPlanStage().getId().equals(planStageId)) {
             throw new AppException(ErrorCode.TASK_NOT_FOUND);
         }
 
-        if (!Objects.equals(task.getVersion(), request.getVersion())) {
-            throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
-        }
-        // Validate plot thuộc plan nếu có gửi plotId
         if (request.getPlotId() != null) {
             PlotEntity plot = planPlotRepository
                     .findPlotByPlanIdAndPlotId(planId, request.getPlotId())
@@ -137,7 +139,6 @@ public class TaskService {
             task.setPlot(plot);
         }
 
-        // Update từng field — chỉ update khi client gửi (không null)
         if (request.getName() != null)
             task.setName(request.getName());
 
@@ -150,10 +151,12 @@ public class TaskService {
         if (request.getEndDate() != null)
             task.setEndDate(request.getEndDate());
 
-        TaskEntity saved = taskRepository.saveAndFlush(task);
-        entityManager.refresh(saved); // sync lại từ DB → version đúng
-        return taskMapper.toResponse(saved);
-
+        // Lớp 2: Bảo vệ race condition giữa các request đồng thời
+        try {
+            return taskMapper.toResponse(taskRepository.saveAndFlush(task));
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
+        }
     }
 
 
@@ -192,13 +195,15 @@ public class TaskService {
         if (!Objects.equals(updateTask.getVersion(), request.getVersion())) {
             throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
         }
+
         updateTask.setStartDate(request.getStartDate());
         updateTask.setEndDate(request.getEndDate());
 
-        TaskEntity saved = taskRepository.saveAndFlush(updateTask);
-        entityManager.refresh(saved);
-
-        return taskMapper.toResponse(saved);
+        try {
+            return taskMapper.toResponse(taskRepository.saveAndFlush(updateTask));
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
+        }
     }
 
     @Transactional

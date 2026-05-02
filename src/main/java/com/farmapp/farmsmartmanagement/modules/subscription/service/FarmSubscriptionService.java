@@ -24,6 +24,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -67,7 +68,7 @@ public class FarmSubscriptionService {
         return subscriptionMapper.toFarmSubscriptionResponse(farmSubscription);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public void activateSubscription(PaymentTransactionEntity txn) {
 
         entityManager.createNativeQuery("SET LOCAL app.bypass_rls = 'true'").executeUpdate();
