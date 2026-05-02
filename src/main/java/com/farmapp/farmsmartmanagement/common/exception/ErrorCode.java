@@ -112,7 +112,9 @@ public enum ErrorCode {
     TASK_STATUS_NOT_FOUND(404,"Không tìm thấy trạng thái công việc" ,HttpStatus.NOT_FOUND ),
     TASK_STATUS_TRANSITION_NOT_FOUND(404,"Không tìm thấy chuyển đổi giữa 2 trạng thái của công việc" ,HttpStatus.NOT_FOUND ),
     PLAN_STAGE_STATUS_NOT_FOUND(404,"Không tìm thấy trạng thái giai đoạn" ,HttpStatus.NOT_FOUND ),
-    PLAN_STAGE_STATUS_TRANSITION_NOT_FOUND(404,"Không tìm thấy chuyển đổi giữa 2 trạng thái của giai đoạn" ,HttpStatus.NOT_FOUND );
+    PLAN_STAGE_STATUS_TRANSITION_NOT_FOUND(404,"Không tìm thấy chuyển đổi giữa 2 trạng thái của giai đoạn" ,HttpStatus.NOT_FOUND ),
+    USER_HAS_BEEN_ACTIVE(409,"Tài khoản đã được kich hoạt" ,HttpStatus.CONFLICT ), USER_SUSPENDED(409,"Tài khoản đã bị tạm dừng" ,HttpStatus.CONFLICT ),
+    WRONG_PASSWORD(409,"Sai mật khẩu" ,HttpStatus.CONFLICT ), TOO_MANY_REQUESTS(429,"Vui lòng sống chậm lại" , HttpStatus.TOO_MANY_REQUESTS);
 
 
 

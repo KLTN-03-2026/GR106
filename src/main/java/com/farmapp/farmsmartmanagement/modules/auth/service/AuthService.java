@@ -29,6 +29,7 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -75,14 +76,8 @@ public class AuthService {
                     .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
             userRoleRepository.save(new UserRoleEntity(user, userRole));
 
-            String rawToken = UUID.randomUUID().toString();
-            String hash = HashUtils.sha256(rawToken);
 
-            EmailVerificationTokenEntity token = new EmailVerificationTokenEntity();
-            token.setUser(user);
-            token.setTokenHash(hash);
-            token.setExpiresAt(Instant.now().plusSeconds(15 * 60));
-            emailVerificationTokenRepository.save(token);
+            String rawToken = createAndSaveVerificationToken(user);
 
             // KHÔNG gọi email ở đây nữa
             // Dùng event — gửi sau khi transaction commit xong
@@ -90,6 +85,47 @@ public class AuthService {
             eventPublisher.publishEvent(
                     new SendVerifyEmailEvent(this, user.getFullName(), user.getEmail(), link)
             );
+        });
+
+    }
+
+    @Transactional
+    public void resendMailRegister(LoginRequest req) {
+        rlsUtils.runAsAdmin(()->{
+            UserEntity user = userRepository
+                .findByEmail(req.email())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+            if(user.getStatus().equals(UserStatus.ACTIVE)) {
+                throw new AppException(ErrorCode.USER_HAS_BEEN_ACTIVE);
+            }
+
+            if(user.getStatus().equals(UserStatus.SUSPENDED) || Boolean.TRUE.equals(user.getIsLocked())) {
+                throw new AppException(ErrorCode.USER_SUSPENDED);
+            }
+
+            if (!passwordEncoder.matches(req.password(), user.getPassword())) {
+                throw new AppException(ErrorCode.WRONG_PASSWORD);
+            }
+
+            Optional<EmailVerificationTokenEntity> latest =
+                    emailVerificationTokenRepository.findTopByUserIdOrderByCreatedAtDesc(user.getId());
+
+            if (latest.isPresent() && latest.get().getCreatedAt().isAfter(Instant.now().minusSeconds(60))) {
+                throw new AppException(ErrorCode.TOO_MANY_REQUESTS);
+            }
+
+            emailVerificationTokenRepository.revokeAllByUserId(user.getId(), Instant.now());
+
+
+            String rawToken = createAndSaveVerificationToken(user);
+
+            // Dùng event — gửi sau khi transaction commit xong
+            String link = appProperties.getFrontendUrl() + "/verify-email?token=" + rawToken;
+            eventPublisher.publishEvent(
+                    new SendVerifyEmailEvent(this, user.getFullName(), user.getEmail(), link)
+            );
+            log.info("Resend verify email for userId={}", user.getId());
         });
 
     }
@@ -107,6 +143,10 @@ public class AuthService {
                 // Check chưa verify email
                 if (user.getStatus() == UserStatus.PENDING) {
                     throw new AppException(ErrorCode.ACCOUNT_NOT_VERIFIED);
+                }
+
+                if(user.getStatus().equals(UserStatus.SUSPENDED) || user.getIsLocked()) {
+                    throw new AppException(ErrorCode.USER_SUSPENDED);
                 }
 
                 if (!passwordEncoder.matches(req.password(), user.getPassword())) {
@@ -167,6 +207,7 @@ public class AuthService {
             emailVerificationTokenRepository.save(token);
         });
     }
+
     private String hash(String val) {
         try {
             var md = MessageDigest.getInstance("SHA-256");
@@ -174,5 +215,20 @@ public class AuthService {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private String createAndSaveVerificationToken(UserEntity user){
+        String rawToken = UUID.randomUUID().toString();
+        String hash = HashUtils.sha256(rawToken);
+
+        EmailVerificationTokenEntity token = new EmailVerificationTokenEntity();
+        token.setUser(user);
+        token.setTokenHash(hash);
+        token.setExpiresAt(Instant.now().plusSeconds(15 * 60));
+        token.setUsedAt(null);
+        token.setRevokedAt(null);
+        token.setCreatedAt(Instant.now());
+        emailVerificationTokenRepository.save(token);
+        return rawToken;
     }
 }

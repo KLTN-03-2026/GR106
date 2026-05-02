@@ -60,6 +60,18 @@ public class AuthController {
     }
 
     @Operation(
+            summary = "Gửi lại mail"
+    )
+    @PostMapping("/register/resend-mail")
+    public ApiResponse<Void> resendMail(
+            @RequestBody LoginRequest req,
+            HttpServletRequest request
+    ) {
+        authService.resendMailRegister(req);
+        return ApiResponse.noContent();
+    }
+
+    @Operation(
             summary = "Xác thực email / tài khoản",
             description = "API dùng để xác thực tài khoản thông qua token (thường gửi qua email)"
     )
