@@ -146,15 +146,47 @@ public class FarmInvitationService {
         if (isNewUser) {
             String finalRaw = rawPassword;
             eventPublisher.publishEvent(new SendCredentialsEmailEvent(
-                    this, request.getEmail(), request.getEmail(),
-                    finalRaw, farm.getName(), acceptLink
+                    this,
+                    request.getEmail(),
+                    request.getEmail(),
+                    finalRaw,
+                    farm.getName(),
+                    acceptLink
             ));
         } else {
             eventPublisher.publishEvent(new SendFarmInvitationEvent(
-                    this, request.getEmail(), request.getEmail(),
-                    farm.getName(), acceptLink
+                    this,
+                    request.getEmail(),
+                    request.getEmail(),
+                    farm.getName(),
+                    acceptLink
             ));
         }
+    }
+
+    public void resendInvitation(UUID farmId, UUID invitationId){
+        FarmEntity farm = farmRepository
+                .findById(farmId)
+                .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
+
+        InvitationEntity currentInvitation = invitationRepository
+                .findById(invitationId)
+                .orElseThrow(() -> new AppException(ErrorCode.INVITATION_NOT_FOUND));
+
+        UserEntity recipientMail = userRepository
+                .findByEmail(currentInvitation.getEmail())
+                .orElseThrow(()-> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        String acceptLink = appProperties.getFrontendUrl()
+                + "/invitations/" + currentInvitation.getId() + "/accept";
+
+        eventPublisher.publishEvent(new SendFarmInvitationEvent(
+                this,
+                recipientMail.getFullName(),
+                currentInvitation.getEmail(),
+                farm.getName(),
+                acceptLink
+        ));
     }
 
     @Transactional
@@ -173,9 +205,11 @@ public class FarmInvitationService {
         if (invitation.getStatus() != InvitationStatus.PENDING)
             throw new AppException(ErrorCode.INVITATION_ALREADY_USED);
 
-        if (invitation.getExpiresAt().isBefore(Instant.now()))
+        if (invitation.getExpiresAt().isBefore(Instant.now())){
+            invitation.setExpiresAt(Instant.now().plus(7, ChronoUnit.DAYS));
+            invitationRepository.save(invitation);
             throw new AppException(ErrorCode.INVITATION_EXPIRED);
-
+        }
         UserEntity user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 

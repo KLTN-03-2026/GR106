@@ -48,15 +48,16 @@ public class WarehouseItemService {
 
     @Transactional(readOnly = true)
     public List<WarehouseItemResponse> getAllWarehouseItemByFarm(UUID farmId) {
-        List<WarehouseItemEntity> items = warehouseItemRepository
-                .findAllByFarm_Id(farmId);
+        long start = System.currentTimeMillis();
+        List<WarehouseItemEntity> items = warehouseItemRepository.findAllByFarm_Id(farmId);
+        log.info("Query findAllByFarm_Id took {} ms", System.currentTimeMillis() - start);
 
         if (items.isEmpty()) return List.of();
 
-        // Lấy danh sách id của tất cả item
         List<UUID> itemIds = items.stream().map(WarehouseItemEntity::getId).toList();
 
-        // Map stock cho từng item
+        // đo thời gian query stock
+        start = System.currentTimeMillis();
         Map<UUID, BigDecimal> stockMap = warehouseStockRepository
                 .sumQtyByItemIdsAndFarmId(itemIds, farmId)
                 .stream()
@@ -64,8 +65,10 @@ public class WarehouseItemService {
                         row -> (UUID) row[0],
                         row -> (BigDecimal) row[1]
                 ));
+        log.info("Query sumQtyByItemIdsAndFarmId took {} ms", System.currentTimeMillis() - start);
 
-        // Map reservedQty cho từng item
+        // đo thời gian query reservedQty
+        start = System.currentTimeMillis();
         Map<UUID, BigDecimal> reservedQtyMap = taskMaterialRepository
                 .sumPlannedQtyGroupByWarehouseItem(itemIds)
                 .stream()
@@ -73,9 +76,11 @@ public class WarehouseItemService {
                         row -> (UUID) row[0],
                         row -> (BigDecimal) row[1]
                 ));
+        log.info("Query sumPlannedQtyGroupByWarehouseItem took {} ms", System.currentTimeMillis() - start);
 
-        // Build response
-        return items.stream()
+        // build response
+        start = System.currentTimeMillis();
+        List<WarehouseItemResponse> responses = items.stream()
                 .map(item -> {
                     WarehouseItemResponse response = warehouseItemMapper.toResponse(item);
                     response.setStock(stockMap.getOrDefault(item.getId(), BigDecimal.ZERO));
@@ -83,7 +88,11 @@ public class WarehouseItemService {
                     return response;
                 })
                 .toList();
+        log.info("Mapping responses took {} ms", System.currentTimeMillis() - start);
+
+        return responses;
     }
+
 
 
     @Transactional(readOnly = true)

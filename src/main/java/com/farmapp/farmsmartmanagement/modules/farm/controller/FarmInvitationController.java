@@ -59,6 +59,17 @@ public class FarmInvitationController {
         return ResponseUtil.noContent();
     }
 
+    @GetMapping("/api/v1/farms/{farmId}/invitations/{invitationId}")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<Void>> resendInvitation(
+            @PathVariable UUID farmId,
+            @PathVariable UUID invitationId
+    ) {
+        farmInvitationService.resendInvitation(farmId, invitationId);
+
+        return ResponseUtil.noContent();
+    }
+
     // Hủy lời mời
     @PatchMapping("/api/v1/farms/{farmId}/invitations/{invitationId}/cancel")
     @RequiresFarmToken
