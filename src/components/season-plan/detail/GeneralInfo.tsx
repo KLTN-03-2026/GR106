@@ -103,13 +103,8 @@ export function GeneralInfo({
 
         {/* Status lozenge */}
         <div className="flex items-center gap-2 mt-2.5">
-          {type === 'PLAN' && (
-            <StatusSelect
-              value={statusCodeOf(plan.status)}
-              options={[{ code: statusCodeOf(plan.status), label: typeof plan.status === 'string' ? plan.status : (plan.status?.name ?? statusCodeOf(plan.status)) }]}
-              canEdit={false}
-            />
-          )}
+          {/* Plan status removed as requested (no API) */}
+
           {type === 'PHASE' && (
             <StatusSelect
               value={statusCodeOf(tempPhase?.status ?? selection.phase?.status)}

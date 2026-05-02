@@ -14,6 +14,7 @@ export interface CreateTaskRequest {
 }
 
 export interface UpdateTaskRequest {
+  version?: number;
   name?: string;
   description?: string;
   startDate?: string;

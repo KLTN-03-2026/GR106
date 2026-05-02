@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSeasonPlans } from '../../hooks/seasonPlans/useSeasonPlans';
-import { SeasonPlan, PlanStatus, Task } from '../../types/seasonPlan';
+import { SeasonPlan, Task } from '../../types/seasonPlan';
 import {
   Search,
   ArrowLeft,
@@ -70,41 +70,6 @@ type NavTab = typeof NAV_TABS[number]['key'];
 
 const toLabel = (code: string, name?: string) => name || code;
 
-// ─── Status helpers ───────────────────────────────────────────────────────────
-
-function getStatusLabel(status: PlanStatus | any): string {
-  const code = typeof status === 'string' ? status : status?.code;
-  const name = typeof status === 'string' ? null : status?.name;
-  if (name) return name;
-  switch (code) {
-    case 'DRAFT': return 'Bản nháp';
-    case 'ACTIVE': return 'Đang thực hiện';
-    case 'READY_TO_HARVEST': return 'Sẵn sàng thu hoạch';
-    case 'HARVESTING': return 'Đang thu hoạch';
-    case 'COMPLETED': return 'Hoàn thành';
-    case 'CANCELLED': return 'Đã hủy';
-    case 'ASSIGNED': return 'Đã giao việc';
-    case 'IN_PROGRESS': return 'Đang thực hiện';
-    case 'OVERDUE': return 'Trễ hạn';
-    default: return code || 'N/A';
-  }
-}
-
-function getStatusColor(status: PlanStatus | any): string {
-  const code = typeof status === 'string' ? status : status?.code;
-  switch (code) {
-    case 'DRAFT': return 'bg-slate-100 text-slate-600';
-    case 'ACTIVE':
-    case 'IN_PROGRESS': return 'bg-blue-100 text-blue-700';
-    case 'READY_TO_HARVEST': return 'bg-lime-100 text-lime-700';
-    case 'HARVESTING': return 'bg-emerald-100 text-emerald-700';
-    case 'COMPLETED': return 'bg-slate-100 text-slate-400';
-    case 'OVERDUE': return 'bg-rose-100 text-rose-700';
-    case 'ASSIGNED': return 'bg-violet-100 text-violet-700';
-    case 'CANCELLED': return 'bg-red-100 text-red-700';
-    default: return 'bg-slate-100 text-slate-600';
-  }
-}
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('vi-VN', {
@@ -139,7 +104,6 @@ export function SeasonPlanPage() {
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<NavTab>('timeline');
-  const [statusFilter, setStatusFilter] = useState<PlanStatus | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
   // ── Modal state ───────────────────────────────────────────────────────────
@@ -175,25 +139,33 @@ export function SeasonPlanPage() {
   const displayPlans = currentPlan ? [currentPlan] : farmPlans;
 
   const filteredPlans = displayPlans.filter((p: SeasonPlan) => {
-    const planStatusCode = typeof p.status === 'string' ? p.status : p.status?.code;
-    const matchesStatus = statusFilter === 'ALL' || planStatusCode === statusFilter;
     const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
+    return matchesSearch;
   });
   const phaseStatusOptions = planStageStatuses.map((s) => ({
     code: s.code,
     label: toLabel(s.code, s.name),
+    color: s.color,
   }));
 
   const taskStatusOptions = taskStatuses.map((s) => ({
     code: s.code,
     label: toLabel(s.code, s.name),
+    color: s.color,
   }));
 
   // ── Effects ───────────────────────────────────────────────────────────────
   useEffect(() => {
-    fetchPlans();
-  }, [fetchPlans, accessToken]);
+    if (accessToken) {
+      fetchPlans();
+      // If we are on a specific plan page, fetch its stages and plots immediately
+      // instead of waiting for plans to be fetched and currentPlan to be derived.
+      if (planId) {
+        fetchStages(planId);
+        fetchPlanPlots(planId);
+      }
+    }
+  }, [fetchPlans, fetchStages, fetchPlanPlots, accessToken, planId]);
 
   useEffect(() => {
     fetchPlanStageStatuses();
@@ -467,7 +439,7 @@ export function SeasonPlanPage() {
     try {
       await removeSeasonTask(planId, stageId, taskId).unwrap();
       setSelectedItem({ type: 'PHASE', id: stageId, planId });
-    } catch (err: any) {
+    } catch (err: any) {   
       showError('Lỗi xóa công việc', err);
     }
   };
@@ -511,9 +483,9 @@ export function SeasonPlanPage() {
         originalTask.description !== task.description ||
         originalTask.plotId !== plotId;
 
-      const originalStatusCode = typeof originalTask.status === 'string' ? originalTask.status : (originalTask.status as any)?.code;
-      const newStatusCode = (task as any).statusCode;
-      const isStatusChanged = newStatusCode && originalStatusCode !== newStatusCode;
+      const originalStatusCode = typeof originalTask.status === 'string' ? originalTask.status : originalTask.status?.code;
+      const newStatusCode = (task as any).statusCode || (typeof task.status === 'string' ? task.status : task.status?.code);
+      const isStatusChanged = !!newStatusCode && originalStatusCode !== newStatusCode;
 
       if (isDateChanged) {
         await updateTaskTime(planId, stageId, task.id, {
@@ -594,12 +566,6 @@ export function SeasonPlanPage() {
             </h1>
             {currentPlan && (
               <div className="flex items-center gap-2 mt-0.5">
-                <span className={cn(
-                  'px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full whitespace-nowrap inline-flex items-center justify-center',
-                  getStatusColor(currentPlan.status),
-                )}>
-                  {getStatusLabel(currentPlan.status)}
-                </span>
                 <span className="text-[11px] text-slate-400">
                   {formatDate(currentPlan.startDate)} — {formatDate(currentPlan.endDate)}
                 </span>
@@ -711,22 +677,6 @@ export function SeasonPlanPage() {
             </div>
 
             {/* Status filter pills */}
-            <div className="flex items-center gap-1 ml-2">
-              {(['ALL', 'DRAFT', 'ACTIVE', 'READY_TO_HARVEST', 'HARVESTING', 'COMPLETED', 'CANCELLED'] as const).map(status => (
-                <button
-                  key={status}
-                  onClick={() => setStatusFilter(status)}
-                  className={cn(
-                    'px-2.5 py-1 text-[11px] font-medium rounded border transition-all',
-                    statusFilter === status
-                      ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-400 hover:text-slate-900',
-                  )}
-                >
-                  {status === 'ALL' ? 'Tất cả' : getStatusLabel(status)}
-                </button>
-              ))}
-            </div>
           </div>
 
           <div className="flex-1" />
@@ -779,8 +729,6 @@ export function SeasonPlanPage() {
                     onExpandPhase={handleExpandPhase}
                     preExpandedPlanId={currentPlan ? undefined : String(planId)}
                     canEdit={canEdit}
-                    phaseStatuses={planStageStatuses}
-                    taskStatuses={taskStatuses}
                   />
                 </div>
               )}

@@ -132,7 +132,6 @@ export function PlanDetailPanel({
   const [newTaskDesc, setNewTaskDesc] = useState('');
   const [newTaskStart, setNewTaskStart] = useState('');
   const [newTaskEnd, setNewTaskEnd] = useState('');
-  const [newTaskPlotId, setNewTaskPlotId] = useState('');
 
   const [showAddPlot, setShowAddPlot] = useState(false);
   const [selectedPlotIds, setSelectedPlotIds] = useState<string[]>([]);
@@ -177,8 +176,6 @@ export function PlanDetailPanel({
     setSelectedAssigneeUserId('');
     setPlannedQty('');
     if (selection) {
-      const defaultPlot = selection.plan.plots?.[0]?.plotId ?? '';
-      setNewTaskPlotId(defaultPlot);
 
       setTempPlan(selection.plan);
       if (selection.type === 'PHASE') setTempPhase(selection.phase);
@@ -221,7 +218,10 @@ export function PlanDetailPanel({
       } else if (selection.type === 'PHASE' && tempPhase) {
         await onUpdatePhase(tempPlan.id, tempPhase, selection.phase);
       } else if (selection.type === 'TASK' && tempPhase && tempTask) {
-        await onUpdateTask(tempPlan.id, tempPhase.id, tempTask, selection.task);
+        await onUpdateTask(tempPlan.id, tempPhase.id, {
+          ...tempTask,
+          statusCode: statusCodeOf(tempTask.status)
+        } as any, selection.task);
       }
       setIsEditing(false);
     } catch (err) {
@@ -273,7 +273,7 @@ export function PlanDetailPanel({
       description: newTaskDesc,
       startDate: newTaskStart || sel.phase.startDate,
       endDate: newTaskEnd || sel.phase.endDate,
-      plotId: newTaskPlotId,
+      plotId: sel.phase.plotId || plan.plots?.[0]?.plotId || "",
     };
 
     const validation = createTaskSchema.safeParse(payload);
@@ -448,7 +448,11 @@ export function PlanDetailPanel({
                         <input
                           type="range" min="0" max="100"
                           value={sel.task.progressPercent ?? 0}
-                          onChange={e => onUpdateTask(plan.id, sel.phase.id, { ...sel.task, progressPercent: +e.target.value })}
+                          onChange={e => onUpdateTask(plan.id, sel.phase.id, { 
+                            ...sel.task, 
+                            progressPercent: +e.target.value,
+                            statusCode: statusCodeOf(sel.task.status)
+                          } as any)}
                           disabled={['COMPLETED', 'CANCELLED'].includes(statusCodeOf(sel.task.status))}
                           className="w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                         />
@@ -471,8 +475,6 @@ export function PlanDetailPanel({
                       setNewTaskStart={setNewTaskStart}
                       newTaskEnd={newTaskEnd}
                       setNewTaskEnd={setNewTaskEnd}
-                      newTaskPlotId={newTaskPlotId}
-                      setNewTaskPlotId={setNewTaskPlotId}
                       onAddTask={handleAddTaskSubmit}
                       onSelectTask={(taskId) => onSelectTask(plan.id, sel.phase.id, taskId)}
                     />

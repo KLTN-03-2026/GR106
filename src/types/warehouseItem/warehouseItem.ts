@@ -1,5 +1,6 @@
 export interface WarehouseItem {
   id: string;
+  version?: number;
   name: string;
   stock: number;
   reservedQty: number;
@@ -50,4 +51,8 @@ export interface CreateWarehouseItemDto {
   unitPrice: number;
   supplierId: string;
   minStockQty: number;
+}
+
+export interface UpdateWarehouseItemDto extends Partial<CreateWarehouseItemDto> {
+  version?: number;
 }

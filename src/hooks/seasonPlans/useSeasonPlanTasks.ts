@@ -26,9 +26,9 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
               prev.map((p) =>
                 p.id === planId
                   ? {
-                      ...p,
-                      phases: p.phases.map((ph) => (ph.id === stageId ? { ...ph, tasks } : ph)),
-                    }
+                    ...p,
+                    phases: p.phases.map((ph) => (ph.id === stageId ? { ...ph, tasks } : ph)),
+                  }
                   : p,
               ),
             );
@@ -45,11 +45,11 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
               prev.map((p) =>
                 p.id === planId
                   ? {
-                      ...p,
-                      phases: p.phases.map((ph) =>
-                        ph.id === stageId ? { ...ph, tasks: [...(ph.tasks ?? []), task] } : ph,
-                      ),
-                    }
+                    ...p,
+                    phases: p.phases.map((ph) =>
+                      ph.id === stageId ? { ...ph, tasks: [...(ph.tasks ?? []), task] } : ph,
+                    ),
+                  }
                   : p,
               ),
             );
@@ -66,16 +66,16 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
               prev.map((p) =>
                 p.id === planId
                   ? {
-                      ...p,
-                      phases: p.phases.map((ph) =>
-                        ph.id === stageId
-                          ? {
-                              ...ph,
-                              tasks: (ph.tasks ?? []).map((t) => (t.id === task.id ? task : t)),
-                            }
-                          : ph,
-                      ),
-                    }
+                    ...p,
+                    phases: p.phases.map((ph) =>
+                      ph.id === stageId
+                        ? {
+                          ...ph,
+                          tasks: (ph.tasks ?? []).map((t) => (t.id === task.id ? task : t)),
+                        }
+                        : ph,
+                    ),
+                  }
                   : p,
               ),
             );
@@ -92,16 +92,16 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
               prev.map((p) =>
                 p.id === planId
                   ? {
-                      ...p,
-                      phases: p.phases.map((ph) =>
-                        ph.id === stageId
-                          ? {
-                              ...ph,
-                              tasks: (ph.tasks ?? []).map((t) => (t.id === task.id ? { ...t, ...task } : t)),
-                            }
-                          : ph,
-                      ),
-                    }
+                    ...p,
+                    phases: p.phases.map((ph) =>
+                      ph.id === stageId
+                        ? {
+                          ...ph,
+                          tasks: (ph.tasks ?? []).map((t) => (t.id === task.id ? { ...t, ...task } : t)),
+                        }
+                        : ph,
+                    ),
+                  }
                   : p,
               ),
             );
@@ -118,13 +118,13 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
               prev.map((p) =>
                 p.id === planId
                   ? {
-                      ...p,
-                      phases: p.phases.map((ph) =>
-                        ph.id === stageId
-                          ? { ...ph, tasks: (ph.tasks ?? []).filter((t) => t.id !== taskId) }
-                          : ph,
-                      ),
-                    }
+                    ...p,
+                    phases: p.phases.map((ph) =>
+                      ph.id === stageId
+                        ? { ...ph, tasks: (ph.tasks ?? []).filter((t) => t.id !== taskId) }
+                        : ph,
+                    ),
+                  }
                   : p,
               ),
             );
@@ -139,20 +139,20 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
           prev.map((p) =>
             p.id === payload.planId
               ? {
-                  ...p,
-                  phases: p.phases.map((ph) =>
-                    ph.id === payload.stageId
-                      ? {
-                          ...ph,
-                          tasks: (ph.tasks ?? []).map((t) =>
-                            t.id === payload.taskId
-                              ? { ...t, startDate: payload.startDate, endDate: payload.endDate }
-                              : t,
-                          ),
-                        }
-                      : ph,
-                  ),
-                }
+                ...p,
+                phases: p.phases.map((ph) =>
+                  ph.id === payload.stageId
+                    ? {
+                      ...ph,
+                      tasks: (ph.tasks ?? []).map((t) =>
+                        t.id === payload.taskId
+                          ? { ...t, startDate: payload.startDate, endDate: payload.endDate }
+                          : t,
+                      ),
+                    }
+                    : ph,
+                ),
+              }
               : p,
           ),
         );
@@ -197,18 +197,18 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
               prev.map((p) =>
                 p.id === planId
                   ? {
-                      ...p,
-                      phases: p.phases.map((ph) =>
-                        ph.id === stageId
-                          ? {
-                              ...ph,
-                              tasks: (ph.tasks ?? []).map((t) =>
-                                t.id === taskId ? { ...t, status: result.toStatus } : t,
-                              ),
-                            }
-                          : ph,
-                      ),
-                    }
+                    ...p,
+                    phases: p.phases.map((ph) =>
+                      ph.id === stageId
+                        ? {
+                          ...ph,
+                          tasks: (ph.tasks ?? []).map((t) =>
+                            t.id === taskId ? { ...t, status: result.toStatus } : t,
+                          ),
+                        }
+                        : ph,
+                    ),
+                  }
                   : p,
               ),
             );
