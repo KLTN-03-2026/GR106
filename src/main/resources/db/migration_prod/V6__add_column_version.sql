@@ -1,0 +1,11 @@
+BEGIN;
+SET LOCAL app.bypass_rls = 'true';
+ALTER TABLE warehouse_items    ADD COLUMN version BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE plans              ADD COLUMN version BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE tasks              ADD COLUMN version BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE plots              ADD COLUMN version BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE crops              ADD COLUMN version BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE farm_configs       ADD COLUMN version BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE warehouses         ADD COLUMN version BIGINT NOT NULL DEFAULT 0;
+SET LOCAL app.bypass_rls = 'false';
+COMMIT;

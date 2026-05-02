@@ -15,6 +15,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -315,10 +316,11 @@ public class WarehouseItemService {
         if (request.getMinStockQty() != null)
             item.setMinStockQty(request.getMinStockQty());
 
-        WarehouseItemEntity savedItem =  warehouseItemRepository.saveAndFlush(item);
-        entityManager.refresh(savedItem);
+        //Flush luôn để kiểm tra xem có dòng nào được update, tức version lúc update có hợp lệ
+        warehouseItemRepository.saveAndFlush(item);
 
-        WarehouseItemResponse response = warehouseItemMapper.toResponse(savedItem);
+
+        WarehouseItemResponse response = warehouseItemMapper.toResponse(item);
 
         // Query stock hiện tại
         BigDecimal totalStock = warehouseStockRepository

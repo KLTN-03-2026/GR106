@@ -152,11 +152,8 @@ public class TaskService {
             task.setEndDate(request.getEndDate());
 
         // Lớp 2: Bảo vệ race condition giữa các request đồng thời
-        try {
-            return taskMapper.toResponse(taskRepository.saveAndFlush(task));
-        } catch (ObjectOptimisticLockingFailureException e) {
-            throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
-        }
+        return taskMapper.toResponse(taskRepository.saveAndFlush(task));
+
     }
 
 

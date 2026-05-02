@@ -116,10 +116,8 @@ public class PlotService {
             plot.setGeometry(null);
             plot.setAreaHa((double) 0);
         }
-        PlotEntity updatedPlot = plotRepository.saveAndFlush(plot);
-        entityManager.refresh(updatedPlot);
 
-        return plotMapper.toResponse(updatedPlot);
+        return plotMapper.toResponse(plotRepository.saveAndFlush(plot));
     }
 
     // Chưa cần sử dụng vì đã có hàm update

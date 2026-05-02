@@ -103,7 +103,7 @@ public class PlanService {
         plan.setStartDate(request.getStartDate());
         plan.setEndDate(request.getEndDate());
 
-        return planMapper.toResponse(planRepository.save(plan));
+        return planMapper.toResponse(planRepository.saveAndFlush(plan));
     }
 
     @Transactional
