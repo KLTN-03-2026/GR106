@@ -14,6 +14,9 @@ import java.time.LocalDate;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UpdatePlanTimeRequest {
 
+    @NotNull(message = "Version không được để trống")
+    Long version;
+
     @NotNull(message = "Thời gian bắt đầu không được để trống")
     LocalDate startDate;
 

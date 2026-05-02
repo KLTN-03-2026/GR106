@@ -14,7 +14,7 @@ import java.util.UUID;
 public class WarehouseItemResponse {
     UUID id;
     String name;
-
+    Long version;
     BigDecimal stock;
 
     BigDecimal reservedQty;

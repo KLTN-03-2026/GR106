@@ -7,6 +7,7 @@ import java.util.UUID;
 public record CropResponse(
         UUID id,
         String name,
+        Long version,
         CropTypeResponse cropType,
         CropScope scope,
         UUID clonedFromId,

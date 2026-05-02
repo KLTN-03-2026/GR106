@@ -11,5 +11,6 @@ import java.util.UUID;
 @Builder
 public class PlotSnapshotResponse {
     UUID plotId;
+    Long version;
     String plotName;
 }

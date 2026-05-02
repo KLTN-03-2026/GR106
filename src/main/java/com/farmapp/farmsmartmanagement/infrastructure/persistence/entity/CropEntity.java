@@ -41,6 +41,10 @@ public class CropEntity extends BaseEntity{
     @Column(name = "name", nullable = false)
     String name;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    Long version;
+
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "scope")

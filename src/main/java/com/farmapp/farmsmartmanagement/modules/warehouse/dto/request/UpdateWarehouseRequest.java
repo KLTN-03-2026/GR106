@@ -3,6 +3,7 @@ package com.farmapp.farmsmartmanagement.modules.warehouse.dto.request;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Data;
 
@@ -13,6 +14,10 @@ import java.math.BigDecimal;
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UpdateWarehouseRequest {
+
+    @NotNull(message = "Version không được để trống")
+    Long version;
+
     String name;
     String description;
     String address;

@@ -1,8 +1,9 @@
-package com.farmapp.farmsmartmanagement.modules.task.dto.request;
+package com.farmapp.farmsmartmanagement.modules.warehouse.dto.request;
 
 import com.farmapp.farmsmartmanagement.common.annotation.Sanitize;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -20,6 +21,9 @@ public class UpdateWarehouseItemRequest {
     @Sanitize
     @Size(max = 200, message = "Tên không được vượt quá 200 ký tự")
     private String name;
+
+    @NotNull(message = "Version không được để trống")
+    Long version;
 
     @Size(max = 100, message = "SKU không được vượt quá 100 ký tự")
     String sku;

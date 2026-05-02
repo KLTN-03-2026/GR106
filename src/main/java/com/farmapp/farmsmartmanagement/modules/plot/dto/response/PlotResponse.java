@@ -10,6 +10,8 @@ public record PlotResponse(
 
         String name,
 
+        Long version,
+
         Double areaHa,
 
         PlotStatus status,

@@ -40,6 +40,10 @@ public class WarehouseItemEntity extends BaseEntity {
     @Column(name = "name", nullable = false)
     String name;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sku", nullable = false)
     SkuEntity sku;

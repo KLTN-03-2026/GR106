@@ -11,6 +11,10 @@ import lombok.Setter;
 @Getter
 @Setter
 public class UpdatePlotRequest {
+
+    @NotNull(message = "Version không được để trống")
+    Long version;
+
     @Sanitize
     String name;
 

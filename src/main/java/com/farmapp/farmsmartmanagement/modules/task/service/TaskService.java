@@ -10,6 +10,7 @@ import com.farmapp.farmsmartmanagement.modules.task.dto.request.UpdateTaskReques
 import com.farmapp.farmsmartmanagement.modules.task.dto.request.UpdateTaskTimeRequest;
 import com.farmapp.farmsmartmanagement.modules.task.dto.response.TaskResponse;
 import com.farmapp.farmsmartmanagement.modules.task.mapper.TaskMapper;
+import jakarta.persistence.EntityManager;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -39,6 +40,8 @@ public class TaskService {
 
     TaskMapper taskMapper;
     SecurityUtils securityUtils;
+
+    EntityManager entityManager;
 
     @Transactional
     public TaskResponse createTask(UUID planId, UUID planStageId, CreateTaskRequest request){
@@ -99,7 +102,7 @@ public class TaskService {
     }
 
     @Transactional
-    public TaskResponse updateTask(UUID planId, UUID planStageId, UUID taskId, UpdateTaskRequest request){
+    public TaskResponse updateTask(UUID planId, UUID planStageId, UUID taskId, UpdateTaskRequest request) {
 
         UUID farmId = securityUtils.getCurrentFarmId();
 
@@ -107,28 +110,50 @@ public class TaskService {
                 .findByIdAndPlanIdAndPlan_Farm_Id(planStageId, planId, farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
 
-        if (request.getStartDate().isBefore(planStage.getStartDate()) ||
-                request.getEndDate().isAfter(planStage.getEndDate())) {
-            throw new AppException(ErrorCode.TASK_OUT_OF_TIME_PLAN_STAGE);
+        // Validate date với planStage chỉ khi có gửi date
+        if (request.getStartDate() != null && request.getEndDate() != null) {
+            if (request.getStartDate().isBefore(planStage.getStartDate()) ||
+                    request.getEndDate().isAfter(planStage.getEndDate())) {
+                throw new AppException(ErrorCode.TASK_OUT_OF_TIME_PLAN_STAGE);
+            }
         }
 
         TaskEntity task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));
 
-        if(request.getPlotId() != null){
+        // Kiểm tra task thuộc đúng planStage
+        if (!task.getPlanStage().getId().equals(planStageId)) {
+            throw new AppException(ErrorCode.TASK_NOT_FOUND);
+        }
+
+        if (!Objects.equals(task.getVersion(), request.getVersion())) {
+            throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
+        }
+        // Validate plot thuộc plan nếu có gửi plotId
+        if (request.getPlotId() != null) {
             PlotEntity plot = planPlotRepository
                     .findPlotByPlanIdAndPlotId(planId, request.getPlotId())
                     .orElseThrow(() -> new AppException(ErrorCode.PLOT_NOT_FOUND));
             task.setPlot(plot);
         }
 
-        if (!hasChanges(task, request)) {
-            return taskMapper.toResponse(task);
-        }
+        // Update từng field — chỉ update khi client gửi (không null)
+        if (request.getName() != null)
+            task.setName(request.getName());
 
-        taskMapper.updateEntityFromRequest(request, task);
+        if (request.getDescription() != null)
+            task.setDescription(request.getDescription());
 
-        return taskMapper.toResponse(task);
+        if (request.getStartDate() != null)
+            task.setStartDate(request.getStartDate());
+
+        if (request.getEndDate() != null)
+            task.setEndDate(request.getEndDate());
+
+        TaskEntity saved = taskRepository.saveAndFlush(task);
+        entityManager.refresh(saved); // sync lại từ DB → version đúng
+        return taskMapper.toResponse(saved);
+
     }
 
 
@@ -164,10 +189,16 @@ public class TaskService {
         TaskEntity updateTask = taskRepository.findById(taskId)
                 .orElseThrow(()-> new AppException(ErrorCode.TASK_NOT_FOUND));
 
+        if (!Objects.equals(updateTask.getVersion(), request.getVersion())) {
+            throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
+        }
         updateTask.setStartDate(request.getStartDate());
         updateTask.setEndDate(request.getEndDate());
 
-        return taskMapper.toResponse(updateTask);
+        TaskEntity saved = taskRepository.saveAndFlush(updateTask);
+        entityManager.refresh(saved);
+
+        return taskMapper.toResponse(saved);
     }
 
     @Transactional

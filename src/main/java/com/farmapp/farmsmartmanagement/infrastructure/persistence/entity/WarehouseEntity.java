@@ -28,6 +28,10 @@ public class WarehouseEntity extends BaseEntity {
     @JoinColumn(name = "farm_id", nullable = false)
     FarmEntity farm;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    Long version;
+
     @Column(name = "name", nullable = false)
     String name;
 

@@ -95,6 +95,7 @@ public class PlanService {
 
         PlanEntity plan = planRepository.findByIdAndFarm_Id(planId, farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
+        plan.setVersion(request.getVersion());
 
         if(!planRepository.isPlanCoverAllStages(planId, request.getStartDate(), request.getEndDate()))
             throw new AppException(ErrorCode.PLAN_TIME_CANNOT_LESS_STAGE);
@@ -166,6 +167,7 @@ public class PlanService {
         List<PlotSnapshotResponse> addedPlots = planPlots.stream()
                 .map(pp -> PlotSnapshotResponse.builder()
                         .plotId(pp.getPlot().getId())
+                        .version(pp.getPlot().getVersion())
                         .plotName(pp.getPlotNameSnapshot())
                         .build())
                 .toList();
@@ -187,6 +189,7 @@ public class PlanService {
         return plots.stream()
                 .map(plotEntity -> PlotSnapshotResponse.builder()
                         .plotId(plotEntity.getId())
+                        .version(plotEntity.getVersion())
                         .plotName(plotEntity.getName())
                         .build())
                 .toList();

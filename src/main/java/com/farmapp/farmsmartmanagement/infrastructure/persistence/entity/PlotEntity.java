@@ -31,6 +31,10 @@ public class PlotEntity extends BaseEntity {
     @Column(nullable = false)
     private String name;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    Long version;
+
     @Column(name = "area_ha")
     private Double areaHa;
 

@@ -16,6 +16,7 @@ import java.util.UUID;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PlanResponse {
     UUID id;
+    Long version;
     UUID farmId;
     UUID clonedFromId;
     String name;

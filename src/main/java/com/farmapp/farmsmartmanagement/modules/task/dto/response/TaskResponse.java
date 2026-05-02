@@ -16,7 +16,7 @@ import java.util.UUID;
 public class TaskResponse {
 
     UUID id;
-
+    Long version;
     UUID planStageId;
     UUID farmId;
     UUID plotId;

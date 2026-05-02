@@ -39,6 +39,10 @@ public class PlanEntity extends BaseEntity {
     @Column(nullable = false)
     private String name;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    Long version;
+
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 

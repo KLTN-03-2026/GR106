@@ -15,6 +15,7 @@ import java.util.UUID;
 public class TaskSummaryResponse {
     UUID id;
     String name;
+    Long version;
     LocalDate startDate;
     LocalDate endDate;
     TaskStatusResponse status;

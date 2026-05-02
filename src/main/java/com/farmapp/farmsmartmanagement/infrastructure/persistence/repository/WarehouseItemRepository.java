@@ -1,9 +1,11 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.WarehouseItemEntity;
+import jakarta.persistence.LockModeType;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -80,4 +82,12 @@ public interface WarehouseItemRepository extends JpaRepository<WarehouseItemEnti
 
     @EntityGraph(attributePaths = {"warehouse","sku", "supplier", "unit", "createdBy"})
     List<WarehouseItemEntity> findAllByFarm_Id(UUID farmId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT w FROM WarehouseItemEntity w WHERE w.id = :id")
+    Optional<WarehouseItemEntity> findByIdForUpdate(@Param("id") UUID id);
+
+    boolean existsByNameAndWarehouse_IdAndIdNot(String name, UUID warehouseId, UUID excludeId);
+
+    boolean existsBySku_SkuAndWarehouse_IdAndIdNot(String sku, UUID warehouseId, UUID excludeId);
 }

@@ -43,6 +43,10 @@ public class TaskEntity {
     @Column(nullable = false, length = 200)
     String name;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    Long version;
+
     @Column(columnDefinition = "TEXT")
     String description;
 

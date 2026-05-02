@@ -15,6 +15,7 @@ public class WarehouseResponse {
     UUID id;
     String name;
     String description;
+    Long version;
 
     String address;
     BigDecimal latitude;

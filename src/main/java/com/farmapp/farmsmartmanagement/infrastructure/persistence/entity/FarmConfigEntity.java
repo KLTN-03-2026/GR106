@@ -22,6 +22,10 @@ public class FarmConfigEntity {
     @JoinColumn(name = "farm_id")
     private FarmEntity farm;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    Long version;
+
     @Column(nullable = false)
     private String timezone = "Asia/Ho_Chi_Minh";
 

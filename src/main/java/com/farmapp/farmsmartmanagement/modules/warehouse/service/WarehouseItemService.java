@@ -6,7 +6,7 @@ import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
 import com.farmapp.farmsmartmanagement.domain.enums.WarehouseTxnType;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
-import com.farmapp.farmsmartmanagement.modules.task.dto.request.UpdateWarehouseItemRequest;
+import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.UpdateWarehouseItemRequest;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.CreateWarehouseItemRequest;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.response.WarehouseItemResponse;
 import com.farmapp.farmsmartmanagement.modules.warehouse.mapper.WarehouseItemMapper;
@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -240,10 +241,12 @@ public class WarehouseItemService {
                                                      UpdateWarehouseItemRequest request) {
         UUID farmId = securityUtils.getCurrentFarmId();
 
-        // Pessimistic lock để tránh race condition
         WarehouseItemEntity item = warehouseItemRepository
-                .findByIdForUpdate(warehouseItemId)
+                .findById(warehouseItemId)
                 .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_ITEM_NOT_FOUND));
+
+        if(!Objects.equals(item.getVersion(), request.getVersion()))
+            throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
 
         // Kiểm tra item thuộc farm
         if (!item.getFarm().getId().equals(farmId))
@@ -263,7 +266,7 @@ public class WarehouseItemService {
         // Validate SKU không duplicate trong cùng warehouse (trừ chính nó)
         if (request.getSku() != null
                 && !request.getSku().equals(item.getSku().getSku())
-                && warehouseItemRepository.existsBySkuAndWarehouse_IdAndIdNot(
+                && warehouseItemRepository.existsBySku_SkuAndWarehouse_IdAndIdNot(
                 request.getSku(), item.getWarehouse().getId(), warehouseItemId))
             throw new AppException(ErrorCode.SKU_IS_USING);
 
@@ -312,8 +315,10 @@ public class WarehouseItemService {
         if (request.getMinStockQty() != null)
             item.setMinStockQty(request.getMinStockQty());
 
-        // JPA tự dirty check và UPDATE
-        WarehouseItemResponse response = warehouseItemMapper.toResponse(item);
+        WarehouseItemEntity savedItem =  warehouseItemRepository.saveAndFlush(item);
+        entityManager.refresh(savedItem);
+
+        WarehouseItemResponse response = warehouseItemMapper.toResponse(savedItem);
 
         // Query stock hiện tại
         BigDecimal totalStock = warehouseStockRepository

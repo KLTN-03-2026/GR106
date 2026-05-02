@@ -12,6 +12,7 @@ import com.farmapp.farmsmartmanagement.modules.plot.dto.request.GeometryFormat;
 import com.farmapp.farmsmartmanagement.modules.plot.dto.request.UpdatePlotRequest;
 import com.farmapp.farmsmartmanagement.modules.plot.dto.response.PlotResponse;
 import com.farmapp.farmsmartmanagement.modules.plot.mapper.PlotMapper;
+import jakarta.persistence.EntityManager;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Slf4j
@@ -33,6 +35,7 @@ public class PlotService {
     PlotRepository plotRepository;
     FarmRepository farmRepository;
     PlotMapper plotMapper;
+    EntityManager entityManager;
 
 
     @Transactional(readOnly = true)
@@ -76,6 +79,10 @@ public class PlotService {
         PlotEntity plot = plotRepository.findByIdAndFarmId(plotId, farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLOT_NOT_FOUND));
 
+        if(!Objects.equals(plot.getVersion(), request.getVersion())) {
+            throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
+        }
+
         // check trùng name đúng
         if (request.getName() != null
                 && !request.getName().equals(plot.getName())
@@ -109,8 +116,10 @@ public class PlotService {
             plot.setGeometry(null);
             plot.setAreaHa((double) 0);
         }
+        PlotEntity updatedPlot = plotRepository.saveAndFlush(plot);
+        entityManager.refresh(updatedPlot);
 
-        return plotMapper.toResponse(plot);
+        return plotMapper.toResponse(updatedPlot);
     }
 
     // Chưa cần sử dụng vì đã có hàm update

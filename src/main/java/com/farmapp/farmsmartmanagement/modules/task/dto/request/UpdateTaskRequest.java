@@ -2,16 +2,22 @@ package com.farmapp.farmsmartmanagement.modules.task.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
+import lombok.Data;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
 import java.util.UUID;
 
-@Getter
+@Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UpdateTaskRequest {
+    @NotNull(message = "Version không được để trống")
+    Long version;
+
+
     String name;
     String description;
     LocalDate startDate;
