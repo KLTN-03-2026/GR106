@@ -450,13 +450,7 @@ export function SeasonPlanPage() {
 
   const handleDeleteTask = async (planId: string, stageId: string, taskId: string) => {
     try {
-      const taskVersion = plans
-        .find((p) => p.id === planId)
-        ?.phases?.find((ph) => ph.id === stageId)
-        ?.tasks?.find((t) => t.id === taskId)
-        ?.version;
-
-      await removeSeasonTask(planId, stageId, taskId, taskVersion).unwrap();
+      await removeSeasonTask(planId, stageId, taskId).unwrap();
       setSelectedItem({ type: 'PHASE', id: stageId, planId });
     } catch (err: any) {   
       showError('Lỗi xóa công việc', err);

@@ -53,8 +53,7 @@ export const seasonPlanTaskService = {
     return mapToTask(validated.data);
   },
 
-  async deleteTask(planId: string, stageId: string, taskId: string, version?: number): Promise<void> {
-    const config = typeof version === 'number' ? { data: { version } } : undefined;
-    await axiosInstance.delete(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}`, config);
+  async deleteTask(planId: string, stageId: string, taskId: string): Promise<void> {
+    await axiosInstance.delete(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}`);
   },
 };

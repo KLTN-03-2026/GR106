@@ -111,9 +111,9 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
       [updatePlansCache],
     ),
     deleteTask: useCallback(
-      (planId: string, stageId: string, taskId: string, version?: number) =>
+      (planId: string, stageId: string, taskId: string) =>
         withUnwrap(
-          seasonPlanTaskService.deleteTask(planId, stageId, taskId, version).then(() => {
+          seasonPlanTaskService.deleteTask(planId, stageId, taskId).then(() => {
             updatePlansCache((prev) =>
               prev.map((p) =>
                 p.id === planId
