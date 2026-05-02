@@ -164,6 +164,7 @@ public class FarmInvitationService {
         }
     }
 
+    @Transactional
     public void resendInvitation(UUID farmId, UUID invitationId){
         FarmEntity farm = farmRepository
                 .findById(farmId)
@@ -172,6 +173,14 @@ public class FarmInvitationService {
         InvitationEntity currentInvitation = invitationRepository
                 .findById(invitationId)
                 .orElseThrow(() -> new AppException(ErrorCode.INVITATION_NOT_FOUND));
+
+        if(currentInvitation.getStatus().equals(InvitationStatus.ACCEPTED)){
+            throw new AppException(ErrorCode.INVITATION_ALREADY_USED);
+        }
+
+        currentInvitation.setStatus(InvitationStatus.PENDING);
+        currentInvitation.setExpiresAt(Instant.now().plus(7, ChronoUnit.DAYS));
+        invitationRepository.save(currentInvitation);
 
         UserEntity recipientMail = userRepository
                 .findByEmail(currentInvitation.getEmail())
