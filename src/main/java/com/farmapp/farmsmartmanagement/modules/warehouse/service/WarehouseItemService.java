@@ -6,6 +6,7 @@ import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
 import com.farmapp.farmsmartmanagement.domain.enums.WarehouseTxnType;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
+import com.farmapp.farmsmartmanagement.modules.task.dto.request.UpdateWarehouseItemRequest;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.CreateWarehouseItemRequest;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.response.WarehouseItemResponse;
 import com.farmapp.farmsmartmanagement.modules.warehouse.mapper.WarehouseItemMapper;
@@ -70,11 +71,16 @@ public class WarehouseItemService {
         // đo thời gian query reservedQty
         start = System.currentTimeMillis();
         Map<UUID, BigDecimal> reservedQtyMap = taskMaterialRepository
-                .sumPlannedQtyGroupByWarehouseItem(itemIds)
+                .sumRemainingQtyGroupByWarehouseItem(itemIds)  // đổi tên method
                 .stream()
                 .collect(Collectors.toMap(
                         row -> (UUID) row[0],
-                        row -> (BigDecimal) row[1]
+                        row -> {
+                            BigDecimal val = (BigDecimal) row[1];
+                            // Có thể âm nếu work log dùng nhiều hơn planned — clamp về 0
+                            return val != null && val.compareTo(BigDecimal.ZERO) > 0
+                                    ? val : BigDecimal.ZERO;
+                        }
                 ));
         log.info("Query sumPlannedQtyGroupByWarehouseItem took {} ms", System.currentTimeMillis() - start);
 
@@ -113,13 +119,17 @@ public class WarehouseItemService {
                 ));
 
         Map<UUID, BigDecimal> reservedQtyMap = taskMaterialRepository
-                .sumPlannedQtyGroupByWarehouseItem(itemIds)
+                .sumRemainingQtyGroupByWarehouseItem(itemIds)  // đổi tên method
                 .stream()
                 .collect(Collectors.toMap(
                         row -> (UUID) row[0],
-                        row -> (BigDecimal) row[1]
+                        row -> {
+                            BigDecimal val = (BigDecimal) row[1];
+                            // Có thể âm nếu work log dùng nhiều hơn planned — clamp về 0
+                            return val != null && val.compareTo(BigDecimal.ZERO) > 0
+                                    ? val : BigDecimal.ZERO;
+                        }
                 ));
-
         return items.stream()
                 .map(item -> {
                     WarehouseItemResponse response = warehouseItemMapper.toResponse(item);
@@ -223,5 +233,134 @@ public class WarehouseItemService {
         response.setStock(totalStock);
 
         return response;
+    }
+
+    @Transactional
+    public WarehouseItemResponse updateWarehouseItem(UUID warehouseItemId,
+                                                     UpdateWarehouseItemRequest request) {
+        UUID farmId = securityUtils.getCurrentFarmId();
+
+        // Pessimistic lock để tránh race condition
+        WarehouseItemEntity item = warehouseItemRepository
+                .findByIdForUpdate(warehouseItemId)
+                .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_ITEM_NOT_FOUND));
+
+        // Kiểm tra item thuộc farm
+        if (!item.getFarm().getId().equals(farmId))
+            throw new AppException(ErrorCode.FORBIDDEN);
+
+        // Kiểm tra đã bị xóa chưa
+        if (item.getDeletedAt() != null)
+            throw new AppException(ErrorCode.WAREHOUSE_ITEM_NOT_FOUND);
+
+        // Validate name không duplicate trong cùng warehouse (trừ chính nó)
+        if (request.getName() != null
+                && !request.getName().equals(item.getName())
+                && warehouseItemRepository.existsByNameAndWarehouse_IdAndIdNot(
+                request.getName(), item.getWarehouse().getId(), warehouseItemId))
+            throw new AppException(ErrorCode.WAREHOUSE_ITEM_ALREADY_EXISTS);
+
+        // Validate SKU không duplicate trong cùng warehouse (trừ chính nó)
+        if (request.getSku() != null
+                && !request.getSku().equals(item.getSku().getSku())
+                && warehouseItemRepository.existsBySkuAndWarehouse_IdAndIdNot(
+                request.getSku(), item.getWarehouse().getId(), warehouseItemId))
+            throw new AppException(ErrorCode.SKU_IS_USING);
+
+        // Update SKU nếu có thay đổi
+        if (request.getSku() != null
+                && !request.getSku().equals(item.getSku().getSku())) {
+            SkuEntity sku = skuRepository.findById(request.getSku())
+                    .orElseThrow(() -> new AppException(ErrorCode.SKU_NOT_FOUND));
+
+            if (!sku.getFarm().getId().equals(farmId))
+                throw new AppException(ErrorCode.FORBIDDEN);
+
+            item.setSku(sku);
+        }
+
+        // Update unit nếu có thay đổi
+        if (request.getUnitId() != null
+                && !request.getUnitId().equals(item.getUnit().getId())) {
+            UnitEntity unit = unitRepository.findById(request.getUnitId())
+                    .orElseThrow(() -> new AppException(ErrorCode.UNIT_NOT_FOUND));
+
+            item.setUnit(unit);
+        }
+
+        // Update supplier nếu có thay đổi
+        if (request.getSupplierId() != null) {
+            SupplierEntity supplier = supplierRepository.findById(request.getSupplierId())
+                    .orElseThrow(() -> new AppException(ErrorCode.SUPPLIER_NOT_FOUND));
+
+            if (!supplier.getFarm().getId().equals(farmId))
+                throw new AppException(ErrorCode.FORBIDDEN);
+
+            item.setSupplier(supplier);
+        } else {
+            // Nếu client gửi null có nghĩa là muốn xóa supplier
+            item.setSupplier(null);
+        }
+
+        // Update các field đơn giản
+        if (request.getName() != null)
+            item.setName(request.getName());
+
+        if (request.getUnitPrice() != null)
+            item.setUnitPrice(request.getUnitPrice());
+
+        if (request.getMinStockQty() != null)
+            item.setMinStockQty(request.getMinStockQty());
+
+        // JPA tự dirty check và UPDATE
+        WarehouseItemResponse response = warehouseItemMapper.toResponse(item);
+
+        // Query stock hiện tại
+        BigDecimal totalStock = warehouseStockRepository
+                .sumQtyByWarehouseItemId(warehouseItemId);
+        response.setStock(totalStock != null ? totalStock : BigDecimal.ZERO);
+
+        BigDecimal reservedQty = taskMaterialRepository
+                .sumRemainingQtyByWarehouseItemId(warehouseItemId);
+        response.setReservedQty(reservedQty != null
+                && reservedQty.compareTo(BigDecimal.ZERO) > 0
+                ? reservedQty : BigDecimal.ZERO);
+
+        return response;
+    }
+
+    @Transactional
+    public void deleteWarehouseItem(UUID warehouseItemId) {
+        UUID farmId = securityUtils.getCurrentFarmId();
+
+        // Pessimistic lock — block row trong suốt transaction
+        WarehouseItemEntity item = warehouseItemRepository
+                .findByIdForUpdate(warehouseItemId)
+                .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_ITEM_NOT_FOUND));
+
+        // Kiểm tra item thuộc farm
+        if (!item.getFarm().getId().equals(farmId))
+            throw new AppException(ErrorCode.FORBIDDEN);
+
+        // Kiểm tra đã bị xóa chưa
+        if (item.getDeletedAt() != null)
+            throw new AppException(ErrorCode.WAREHOUSE_ITEM_NOT_FOUND);
+
+        // Kiểm tra còn tồn kho không
+        BigDecimal currentStock = warehouseStockRepository
+                .sumQtyByWarehouseItemId(warehouseItemId);
+
+        if (currentStock != null && currentStock.compareTo(BigDecimal.ZERO) > 0)
+            throw new AppException(ErrorCode.WAREHOUSE_ITEM_HAS_STOCK);
+
+        // Kiểm tra đang được dùng trong task_materials không
+        boolean usedInTask = taskMaterialRepository
+                .existsByWarehouseItemId(warehouseItemId);
+
+        if (usedInTask)
+            throw new AppException(ErrorCode.WAREHOUSE_ITEM_IN_USE);
+
+        // Soft delete
+        item.setDeletedAt(Instant.now());
     }
 }
