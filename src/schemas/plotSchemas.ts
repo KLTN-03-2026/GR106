@@ -18,10 +18,10 @@ export const plotSchema = z.object({
   geometry: geometrySchema.nullish().transform(v => v ?? undefined),
 });
 
-// Schema cho Payload tạo Plot mới
+// Schema cho Payload tạo Plot mới — geometry KHÔNG bắt buộc
 export const createPlotSchema = z.object({
   name: z.string().trim().min(1, 'Vui lòng nhập tên lô đất'),
-  geometry: geometrySchema,
+  geometry: geometrySchema.optional().nullable(),
   description: z.string().optional().nullable(),
 });
 
