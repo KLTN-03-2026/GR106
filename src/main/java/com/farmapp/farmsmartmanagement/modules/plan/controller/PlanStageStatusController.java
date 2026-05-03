@@ -47,6 +47,19 @@ public class PlanStageStatusController {
         return ResponseUtil.success(planStageStatusService.findAllPlanStageStatusHistory(planId, stageId));
     }
 
+    @Operation(summary = "Danh sách trạng thái tiếp theo hợp lệ của Plan Stage",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/api/v1/plans/{planId}/stages/{stageId}/available-statuses")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<List<PlanStageStatusResponse>>> getPlanStageStatusAvailableByPlanStageAndFarm(
+            @PathVariable("planId") UUID planId,
+            @PathVariable("stageId") UUID stageId) {
+        return ResponseUtil.success(
+                planStageStatusService
+                        .findAllPlanStageStatusAvailableByPlanStageAndFarm(stageId)
+        );
+    }
+
     @Operation(summary = "Danh sách transition trạng thái theo Farm",
             description = "API trả về các transition trạng thái hợp lệ theo Farm hiện tại",
             security = @SecurityRequirement(name = "bearerAuth"))

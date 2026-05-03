@@ -46,6 +46,11 @@ public class PlanStageStatusService {
         return planStageStatusMapper.toResponses(planStageStatusRepository.findAll());
     }
 
+    public List<PlanStageStatusResponse> findAllPlanStageStatusAvailableByPlanStageAndFarm(UUID planStageId) {
+        UUID farmId = securityUtils.getCurrentFarmId();
+        return planStageStatusMapper.toResponses(planStageStatusRepository.findAllByPlanStage_IdAndFarm_IdAndStatusAvailable(planStageId,farmId));
+    }
+
     public List<PlanStageStatusHistoryResponse> findAllPlanStageStatusHistory(UUID planId, UUID stageId) {
         PlanStageEntity stage = planStageRepository
                 .findByIdAndPlanIdAndStatusIsNotTerminal(stageId, planId)

@@ -49,8 +49,7 @@ public class PlanController {
     }
 
     @Operation(
-            summary = "Lấy danh sách kế hoạch của farm",
-            description = "API trả về toàn bộ kế hoạch (plan) thuộc farm hiện tại",
+            summary = "Lấy chi tiết 1 kế hoạch của farm",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @GetMapping("/api/v1/plans/{planId}")

@@ -3,6 +3,7 @@ package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskStatusEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +24,6 @@ public interface TaskStatusRepository extends JpaRepository<TaskStatusEntity, UU
             ON ts.id = tst.toStatus.id
         WHERE t.id = :taskId
     """)
-    List<TaskStatusEntity> findByTask_IdAndFarm_IdAndStatusAvailable(UUID taskId, UUID farmId);
+    List<TaskStatusEntity> findByTask_IdAndFarm_IdAndStatusAvailable(@Param("taskId") UUID taskId,@Param("farmId") UUID farmId);
 
 }
