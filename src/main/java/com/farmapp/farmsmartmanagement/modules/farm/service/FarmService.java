@@ -156,7 +156,7 @@ public class FarmService {
         return farmMapper.toResponse(farm);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<FarmResponse> getFarms() {
         UUID userId = securityUtils.getCurrentUserId();
         return farmRepository.findAllByOwnerId(userId)
@@ -165,7 +165,7 @@ public class FarmService {
                 .toList();
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<FarmSummaryResponse> getFarmsSummary() {
         UUID userId = securityUtils.getCurrentUserId();
         return farmRepository.findFarmSummariesByUserId(userId)
@@ -182,6 +182,15 @@ public class FarmService {
                         .build()
                 )
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public FarmResponse getFarmById(UUID farmId) {
+        return farmMapper.toResponse(
+                farmRepository
+                        .findById(farmId)
+                        .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND))
+        );
     }
 
     @Transactional

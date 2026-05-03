@@ -43,6 +43,18 @@ public class FarmController {
         return ApiResponse.success(farmService.getFarms());
     }
 
+    @Operation(
+            summary = "Lấy 1 farm",
+            description = "Trả về farm mà user đang là member",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @GetMapping("/{farmId}")
+    public ApiResponse<FarmResponse> getFarmById(
+            @PathVariable UUID farmId
+    ) {
+        return ApiResponse.success(farmService.getFarmById(farmId));
+    }
+
     // ========================= 2. SUMMARY =========================
     @Operation(
             summary = "Lấy thông tin tổng quan farm",
