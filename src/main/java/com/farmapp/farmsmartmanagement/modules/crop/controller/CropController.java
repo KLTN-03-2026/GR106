@@ -41,6 +41,18 @@ public class CropController {
                 .success(cropService.getAllCropTypes());
     }
 
+    @Operation(
+            summary = "PUBLIC Lấy 1 loại cây trồng",
+            description = "API trả về 1 loại cây trồng (crop types) trong hệ thống"
+    )
+    @GetMapping("/api/v1/crop-types/{cropTypeId}")
+    public ResponseEntity<ApiResponse<CropTypeResponse>> getCropTypeById(
+            @PathVariable UUID cropTypeId
+    ) {
+        return ResponseUtil
+                .success(cropService.getCropTypeById(cropTypeId));
+    }
+
     // ---------------------------- PUBLIC ----------------------------
     @Operation(
             summary = "PUBLIC Lấy danh sách cây trồng hệ thống",

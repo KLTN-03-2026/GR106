@@ -29,6 +29,9 @@ public interface CropMapper {
 
     CropTypeResponse toTypeResponse(CropTypeEntity entity);
 
+    List<CropTypeResponse> toTypeResponses(List<CropTypeEntity> entity);
+
+
     // SYSTEM crop
     default CropEntity toSystemEntity(CreateSystemCropRequest request,
                                       CropTypeEntity cropType,

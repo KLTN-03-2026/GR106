@@ -47,6 +47,15 @@ public class CropService {
     }
 
     @Transactional(readOnly = true)
+    public CropTypeResponse getCropTypeById(UUID id) {
+        return cropMapper.toTypeResponse(
+                cropTypeRepository
+                        .findById(id)
+                        .orElseThrow(()->new AppException(ErrorCode.CROP_TYPE_NOT_FOUND))
+        );
+    }
+
+    @Transactional(readOnly = true)
     public List<CropResponse> getAllSystemCrops() {
         return rlsUtils.runAsAdmin(() -> cropMapper.toResponses(
                 cropRepository.findAllByScope(CropScope.SYSTEM))
