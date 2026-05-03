@@ -63,6 +63,18 @@ public class PlanStageController {
         );
     }
 
+    @GetMapping("/api/v1/plans/{planId}/stages/{stageId}")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<PlanStageResponse>> getByIdAndPlanId(
+            @PathVariable("planId") UUID planId,
+            @PathVariable UUID stageId
+    ){
+        return ResponseUtil.success(
+                planStageService.findByIdAndPlanId(stageId,planId)
+        );
+    }
+
+
     @PatchMapping("/api/v1/plans/{planId}/stages/{stageId}")
     @RequiresFarmToken
     public ResponseEntity<ApiResponse<PlanStageResponse>> updatePlanStageCustom(

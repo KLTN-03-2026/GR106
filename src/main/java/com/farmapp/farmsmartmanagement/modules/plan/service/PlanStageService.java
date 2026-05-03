@@ -42,7 +42,7 @@ public class PlanStageService {
 
     SecurityUtils securityUtils;
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<PlanStageResponse> findAll(){
         return planStageMapper.toResponses(
                 planStageRepository.findAll()
@@ -50,7 +50,7 @@ public class PlanStageService {
     }
 
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<PlanStageResponse> findAllByPlanId(UUID planId){
         UUID farmId = securityUtils.getCurrentFarmId();
 
@@ -65,6 +65,14 @@ public class PlanStageService {
         }
 
         return planStageMapper.toResponses(planStageRepository.findAllByPlanId(planId));
+    }
+
+    public PlanStageResponse findByIdAndPlanId(UUID id, UUID planId){
+        return planStageMapper.toResponse(
+                planStageRepository
+                        .findByIdAndPlanId(id,planId)
+                        .orElseThrow(()-> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND))
+        );
     }
     // plan -> previousStage(orderIndex) -> status -> save
     @Transactional
