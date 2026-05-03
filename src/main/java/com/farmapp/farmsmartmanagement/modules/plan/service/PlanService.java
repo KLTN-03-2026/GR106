@@ -54,6 +54,13 @@ public class PlanService {
         return planMapper.toResponses(planRepository.findAll());
     }
 
+    public PlanResponse findById(UUID id) {
+        return planMapper.toResponse(planRepository
+                .findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND))
+        );
+    }
+
     @Transactional
     public PlanResponse createPlan(UUID farmId, UUID userId, CreatePlanRequest request){
         FarmEntity farm = farmRepository.findById(farmId)

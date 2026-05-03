@@ -49,6 +49,21 @@ public class PlanController {
     }
 
     @Operation(
+            summary = "Lấy danh sách kế hoạch của farm",
+            description = "API trả về toàn bộ kế hoạch (plan) thuộc farm hiện tại",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @GetMapping("/api/v1/plans/{planId}")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<PlanResponse>> findById(
+            @PathVariable UUID planId
+    ){
+        return ResponseUtil.success(
+                planService.findById(planId)
+        );
+    }
+
+    @Operation(
             summary = "Tạo kế hoạch mới",
             description = "API cho phép tạo kế hoạch sản xuất mới cho farm hiện tại",
             security = @SecurityRequirement(name = "bearerAuth")
