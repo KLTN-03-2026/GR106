@@ -116,7 +116,8 @@ public enum ErrorCode {
     USER_HAS_BEEN_ACTIVE(409,"Tài khoản đã được kich hoạt" ,HttpStatus.CONFLICT ), USER_SUSPENDED(409,"Tài khoản đã bị tạm dừng" ,HttpStatus.CONFLICT ),
     WRONG_PASSWORD(409,"Sai mật khẩu" ,HttpStatus.CONFLICT ), TOO_MANY_REQUESTS(429,"Vui lòng sống chậm lại" , HttpStatus.TOO_MANY_REQUESTS),
     WAREHOUSE_ITEM_HAS_STOCK(409,"Vật tư vẫn còn số lượng trong kho" , HttpStatus.CONFLICT),
-    WAREHOUSE_ITEM_IN_USE(409,"Vật tư đang được sử dụng" ,HttpStatus.CONFLICT ), CONCURRENT_MODIFICATION(409,"Dữ liệu đã thay đổi vui lòng load lại" ,HttpStatus.CONFLICT ),;
+    WAREHOUSE_ITEM_IN_USE(409,"Vật tư đang được sử dụng" ,HttpStatus.CONFLICT ), CONCURRENT_MODIFICATION(409,"Dữ liệu đã thay đổi vui lòng load lại" ,HttpStatus.CONFLICT ),
+    TASK_ASSIGNEE_NOT_FOUND_OR_TASK_IS_TERMINAL(404,"Không tìm thấy việc được giao hoặc công việc đã kết thúc" ,HttpStatus.NOT_FOUND ), TASK_NOT_FOUND_OR_TASK_IS_TERMINAL(404,"Không tìm thấy công việc hoặc công việc đã kết thúc" ,HttpStatus.NOT_FOUND );
 
 
 

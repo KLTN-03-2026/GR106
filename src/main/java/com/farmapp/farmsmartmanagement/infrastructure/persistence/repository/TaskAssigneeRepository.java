@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface TaskAssigneeRepository extends JpaRepository<TaskAssigneeEntity, UUID> {
@@ -30,5 +31,14 @@ public interface TaskAssigneeRepository extends JpaRepository<TaskAssigneeEntity
             AND ta.task.planStage.plan.id = :planId
         """)
     void deleteByIdAndPlan_IdAndStage_IdAndTask_Id(UUID assigneeId, UUID planId, UUID stageId, UUID taskId);
+
+    @Query("""
+        SELECT ta
+        FROM TaskAssigneeEntity ta
+        WHERE ta.id = :assigneeId
+          AND ta.task.id = :taskId
+          AND ta.task.status.isTerminal = FALSE
+    """)
+    Optional<TaskAssigneeEntity> findByIdAndTaskIsNotTerminal(UUID assigneeId, UUID taskId);
 
 }

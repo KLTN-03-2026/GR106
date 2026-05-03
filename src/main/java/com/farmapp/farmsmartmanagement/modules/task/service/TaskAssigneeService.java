@@ -115,8 +115,8 @@ public class TaskAssigneeService {
     @PreAuthorize("hasAuthority('task:assign')")
     public TaskAssigneeResponse deleteAssignee(UUID planId, UUID stageId, UUID taskId, UUID assigneeId, DeleteTaskAssigneeRequest request) {
         TaskAssigneeEntity taskAssignee = taskAssigneeRepository
-                .findById(assigneeId)
-                .orElseThrow(()->new AppException(ErrorCode.TASK_ASSIGNEE_NOT_FOUND));
+                .findByIdAndTaskIsNotTerminal(assigneeId,taskId)
+                .orElseThrow(()->new AppException(ErrorCode.TASK_ASSIGNEE_NOT_FOUND_OR_TASK_IS_TERMINAL));
 
         taskAssignee.setRemovalReason(request.getRemovalReason()!=null?request.getRemovalReason():"");
         taskAssignee.setRemovedBy(userRepository.getReferenceById(securityUtils.getCurrentUserId()));

@@ -49,7 +49,7 @@ public class TaskMaterialService {
 
         TaskEntity task = taskRepository
                 .findByIdAndStageIdAndPlanIdAndStatusIsNotTerminal(taskId,stageId,planId)
-                .orElseThrow(()->new AppException(ErrorCode.TASK_NOT_FOUND));
+                .orElseThrow(()->new AppException(ErrorCode.TASK_NOT_FOUND_OR_TASK_IS_TERMINAL));
 
         // Vật tư là nullable = true
         WarehouseItemEntity warehouseItem = null;
@@ -62,8 +62,8 @@ public class TaskMaterialService {
                 throw new AppException(ErrorCode.TASK_IS_TERMINAL);
         }
 
-        if(task.getStatus().getIsTerminal().equals(true))
-            throw new AppException(ErrorCode.TASK_IS_TERMINAL);
+//        if(task.getStatus().getIsTerminal().equals(true))
+//            throw new AppException(ErrorCode.TASK_IS_TERMINAL);
 
         // Kiểm tra số lượng vật tư có đủ?
         boolean sufficient = warehouseItemRepository
