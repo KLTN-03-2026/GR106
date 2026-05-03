@@ -38,6 +38,7 @@ public class CropService {
     RlsUtils rlsUtils;
     SecurityUtils securityUtils;
 
+    @Transactional(readOnly = true)
     public List<CropTypeResponse> getAllCropTypes() {
         return cropTypeRepository.findAll()
                 .stream()
@@ -45,10 +46,35 @@ public class CropService {
                 .toList();
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<CropResponse> getAllSystemCrops() {
         return rlsUtils.runAsAdmin(() -> cropMapper.toResponses(
                 cropRepository.findAllByScope(CropScope.SYSTEM))
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public CropResponse getSystemCropById(UUID cropId) {
+        return rlsUtils.runAsAdmin(() -> cropMapper
+                .toResponse(
+                        cropRepository
+                                .findByIdAndScope(cropId, CropScope.SYSTEM)
+                ));
+    }
+
+    @Transactional(readOnly = true)
+    public List<CropResponse> getAllFarmCrops(UUID farmId) {
+        return rlsUtils.runAsAdmin(() -> cropMapper.toResponses(
+                cropRepository.findAllByScopeAndFarm_Id(CropScope.FARM, farmId))
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public CropResponse getFarmCropByIdAndFarmId(UUID cropId, UUID farmId) {
+        return cropMapper.toResponse(
+                cropRepository
+                        .findByIdAndScopeAndFarm_Id(cropId, CropScope.FARM,farmId)
+                        .orElseThrow(()->new AppException(ErrorCode.CROP_NOT_FOUND))
         );
     }
 

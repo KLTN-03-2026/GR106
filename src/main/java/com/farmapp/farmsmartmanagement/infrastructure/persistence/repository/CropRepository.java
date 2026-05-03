@@ -18,4 +18,8 @@ public interface CropRepository extends JpaRepository<CropEntity, UUID> {
     List<CropEntity> findAllByScope(CropScope cropScope);
 
     CropEntity findByIdAndScope(UUID cropId, CropScope cropScope);
+
+    Optional<CropEntity> findByIdAndScopeAndFarm_Id(UUID cropId, CropScope cropScope, UUID farmId);
+
+    List<CropEntity> findAllByScopeAndFarm_Id(CropScope cropScope, UUID farmId);
 }

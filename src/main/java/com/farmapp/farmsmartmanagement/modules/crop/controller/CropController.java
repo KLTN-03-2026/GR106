@@ -1,5 +1,6 @@
 package com.farmapp.farmsmartmanagement.modules.crop.controller;
 
+import com.farmapp.farmsmartmanagement.common.annotation.RequiresFarmToken;
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
 import com.farmapp.farmsmartmanagement.common.response.ResponseUtil;
 import com.farmapp.farmsmartmanagement.domain.enums.CropScope;
@@ -50,6 +51,48 @@ public class CropController {
         return  ResponseUtil.success(cropService.getAllSystemCrops());
     }
 
+    @Operation(
+            summary = "PUBLIC Lấy danh sách cây trồng hệ thống",
+            description = "API trả về tất cả cây trồng thuộc phạm vi hệ thống (SYSTEM scope)"
+    )
+    @GetMapping("/api/v1/crops/{cropId}")
+    public ResponseEntity<ApiResponse<CropResponse>> getSystemCropById(
+            @PathVariable UUID cropId
+    ) {
+        return  ResponseUtil.success(cropService.getSystemCropById(cropId));
+    }
+
+
+
+    // ---------------------------- FARM ----------------------------
+    @Operation(
+            summary = "PUBLIC Lấy danh sách cây trồng của farm",
+            description = "API trả về tất cả cây trồng thuộc phạm vi FARM (FARM scope)"
+    )
+    @GetMapping("/api/v1/farms/{farmId}/crops")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<List<CropResponse>>> getAllFarmCrops(
+            @PathVariable UUID farmId
+    ) {
+        return  ResponseUtil.success(
+                cropService.getAllFarmCrops(farmId)
+        );
+    }
+
+    @Operation(
+            summary = "PUBLIC Lấy 1 cây trồng của farm",
+            description = "API trả về cây trồng thuộc phạm vi FARM (FARM scope)"
+    )
+    @GetMapping("/api/v1/farms/{farmId}/crops/{cropId}")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<CropResponse>> getFarmCropById(
+            @PathVariable UUID farmId,
+            @PathVariable UUID cropId
+    ) {
+        return  ResponseUtil.success(
+                cropService.getFarmCropByIdAndFarmId(cropId, farmId)
+        );
+    }
 
     // ------------------ ADMIN ----------------------
     @Operation(

@@ -52,5 +52,11 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
             @Param("planId") UUID planId
     );
 
-    Optional<TaskEntity> findByIdAndPlanStage_IdAndPlan_Id(UUID id, UUID planStageId, UUID planId);
+    @Query("""
+        SELECT t FROM TaskEntity t
+        WHERE t.id = :id
+          AND t.planStage.id = :planStageId
+          AND t.planStage.plan.id = :planId
+    """)
+    Optional<TaskEntity> findByIdAndPlanStage_IdAndPlan_Id(@Param("id") UUID id,@Param("planStageId") UUID planStageId,@Param("planId") UUID planId);
 }
