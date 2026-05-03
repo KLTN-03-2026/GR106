@@ -56,6 +56,22 @@ public class TaskStatusController {
     }
 
     @Operation(
+            summary = "Danh sách trạng thái tiếp theo hợp lệ của Task",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @GetMapping("/api/v1/plans/{planId}/stages/{stageId}/tasks/{taskId}/available-status")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<List<TaskStatusResponse>>> getTaskStatusAvailable(
+            @PathVariable("planId") UUID planId,
+            @PathVariable("stageId") UUID stageId,
+            @PathVariable("taskId") UUID taskId
+    ) {
+        return ResponseUtil.success(
+                taskStatusService.findTaskStatusAvailableByTaskAndFarm(taskId)
+        );
+    }
+
+    @Operation(
             summary = "Danh sách transition trạng thái theo Farm",
             description = "API trả về các transition trạng thái hợp lệ theo Farm hiện tại",
             security = @SecurityRequirement(name = "bearerAuth")

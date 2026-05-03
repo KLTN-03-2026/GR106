@@ -64,6 +64,14 @@ public class TaskStatusService {
                 );
     }
 
+    @Transactional(readOnly = true)
+    public List<TaskStatusResponse> findTaskStatusAvailableByTaskAndFarm(UUID taskId){
+        UUID farmId = securityUtils.getCurrentFarmId();
+        return taskStatusMapper.toResponses(
+                taskStatusRepository.findByTask_IdAndFarm_IdAndStatusAvailable(taskId,farmId)
+        );
+    }
+
     @Transactional
     public TaskStatusHistoryResponse updateTaskStatus(UUID planId, UUID stageId, UUID taskId, UUID taskStatusId){
         UUID farmId = securityUtils.getCurrentFarmId();
