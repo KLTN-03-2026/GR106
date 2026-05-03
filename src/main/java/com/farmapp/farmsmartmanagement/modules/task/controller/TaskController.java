@@ -94,6 +94,18 @@ public class TaskController {
         );
     }
 
+    @GetMapping("/api/v1/plans/{planId}/stages/{stageId}/tasks/{taskId}")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<TaskResponse>> getTaskByIdAndPlanStageIdAndPlanId(
+            @PathVariable("planId") UUID planId,
+            @PathVariable("stageId") UUID stageId,
+            @PathVariable UUID taskId
+    ){
+        return ResponseUtil.success(
+                taskService.findByIdAndPlanStageIdAndPlanId(taskId,stageId,planId)
+        );
+    }
+
 
     @DeleteMapping("/api/v1/plans/{planId}/stages/{stageId}/tasks/{taskId}")
     @RequiresFarmToken

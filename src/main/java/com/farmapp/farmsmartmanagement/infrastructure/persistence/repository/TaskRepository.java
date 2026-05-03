@@ -52,4 +52,5 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
             @Param("planId") UUID planId
     );
 
+    Optional<TaskEntity> findByIdAndPlanStage_IdAndPlan_Id(UUID id, UUID planStageId, UUID planId);
 }

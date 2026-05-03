@@ -210,6 +210,14 @@ public class TaskService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public TaskResponse findByIdAndPlanStageIdAndPlanId(UUID id, UUID planStageId, UUID planId) {
+        return taskMapper.toResponse(
+                taskRepository
+                        .findByIdAndPlanStage_IdAndPlan_Id(id,planStageId,planId)
+                        .orElseThrow(()->new AppException(ErrorCode.TASK_NOT_FOUND))
+        );
+    }
 
     @Transactional
     public void deleteTask(UUID taskId) {
