@@ -22,18 +22,23 @@ export function fmtDate(d: string) {
  */
 const SEMANTIC_STATUS_COLORS: Record<string, string> = {
   // Task statuses
-  UNASSIGNED:  '#94a3b8', // xám — chưa giao
-  ASSIGNED:    '#f59e0b', // vàng cam — đã giao việc
-  IN_PROGRESS: '#3b82f6', // xanh dương — đang làm
-  DONE:        '#22c55e', // xanh lá — hoàn thành
-  CANCELLED:   '#ef4444', // đỏ — đã hủy
-  OVERDUE:     '#f97316', // cam đậm — trễ hạn
+  TODO:        '#64748b', // xám đậm — Chờ thực hiện
+  UPCOMING:    '#94a3b8', // xám — Chưa bắt đầu
+  NOT_STARTED: '#94a3b8', // xám — Chưa bắt đầu
+  UNASSIGNED:  '#94a3b8', // xám — Chưa giao việc
+  ASSIGNED:    '#3b82f6', // xanh dương — Đã giao việc
+  IN_PROGRESS: '#0ea5e9', // xanh sky — Đang thực hiện
+  DONE:        '#22c55e', // xanh lá — Hoàn thành
+  COMPLETED:   '#16a34a', // xanh lá đậm — Hoàn thành
+  CANCELLED:   '#ef4444', // đỏ — Đã hủy
+  OVERDUE:     '#f43f5e', // hồng đỏ — Trễ hạn
+  PENDING:     '#f59e0b', // vàng cam — Đang chờ xử lý
+  
   // Plan / Phase statuses
   DRAFT:             '#94a3b8', // xám
   ACTIVE:            '#3b82f6', // xanh dương
   READY_TO_HARVEST:  '#a855f7', // tím
   HARVESTING:        '#f59e0b', // vàng
-  COMPLETED:         '#22c55e', // xanh lá
 };
 
 export function statusCodeToColor(code: string): string {
@@ -54,20 +59,20 @@ export function statusCodeToColor(code: string): string {
 export function getStatusColor(s: any): string {
   if (!s) return '#cbd5e1';
   const code = (typeof s === 'string' ? s : (s.code ?? '')).toUpperCase();
-  // Ưu tiên màu đã định nghĩa cục bộ (semantic) để phân biệt rõ ràng nếu API trả về màu trùng nhau
+
+  // LUÔN ƯU TIÊN MÀU TỪ FE: Để đảm bảo giao diện đồng bộ và chuyên nghiệp
   if (SEMANTIC_STATUS_COLORS[code]) return SEMANTIC_STATUS_COLORS[code];
-  
-  // Nếu không có semantic color, lấy màu từ API
-  if (typeof s !== 'string' && s.color && s.color.trim() !== '') return s.color;
-  
-  // Cuối cùng dùng fallback hash
+
+  // Nếu không có trong bảng màu chuẩn, dùng hàm tạo màu ngẫu nhiên theo mã
   return statusCodeToColor(code);
 }
 
-export function getStatusLabel(s: any): string {
+export function statusLabel(s: string | any | null): string {
   if (!s) return 'Nháp';
+  // BẮT BUỘC lấy tên hiển thị từ API
   if (typeof s !== 'string' && s.name) return s.name;
-  return statusViLabel(statusCodeOf(s));
+  // Nếu là chuỗi cũ hoặc không có name, hiện mã code
+  return typeof s === 'string' ? s : (s.code || '');
 }
 
 export function statusChipClass(code: string): string {
@@ -75,21 +80,6 @@ export function statusChipClass(code: string): string {
   return 'text-white';
 }
 
-export function statusViLabel(code: string): string {
-  switch (code) {
-    case 'DRAFT': return 'Bản nháp';
-    case 'ACTIVE': return 'Đang thực hiện';
-    case 'IN_PROGRESS': return 'Đang thực hiện';
-    case 'READY_TO_HARVEST': return 'Sẵn sàng thu hoạch';
-    case 'HARVESTING': return 'Đang thu hoạch';
-    case 'COMPLETED': return 'Hoàn thành';
-    case 'CANCELLED': return 'Đã hủy';
-    case 'OVERDUE': return 'Trễ hạn';
-    case 'ASSIGNED': return 'Đã giao việc';
-    case 'UNASSIGNED': return 'Chưa giao';
-    default: return code;
-  }
-}
 
 export function DetailRow({ icon: Icon, label, children }: {
   icon: React.ElementType;
@@ -133,7 +123,7 @@ export function StatusSelect({ value, options, onChange, canEdit }: {
   const code = statusCodeOf(value);
   const currentOpt = options.find(o => o.code === code);
   
-  const currentLabel = currentOpt?.label || getStatusLabel(value);
+  const currentLabel = currentOpt?.label || statusLabel(value);
   const currentColor = getStatusColor(currentOpt || value);
 
   const chip = (
