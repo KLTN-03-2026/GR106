@@ -353,6 +353,7 @@ export function SeasonPlanPage() {
 
   const confirmDelete = async () => {
     if (!deleteConfirm.planId) return;
+    
     setDeleteConfirm(prev => ({ ...prev, isDeleting: true }));
     try {
       await removePlan(deleteConfirm.planId).unwrap();
@@ -440,24 +441,12 @@ export function SeasonPlanPage() {
   };
 
   const handleDeletePhase = async (planId: string, stageId: string) => {
-    // Lấy thông tin phase từ cache để kiểm tra trạng thái
     const cachedPhase = plans
       .find(p => p.id === planId)
       ?.phases?.find(ph => ph.id === stageId);
 
     const phaseStatus = cachedPhase?.status && typeof cachedPhase.status === 'object' ? cachedPhase.status : null;
     const statusName = (phaseStatus as any)?.name ?? (typeof cachedPhase?.status === 'string' ? cachedPhase.status : undefined);
-
-    // Chặn xóa nếu giai đoạn đã qua trạng thái khởi tạo hoặc đã kết thúc
-    if ((phaseStatus as any)?.isInitial === false || (phaseStatus as any)?.isTerminal === true) {
-      setNotification({
-        isOpen: true,
-        type: 'error',
-        title: 'Không thể xóa giai đoạn',
-        message: `Giai đoạn đang ở trạng thái "${statusName ?? 'Hoàn thành'}" và không thể xóa. Chỉ có thể xóa giai đoạn chưa được xử lý.`,
-      });
-      return;
-    }
 
     try {
       await removePhase(planId, stageId).unwrap();
@@ -482,20 +471,9 @@ export function SeasonPlanPage() {
     const taskStatus = typeof cachedTask?.status === 'object' ? cachedTask?.status : null;
     const statusName = taskStatus?.name ?? (typeof cachedTask?.status === 'string' ? cachedTask.status : undefined);
 
-    // Chặn sớm nếu task không còn ở trạng thái khởi tạo hoặc đã kết thúc
-    if ((taskStatus as any)?.isInitial === false || (taskStatus as any)?.isTerminal === true) {
-      setNotification({
-        isOpen: true,
-        type: 'error',
-        title: 'Không thể xóa công việc',
-        message: `Công việc đang ở trạng thái "${statusName ?? 'Hoàn thành'}" và không thể xóa. Chỉ có thể xóa công việc chưa được xử lý.`,
-      });
-      return;
-    }
-
     try {
       await removeSeasonTask(planId, stageId, taskId).unwrap();
-      setSelectedItem({ type: 'PHASE', id: stageId, planId });
+      setSelectedItem(null);
     } catch (err: any) {
       setNotification({
         isOpen: true,

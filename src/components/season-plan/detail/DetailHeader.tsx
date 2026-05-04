@@ -103,42 +103,15 @@ export function DetailHeader({
             <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors" title="Mở rộng">
               <ExternalLink size={13} />
             </button>
-            {(() => {
-              if (!canEdit || type === 'PLAN') return null;
-              
-              // Nếu là Task hoặc Phase, chặn xóa nếu đã xác định rõ không phải trạng thái khởi tạo hoặc đã kết thúc.
-              if (type === 'TASK' || type === 'PHASE') {
-                const targetObj = type === 'TASK' ? task : phase;
-                const status = targetObj?.status;
-                
-                // Trích xuất thông tin trạng thái kể cả khi nó là string hoặc object
-                const isInitial = typeof status === 'object' ? status?.isInitial : undefined;
-                const isTerminal = typeof status === 'object' ? status?.isTerminal : undefined;
-                const statusCode = (typeof status === 'object' ? status?.code : status)?.toUpperCase();
-
-                // Ẩn nút xóa nếu:
-                // 1. BE khẳng định không phải khởi tạo (false)
-                // 2. BE khẳng định là trạng thái kết thúc (true)
-                // 3. Trạng thái đã chuyển qua các bước xử lý (không phải UNASSIGNED)
-                if (
-                  isInitial === false || 
-                  isTerminal === true || 
-                  (statusCode && !['UNASSIGNED', 'DRAFT', 'TODO'].includes(statusCode))
-                ) {
-                  return null;
-                }
-              }
-              
-              return (
-                <button
-                  className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
-                  onClick={onDelete}
-                  title="Xóa"
-                >
-                  <Trash2 size={13} />
-                </button>
-              );
-            })()}
+            {canEdit && (
+              <button
+                className="p-1.5 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                onClick={onDelete}
+                title="Xóa"
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
             <button
               className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded transition-colors"
               onClick={onClose}

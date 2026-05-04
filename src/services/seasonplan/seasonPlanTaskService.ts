@@ -135,4 +135,21 @@ export const seasonPlanTaskService = {
 
     await axiosInstance.delete(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}`);
   },
+
+  /** Lấy danh sách ID các công việc mà taskId phụ thuộc vào */
+  async getTaskDependencies(taskId: string): Promise<string[]> {
+    return fetchTaskDependencyIds(taskId);
+  },
+
+  /** Thiết lập quan hệ phụ thuộc: taskId phụ thuộc vào dependsOnTaskId */
+  async addTaskDependency(planId: string, stageId: string, taskId: string, dependsOnTaskId: string): Promise<void> {
+    await axiosInstance.post(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}/dependencies`, {
+      dependsOnTaskId
+    });
+  },
+
+  /** Xóa quan hệ phụ thuộc giữa hai công việc */
+  async deleteTaskDependency(taskId: string, dependsOnTaskId: string): Promise<void> {
+    return deleteTaskDependencyEdge(taskId, dependsOnTaskId);
+  },
 };

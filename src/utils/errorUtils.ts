@@ -58,16 +58,20 @@ export const extractDeleteTaskErrorMessage = (err: any, taskStatus?: string): st
   return extractErrorMessage(err);
 };
 
-/**
- * Trả về thông báo lỗi xóa giai đoạn (Phase/Stage) thân thiện.
- */
-export const extractDeletePhaseErrorMessage = (err: any, phaseStatus?: string): string => {
-  const statusCode = getErrorStatusCode(err);
+/** Lấy thông báo lỗi khi xóa giai đoạn (Phase) */
+export function extractDeletePhaseErrorMessage(error: any, statusName?: string, hasTasks?: boolean): string {
+  const code = error?.data?.code || error?.status;
+  const message = error?.data?.message || '';
 
-  if (statusCode === 409) {
-    const statusLabel = phaseStatus ? ` "${phaseStatus}"` : '';
-    return `Không thể xóa giai đoạn này vì trạng thái${statusLabel} đã được cập nhật. Vui lòng kiểm tra lại trạng thái của các công việc bên trong.`;
+  if (code === 409 || message.toLowerCase().includes('conflict') || message.toLowerCase().includes('task')) {
+    if (hasTasks) {
+      return 'Không thể xóa giai đoạn này vì đang có các công việc bên trong. Vui lòng xóa hết các công việc trước khi xóa giai đoạn.';
+    }
+    return `Giai đoạn đang ở trạng thái "${statusName || 'xử lý'}" nên không được phép xóa.`;
   }
-
-  return extractErrorMessage(err);
-};
+  
+  if (code === 403) return 'Bạn không có quyền xóa giai đoạn này.';
+  if (code === 404) return 'Giai đoạn không tồn tại hoặc đã bị xóa trước đó.';
+  
+  return 'Đã có lỗi xảy ra khi xóa giai đoạn. Vui lòng thử lại sau.';
+}
