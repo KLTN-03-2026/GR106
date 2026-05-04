@@ -38,7 +38,6 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
             @Param("stageEndDate") LocalDate stageEndDate
     );
 
-    // TaskRepository
     @Query("""
         SELECT t FROM TaskEntity t
         WHERE t.id = :taskId
@@ -50,6 +49,21 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
             @Param("taskId") UUID taskId,
             @Param("stageId") UUID stageId,
             @Param("planId") UUID planId
+    );
+
+    @Query("""
+        SELECT t FROM TaskEntity t
+        WHERE t.id = :taskId
+          AND t.planStage.id = :stageId
+          AND t.planStage.plan.id = :planId
+          AND t.status.isTerminal = false
+          AND t.farm.id = :farmId
+    """)
+    Optional<TaskEntity> findByIdAndStageIdAndPlanIdAndFarmIdAndStatusIsNotTerminal(
+            @Param("taskId") UUID taskId,
+            @Param("stageId") UUID stageId,
+            @Param("planId") UUID planId,
+            @Param("farmId") UUID farmId
     );
 
     @Query("""

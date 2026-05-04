@@ -48,13 +48,55 @@ public class WarehouseService {
 
     SecurityUtils securityUtils;
 
-
+    @Transactional(readOnly = true)
     public List<WarehouseResponse> findAllWarehouses() {
         return warehouseMapper.toResponses(
                 warehouseRepository.findAll()
         );
     }
 
+    @Transactional
+    @PreAuthorize("hasAuthority('warehouse:manage')")
+    public WarehouseResponse createWarehouse(UUID farmId, CreateWarehouseRequest request) {
+
+        if (warehouseRepository.existsByNameAndFarm_Id(request.getName(), farmId))
+            throw new AppException(ErrorCode.WAREHOUSE_ALREADY_EXISTS);
+
+        FarmEntity farm = farmRepository.getReferenceById(farmId);
+
+        UUID userId = securityUtils.getCurrentUserId();
+        UserEntity createdBy = userRepository.getReferenceById(userId);
+
+        WarehouseEntity entity = warehouseMapper.createEntityFromRequest(request);
+        // Gán những field không có trong request
+        entity.setFarm(farm);
+        entity.setCreatedBy(createdBy);
+        entity.setIsActive(true);
+
+        warehouseRepository.save(entity);
+
+        return warehouseMapper.toResponse(entity);
+    }
+//    public WarehouseResponse updateWarehouse(UUID warehouseId, UpdateWarehouseRequest request) {
+//        WarehouseEntity warehouse = warehouseRepository.findById(warehouseId)
+//                .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND));
+//    }
+
+    @Transactional
+    @PreAuthorize("hasAuthority('warehouse:manage')")
+    public void deleteWarehouse(UUID farmId, UUID warehouseId) {
+
+        WarehouseEntity warehouse = warehouseRepository
+                .findByIdAndFarm_Id(warehouseId, farmId)
+                .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND));
+
+        // Soft delete
+        warehouse.setDeletedAt(Instant.now());
+    }
+
+    // =============================== WAREHOUSE LOCATION ============================================
+    //================================================================================================
+    @Transactional(readOnly = true)
     public List<WarehouseLocationResponse> findAllWarehousesLocationsByWarehouseId(UUID warehouseId) {
         return warehouseLocationMapper.toResponses(warehouseLocationRepository.findAll());
     }
@@ -82,48 +124,6 @@ public class WarehouseService {
     @Transactional
     public void deleteWarehouseLocation(UUID warehouseId, UUID warehouseLocationId) {
         warehouseLocationRepository.deleteByIdAndWarehouse_Id(warehouseLocationId, warehouseId);
-    }
-
-    @Transactional
-    @PreAuthorize("hasAuthority('warehouse:manage')")
-    public WarehouseResponse createWarehouse(UUID farmId, CreateWarehouseRequest request) {
-
-        if (warehouseRepository.existsByNameAndFarm_Id(request.getName(), farmId))
-            throw new AppException(ErrorCode.WAREHOUSE_ALREADY_EXISTS);
-
-        FarmEntity farm = farmRepository.getReferenceById(farmId);
-
-        UUID userId = securityUtils.getCurrentUserId();
-        UserEntity createdBy = userRepository.getReferenceById(userId);
-
-        WarehouseEntity entity = warehouseMapper.createEntityFromRequest(request);
-        // Gán những field không có trong request
-        entity.setFarm(farm);
-        entity.setCreatedBy(createdBy);
-        entity.setIsActive(true);
-
-        warehouseRepository.save(entity);
-
-        return warehouseMapper.toResponse(entity);
-    }
-
-
-//    public WarehouseResponse updateWarehouse(UUID warehouseId, UpdateWarehouseRequest request) {
-//        WarehouseEntity warehouse = warehouseRepository.findById(warehouseId)
-//                .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND));
-//    }
-
-
-    @Transactional
-    @PreAuthorize("hasAuthority('warehouse:manage')")
-    public void deleteWarehouse(UUID farmId, UUID warehouseId) {
-
-        WarehouseEntity warehouse = warehouseRepository
-                .findByIdAndFarm_Id(warehouseId, farmId)
-                .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND));
-
-        // Soft delete
-        warehouse.setDeletedAt(Instant.now());
     }
 
 }

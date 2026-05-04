@@ -101,8 +101,6 @@ public class WarehouseItemService {
         return responses;
     }
 
-
-
     @Transactional(readOnly = true)
     public List<WarehouseItemResponse> getAllWarehouseItemByWarehouseAndFarm(UUID warehouseId,UUID farmId) {
         List<WarehouseItemEntity> items = warehouseItemRepository
@@ -143,8 +141,7 @@ public class WarehouseItemService {
     }
 
     @Transactional
-    public WarehouseItemResponse createWarehouseItem(UUID warehouseId,
-                                                     CreateWarehouseItemRequest request) {
+    public WarehouseItemResponse createWarehouseItem(UUID warehouseId, CreateWarehouseItemRequest request) {
         UUID userId = securityUtils.getCurrentUserId();
         UUID farmId = securityUtils.getCurrentFarmId();
 
@@ -238,8 +235,7 @@ public class WarehouseItemService {
     }
 
     @Transactional
-    public WarehouseItemResponse updateWarehouseItem(UUID farmId, UUID warehouseId, UUID warehouseItemId,
-                                                     UpdateWarehouseItemRequest request) {
+    public WarehouseItemResponse updateWarehouseItem(UUID farmId, UUID warehouseId, UUID warehouseItemId, UpdateWarehouseItemRequest request) {
 
         WarehouseItemEntity item = warehouseItemRepository
                 .findByIdAndWarehouse_IdAndFarm_Id(warehouseItemId,warehouseId,farmId)
