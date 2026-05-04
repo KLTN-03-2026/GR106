@@ -16,8 +16,30 @@ export function fmtDate(d: string) {
   return `${day}/${m}/${y}`;
 }
 
+/**
+ * Bảng màu semantic cho các trạng thái đã biết.
+ * Chỉ dùng khi API không trả về color (fallback).
+ */
+const SEMANTIC_STATUS_COLORS: Record<string, string> = {
+  // Task statuses
+  UNASSIGNED:  '#94a3b8', // xám — chưa giao
+  ASSIGNED:    '#f59e0b', // vàng cam — đã giao việc
+  IN_PROGRESS: '#3b82f6', // xanh dương — đang làm
+  DONE:        '#22c55e', // xanh lá — hoàn thành
+  CANCELLED:   '#ef4444', // đỏ — đã hủy
+  OVERDUE:     '#f97316', // cam đậm — trễ hạn
+  // Plan / Phase statuses
+  DRAFT:             '#94a3b8', // xám
+  ACTIVE:            '#3b82f6', // xanh dương
+  READY_TO_HARVEST:  '#a855f7', // tím
+  HARVESTING:        '#f59e0b', // vàng
+  COMPLETED:         '#22c55e', // xanh lá
+};
+
 export function statusCodeToColor(code: string): string {
   const normalized = (code || 'UNKNOWN').toUpperCase();
+  if (SEMANTIC_STATUS_COLORS[normalized]) return SEMANTIC_STATUS_COLORS[normalized];
+  // Fallback: deterministic color from palette for unknown codes
   const palette = [
     '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444',
     '#06b6d4', '#84cc16', '#ec4899', '#f97316', '#14b8a6',
@@ -29,13 +51,20 @@ export function statusCodeToColor(code: string): string {
   return palette[hash % palette.length];
 }
 
-export function getStatusColor(s: string | StatusObject | null | undefined): string {
+export function getStatusColor(s: any): string {
   if (!s) return '#cbd5e1';
-  if (typeof s !== 'string' && s.color) return s.color;
-  return statusCodeToColor(statusCodeOf(s));
+  const code = (typeof s === 'string' ? s : (s.code ?? '')).toUpperCase();
+  // Ưu tiên màu đã định nghĩa cục bộ (semantic) để phân biệt rõ ràng nếu API trả về màu trùng nhau
+  if (SEMANTIC_STATUS_COLORS[code]) return SEMANTIC_STATUS_COLORS[code];
+  
+  // Nếu không có semantic color, lấy màu từ API
+  if (typeof s !== 'string' && s.color && s.color.trim() !== '') return s.color;
+  
+  // Cuối cùng dùng fallback hash
+  return statusCodeToColor(code);
 }
 
-export function getStatusLabel(s: string | StatusObject | null | undefined): string {
+export function getStatusLabel(s: any): string {
   if (!s) return 'Nháp';
   if (typeof s !== 'string' && s.name) return s.name;
   return statusViLabel(statusCodeOf(s));
@@ -105,7 +134,7 @@ export function StatusSelect({ value, options, onChange, canEdit }: {
   const currentOpt = options.find(o => o.code === code);
   
   const currentLabel = currentOpt?.label || getStatusLabel(value);
-  const currentColor = currentOpt?.color || getStatusColor(value);
+  const currentColor = getStatusColor(currentOpt || value);
 
   const chip = (
     <button
@@ -155,7 +184,7 @@ export function StatusSelect({ value, options, onChange, canEdit }: {
               >
                 <span 
                   className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: opt.color || getStatusColor(opt.code) }} 
+                  style={{ backgroundColor: getStatusColor(opt) }} 
                 />
                 <span className={cn(
                   'text-[12px] font-semibold transition-colors',
