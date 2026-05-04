@@ -4,6 +4,8 @@ import com.farmapp.farmsmartmanagement.domain.enums.WorkLogType;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -46,6 +48,7 @@ public class WorkLogEntity {
     WorkShiftEntity shift;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "type", nullable = false)
     WorkLogType type = WorkLogType.NORMAL;
 

@@ -17,7 +17,7 @@ public record PlotResponse(
         PlotStatus status,
 
         GeometryFormat geometry,
-        
+
         String description
 ) {
 }

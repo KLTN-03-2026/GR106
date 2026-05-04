@@ -197,6 +197,8 @@ public class PlanStageService {
 
     @Transactional
     public void deletePlanStageCustom(UUID stageId){
+
+        //Cleanup entity
         taskRepository.deleteByPlanStageId(stageId);
 
         planStageRepository.deleteById(stageId);

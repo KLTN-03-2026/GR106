@@ -1,6 +1,7 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.WarehouseStockEntity;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -34,4 +35,8 @@ public interface WarehouseStockRepository extends JpaRepository<WarehouseStockEn
         GROUP BY ws.warehouseItem.id
     """)
     List<Object[]> sumQtyByItemIdsAndFarmId(List<UUID> itemIds, UUID farmId);
+
+    @Query("SELECT COALESCE(ws.qtyOnHand,0) FROM WarehouseStockEntity ws " +
+            "WHERE ws.warehouseItem.id = :warehouseItemId AND ws.location.id = :fromLocationId")
+    BigDecimal findQtyByWarehouseItemIdAndLocationId(UUID warehouseItemId, UUID fromLocationId);
 }

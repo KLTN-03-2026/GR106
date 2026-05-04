@@ -6,4 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.UUID;
 
 public interface WarehouseTransactionRepository extends JpaRepository<WarehouseTransactionEntity, UUID> {
+    void deleteAllByRefWorkLog_Id(UUID workLogId);
 }

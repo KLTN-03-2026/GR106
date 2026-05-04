@@ -122,7 +122,16 @@ public enum ErrorCode {
     TASK_NOT_FOUND_OR_TASK_IS_TERMINAL(404,"Không tìm thấy công việc hoặc công việc đã kết thúc" ,HttpStatus.NOT_FOUND ),
     TASK_DEPENDENCY_ALREADY_EXISTS(409,"Đã có sự phụ thuộc giữa 2 công việc" ,HttpStatus.CONFLICT ),
     TASK_DEPENDENCY_NOT_FOUND(404,"Không tìm thấy sự phụ thuộc giữa 2 công việc" ,HttpStatus.NOT_FOUND ),
-    TASK_DEPENDENCY_SELF_NOT_ALLOWED(409,"Công việc không thể tự phụ thuộc vào chính nó" ,HttpStatus.CONFLICT ),;
+    TASK_DEPENDENCY_SELF_NOT_ALLOWED(409,"Công việc không thể tự phụ thuộc vào chính nó" ,HttpStatus.CONFLICT ),
+    TASK_MATERIAL_NOT_FOUND(404,"Không tìm thấy vật tư được gán" ,HttpStatus.NOT_FOUND ),
+    WORK_SHIFT_NOT_FOUND(404,"Không tìm thấy ca làm việc" ,HttpStatus.NOT_FOUND ),
+    WORK_DATE_CANNOT_BE_FUTURE(490,"Ngày làm việc không được nằm trong tương la" ,HttpStatus.CONFLICT ),
+    WORK_DATE_IS_SKIP_DAY(409,"Ngày chấm công này đã bị bỏ qua (Nghỉ)" ,HttpStatus.CONFLICT ),
+    WORK_LOG_ALREADY_EXISTS(409,"Ngày này đã được chấm công" ,HttpStatus.CONFLICT  ),
+    WORK_DATE_OUT_OF_TASK_RANGE(409,"Ngày chấm công nằm ngoài thời gian của công việc" ,HttpStatus.CONFLICT ), INSUFFICIENT_STOCK(409,"Tồn kho không đủ" ,HttpStatus.CONFLICT ),
+    LOCATION_NOT_IN_SAME_WAREHOUSE(409,"Địa chỉ nằy không cùng nằm 1 kho" ,HttpStatus.CONFLICT ),
+    DATE_RANGE_REQUIRED(400,"Vui lòng chọn khoảng thời gian" ,HttpStatus.BAD_REQUEST), WORK_LOG_NOT_FOUND(404,"Không tìm thấy chấm công" ,HttpStatus.NOT_FOUND ), DATE_RANGE_TOO_LARGE(400,"Không thời gian quá lớn" ,HttpStatus.BAD_REQUEST ),
+    WORK_LOG_ALREADY_LOCKED(409,"Ngày chấm công này đã bị khoá" ,HttpStatus.CONFLICT );
 
 
 

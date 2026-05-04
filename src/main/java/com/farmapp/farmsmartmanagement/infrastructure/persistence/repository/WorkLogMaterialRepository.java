@@ -6,4 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.UUID;
 
 public interface WorkLogMaterialRepository extends JpaRepository<WorkLogMaterialEntity, UUID> {
+    void deleteAllByWorkLog_Id(UUID workLogId);
 }
