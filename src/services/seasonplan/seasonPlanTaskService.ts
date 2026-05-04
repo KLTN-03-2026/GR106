@@ -87,6 +87,12 @@ export const seasonPlanTaskService = {
     return validated.data.map(mapToTask);
   },
 
+  async getTaskById(planId: string, stageId: string, taskId: string): Promise<Task> {
+    const response = await axiosInstance.get(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}`);
+    const validated = createTaskResponseSchema.parse(response.data);
+    return mapToTask(validated.data);
+  },
+
   async createTask(planId: string, stageId: string, data: CreateTaskRequest): Promise<Task> {
     const response = await axiosInstance.post(`/api/v1/plans/${planId}/stages/${stageId}/tasks`, data);
     const validated = createTaskResponseSchema.parse(response.data);

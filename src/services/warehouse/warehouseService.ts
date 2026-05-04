@@ -38,4 +38,19 @@ export const warehouseService = {
     }
     return res.data;
   },
+
+  async getWarehouseLocations(farmId: string, warehouseId: string): Promise<ApiResponse<any[]>> {
+    const res = await axiosInstance.get(`/api/v1/farms/${farmId}/warehouses/${warehouseId}/locations`);
+    return res.data;
+  },
+
+  async createWarehouseLocation(farmId: string, warehouseId: string, data: any): Promise<ApiResponse<any>> {
+    const res = await axiosInstance.post(`/api/v1/farms/${farmId}/warehouses/${warehouseId}/locations`, data);
+    return res.data;
+  },
+
+  async getWarehouseLocationById(farmId: string, warehouseId: string, locationId: string): Promise<ApiResponse<any>> {
+    const res = await axiosInstance.get(`/api/v1/farms/${farmId}/warehouses/${warehouseId}/locations/${locationId}`);
+    return res.data;
+  },
 };

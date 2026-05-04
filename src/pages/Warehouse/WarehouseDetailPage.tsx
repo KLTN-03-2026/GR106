@@ -184,12 +184,12 @@ export function WarehouseDetailPage() {
       setIsSubmitting(true)
       await deleteItem(farmId, warehouseId, selectedItem.id).unwrap()
       toast.success('Đã xóa vật tư thành công')
-      setIsDeleteModalOpen(false)
-      setSelectedItem(null)
     } catch (err: any) {
       toast.error(extractErrorMessage(err))
     } finally {
       setIsSubmitting(false)
+      setIsDeleteModalOpen(false)
+      setSelectedItem(null)
     }
   }
 
@@ -222,12 +222,12 @@ export function WarehouseDetailPage() {
       setIsSubmitting(true)
       await deleteLocation(farmId, warehouseId, selectedLoc.id).unwrap()
       toast.success('Đã xóa vị trí thành công')
-      setIsDeleteLocModalOpen(false)
-      setSelectedLoc(null)
     } catch (err: any) {
       toast.error(extractErrorMessage(err))
     } finally {
       setIsSubmitting(false)
+      setIsDeleteLocModalOpen(false)
+      setSelectedLoc(null)
     }
   }
 

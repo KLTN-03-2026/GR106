@@ -26,34 +26,8 @@ export const useWarehouseItems = (farmId?: string | null, warehouseId?: string |
         return warehouseItemService.getWarehouseItems(farmId, warehouseId);
       }
       
-      // Nếu không có warehouseId, lấy tất cả kho và cộng dồn tồn kho
-      try {
-        const warehouses = await warehouseItemService.getFarmWarehouses(farmId);
-        if (warehouses.length === 0) return [];
-
-        const itemsPromises = warehouses.map((wh: any) =>
-          warehouseItemService.getWarehouseItems(farmId, wh.id)
-            .catch(() => [])
-        );
-
-        const allResults = await Promise.all(itemsPromises);
-        const flatItems: WarehouseItem[] = allResults.flat();
-
-        const aggregated = flatItems.reduce((acc: Record<string, WarehouseItem>, item) => {
-          const key = item.id;
-          if (!acc[key]) {
-            acc[key] = { ...item };
-          } else {
-            acc[key].stock += (item.stock || 0);
-          }
-          return acc;
-        }, {});
-
-        return Object.values(aggregated);
-      } catch (err) {
-        console.error("Lỗi cộng dồn tồn kho:", err);
-        return warehouseItemService.getFarmWarehouseItems(farmId);
-      }
+      // Nếu không có warehouseId, lấy tất cả vật tư của farm thông qua API chuyên dụng
+      return warehouseItemService.getFarmWarehouseItems(farmId);
     },
     enabled: !!farmId,
     staleTime: 1000 * 60 * 5, // 5 minutes
