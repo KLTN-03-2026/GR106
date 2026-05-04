@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.lang.ScopedValue;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -84,10 +85,20 @@ public interface WarehouseItemRepository extends JpaRepository<WarehouseItemEnti
     List<WarehouseItemEntity> findAllByFarm_Id(UUID farmId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT w FROM WarehouseItemEntity w WHERE w.id = :id")
-    Optional<WarehouseItemEntity> findByIdForUpdate(@Param("id") UUID id);
+    @Query("""
+        SELECT w
+        FROM WarehouseItemEntity w
+        WHERE w.id = :id
+        AND w.farm.id = :farmId
+    """)
+    Optional<WarehouseItemEntity> findByIdAndFarm_IdForUpdate(@Param("id") UUID id, @Param("farmId") UUID farmId);
 
     boolean existsByNameAndWarehouse_IdAndIdNot(String name, UUID warehouseId, UUID excludeId);
 
     boolean existsBySku_SkuAndWarehouse_IdAndIdNot(String sku, UUID warehouseId, UUID excludeId);
+
+    Optional<WarehouseItemEntity> findByIdAndWarehouse_IdAndFarm_Id(UUID warehouseItemId, UUID warehouseId, UUID farmId);
+
+    @EntityGraph(attributePaths = {"warehouse","sku", "supplier", "unit", "createdBy"})
+    List<WarehouseItemEntity> findAllByWarehouse_IdAndFarm_Id(UUID warehouseId, UUID farmId);
 }

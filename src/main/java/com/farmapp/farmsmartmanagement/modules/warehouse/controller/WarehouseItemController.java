@@ -4,6 +4,7 @@ import com.farmapp.farmsmartmanagement.common.annotation.RequiresFarmToken;
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
 import com.farmapp.farmsmartmanagement.common.response.ResponseUtil;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.CreateWarehouseItemRequest;
+import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.UpdateWarehouseItemRequest;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.response.WarehouseItemResponse;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.response.WarehouseResponse;
 import com.farmapp.farmsmartmanagement.modules.warehouse.service.WarehouseItemService;
@@ -24,9 +25,6 @@ import java.util.UUID;
 public class WarehouseItemController {
     WarehouseItemService warehouseItemService;
 
-
-    WarehouseService warehouseService;
-
     @GetMapping("/api/v1/farms/{farmId}/warehouses/items")
     @RequiresFarmToken
     public ResponseEntity<ApiResponse<List<WarehouseItemResponse>>> getAllWarehouseItemsByFarm(
@@ -39,12 +37,12 @@ public class WarehouseItemController {
 
     @GetMapping("/api/v1/farms/{farmId}/warehouses/{warehouseId}/items")
     @RequiresFarmToken
-    public ResponseEntity<ApiResponse<List<WarehouseItemResponse>>> getAllWarehouseItemsByWarehouse(
+    public ResponseEntity<ApiResponse<List<WarehouseItemResponse>>> getAllWarehouseItemsByWarehouseAndFarm(
             @PathVariable("farmId") UUID farmId,
             @PathVariable("warehouseId") UUID warehouseId
     ){
         return ResponseUtil.success(
-                warehouseItemService.getAllWarehouseItemByWarehouse(warehouseId)
+                warehouseItemService.getAllWarehouseItemByWarehouseAndFarm(warehouseId,farmId)
         );
     }
 
@@ -59,6 +57,49 @@ public class WarehouseItemController {
         return ResponseUtil.success(
                 warehouseItemService.createWarehouseItem(warehouseId,request)
         );
+    }
+
+    @PatchMapping("/api/v1/farms/{farmId}/warehouses/{warehouseId}/items/{warehouseItemId}")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<WarehouseItemResponse>> updateWarehouseItem(
+            @PathVariable("farmId") UUID farmId,
+            @PathVariable("warehouseId") UUID warehouseId,
+            @PathVariable("warehouseItemId") UUID warehouseItemId,
+            @RequestBody @Valid UpdateWarehouseItemRequest request
+    ){
+        return ResponseUtil.success(
+                warehouseItemService
+                        .updateWarehouseItem(
+                                farmId,
+                                warehouseId,
+                                warehouseItemId,
+                                request
+                        )
+        );
+    }
+
+    @DeleteMapping("/api/v1/farms/{farmId}/items/{warehouseItemId}")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<Void>> deleteWarehouseItemByIdAndFarm(
+            @PathVariable("farmId") UUID farmId,
+            @PathVariable("warehouseItemId") UUID warehouseItemId
+    ){
+        warehouseItemService.deleteWarehouseItemByIdAndFarm(warehouseItemId, farmId);
+
+        return ResponseUtil.noContent();
+    }
+
+    @DeleteMapping("/api/v1/farms/{farmId}/warehouses/{warehouseId}/items/{warehouseItemId}")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<Void>> deleteWarehouseItemByIdAndWarehouseAndFarm(
+            @PathVariable("farmId") UUID farmId,
+            @PathVariable("warehouseId") UUID warehouseId,
+            @PathVariable("warehouseItemId") UUID warehouseItemId
+    ){
+        warehouseItemService
+                .deleteWarehouseItemByIdAndWarehouseAndFarm(warehouseItemId, warehouseId, farmId);
+
+        return ResponseUtil.noContent();
     }
 
 }

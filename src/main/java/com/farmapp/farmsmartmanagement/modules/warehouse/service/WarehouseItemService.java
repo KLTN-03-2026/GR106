@@ -104,9 +104,9 @@ public class WarehouseItemService {
 
 
     @Transactional(readOnly = true)
-    public List<WarehouseItemResponse> getAllWarehouseItemByWarehouse(UUID warehouseId) {
+    public List<WarehouseItemResponse> getAllWarehouseItemByWarehouseAndFarm(UUID warehouseId,UUID farmId) {
         List<WarehouseItemEntity> items = warehouseItemRepository
-                .findAllByWarehouse_Id(warehouseId);
+                .findAllByWarehouse_IdAndFarm_Id(warehouseId, farmId);
 
         if (items.isEmpty()) return List.of();
 
@@ -238,20 +238,19 @@ public class WarehouseItemService {
     }
 
     @Transactional
-    public WarehouseItemResponse updateWarehouseItem(UUID warehouseItemId,
+    public WarehouseItemResponse updateWarehouseItem(UUID farmId, UUID warehouseId, UUID warehouseItemId,
                                                      UpdateWarehouseItemRequest request) {
-        UUID farmId = securityUtils.getCurrentFarmId();
 
         WarehouseItemEntity item = warehouseItemRepository
-                .findById(warehouseItemId)
+                .findByIdAndWarehouse_IdAndFarm_Id(warehouseItemId,warehouseId,farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_ITEM_NOT_FOUND));
 
         if(!Objects.equals(item.getVersion(), request.getVersion()))
             throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
 
         // Kiểm tra item thuộc farm
-        if (!item.getFarm().getId().equals(farmId))
-            throw new AppException(ErrorCode.FORBIDDEN);
+//        if (!item.getFarm().getId().equals(farmId))
+//            throw new AppException(ErrorCode.FORBIDDEN);
 
         // Kiểm tra đã bị xóa chưa
         if (item.getDeletedAt() != null)
@@ -337,32 +336,41 @@ public class WarehouseItemService {
     }
 
     @Transactional
-    public void deleteWarehouseItem(UUID warehouseItemId) {
-        UUID farmId = securityUtils.getCurrentFarmId();
+    public void deleteWarehouseItemByIdAndFarm(UUID warehouseItemId, UUID farmId) {
 
         // Pessimistic lock — block row trong suốt transaction
         WarehouseItemEntity item = warehouseItemRepository
-                .findByIdForUpdate(warehouseItemId)
+                .findByIdAndFarm_Id(warehouseItemId, farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_ITEM_NOT_FOUND));
 
-        // Kiểm tra item thuộc farm
-        if (!item.getFarm().getId().equals(farmId))
-            throw new AppException(ErrorCode.FORBIDDEN);
+        deleteWarehouseItem(item);
+    }
 
+    @Transactional
+    public void deleteWarehouseItemByIdAndWarehouseAndFarm(UUID warehouseItemId, UUID warehouseId, UUID farmId) {
+        // Pessimistic lock — block row trong suốt transaction
+        WarehouseItemEntity item = warehouseItemRepository
+                .findByIdAndWarehouse_IdAndFarm_Id(warehouseItemId, warehouseId, farmId)
+                .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_ITEM_NOT_FOUND));
+
+        deleteWarehouseItem(item);
+    }
+
+    private void deleteWarehouseItem(WarehouseItemEntity item){
         // Kiểm tra đã bị xóa chưa
         if (item.getDeletedAt() != null)
             throw new AppException(ErrorCode.WAREHOUSE_ITEM_NOT_FOUND);
 
         // Kiểm tra còn tồn kho không
         BigDecimal currentStock = warehouseStockRepository
-                .sumQtyByWarehouseItemId(warehouseItemId);
+                .sumQtyByWarehouseItemId(item.getId());
 
         if (currentStock != null && currentStock.compareTo(BigDecimal.ZERO) > 0)
             throw new AppException(ErrorCode.WAREHOUSE_ITEM_HAS_STOCK);
 
         // Kiểm tra đang được dùng trong task_materials không
         boolean usedInTask = taskMaterialRepository
-                .existsByWarehouseItemId(warehouseItemId);
+                .existsByWarehouseItemId(item.getId());
 
         if (usedInTask)
             throw new AppException(ErrorCode.WAREHOUSE_ITEM_IN_USE);
@@ -370,4 +378,5 @@ public class WarehouseItemService {
         // Soft delete
         item.setDeletedAt(Instant.now());
     }
+
 }
