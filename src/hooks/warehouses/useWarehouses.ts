@@ -19,7 +19,7 @@ export const useWarehouses = () => {
   const warehousesQuery = useQuery({
     queryKey: farmId ? WAREHOUSE_KEYS.byFarm(farmId) : ['warehouses', 'inactive'],
     queryFn: async () => (await warehouseService.getWarehouses(farmId as string)).data ?? [],
-    enabled: false,
+    enabled: !!farmId,
   });
 
   const createWarehouseMutation = useMutation({
