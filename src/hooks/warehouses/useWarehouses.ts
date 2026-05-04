@@ -33,12 +33,27 @@ export const useWarehouses = () => {
   });
 
   const deleteWarehouseMutation = useMutation({
-    mutationFn: async ({ farmId: targetFarmId, warehouseId }: { farmId: string; warehouseId: string }) => {
-      await warehouseService.deleteWarehouse(targetFarmId, warehouseId);
+    mutationFn: async ({ farmId: targetFarmId, warehouseId, version }: { farmId: string; warehouseId: string; version: number }) => {
+      await warehouseService.deleteWarehouse(targetFarmId, warehouseId, version);
       return warehouseId;
     },
-    onSuccess: (_, variables) => {
-      void queryClient.invalidateQueries({ queryKey: WAREHOUSE_KEYS.byFarm(variables.farmId) });
+    onSuccess: (deletedId, variables) => {
+  
+      queryClient.setQueryData(WAREHOUSE_KEYS.byFarm(variables.farmId), (oldData: any) => {
+        if (!oldData) return [];
+        // Nếu là mảng trực tiếp (kết quả từ queryFn)
+        if (Array.isArray(oldData)) {
+          return oldData.filter((wh: any) => wh.id !== deletedId);
+        }
+        // Nếu là object envelope
+        if (oldData.data && Array.isArray(oldData.data)) {
+          return {
+            ...oldData,
+            data: oldData.data.filter((wh: any) => wh.id !== deletedId)
+          };
+        }
+        return [];
+      });
     },
   });
 
@@ -57,10 +72,12 @@ export const useWarehouses = () => {
     fetchWarehouses: useCallback(
       (farmIdValue: string) => {
         setFarmId(farmIdValue);
+        // Sử dụng fetchQuery với staleTime: 0 để ép buộc lấy dữ liệu mới từ Server
         return withUnwrap(
           queryClient.fetchQuery({
             queryKey: WAREHOUSE_KEYS.byFarm(farmIdValue),
             queryFn: async () => (await warehouseService.getWarehouses(farmIdValue)).data ?? [],
+            staleTime: 0, // Đảm bảo dữ liệu luôn được coi là cũ để fetch mới
           }),
         );
       },
@@ -72,8 +89,8 @@ export const useWarehouses = () => {
       [createWarehouseMutation],
     ),
     deleteWarehouse: useCallback(
-      (farmIdValue: string, warehouseId: string) =>
-        withUnwrap(deleteWarehouseMutation.mutateAsync({ farmId: farmIdValue, warehouseId })),
+      (farmIdValue: string, warehouseId: string, version: number) =>
+        withUnwrap(deleteWarehouseMutation.mutateAsync({ farmId: farmIdValue, warehouseId, version })),
       [deleteWarehouseMutation],
     ),
     clearError: useCallback(() => undefined, []),

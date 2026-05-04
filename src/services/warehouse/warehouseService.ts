@@ -19,9 +19,23 @@ export const warehouseService = {
     return res.data;
   },
 
-  async deleteWarehouse(farmId: string, warehouseId: string): Promise<ApiResponse<string>> {
-    const res = await axiosInstance.delete(`/api/v1/farms/${farmId}/warehouses/${warehouseId}`);
-
+  async deleteWarehouse(farmId: string, warehouseId: string, version: number): Promise<ApiResponse<any>> {
+    // Gửi version qua CẢ Query Parameter và Request Body để đảm bảo Backend nhận được
+    const res = await axiosInstance.delete(`/api/v1/farms/${farmId}/warehouses/${warehouseId}`, {
+      params: { version },
+      data: { version } 
+    });
+    
+    // Xử lý 204 No Content: Trả về cấu trúc thành công mặc định
+    if (res.status === 204 || !res.data) {
+      return {
+        success: true,
+        code: 204,
+        message: 'Xóa thành công',
+        data: null,
+        timestamp: new Date().toISOString()
+      };
+    }
     return res.data;
   },
 };

@@ -77,11 +77,72 @@ export const useWarehouseItems = (farmId?: string | null, warehouseId?: string |
     },
   });
 
-  const error = useMemo(() => itemsQuery.error ?? createItemMutation.error ?? null, [itemsQuery.error, createItemMutation.error]);
+  const updateItemMutation = useMutation({
+    mutationFn: async ({
+      fId,
+      wId,
+      itemId,
+      itemData,
+    }: {
+      fId: string;
+      wId: string;
+      itemId: string;
+      itemData: any;
+    }) => {
+      return warehouseItemService.updateWarehouseItem(fId, wId, itemId, itemData);
+    },
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ITEM_KEYS.byWarehouse(variables.fId, variables.wId) });
+      void queryClient.invalidateQueries({ queryKey: ITEM_KEYS.allByFarm(variables.fId) });
+    },
+  });
+
+  const deleteItemMutation = useMutation({
+    mutationFn: async ({
+      fId,
+      wId,
+      itemId,
+    }: {
+      fId: string;
+      wId: string;
+      itemId: string;
+    }) => {
+      return warehouseItemService.deleteWarehouseItem(fId, wId, itemId);
+    },
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ITEM_KEYS.byWarehouse(variables.fId, variables.wId) });
+      void queryClient.invalidateQueries({ queryKey: ITEM_KEYS.allByFarm(variables.fId) });
+    },
+  });
+
+  const deleteItemFromFarmMutation = useMutation({
+    mutationFn: async ({
+      fId,
+      itemId,
+    }: {
+      fId: string;
+      itemId: string;
+    }) => {
+      return warehouseItemService.deleteItemFromFarm(fId, itemId);
+    },
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ITEM_KEYS.allByFarm(variables.fId) });
+    },
+  });
+
+  const error = useMemo(() => 
+    itemsQuery.error ?? 
+    createItemMutation.error ?? 
+    updateItemMutation.error ?? 
+    deleteItemMutation.error ?? 
+    deleteItemFromFarmMutation.error ?? 
+    null, 
+    [itemsQuery.error, createItemMutation.error, updateItemMutation.error, deleteItemMutation.error, deleteItemFromFarmMutation.error]
+  );
 
   return {
     items: itemsQuery.data ?? [],
-    loading: itemsQuery.isLoading || itemsQuery.isFetching || createItemMutation.isPending,
+    loading: itemsQuery.isLoading || itemsQuery.isFetching || createItemMutation.isPending || updateItemMutation.isPending || deleteItemMutation.isPending || deleteItemFromFarmMutation.isPending,
     error,
     fetchItems: useCallback(
       (fId: string, wId: string): Promise<WarehouseItem[]> => {
@@ -113,6 +174,21 @@ export const useWarehouseItems = (farmId?: string | null, warehouseId?: string |
       (fId: string, wId: string, itemData: CreateWarehouseItemDto) =>
         withUnwrap(createItemMutation.mutateAsync({ fId, wId, itemData })),
       [createItemMutation],
+    ),
+    updateItem: useCallback(
+      (fId: string, wId: string, itemId: string, itemData: any) =>
+        withUnwrap(updateItemMutation.mutateAsync({ fId, wId, itemId, itemData })),
+      [updateItemMutation],
+    ),
+    deleteItem: useCallback(
+      (fId: string, wId: string, itemId: string) =>
+        withUnwrap(deleteItemMutation.mutateAsync({ fId, wId, itemId })),
+      [deleteItemMutation],
+    ),
+    deleteItemFromFarm: useCallback(
+      (fId: string, itemId: string) =>
+        withUnwrap(deleteItemFromFarmMutation.mutateAsync({ fId, itemId })),
+      [deleteItemFromFarmMutation],
     ),
   };
 };

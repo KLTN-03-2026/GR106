@@ -11,11 +11,11 @@ export interface Warehouse {
 export interface CreateWarehouseRequest {
   name: string;
   description?: string;
-  address: string;
+  address?: string;
   latitude: number;
   longitude: number;
 }
 
 export interface UpdateWarehouseRequest extends Partial<CreateWarehouseRequest> {
-  version?: number;
+  version: number; // Bắt buộc truyền version
 }

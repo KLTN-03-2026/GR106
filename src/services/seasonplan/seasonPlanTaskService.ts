@@ -14,7 +14,7 @@ export interface CreateTaskRequest {
 }
 
 export interface UpdateTaskRequest {
-  version?: number;
+  version: number; // Bắt buộc truyền version
   name?: string;
   description?: string;
   startDate?: string;
