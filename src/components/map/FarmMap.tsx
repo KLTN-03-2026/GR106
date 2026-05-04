@@ -13,9 +13,14 @@ import {
 import { Warehouse } from '@/types/warehouse/warehouse'
 
 const MAP_OPTIONS: google.maps.MapOptions = {
-  mapTypeId: 'satellite', disableDefaultUI: false, zoomControl: true,
-  mapTypeControl: false, scaleControl: true, streetViewControl: false,
-  rotateControl: true, fullscreenControl: false, // Tắt nút Google — dùng nút tùy chỉnh của MapCanvas
+  mapTypeId: 'satellite',
+  disableDefaultUI: true, // Tắt toàn bộ UI mặc định (Zoom +/-, StreetView, Scale...)
+  zoomControl: false,
+  mapTypeControl: false,
+  scaleControl: false,
+  streetViewControl: false,
+  rotateControl: false,
+  fullscreenControl: false,
 }
 
 export interface FarmMapHandle {
