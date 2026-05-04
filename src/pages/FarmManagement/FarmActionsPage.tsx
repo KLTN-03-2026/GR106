@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { FarmSummary } from '../../types/farm/farm';
 import { extractErrorMessage } from '../../utils/errorUtils';
+import { getRoleDisplayName } from '../../utils/roleUtils';
 
 const FarmActionsPage: React.FC = () => {
     const { farmId } = useParams<{ farmId: string }>();
@@ -116,7 +117,7 @@ const FarmActionsPage: React.FC = () => {
                         <div className="flex items-center gap-3 mb-1">
                             <h1 className="text-2xl font-black text-slate-900 tracking-tight">{farm?.farmName}</h1>
                             <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-wider">
-                                {farm?.myRole}
+                                {getRoleDisplayName(farm?.myRole)}
                             </span>
                         </div>
                         <div className="flex items-center gap-4 text-slate-400 text-xs font-bold">
