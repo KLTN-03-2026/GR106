@@ -32,6 +32,16 @@ export const useWarehouses = () => {
     },
   });
 
+  const updateWarehouseMutation = useMutation({
+    mutationFn: async ({ farmId: targetFarmId, warehouseId, data }: { farmId: string; warehouseId: string; data: any }) => {
+      const res = await warehouseService.updateWarehouse(targetFarmId, warehouseId, data);
+      return res.data;
+    },
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: WAREHOUSE_KEYS.byFarm(variables.farmId) });
+    },
+  });
+
   const deleteWarehouseMutation = useMutation({
     mutationFn: async ({ farmId: targetFarmId, warehouseId, version }: { farmId: string; warehouseId: string; version: number }) => {
       await warehouseService.deleteWarehouse(targetFarmId, warehouseId, version);
@@ -58,10 +68,10 @@ export const useWarehouses = () => {
   });
 
   const loading = warehousesQuery.isLoading || warehousesQuery.isFetching;
-  const submitting = createWarehouseMutation.isPending || deleteWarehouseMutation.isPending;
+  const submitting = createWarehouseMutation.isPending || updateWarehouseMutation.isPending || deleteWarehouseMutation.isPending;
   const error = useMemo(
-    () => warehousesQuery.error ?? createWarehouseMutation.error ?? deleteWarehouseMutation.error ?? null,
-    [warehousesQuery.error, createWarehouseMutation.error, deleteWarehouseMutation.error],
+    () => warehousesQuery.error ?? createWarehouseMutation.error ?? updateWarehouseMutation.error ?? deleteWarehouseMutation.error ?? null,
+    [warehousesQuery.error, createWarehouseMutation.error, updateWarehouseMutation.error, deleteWarehouseMutation.error],
   );
 
   return {
@@ -87,6 +97,11 @@ export const useWarehouses = () => {
       (farmIdValue: string, data: CreateWarehouseRequest) =>
         withUnwrap(createWarehouseMutation.mutateAsync({ farmId: farmIdValue, data })),
       [createWarehouseMutation],
+    ),
+    updateWarehouse: useCallback(
+      (farmIdValue: string, warehouseId: string, data: any) =>
+        withUnwrap(updateWarehouseMutation.mutateAsync({ farmId: farmIdValue, warehouseId, data })),
+      [updateWarehouseMutation],
     ),
     deleteWarehouse: useCallback(
       (farmIdValue: string, warehouseId: string, version: number) =>

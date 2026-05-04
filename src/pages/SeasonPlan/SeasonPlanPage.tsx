@@ -508,7 +508,7 @@ export function SeasonPlanPage() {
     try {
       if (!originalTask) {
         await updateSeasonTask(planId, stageId, task.id, {
-          version: task.version,
+          version: task.version ?? 0,
           name: task.name,
           description: task.description || '',
           startDate: task.startDate,
@@ -538,7 +538,7 @@ export function SeasonPlanPage() {
 
       if (isContentChanged) {
         await updateSeasonTask(planId, stageId, task.id, {
-          version: originalTask.version,
+          version: originalTask.version ?? 0,
           name: task.name,
           description: task.description || '',
           startDate: task.startDate,

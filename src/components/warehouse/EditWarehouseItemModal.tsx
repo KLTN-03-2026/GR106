@@ -9,7 +9,6 @@ import { useSuppliers } from "@/hooks/suppliers/useSuppliers";
 import { useSkus } from "@/hooks/skus/useSkus";
 import { useUnits } from "@/hooks/units/useUnits";
 import { WarehouseItem } from "@/types/warehouseItem/warehouseItem";
-import { cn } from "@/utils/cn";
 import { extractErrorMessage } from "@/utils/errorUtils";
 
 interface Props {
@@ -78,7 +77,6 @@ export function EditWarehouseItemModal({ farmId, warehouseId, item, isOpen, onCl
   });
 
   const labelCls = "block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2";
-  const inputCls = "w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all";
   const selectCls = "w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all appearance-none cursor-pointer";
 
   return (

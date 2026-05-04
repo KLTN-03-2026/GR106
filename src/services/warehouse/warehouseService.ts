@@ -19,6 +19,14 @@ export const warehouseService = {
     return res.data;
   },
 
+  async updateWarehouse(farmId: string, warehouseId: string, data: any): Promise<ApiResponse<Warehouse>> {
+    const res = await axiosInstance.patch(`/api/v1/farms/${farmId}/warehouses/${warehouseId}`, data);
+    if (!res.data.success) {
+      throw new Error(res.data.message || 'Không thể cập nhật kho hàng');
+    }
+    return res.data;
+  },
+
   async deleteWarehouse(farmId: string, warehouseId: string, version: number): Promise<ApiResponse<any>> {
     // Gửi version qua CẢ Query Parameter và Request Body để đảm bảo Backend nhận được
     const res = await axiosInstance.delete(`/api/v1/farms/${farmId}/warehouses/${warehouseId}`, {

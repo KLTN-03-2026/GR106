@@ -59,10 +59,12 @@ export function EditWarehouseModal({ farmId, warehouse, isOpen, onClose, onSucce
     }
   }, [isOpen, warehouse, reset, farmId, fetchPlots]);
 
-  const handleLocationChange = (coords: { lat: number; lng: number }) => {
+  const handleLocationChange = (coords: { lat: number; lng: number } | null) => {
     setLocation(coords);
-    setValue("latitude", coords.lat, { shouldValidate: true });
-    setValue("longitude", coords.lng, { shouldValidate: true });
+    if (coords) {
+      setValue("latitude", coords.lat, { shouldValidate: true });
+      setValue("longitude", coords.lng, { shouldValidate: true });
+    }
   };
 
   const onSubmit = async (data: CreateWarehouseFormValues) => {

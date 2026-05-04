@@ -129,5 +129,16 @@ Dưới đây là danh sách toàn bộ các API đã được đồng bộ hóa
 - `PATCH /api/v1/plots/{plotId}`: Cập nhật thông tin lô đất (kèm version).
 - `DELETE /api/v1/plots/{plotId}`: Xóa lô đất.
 
+## 15. Quản lý Trang trại (Farm API)
+**Service:** `src/services/farm/farmService.ts`
+
+- `GET /api/v1/farms`: Lấy danh sách farm mà user sở hữu.
+- `POST /api/v1/farms`: Tạo farm mới.
+- `POST /api/v1/farms/{farmId}/select`: Chọn farm làm việc (Cấp Farm Token).
+- `GET /api/v1/farms/{farmId}`: Lấy chi tiết thông tin một farm.
+- `PATCH /api/v1/farms/{farmId}`: Cập nhật thông tin farm (kèm version).
+- `DELETE /api/v1/farms/{farmId}`: Xóa farm.
+- `GET /api/v1/farms/summary`: Lấy thông tin tổng quan farm (Dashboard).
+
 ---
 **Ghi chú:** Tất cả các API trên đều tuân thủ cấu trúc phản hồi chuẩn `{ success, code, message, data, timestamp }`.
