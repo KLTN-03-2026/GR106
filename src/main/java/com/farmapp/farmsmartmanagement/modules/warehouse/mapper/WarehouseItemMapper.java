@@ -4,6 +4,7 @@ import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.Warehou
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.WarehouseStockEntity;
 import com.farmapp.farmsmartmanagement.modules.user.mapper.UserMapper;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.response.WarehouseItemResponse;
+import com.farmapp.farmsmartmanagement.modules.warehouse.dto.response.WarehouseItemSummaryResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -21,6 +22,9 @@ public interface WarehouseItemMapper {
     @Mapping(source = "createdBy", target = "createdBy")
     @Mapping(target = "stock", ignore = true)
     WarehouseItemResponse toResponse(WarehouseItemEntity entity);
+
+    WarehouseItemSummaryResponse toSummaryResponse(WarehouseItemEntity entity);
+    List<WarehouseItemSummaryResponse> toSummaryResponses(List<WarehouseItemEntity> entities);
 
     List<WarehouseItemResponse> toResponses(List<WarehouseItemEntity> entities);
 

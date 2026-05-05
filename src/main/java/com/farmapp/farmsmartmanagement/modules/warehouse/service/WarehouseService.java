@@ -11,7 +11,6 @@ import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.Warehou
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.CreateWarehouseLocationRequest;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.CreateWarehouseRequest;
-import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.UpdateWarehouseRequest;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.response.WarehouseLocationResponse;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.response.WarehouseResponse;
 import com.farmapp.farmsmartmanagement.modules.warehouse.mapper.WarehouseLocationMapper;
@@ -126,8 +125,8 @@ public class WarehouseService {
     public void deleteWarehouseLocation(UUID warehouseId, UUID warehouseLocationId) {
         UUID farmId = securityUtils.getCurrentFarmId();
 
-        if (warehouseStockRepository.existsByWarehouseLocation_IdAndFarm_Id(warehouseLocationId, farmId)) {
-            throw new AppException(ErrorCode.WAREHOUSE_LOCATION_IN_USING);
+        if (warehouseStockRepository.existsByLocation_IdAndFarm_Id(warehouseLocationId, farmId)) {
+            throw new AppException(ErrorCode.WAREHOUSE_LOCATION_IN_USE);
         }
 
         WarehouseLocationEntity location = warehouseLocationRepository

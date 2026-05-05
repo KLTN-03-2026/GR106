@@ -132,7 +132,7 @@ public enum ErrorCode {
     LOCATION_NOT_IN_SAME_WAREHOUSE(409,"Địa chỉ nằy không cùng nằm 1 kho" ,HttpStatus.CONFLICT ),
     DATE_RANGE_REQUIRED(400,"Vui lòng chọn khoảng thời gian" ,HttpStatus.BAD_REQUEST), WORK_LOG_NOT_FOUND(404,"Không tìm thấy chấm công" ,HttpStatus.NOT_FOUND ), DATE_RANGE_TOO_LARGE(400,"Không thời gian quá lớn" ,HttpStatus.BAD_REQUEST ),
     WORK_LOG_ALREADY_LOCKED(409,"Ngày chấm công này đã bị khoá" ,HttpStatus.CONFLICT ),
-    WAREHOUSE_LOCATION_IN_USING(409,"Vị trí này đang được sử dụng" ,HttpStatus.CONFLICT );
+    WAREHOUSE_LOCATION_IN_USE(409,"Vị trí này đang được sử dụng" ,HttpStatus.CONFLICT );
 
 
 

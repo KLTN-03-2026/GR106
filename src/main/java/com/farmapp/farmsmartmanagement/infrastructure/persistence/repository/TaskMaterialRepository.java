@@ -16,29 +16,35 @@ public interface TaskMaterialRepository extends JpaRepository<TaskMaterialEntity
 
     void deleteByIdAndTask_Id(UUID taskMaterialId, UUID taskId);
 
-    // TaskMaterialRepository
-    @Query("""
+    @Query(value = """
     SELECT
-        tm.warehouseItem.id,
-        SUM(tm.plannedQty) - COALESCE(SUM(wlm.usedQty), 0)
-    FROM TaskMaterialEntity tm
-    LEFT JOIN WorkLogMaterialEntity wlm
-        ON wlm.warehouseItem.id = tm.warehouseItem.id
-       AND wlm.workLog.task.id  = tm.task.id
-    WHERE tm.warehouseItem.id IN :itemIds
-    GROUP BY tm.warehouseItem.id
-    """)
+        tm.warehouse_item_id,
+        COALESCE(SUM(tm.planned_qty), 0) - COALESCE(SUM((
+            SELECT COALESCE(SUM(wlm2.used_qty), 0)
+            FROM work_log_materials wlm2
+            JOIN work_logs wl2 ON wl2.id = wlm2.work_log_id
+            WHERE wlm2.warehouse_item_id = tm.warehouse_item_id
+              AND wl2.task_id = tm.task_id
+        )), 0)
+    FROM task_materials tm
+    WHERE tm.warehouse_item_id IN :itemIds
+    GROUP BY tm.warehouse_item_id
+    """, nativeQuery = true)
     List<Object[]> sumRemainingQtyGroupByWarehouseItem(@Param("itemIds") List<UUID> itemIds);
 
-    @Query("""
+
+    @Query(value = """
     SELECT
-        SUM(tm.plannedQty) - COALESCE(SUM(wlm.usedQty), 0)
-    FROM TaskMaterialEntity tm
-    LEFT JOIN WorkLogMaterialEntity wlm
-        ON wlm.warehouseItem.id = tm.warehouseItem.id
-       AND wlm.workLog.task.id  = tm.task.id
-    WHERE tm.warehouseItem.id = :itemId
-    """)
+        COALESCE(SUM(tm.planned_qty), 0) - COALESCE(SUM((
+            SELECT COALESCE(SUM(wlm2.used_qty), 0)
+            FROM work_log_materials wlm2
+            JOIN work_logs wl2 ON wl2.id = wlm2.work_log_id
+            WHERE wlm2.warehouse_item_id = tm.warehouse_item_id
+              AND wl2.task_id = tm.task_id
+        )), 0)
+    FROM task_materials tm
+    WHERE tm.warehouse_item_id = :itemId
+    """, nativeQuery = true)
     BigDecimal sumRemainingQtyByWarehouseItemId(@Param("itemId") UUID itemId);
 
     boolean existsByWarehouseItemId(UUID warehouseItemId);
