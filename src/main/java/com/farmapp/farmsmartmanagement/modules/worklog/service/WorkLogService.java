@@ -175,6 +175,7 @@ public class WorkLogService {
                 .shift(shift)
                 .type(request.getType())
                 .isOvertime(request.isOvertime())
+                .lockedAt(Instant.now()) // Khoá lại luôn
                 .notes(request.getNotes())
                 .createdAt(Instant.now())
                 .build();
