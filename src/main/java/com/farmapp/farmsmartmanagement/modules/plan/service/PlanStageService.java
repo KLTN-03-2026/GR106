@@ -4,7 +4,6 @@ import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
 import com.farmapp.farmsmartmanagement.domain.enums.PlanStageSource;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.FarmEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanStageEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanStageStatusEntity;
@@ -22,6 +21,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -87,7 +87,7 @@ public class PlanStageService {
             throw new AppException(ErrorCode.PLAN_NOT_FOUND);
         }
 
-        if(planStageRepository.existsByPlanIdAndName(planId, request.getName()))
+        if(planStageRepository.existsByPlanIdAndNameAndDeletedAtIsNull(planId, request.getName()))
             throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_EXISTS);
 
         if(plan.getStartDate().isAfter(request.getStartDate())
@@ -198,9 +198,14 @@ public class PlanStageService {
     @Transactional
     public void deletePlanStageCustom(UUID stageId){
 
-        //Cleanup entity
-        taskRepository.deleteByPlanStageId(stageId);
+//        //Cleanup entity
+//        taskRepository.deleteByPlanStageId(stageId);
+        PlanStageEntity deletedStage = planStageRepository
+                .findById(stageId)
+                        .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
 
-        planStageRepository.deleteById(stageId);
+        deletedStage.setDeletedAt(Instant.now());
+        planStageRepository.save(deletedStage);
+//        planStageRepository.deleteById(stageId);
     }
 }

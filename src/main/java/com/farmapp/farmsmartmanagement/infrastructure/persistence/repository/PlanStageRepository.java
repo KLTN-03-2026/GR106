@@ -1,7 +1,6 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanStageEntity;
-import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -16,13 +15,14 @@ public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID
 
     List<PlanStageEntity> findByPlan_IdOrderByOrderIndexAsc(UUID planId);
 
-    boolean existsByPlanIdAndName(UUID planId, String name);
+    boolean existsByPlanIdAndNameAndDeletedAtIsNull(UUID planId, String name);
 
     // Sử dụng khi tạo mới
     @Query("""
         SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END
         FROM PlanStageEntity p
         WHERE p.plan.id = :planId
+        AND p.deletedAt IS NULL
         AND (
             :startDate <= p.endDate
             AND :endDate >= p.startDate
@@ -39,6 +39,7 @@ public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID
         SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END
         FROM PlanStageEntity p
         WHERE p.plan.id = :planId
+        AND p.deletedAt IS NULL
         AND p.id != :stageId
         AND (
             :startDate <= p.endDate
@@ -59,15 +60,27 @@ public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID
         SELECT p FROM PlanStageEntity p
         WHERE p.plan.id = :planId
         AND p.endDate <= :startDate
+        AND p.deletedAt IS NULL
         ORDER BY p.endDate DESC
     """)
     List<PlanStageEntity> findPreviousStage(UUID planId, LocalDate startDate, Pageable pageable);
 
-    List<PlanStageEntity> findAllByPlanId(UUID planId);
+    @Query("""
+            SELECT pt FROM PlanStageEntity pt
+            WHERE pt.plan.id = :planId
+            AND pt.deletedAt IS NULL
+            """)
+    List<PlanStageEntity> findAllByPlanId(@Param("planId") UUID planId);
 
     boolean existsByIdAndPlan_Id(UUID planStageId, UUID planId);
 
-    Optional<PlanStageEntity> findByIdAndPlanId(UUID planStageId, UUID planId);
+    @Query("""
+            SELECT pt FROM PlanStageEntity pt
+            WHERE pt.id = :planStageId
+            AND pt.plan.id = :planId
+            AND pt.deletedAt IS NULL
+        """)
+    Optional<PlanStageEntity> findByIdAndPlanId(@Param("planStageId") UUID planStageId,@Param("planId") UUID planId);
 
     Optional<PlanStageEntity> findByIdAndPlanIdAndPlan_Farm_Id(UUID planStageId, UUID planId, UUID farmId);
 
@@ -76,6 +89,7 @@ public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID
         WHERE pt.id = :stageId
           AND pt.plan.id = :planId
           AND pt.status.isTerminal = false
+          AND pt.deletedAt IS NULL
     """)
     Optional<PlanStageEntity> findByIdAndPlanIdAndStatusIsNotTerminal(UUID stageId, UUID planId);
 }

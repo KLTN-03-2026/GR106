@@ -61,4 +61,7 @@ public class PlanStageEntity {
     @Column(name = "ai_cached_at")
     Instant aiCachedAt;
 
+    @Column(name = "deleted_at")
+    Instant deletedAt;
+
 }
