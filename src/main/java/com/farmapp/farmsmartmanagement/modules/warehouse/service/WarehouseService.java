@@ -49,7 +49,7 @@ public class WarehouseService {
     @Transactional(readOnly = true)
     public List<WarehouseResponse> findAllWarehouses() {
         return warehouseMapper.toResponses(
-                warehouseRepository.findAll()
+                warehouseRepository.findAllByDeletedAtIsNull()
         );
     }
 

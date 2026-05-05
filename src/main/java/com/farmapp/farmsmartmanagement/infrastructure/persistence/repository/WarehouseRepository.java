@@ -12,4 +12,10 @@ public interface WarehouseRepository extends JpaRepository<WarehouseEntity, UUID
     void deleteByIdAndFarm_Id(UUID warehouseId, UUID farmId);
 
     Optional<WarehouseEntity> findByIdAndFarm_Id(UUID warehouseId, UUID farmId);
+
+    @Query("""
+            SELECT w FROM WarehouseEntity w
+            WHERE w.deletedAt IS NULL
+            """)
+    List<WarehouseEntity> findAllByDeletedAtIsNull();
 }
