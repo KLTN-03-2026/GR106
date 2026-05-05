@@ -4,6 +4,7 @@ import { useWorkLogs, useEmployeeWorkLogs } from '@/hooks/workLog/useWorkLogs';
 import { formatDate } from '@/utils/format';
 import { cn } from '@/utils/cn';
 import { toast } from 'sonner';
+import { extractErrorMessage } from '@/utils/errorUtils';
 
 interface EmployeeWorkLogModalProps {
   isOpen: boolean;
@@ -23,7 +24,7 @@ export function EmployeeWorkLogModal({ isOpen, onClose, employeeId, employeeName
       await deleteWorkLog(taskId, logId);
       toast.success('Xóa nhật ký thành công');
     } catch (err) {
-      toast.error('Không thể xóa nhật ký');
+      toast.error(extractErrorMessage(err));
     }
   };
 
