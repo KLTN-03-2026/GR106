@@ -24,4 +24,12 @@ public interface PlotRepository extends JpaRepository<PlotEntity, UUID> {
             @Param("ids") List<UUID> ids,
             @Param("farmId") UUID farmId
     );
+
+    @Query("""
+    SELECT COUNT(p) FROM PlotEntity p
+    WHERE p.farm.id = :farmId
+      AND p.deletedAt IS NULL
+      AND p.status != 'ARCHIVED'
+    """)
+    long countActivePlotsByFarmId(@Param("farmId") UUID farmId);
 }

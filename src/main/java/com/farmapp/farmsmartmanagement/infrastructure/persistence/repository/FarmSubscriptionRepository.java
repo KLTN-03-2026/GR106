@@ -25,4 +25,11 @@ public interface FarmSubscriptionRepository extends JpaRepository<FarmSubscripti
     Optional<FarmSubscriptionEntity> findCurrentByFarmIdForUpdate(@Param("farmId") UUID farmId);
 
     Collection<FarmSubscriptionEntity> findByFarm_Id(UUID farmId);
+
+    @Query("""
+    SELECT fs FROM FarmSubscriptionEntity fs
+    WHERE fs.farm.id = :farmId
+      AND fs.isCurrent = true
+    """)
+    Optional<FarmSubscriptionEntity> findCurrentByFarmId(@Param("farmId") UUID farmId);
 }

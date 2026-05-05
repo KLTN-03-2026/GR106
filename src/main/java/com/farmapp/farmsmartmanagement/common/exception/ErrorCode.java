@@ -132,7 +132,13 @@ public enum ErrorCode {
     LOCATION_NOT_IN_SAME_WAREHOUSE(409,"Địa chỉ nằy không cùng nằm 1 kho" ,HttpStatus.CONFLICT ),
     DATE_RANGE_REQUIRED(400,"Vui lòng chọn khoảng thời gian" ,HttpStatus.BAD_REQUEST), WORK_LOG_NOT_FOUND(404,"Không tìm thấy chấm công" ,HttpStatus.NOT_FOUND ), DATE_RANGE_TOO_LARGE(400,"Không thời gian quá lớn" ,HttpStatus.BAD_REQUEST ),
     WORK_LOG_ALREADY_LOCKED(409,"Ngày chấm công này đã bị khoá" ,HttpStatus.CONFLICT ),
-    WAREHOUSE_LOCATION_IN_USE(409,"Vị trí này đang được sử dụng" ,HttpStatus.CONFLICT );
+    WAREHOUSE_LOCATION_IN_USE(409,"Vị trí này đang được sử dụng" ,HttpStatus.CONFLICT ),
+
+    SUBSCRIPTION_EXPIRED(403, "Gói đăng ký đã hết hạn, vui lòng gia hạn để tiếp tục sử dụng", HttpStatus.FORBIDDEN),
+    SUBSCRIPTION_NOT_ACTIVE(403, "Gói đăng ký chưa được kích hoạt", HttpStatus.FORBIDDEN),
+    FEATURE_NOT_AVAILABLE(403, "Tính năng này không có trong gói đăng ký hiện tại",HttpStatus.FORBIDDEN),
+    PLOT_LIMIT_EXCEEDED(403, "Đã đạt giới hạn số lô đất của gói đăng ký",HttpStatus.FORBIDDEN),
+    MEMBER_LIMIT_EXCEEDED(403, "Đã đạt giới hạn số thành viên của gói đăng ký",HttpStatus.FORBIDDEN);
 
 
 

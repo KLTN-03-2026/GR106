@@ -1,8 +1,10 @@
 package com.farmapp.farmsmartmanagement.modules.plot.controller;
 
 import com.farmapp.farmsmartmanagement.common.annotation.RequiresFarmToken;
+import com.farmapp.farmsmartmanagement.common.annotation.RequiresSubscription;
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
 import com.farmapp.farmsmartmanagement.common.response.ResponseUtil;
+import com.farmapp.farmsmartmanagement.domain.enums.LimitType;
 import com.farmapp.farmsmartmanagement.infrastructure.security.UserPrincipal;
 import com.farmapp.farmsmartmanagement.modules.plot.dto.request.CreatePlotRequest;
 import com.farmapp.farmsmartmanagement.modules.plot.dto.request.UpdatePlotRequest;
@@ -54,6 +56,7 @@ public class PlotController {
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @RequiresFarmToken
+    @RequiresSubscription(checkLimits = true, limitType = LimitType.PLOT)
     @PostMapping
     public ResponseEntity<ApiResponse<PlotResponse>> createPlot(
             @Parameter(hidden = true)
