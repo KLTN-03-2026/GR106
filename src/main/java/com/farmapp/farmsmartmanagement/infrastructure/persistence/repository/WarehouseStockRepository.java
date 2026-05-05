@@ -39,4 +39,6 @@ public interface WarehouseStockRepository extends JpaRepository<WarehouseStockEn
     @Query("SELECT COALESCE(ws.qtyOnHand,0) FROM WarehouseStockEntity ws " +
             "WHERE ws.warehouseItem.id = :warehouseItemId AND ws.location.id = :fromLocationId")
     BigDecimal findQtyByWarehouseItemIdAndLocationId(UUID warehouseItemId, UUID fromLocationId);
+
+    boolean existsByWarehouseLocation_IdAndFarm_Id(UUID warehouseLocationId, UUID farmId);
 }

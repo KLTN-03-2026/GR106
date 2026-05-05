@@ -8,10 +8,7 @@ import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.FarmEnt
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.UserEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.WarehouseEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.WarehouseLocationEntity;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.FarmRepository;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.UserRepository;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.WarehouseLocationRepository;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.WarehouseRepository;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.CreateWarehouseLocationRequest;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.CreateWarehouseRequest;
 import com.farmapp.farmsmartmanagement.modules.warehouse.dto.request.UpdateWarehouseRequest;
@@ -42,6 +39,8 @@ public class WarehouseService {
     WarehouseRepository warehouseRepository;
 
     WarehouseMapper warehouseMapper;
+
+    WarehouseStockRepository warehouseStockRepository;
 
     WarehouseLocationRepository warehouseLocationRepository;
     WarehouseLocationMapper  warehouseLocationMapper;
@@ -98,15 +97,17 @@ public class WarehouseService {
     //================================================================================================
     @Transactional(readOnly = true)
     public List<WarehouseLocationResponse> findAllWarehousesLocationsByWarehouseId(UUID warehouseId) {
-        return warehouseLocationMapper.toResponses(warehouseLocationRepository.findAll());
+        return warehouseLocationMapper.toResponses(warehouseLocationRepository.findByWarehouseIdAndNotDeleted(warehouseId));
     }
 
     @Transactional
     public WarehouseLocationResponse createWarehouseLocation(UUID warehouseId, CreateWarehouseLocationRequest request){
         FarmEntity farm = farmRepository.getReferenceById(securityUtils.getCurrentFarmId());
+
         WarehouseEntity warehouse = warehouseRepository
                 .findById(warehouseId)
                 .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND));
+
         if(warehouseLocationRepository.existsByCodeAndWarehouse_Id(request.getCode(), warehouse.getId()))
             throw new AppException(ErrorCode.WAREHOUSE_LOCATION_ALREADY_EXISTS);
 
@@ -123,7 +124,20 @@ public class WarehouseService {
 
     @Transactional
     public void deleteWarehouseLocation(UUID warehouseId, UUID warehouseLocationId) {
-        warehouseLocationRepository.deleteByIdAndWarehouse_Id(warehouseLocationId, warehouseId);
+        UUID farmId = securityUtils.getCurrentFarmId();
+
+        if (warehouseStockRepository.existsByWarehouseLocation_IdAndFarm_Id(warehouseLocationId, farmId)) {
+            throw new AppException(ErrorCode.WAREHOUSE_LOCATION_IN_USING);
+        }
+
+        WarehouseLocationEntity location = warehouseLocationRepository
+                .findByIdAndWarehouse_Id(warehouseLocationId, warehouseId)
+                .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_LOCATION_NOT_FOUND));
+
+        location.setDeletedAt(Instant.now());
+        location.setActive(false);
+        warehouseLocationRepository.save(location);
     }
+
 
 }
