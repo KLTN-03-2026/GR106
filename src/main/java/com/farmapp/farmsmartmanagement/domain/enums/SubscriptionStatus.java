@@ -6,5 +6,5 @@ public enum SubscriptionStatus {
     PENDING,
     EXPIRED,
     CANCELLED,
-    GRACE_PERIOD
+    GRACE_PERIOD // Thời gian trống để cho phép user gia hạn
 }

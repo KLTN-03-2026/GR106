@@ -2,9 +2,11 @@ package com.farmapp.farmsmartmanagement.modules.farm.controller;
 
 
 import com.farmapp.farmsmartmanagement.common.annotation.RequiresFarmToken;
+import com.farmapp.farmsmartmanagement.common.annotation.RequiresSubscription;
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
 import com.farmapp.farmsmartmanagement.common.response.ResponseUtil;
 import com.farmapp.farmsmartmanagement.domain.enums.InvitationStatus;
+import com.farmapp.farmsmartmanagement.domain.enums.LimitType;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.request.InvitationRequest;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmInvitationResponse;
 import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmMemberResponse;
@@ -50,6 +52,7 @@ public class FarmInvitationController {
 
     @PostMapping("/api/v1/farms/{farmId}/members")
     @RequiresFarmToken
+    @RequiresSubscription(checkLimits = true, limitType = LimitType.MEMBER)
     public ResponseEntity<ApiResponse<Void>> InviteFarmMember(
             @PathVariable("farmId")UUID farmId,
             @RequestBody @Valid InvitationRequest invitationRequest
