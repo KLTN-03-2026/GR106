@@ -77,9 +77,13 @@ public class TaskStatusService {
         UUID farmId = securityUtils.getCurrentFarmId();
 
         UserEntity changedBy = userRepository.getReferenceById(securityUtils.getCurrentUserId());
+
         TaskEntity task = taskRepository
                 .findByIdAndStageIdAndPlanIdAndStatusIsNotTerminal(taskId,stageId,planId)
                 .orElseThrow(()->new AppException(ErrorCode.TASK_NOT_FOUND));
+
+        if(task.getPlanStage().getStatus().getIsTerminal())
+            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
 
         TaskStatusEntity currentStatus = task.getStatus();
 

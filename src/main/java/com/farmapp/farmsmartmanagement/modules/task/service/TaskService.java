@@ -64,6 +64,9 @@ public class TaskService {
                 .findByIdAndPlanId(planStageId,planId)
                 .orElseThrow(() -> new AppException(ErrorCode.FORBIDDEN));
 
+        if(planStage.getStatus().getIsTerminal())
+            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
+
         // check ownership
         if (!planStage.getPlan().getFarm().getId().equals(farmId)) {
             throw new AppException(ErrorCode.CROP_ALREADY_EXISTS);
@@ -112,6 +115,9 @@ public class TaskService {
         PlanStageEntity planStage = planStageRepository
                 .findByIdAndPlanIdAndPlan_Farm_Id(planStageId, planId, farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
+
+        if(planStage.getStatus().getIsTerminal())
+            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
 
         if (request.getStartDate() != null && request.getEndDate() != null) {
             if (request.getStartDate().isBefore(planStage.getStartDate()) ||
@@ -172,8 +178,12 @@ public class TaskService {
                 .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
 
         // check planStage
-        PlanStageEntity planStage = planStageRepository.findByIdAndPlanId(planStageId,planId)
+        PlanStageEntity planStage = planStageRepository
+                .findByIdAndPlanId(planStageId,planId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
+
+        if(planStage.getStatus().getIsTerminal())
+            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
 
         // check ownership
         if (!planStage.getPlan().getFarm().getId().equals(farmId)) {

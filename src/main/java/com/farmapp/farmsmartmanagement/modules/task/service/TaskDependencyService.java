@@ -41,6 +41,9 @@ public class TaskDependencyService {
                 .findByIdAndStageIdAndPlanIdAndFarmIdAndStatusIsNotTerminal(taskId,planStageId,planId,farmId)
                 .orElseThrow(()-> new AppException(ErrorCode.TASK_NOT_FOUND));
 
+        if(task.getPlanStage().getStatus().getIsTerminal())
+            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
+
         TaskEntity dependencyOnTask = taskRepository
                 .findByIdAndStageIdAndPlanIdAndFarmIdAndStatusIsNotTerminal(request.getDependsOnTaskId(),planStageId,planId,farmId)
                 .orElseThrow(()-> new AppException(ErrorCode.TASK_NOT_FOUND));
@@ -92,6 +95,13 @@ public class TaskDependencyService {
         if (!taskDependencyRepository.existsByTask_IdAndDependsOnTask_Id(taskId, dependsOnTaskId)) {
             throw new AppException(ErrorCode.TASK_DEPENDENCY_NOT_FOUND);
         }
+
+        if(taskRepository.existsByIdAndStatusIsNotTerminalAndPlanStageStatusIsNotTerminal(taskId))
+            throw new  AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
+
+        if(taskRepository.existsByIdAndStatusIsNotTerminalAndPlanStageStatusIsNotTerminal(dependsOnTaskId))
+            throw new  AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
+
         taskDependencyRepository.deleteByTask_IdAndDependsOnTask_Id(taskId, dependsOnTaskId);
 
     }

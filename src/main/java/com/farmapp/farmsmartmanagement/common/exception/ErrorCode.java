@@ -138,7 +138,8 @@ public enum ErrorCode {
     SUBSCRIPTION_NOT_ACTIVE(403, "Gói đăng ký chưa được kích hoạt", HttpStatus.FORBIDDEN),
     FEATURE_NOT_AVAILABLE(403, "Tính năng này không có trong gói đăng ký hiện tại",HttpStatus.FORBIDDEN),
     PLOT_LIMIT_EXCEEDED(403, "Đã đạt giới hạn số lô đất của gói đăng ký",HttpStatus.FORBIDDEN),
-    MEMBER_LIMIT_EXCEEDED(403, "Đã đạt giới hạn số thành viên của gói đăng ký",HttpStatus.FORBIDDEN);
+    MEMBER_LIMIT_EXCEEDED(403, "Đã đạt giới hạn số thành viên của gói đăng ký",HttpStatus.FORBIDDEN),
+    PLAN_STAGE_IS_TERMINAL(409,"Gia đoạn này đã kết thúc" ,HttpStatus.CONFLICT ),;
 
 
 

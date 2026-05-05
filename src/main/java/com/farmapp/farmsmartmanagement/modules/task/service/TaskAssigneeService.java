@@ -61,6 +61,9 @@ public class TaskAssigneeService {
                 .findByIdAndStageIdAndPlanIdAndStatusIsNotTerminal(taskId, stageId, planId)
                 .orElseThrow(()-> new AppException(ErrorCode.TASK_NOT_FOUND));
 
+        if(task.getPlanStage().getStatus().getIsTerminal())
+            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
+
         UserEntity user = userRepository
                 .findById(request.getUserId())
                 .orElseThrow(()->new AppException(ErrorCode.USER_NOT_EXISTED));
@@ -117,6 +120,9 @@ public class TaskAssigneeService {
         TaskAssigneeEntity taskAssignee = taskAssigneeRepository
                 .findByIdAndTaskIsNotTerminal(assigneeId,taskId)
                 .orElseThrow(()->new AppException(ErrorCode.TASK_ASSIGNEE_NOT_FOUND_OR_TASK_IS_TERMINAL));
+
+        if(taskAssignee.getTask().getPlanStage().getStatus().getIsTerminal())
+            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
 
         taskAssignee.setRemovalReason(request.getRemovalReason()!=null?request.getRemovalReason():"");
         taskAssignee.setRemovedBy(userRepository.getReferenceById(securityUtils.getCurrentUserId()));

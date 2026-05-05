@@ -81,4 +81,14 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
             AND t.status.isTerminal = FALSE
             """)
     boolean existsByIdAndStatusIsNotTerminal(UUID taskId);
+
+    @Query("""
+        SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END
+        FROM TaskEntity t
+        WHERE t.status.isTerminal = false
+          AND t.planStage.status.isTerminal = false
+          AND t.id = :taskId
+    """)
+    boolean existsByIdAndStatusIsNotTerminalAndPlanStageStatusIsNotTerminal(UUID taskId);
+
 }

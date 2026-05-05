@@ -51,6 +51,9 @@ public class TaskMaterialService {
                 .findByIdAndStageIdAndPlanIdAndStatusIsNotTerminal(taskId,stageId,planId)
                 .orElseThrow(()->new AppException(ErrorCode.TASK_NOT_FOUND_OR_TASK_IS_TERMINAL));
 
+        if(task.getPlanStage().getStatus().getIsTerminal())
+            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
+
         // Vật tư là nullable = true
         WarehouseItemEntity warehouseItem = null;
         if(request.getWarehouseItemId()!=null){
