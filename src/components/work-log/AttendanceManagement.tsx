@@ -13,14 +13,9 @@ import {
   Clock,
   Download,
   Filter,
-  Search,
-  ClipboardList,
-  Briefcase,
-  StickyNote,
-  CheckCircle2,
-  XCircle
+  Search
 } from 'lucide-react';
-import { useWorkLogs, useFarmWorkLogs, useWorkLogSummary, useEmployeeWorkLogs } from '@/hooks/workLog/useWorkLogs';
+import { useWorkLogs, useFarmWorkLogs, useWorkLogSummary } from '@/hooks/workLog/useWorkLogs';
 import { WorkLog, WorkLogSummary } from '@/types/workLog/workLog';
 import { formatDate, formatCurrency } from '@/utils/format';
 import { SeasonPlan } from '@/types/seasonPlan';
@@ -35,7 +30,7 @@ interface AttendanceManagementProps {
   plan: SeasonPlan;
 }
 
-type ViewMode = 'HISTORY' | 'SUMMARY' | 'ATTENDANCE';
+type ViewMode = 'HISTORY' | 'SUMMARY';
 
 export function AttendanceManagement({ farmId, plan }: AttendanceManagementProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('SUMMARY');
@@ -45,8 +40,7 @@ export function AttendanceManagement({ farmId, plan }: AttendanceManagementProps
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<{ id: string; name: string } | null>(null);
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
-  // Tab chấm công: nhân công được chọn để xem worklog inline
-  const [attendanceEmployee, setAttendanceEmployee] = useState<{ id: string; name: string } | null>(null);
+
   
   // Sử dụng useMemo thay vì useState để dateRange luôn cập nhật khi plan thay đổi
   const dateRange = useMemo(() => ({
@@ -62,13 +56,7 @@ export function AttendanceManagement({ farmId, plan }: AttendanceManagementProps
   );
   const { data: summary = [], isLoading: summaryLoading, isError: summaryError, error: summaryErrorInfo } = useWorkLogSummary(
     dateRange.from, dateRange.to,
-    viewMode === 'SUMMARY' || viewMode === 'ATTENDANCE'
-  );
-  // Worklog của nhân công được chọn trong tab chấm công
-  const { data: attendanceLogs = [], isLoading: attendanceLoading } = useEmployeeWorkLogs(
-    attendanceEmployee?.id || '',
-    dateRange.from,
-    dateRange.to
+    viewMode === 'SUMMARY'
   );
 
   const filteredLogs = useMemo((): WorkLog[] => {
@@ -182,16 +170,6 @@ export function AttendanceManagement({ farmId, plan }: AttendanceManagementProps
               <div className="flex items-center gap-2"><BookOpen size={18} />Lịch sử nhật ký</div>
               {viewMode === 'HISTORY' && <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 rounded-t-full" />}
             </button>
-            <button
-              onClick={() => { setViewMode('ATTENDANCE'); setAttendanceEmployee(null); }}
-              className={cn(
-                "pb-4 text-[14px] font-black transition-all relative group",
-                viewMode === 'ATTENDANCE' ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"
-              )}
-            >
-              <div className="flex items-center gap-2"><ClipboardList size={18} />Quản lý chấm công</div>
-              {viewMode === 'ATTENDANCE' && <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-1 bg-indigo-600 rounded-t-full" />}
-            </button>
           </div>
         </div>
       </div>
@@ -200,150 +178,7 @@ export function AttendanceManagement({ farmId, plan }: AttendanceManagementProps
       <div className="flex-1 overflow-y-auto scrollbar-hide">
         <div className="max-w-7xl mx-auto px-8 py-8">
           <AnimatePresence mode="wait">
-            {viewMode === 'ATTENDANCE' ? (
-              <motion.div key="attendance-tab" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} className="flex gap-6">
-                {/* Danh sách nhân công bên trái */}
-                <div className="w-72 shrink-0">
-                  <div className="bg-white rounded-[24px] border border-slate-200/60 shadow-sm overflow-hidden">
-                    <div className="px-5 py-4 border-b border-slate-100">
-                      <h3 className="text-[14px] font-black text-slate-900 flex items-center gap-2">
-                        <Users size={16} className="text-indigo-500" />
-                        Danh sách nhân công
-                      </h3>
-                      <p className="text-[11px] text-slate-400 mt-0.5">Chọn nhân viên để xem lịch sử chấm công</p>
-                    </div>
-                    {summaryLoading ? (
-                      <div className="flex items-center justify-center py-12">
-                        <Loader2 size={24} className="animate-spin text-indigo-500" />
-                      </div>
-                    ) : summary.length === 0 ? (
-                      <div className="py-12 text-center text-slate-400">
-                        <Users size={32} className="mx-auto mb-2 opacity-20" />
-                        <p className="text-[12px]">Chưa có nhân công</p>
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-slate-50">
-                        {summary.map((emp) => {
-                          const isSelected = attendanceEmployee?.id === emp.employeeId;
-                          return (
-                            <button
-                              key={emp.employeeId}
-                              onClick={() => setAttendanceEmployee({ id: emp.employeeId, name: emp.employeeName || emp.fullName || 'N/A' })}
-                              className={cn(
-                                'w-full flex items-center gap-3 px-5 py-4 transition-all text-left',
-                                isSelected ? 'bg-indigo-50 border-r-2 border-indigo-600' : 'hover:bg-slate-50'
-                              )}
-                            >
-                              <div className={cn(
-                                'w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0',
-                                isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
-                              )}>
-                                {(emp.employeeName || emp.fullName || 'N').charAt(0)}
-                              </div>
-                              <div className="min-w-0">
-                                <p className={cn('text-[13px] font-bold truncate', isSelected ? 'text-indigo-600' : 'text-slate-900')}>
-                                  {emp.employeeName || emp.fullName || 'N/A'}
-                                </p>
-                                <p className="text-[10px] text-slate-400 font-mono">{emp.employeeId.slice(0, 8)}…</p>
-                              </div>
-                              {isSelected && <ChevronRight size={14} className="text-indigo-500 ml-auto shrink-0" />}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Worklog bên phải */}
-                <div className="flex-1 min-w-0">
-                  {!attendanceEmployee ? (
-                    <div className="flex flex-col items-center justify-center h-64 text-slate-400">
-                      <ClipboardList size={44} className="mb-3 opacity-20" />
-                      <p className="text-[14px] font-bold text-slate-600">Chọn nhân viên để xem chấm công</p>
-                      <p className="text-[12px] text-slate-400 mt-1">Danh sách nhật ký sẽ hiển thị tại đây</p>
-                    </div>
-                  ) : attendanceLoading ? (
-                    <div className="flex items-center justify-center py-24">
-                      <Loader2 size={32} className="animate-spin text-indigo-500" />
-                    </div>
-                  ) : attendanceLogs.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-24 text-slate-400">
-                      <Calendar size={40} className="mb-3 opacity-20" />
-                      <p className="text-[14px] font-bold text-slate-600">Chưa có nhật ký</p>
-                      <p className="text-[12px] text-slate-400 mt-1">{attendanceEmployee.name} chưa có bản ghi công nào</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-[15px] font-black text-slate-900">
-                          {attendanceEmployee.name}
-                          <span className="ml-2 text-[11px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-                            {attendanceLogs.length} bản ghi
-                          </span>
-                        </h3>
-                      </div>
-                      {attendanceLogs.map((log) => (
-                        <div key={log.id} className="bg-white border border-slate-200/60 rounded-[20px] overflow-hidden hover:border-indigo-200 hover:shadow-md transition-all">
-                          {/* Card header */}
-                          <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-100">
-                            <div className="flex items-center gap-2">
-                              <Calendar size={12} className="text-indigo-500" />
-                              <span className="text-[12px] font-bold text-indigo-600">{formatDate(log.workDate)}</span>
-                            </div>
-                            <span className={cn(
-                              'px-2 py-0.5 rounded-full text-[10px] font-bold',
-                              log.type === 'OVERTIME' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
-                            )}>
-                              {log.type === 'OVERTIME' ? 'Tăng ca' : 'Chính thức'}
-                            </span>
-                          </div>
-                          {/* Card body — đầy đủ fields */}
-                          <div className="px-4 py-3 grid grid-cols-2 gap-x-6 gap-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-400">
-                                <Briefcase size={11} />Công việc
-                              </span>
-                              <span className="text-[12px] font-semibold text-slate-800 truncate max-w-[120px]">
-                                {log.task?.name || log.taskName || <span className="text-slate-400 italic font-normal">Chưa có</span>}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-400">
-                                <CheckCircle2 size={11} />Tăng ca
-                              </span>
-                              <span className={cn('text-[12px] font-bold flex items-center gap-1', log.isOverTime ? 'text-amber-600' : 'text-slate-500')}>
-                                {log.isOverTime ? <><CheckCircle2 size={12} />Có</> : <><XCircle size={12} className="text-slate-300" />Không</>}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center col-span-2">
-                              <span className="flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-400">
-                                <StickyNote size={11} />Ghi chú
-                              </span>
-                              <span className={cn('text-[12px] text-right max-w-[220px]', log.notes ? 'font-semibold text-slate-700' : 'italic text-slate-400 font-normal')}>
-                                {log.notes || 'Không có'}
-                              </span>
-                            </div>
-                          </div>
-                          {/* Tiến độ task */}
-                          {log.task?.progressPercent != null && (
-                            <div className="px-4 py-2 border-t border-slate-100 bg-slate-50/50">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] font-semibold text-slate-400">Tiến độ công việc</span>
-                                <span className="text-[10px] font-bold text-indigo-600">{log.task.progressPercent}%</span>
-                              </div>
-                              <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${log.task.progressPercent}%` }} />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ) : viewMode === 'SUMMARY' ? (
+            {viewMode === 'SUMMARY' ? (
               <motion.div
                 key="summary-tab"
                 initial={{ opacity: 0, y: 10 }}
