@@ -121,8 +121,8 @@ public class TaskAssigneeService {
         taskAssignee.setRemovalReason(request.getRemovalReason()!=null?request.getRemovalReason():"");
         taskAssignee.setRemovedBy(userRepository.getReferenceById(securityUtils.getCurrentUserId()));
         taskAssignee.setRemovedAt(Instant.now());
-        taskAssigneeRepository.save(taskAssignee);
-
+//        taskAssigneeRepository.save(taskAssignee);
+        taskAssigneeRepository.deleteById(taskAssignee.getId());
         return TaskAssigneeResponse.builder()
                 .id(taskAssignee.getId())
                 .user(userMapper.toUserResponse(taskAssignee.getUser()))
