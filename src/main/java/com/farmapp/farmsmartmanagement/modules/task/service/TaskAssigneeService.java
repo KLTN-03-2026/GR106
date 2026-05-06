@@ -68,8 +68,6 @@ public class TaskAssigneeService {
                 .findById(request.getUserId())
                 .orElseThrow(()->new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        if(taskAssigneeRepository.existsByTask_IdAndUser_Id(task.getId(), user.getId()))
-            throw new AppException(ErrorCode.TASK_ASSIGNEE_ALREADY_USER);
 
         TaskAssigneeEntity taskAssignee = taskAssigneeRepository
                 .findByTask_IdAndUser_Id(task.getId(), user.getId());
