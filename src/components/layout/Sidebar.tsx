@@ -120,7 +120,7 @@ export default function Sidebar({
   if (variant === "compact") {
     return (
       <>
-        <aside className="flex flex-col items-center justify-between h-full w-16 bg-white shrink-0 rounded-3xl shadow-sm border border-slate-100 py-6 px-2">
+        <aside className="flex flex-col items-center justify-between h-full w-16 bg-white shrink-0 rounded-3xl shadow-sm border border-slate-100 py-6 px-2 overflow-y-auto custom-scrollbar">
           <div className="flex flex-col items-center gap-2 w-full">
             {NAV_GROUPS.flatMap((g) => g.items)
               .concat(FOOTER_ITEMS.flatMap((g) => g.items))
@@ -201,7 +201,7 @@ export default function Sidebar({
   /* ── WIDE variant ── */
   return (
     <>
-      <aside className="flex flex-col h-full w-[260px] bg-white shrink-0 rounded-[32px] border border-slate-100 shadow-sm overflow-y-auto no-scrollbar">
+      <aside className="flex flex-col h-full w-[260px] bg-white shrink-0 rounded-[32px] border border-slate-100 shadow-sm overflow-y-auto custom-scrollbar">
         {/* Header */}
         <div className="flex items-center gap-3 px-4 pt-5 pb-3 shrink-0">
           <div className="w-8 h-8 bg-emerald-50 rounded-xl flex items-center justify-center border border-emerald-100 shrink-0">

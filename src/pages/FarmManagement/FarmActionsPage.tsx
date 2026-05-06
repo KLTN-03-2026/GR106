@@ -29,23 +29,15 @@ const FarmActionsPage: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { farmSummary, farms, fetchFarms, fetchFarmsSummary, deleteFarm, loading: loadingFarms } = useFarms();
-    const { plots, fetchPlots, loading: loadingPlots } = usePlots();
-    const { crops, fetchCrops, loading: loadingCrops } = useCrops();
-    const { plans, fetchPlans, fetchStages, loading: loadingPlans } = useSeasonPlans();
+    const { plots, loading: loadingPlots } = usePlots();
+    const { systemCrops, systemCropsLoading } = useCrops(farmId);
+    const { plans, fetchStages, loading: loadingPlans } = useSeasonPlans(farmId);
 
     useEffect(() => {
         if (farmId === 'null' || !farmId) {
             navigate('/farms', { replace: true });
         }
     }, [farmId, navigate]);
-
-    useEffect(() => {
-        if (farmId && farmId !== 'null') {
-            fetchPlots(farmId);
-            fetchCrops();
-            fetchPlans();
-        }
-    }, [farmId, fetchFarmsSummary, fetchPlots, fetchCrops, fetchPlans]);
 
     // Tự động fetch stages cho tất cả plans để có dữ liệu tiến trình thực tế
     useEffect(() => {
@@ -143,10 +135,10 @@ const FarmActionsPage: React.FC = () => {
                 {/* Compact Stats Grid */}
                 <QuickStats
                     plotsCount={plots.length}
-                    cropsCount={crops.length}
+                    cropsCount={systemCrops.length}
                     plansCount={plans.length}
                     planProgress={planProgress}
-                    loading={loadingPlots || loadingCrops || loadingPlans}
+                    loading={loadingPlots || systemCropsLoading || loadingPlans}
                 />
 
                 {/* Quick Actions Grid */}
