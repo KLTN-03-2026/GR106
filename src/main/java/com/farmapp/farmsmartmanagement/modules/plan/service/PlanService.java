@@ -185,6 +185,17 @@ public class PlanService {
                 .build();
     }
 
+    public void deletePlotFromPlan(UUID planId, UUID plotId) {
+        PlotEntity plot = planPlotRepository
+                .findPlotByPlanIdAndPlotId(planId, plotId)
+                .orElseThrow(()->new AppException(ErrorCode.PLAN_PLOT_NOT_FOUND));
+
+        if(taskRepository.existsByPlot_IdAndPlan_Id(plot.getId(), planId))
+            throw new AppException(ErrorCode.PLOT_IS_USING_BY_TASK);
+
+        planPlotRepository.deleteByPlot_IdAndPlan_Id(plot.getId(), planId);
+    }
+
     public List<PlotSnapshotResponse> getPlotsByPlan(UUID planId) {
         UUID farmId = securityUtils.getCurrentFarmId();
 
