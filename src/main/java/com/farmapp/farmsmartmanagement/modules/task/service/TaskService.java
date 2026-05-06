@@ -79,7 +79,10 @@ public class TaskService {
         }
 
         // validate date
-        if (request.getStartDate().isBefore(planStage.getStartDate()) ||
+        LocalDate stageStartDate = planStage.getActualStartDate() != null?
+                planStage.getActualStartDate() : planStage.getStartDate();
+
+        if (request.getStartDate().isBefore(stageStartDate) ||
         request.getEndDate().isAfter(planStage.getEndDate())) {
             throw new AppException(ErrorCode.TASK_OUT_OF_TIME_PLAN_STAGE);
         }
