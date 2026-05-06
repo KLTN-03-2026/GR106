@@ -60,33 +60,37 @@ export function AttendanceManagement({ farmId, plan }: AttendanceManagementProps
   );
 
   const filteredLogs = useMemo((): WorkLog[] => {
-    if (!workLogs || !plan.phases) return [];
+    if (!workLogs) return [];
     
+    // 1. Xác định tập hợp Task IDs thuộc kế hoạch này
     const planTaskIds = new Set<string>();
-    plan.phases.forEach(phase => {
-      phase.tasks.forEach(task => planTaskIds.add(task.id));
-    });
+    if (plan.phases) {
+      plan.phases.forEach(phase => {
+        if (phase.tasks) {
+          phase.tasks.forEach(task => planTaskIds.add(task.id));
+        }
+      });
+    }
 
-    // If planTaskIds is empty (stages not loaded yet), show all logs
-    const logs = planTaskIds.size === 0
-      ? (workLogs as WorkLog[])
-      : (workLogs as WorkLog[]).filter(log => {
-          const tId = log.task?.id || log.taskId;
-          // Include log if taskId matches plan, or if taskId is unknown (don't silently drop)
-          return !tId || planTaskIds.has(tId);
-        });
+    // 2. Lọc theo Kế hoạch (nếu đã có thông tin Task, nếu chưa thì lấy hết của farm)
+    let logs = (workLogs as WorkLog[]);
+    if (planTaskIds.size > 0) {
+      logs = logs.filter(log => {
+        const tId = log.task?.id || log.taskId;
+        return !tId || planTaskIds.has(tId);
+      });
+    }
 
+    // 3. Lọc theo Search Term
     if (!searchTerm) return logs;
 
     const q = searchTerm.toLowerCase();
     return logs.filter(log => 
-      log.employee?.fullName?.toLowerCase().includes(q) ||
-      log.employeeName?.toLowerCase().includes(q) ||
-      log.task?.name?.toLowerCase().includes(q) ||
-      log.taskName?.toLowerCase().includes(q) ||
-      log.notes?.toLowerCase().includes(q)
+      (log.employee?.fullName || log.employeeName || '').toLowerCase().includes(q) ||
+      (log.task?.name || log.taskName || '').toLowerCase().includes(q) ||
+      (log.notes || '').toLowerCase().includes(q)
     );
-  }, [workLogs, plan, searchTerm]);
+  }, [workLogs, plan.phases, searchTerm]);
 
   const handleDelete = async (taskId: string, logId: string) => {
     try {

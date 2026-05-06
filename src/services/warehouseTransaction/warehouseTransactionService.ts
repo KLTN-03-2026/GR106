@@ -59,10 +59,6 @@ export const warehouseTransactionService = {
     return unwrapData<PagedData<WarehouseTransaction>>(response);
   },
 
-  /**
-   * GET /api/v1/farms/{farmId}/transactions
-   * Danh sách giao dịch theo Farm
-   */
   async getTransactionsByFarm(
     farmId: string,
     pageable?: PageableParams,

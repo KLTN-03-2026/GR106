@@ -304,16 +304,7 @@ export function WorkLogDetailModal({ isOpen, onClose, taskId, workLogId }: WorkL
             </div>
           ) : null}
         </div>
-
-        {/* ── Footer ── */}
-        <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-5 py-2 bg-slate-900 hover:bg-indigo-600 text-white text-[12px] font-bold rounded-xl transition-all tracking-wide"
-          >
-            Đóng
-          </button>
-        </div>
+c
       </div>
     </Modal>
   );

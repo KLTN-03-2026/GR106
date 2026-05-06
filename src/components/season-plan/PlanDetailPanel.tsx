@@ -199,6 +199,7 @@ export function PlanDetailPanel({
   const [newTaskDesc, setNewTaskDesc] = useState('');
   const [newTaskStart, setNewTaskStart] = useState('');
   const [newTaskEnd, setNewTaskEnd] = useState('');
+  const [newTaskPlotId, setNewTaskPlotId] = useState('');
 
   const [showAddPlot, setShowAddPlot] = useState(false);
   const [selectedPlotIds, setSelectedPlotIds] = useState<string[]>([]);
@@ -340,7 +341,7 @@ export function PlanDetailPanel({
       description: newTaskDesc,
       startDate: newTaskStart || sel.phase.startDate,
       endDate: newTaskEnd || sel.phase.endDate,
-      plotId: sel.phase.plotId || plan.plots?.[0]?.plotId || "",
+      plotId: newTaskPlotId || sel.phase.plotId || plan.plots?.[0]?.plotId || "",
     };
 
     const validation = createTaskSchema.safeParse(payload);
@@ -352,6 +353,7 @@ export function PlanDetailPanel({
     onAddTask(plan.id, sel.phase.id, validation.data as any);
     setNewTaskName(''); setNewTaskDesc('');
     setNewTaskStart(''); setNewTaskEnd('');
+    setNewTaskPlotId('');
     setIsAddingTask(false);
   };
 
@@ -537,6 +539,8 @@ export function PlanDetailPanel({
                       setNewTaskStart={setNewTaskStart}
                       newTaskEnd={newTaskEnd}
                       setNewTaskEnd={setNewTaskEnd}
+                      newTaskPlotId={newTaskPlotId}
+                      setNewTaskPlotId={setNewTaskPlotId}
                       onAddTask={handleAddTaskSubmit}
                       onSelectTask={(taskId) => onSelectTask(plan.id, sel.phase.id, taskId)}
                     />
