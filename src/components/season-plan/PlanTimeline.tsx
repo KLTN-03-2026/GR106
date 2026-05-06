@@ -75,6 +75,243 @@ function getMonday(d: Date): Date {
   return result;
 }
 
+// ─── ActualOverlay ───────────────────────────────────────────────────────────
+// Renders:
+//  - A dimmed region between planned date and actual date (when they differ)
+//  - A thin vertical marker line at the actual date with hover tooltip
+
+interface ActualOverlayProps {
+  plannedStart: string;
+  plannedEnd?: string; // kept for API symmetry but derived from barWidth in body
+  actualStart?: string | null;
+  actualEnd?: string | null;
+  ppd: number;
+  barLeft: number;
+  barWidth: number;
+  rowHeight: number;
+  markerColor: string;
+}
+
+function ActualOverlay({
+  plannedStart,
+  actualStart, actualEnd,
+  ppd, barLeft, barWidth,
+  rowHeight, markerColor,
+}: ActualOverlayProps) {
+  const [hoveredPin, setHoveredPin] = React.useState<'start' | 'end' | null>(null);
+
+  if (!actualStart && !actualEnd) return null;
+
+  // px offset of a date relative to plannedStart (barLeft origin)
+  const toPx = (date: string) => {
+    const da = new Date(plannedStart);
+    const db = new Date(date);
+    return Math.round((db.getTime() - da.getTime()) / 86_400_000) * ppd;
+  };
+
+  const barH = rowHeight * 0.6;
+  const markerH = rowHeight * 0.9;
+  const dimOpacity = 0.28;
+  const dimColor = '#475569';
+
+  // ── Pins ─────────────────────────────────────────────────────────────────
+  const pins: { kind: 'start' | 'end'; pxInBar: number; dateLabel: string }[] = [];
+  if (actualStart) {
+    pins.push({
+      kind: 'start',
+      pxInBar: toPx(actualStart),
+      dateLabel: new Date(actualStart).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    });
+  }
+  if (actualEnd) {
+    pins.push({
+      kind: 'end',
+      pxInBar: toPx(actualEnd),
+      dateLabel: new Date(actualEnd).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    });
+  }
+
+  // ── Dim segments ─────────────────────────────────────────────────────────
+  const segments: { left: number; width: number }[] = [];
+
+  if (actualStart) {
+    const aPx = toPx(actualStart);
+    if (aPx > 0) {
+      // actual later than planned → dim [plannedStart → actualStart]
+      segments.push({ left: barLeft, width: aPx });
+    } else if (aPx < 0) {
+      // actual earlier than planned → dim [actualStart → plannedStart]
+      segments.push({ left: barLeft + aPx, width: -aPx });
+    }
+  }
+
+  if (actualEnd) {
+    const aPx = toPx(actualEnd);
+    if (aPx < barWidth) {
+      // actual ended earlier → dim [actualEnd → plannedEnd]
+      segments.push({ left: barLeft + aPx, width: barWidth - aPx });
+    } else if (aPx > barWidth) {
+      // actual ended later → dim [plannedEnd → actualEnd]
+      segments.push({ left: barLeft + barWidth, width: aPx - barWidth });
+    }
+  }
+
+  const topOffset = (rowHeight - barH) / 2;
+  const markerTop = (rowHeight - markerH) / 2;
+
+  return (
+    <>
+      {/* Dim segments */}
+      {segments.map((seg, i) => (
+        <div
+          key={i}
+          className="absolute pointer-events-none z-20"
+          style={{
+            left: seg.left,
+            width: Math.max(2, seg.width),
+            top: topOffset,
+            height: barH,
+            backgroundColor: dimColor,
+            opacity: dimOpacity,
+            borderRadius: 3,
+          }}
+        />
+      ))}
+
+      {/* Marker pins */}
+      {pins.map(pin => {
+        const isHovered = hoveredPin === pin.kind;
+        const pinLeft = barLeft + pin.pxInBar;
+        return (
+          <React.Fragment key={pin.kind}>
+            {/* Vertical line — interactive for hover */}
+            <div
+              className="absolute z-30 cursor-default"
+              style={{
+                left: pinLeft - 1,
+                top: markerTop,
+                width: 2,
+                height: markerH,
+                backgroundColor: markerColor,
+                opacity: isHovered ? 1 : 0.75,
+                borderRadius: 1,
+                transition: 'opacity .15s',
+              }}
+              onMouseEnter={() => setHoveredPin(pin.kind)}
+              onMouseLeave={() => setHoveredPin(null)}
+            />
+            {/* Diamond cap at top */}
+            <div
+              className="absolute z-30 pointer-events-none"
+              style={{
+                left: pinLeft - 4,
+                top: markerTop - 4,
+                width: 8,
+                height: 8,
+                backgroundColor: markerColor,
+                opacity: isHovered ? 1 : 0.8,
+                transform: 'rotate(45deg)',
+                borderRadius: 1,
+                transition: 'opacity .15s',
+              }}
+            />
+            {/* Tooltip on hover */}
+            {isHovered && (
+              <div
+                className="absolute z-50 pointer-events-none"
+                style={{ left: pinLeft + 8, top: markerTop - 6, whiteSpace: 'nowrap' }}
+              >
+                <div
+                  className="text-[10px] font-semibold px-2 py-1 rounded-md shadow-lg"
+                  style={{ backgroundColor: '#1e293b', color: '#f8fafc', border: `1px solid ${markerColor}` }}
+                >
+                  {pin.kind === 'start' ? '▶ Thực tế bắt đầu' : '⏹ Thực tế kết thúc'}: {pin.dateLabel}
+                </div>
+              </div>
+            )}
+          </React.Fragment>
+        );
+      })}
+    </>
+  );
+}
+
+// ─── BarTooltip ───────────────────────────────────────────────────────────────
+// Tooltip hiển thị khi hover vào thanh bar chính (planned start/end + actual nếu có)
+
+interface BarTooltipProps {
+  plannedStart: string;
+  plannedEnd: string;
+  actualStart?: string | null;
+  actualEnd?: string | null;
+  /** Pixel left offset của bar — để hit-area khớp đúng vị trí bar */
+  barLeft: number;
+  /** Pixel width của bar */
+  barWidth: number;
+  /** Row height để căn giữa hit-area */
+  rowHeight: number;
+}
+
+function fmtDate(d: string) {
+  return new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function BarTooltip({ plannedStart, plannedEnd, actualStart, actualEnd, barLeft, barWidth, rowHeight }: BarTooltipProps) {
+  const [show, setShow] = React.useState(false);
+  const [pos, setPos] = React.useState({ x: 0, y: 0 });
+
+  return (
+    <>
+      {/* Invisible hit-area — same size & position as the bar */}
+      <div
+        className="absolute z-25 pointer-events-auto"
+        style={{
+          left: barLeft,
+          width: barWidth,
+          top: (rowHeight - rowHeight * 0.8) / 2,
+          height: rowHeight * 0.8,
+        }}
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        onMouseMove={e => setPos({ x: e.clientX, y: e.clientY })}
+      />
+      {/* Tooltip rendered at cursor via fixed positioning */}
+      {show && (
+        <div
+          className="fixed z-50 pointer-events-none"
+          style={{ left: pos.x + 14, top: pos.y - 10 }}
+        >
+          <div
+            className="text-[11px] font-medium px-2.5 py-1.5 rounded-lg shadow-xl"
+            style={{ backgroundColor: '#1e293b', color: '#f8fafc', border: '1px solid rgba(255,255,255,0.1)', whiteSpace: 'nowrap' }}
+          >
+            {/* Planned dates */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-400 text-[9px] uppercase tracking-widest font-bold w-14">Kế hoạch</span>
+              <span>{fmtDate(plannedStart)}</span>
+              <span className="text-slate-400">→</span>
+              <span>{fmtDate(plannedEnd)}</span>
+            </div>
+            {/* Actual dates — only shown if at least one is present */}
+            {(actualStart || actualEnd) && (
+              <div className="flex items-center gap-1.5 mt-0.5 border-t border-white/10 pt-0.5">
+                <span className="text-amber-400 text-[9px] uppercase tracking-widest font-bold w-14">Thực tế</span>
+                <span className={actualStart ? 'text-amber-300' : 'text-slate-500 italic'}>
+                  {actualStart ? fmtDate(actualStart) : '–'}
+                </span>
+                <span className="text-slate-400">→</span>
+                <span className={actualEnd ? 'text-amber-300' : 'text-slate-500 italic'}>
+                  {actualEnd ? fmtDate(actualEnd) : '–'}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ─── AnimatedRow ──────────────────────────────────────────────────────────────
 
 interface AnimatedRowProps {
@@ -779,18 +1016,18 @@ export function PlanTimeline({
                     >
                       <ChevronDown size={14} strokeWidth={3} />
                     </button>
-                    <div className="w-3.5 h-3.5 rounded-sm flex items-center justify-center mr-2 flex-shrink-0" 
-                         style={{ backgroundColor: getStatusColor(r.item.status) }}>
+                    <div className="w-3.5 h-3.5 rounded-sm flex items-center justify-center mr-2 flex-shrink-0"
+                      style={{ backgroundColor: getStatusColor(r.item.status) }}>
                       <svg width="8" height="8" viewBox="0 0 8 8">
                         <path d="M4 1L7 4L4 7M1 4h6" stroke="white" strokeWidth="1.3" fill="none" strokeLinecap="round" />
                       </svg>
                     </div>
                     <span className="truncate text-[12px] font-medium text-slate-700 flex-1 min-w-0">{r.item.name}</span>
                     <span className="ml-1 flex-shrink-0 text-[9px] px-1.5 py-0.5 rounded font-bold tracking-wide"
-                          style={{ 
-                            backgroundColor: getStatusColor(r.item.status) + '15', 
-                            color: getStatusColor(r.item.status) 
-                          }}>
+                      style={{
+                        backgroundColor: getStatusColor(r.item.status) + '15',
+                        color: getStatusColor(r.item.status)
+                      }}>
                       {statusLabel(r.item.status)}
                     </span>
                   </div>
@@ -811,10 +1048,10 @@ export function PlanTimeline({
                   onClick={() => onSelect({ type: 'TASK', id: r.id, planId: r.planId, phaseId: r.phaseId })}
                 >
                   <div className="w-3 h-3 rounded-sm border mr-2 flex items-center justify-center flex-shrink-0"
-                       style={{ 
-                         backgroundColor: sc === 'COMPLETED' ? getStatusColor(r.item.status) : 'transparent',
-                         borderColor: getStatusColor(r.item.status)
-                       }}>
+                    style={{
+                      backgroundColor: sc === 'COMPLETED' ? getStatusColor(r.item.status) : 'transparent',
+                      borderColor: getStatusColor(r.item.status)
+                    }}>
                     {sc === 'COMPLETED' && (
                       <svg width="7" height="7" viewBox="0 0 8 8">
                         <path d="M1 4l2 2 4-3" stroke="white" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
@@ -824,10 +1061,10 @@ export function PlanTimeline({
                   <span className="text-[10px] text-slate-400 mr-1.5 flex-shrink-0 font-mono">{(r.item as any).code ?? ''}</span>
                   <span className="truncate text-[12px] text-slate-700 font-medium flex-1 min-w-0">{r.item.name}</span>
                   <span className="ml-1 flex-shrink-0 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide"
-                        style={{ 
-                          backgroundColor: getStatusColor(r.item.status) + '15', 
-                          color: getStatusColor(r.item.status) 
-                        }}>
+                    style={{
+                      backgroundColor: getStatusColor(r.item.status) + '15',
+                      color: getStatusColor(r.item.status)
+                    }}>
                     {statusLabel(r.item.status)}
                   </span>
                 </div>
@@ -937,15 +1174,39 @@ export function PlanTimeline({
 
               if (r.type === 'phase') {
                 const ph = r.item as Phase;
-                const ps = previewStyle(r.planId, ph.id, 'phase', ph.startDate, ph.endDate);
-                const isDragging = barDrag?.target.kind === 'phase' && (barDrag.target as any).phaseId === ph.id;
+                // ─── DEV MOCK: xóa khối này sau khi test xong ──────────────
+                // Inject actual dates vào phase ĐẦU TIÊN để test visual
+                const _phWithActual = rows.filter(x => x.type === 'phase')[0]?.id === r.id
+                  ? {
+                    ...ph,
+                    actualStartDate: ph.actualStartDate,  // bắt đầu trễ 5 ngày
+                    actualEndDate: ph.actualEndDate,      // kết thúc sớm 3 ngày
+                  }
+                  : ph;
+                const phFinal = _phWithActual;
+                // ─── END DEV MOCK ───────────────────────────────────────────
+                const ps = previewStyle(r.planId, phFinal.id, 'phase', phFinal.startDate, phFinal.endDate);
+                const isDragging = barDrag?.target.kind === 'phase' && (barDrag.target as any).phaseId === phFinal.id;
+                const phBarLeft = parseFloat(ps.left as string);
+                const phBarWidth = parseFloat(ps.width as string);
                 return (
                   <AnimatedRow key={r.id} visible={visible} rowHeight={ROW_H}>
                     <div
                       style={{ height: ROW_H, position: 'relative' }}
                       className={cn('border-b border-slate-100 cursor-pointer', isSelected ? 'bg-indigo-50/20' : 'hover:bg-slate-50/40')}
-                      onClick={() => onSelect({ type: 'PHASE', id: ph.id, planId: r.planId })}
+                      onClick={() => onSelect({ type: 'PHASE', id: phFinal.id, planId: r.planId })}
                     >
+                      {/* BarTooltip hit-area */}
+                      <BarTooltip
+                        plannedStart={phFinal.startDate}
+                        plannedEnd={phFinal.endDate}
+                        actualStart={phFinal.actualStartDate}
+                        actualEnd={phFinal.actualEndDate}
+                        barLeft={phBarLeft}
+                        barWidth={phBarWidth}
+                        rowHeight={ROW_H}
+                      />
+
                       <div
                         className={cn(
                           'absolute flex items-center overflow-hidden rounded-md z-10',
@@ -954,33 +1215,47 @@ export function PlanTimeline({
                         )}
                         style={{
                           ...ps,
-                          backgroundColor: getStatusColor(ph.status),
+                          backgroundColor: getStatusColor(phFinal.status),
                           top: '50%',
                           transform: 'translateY(-50%)',
                           height: 24,
                           willChange: 'left, width',
                           transition: isDragging ? 'none' : 'left .15s ease-out, width .15s ease-out, background-color .2s ease',
                         }}
-                        onMouseDown={canEdit ? e => startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: ph.id }, 'MOVE', ph.startDate, ph.endDate) : undefined}
-                        onClick={e => { e.stopPropagation(); onSelect({ type: 'PHASE', id: ph.id, planId: r.planId }); }}
+                        onMouseDown={canEdit ? e => startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: phFinal.id }, 'MOVE', phFinal.startDate, phFinal.endDate) : undefined}
+                        onClick={e => { e.stopPropagation(); onSelect({ type: 'PHASE', id: phFinal.id, planId: r.planId }); }}
                       >
                         {canEdit && (
                           <div className="absolute left-0 top-0 bottom-0 w-2 cursor-w-resize z-20 flex items-center justify-center hover:bg-white/10"
-                            onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: ph.id }, 'RESIZE_LEFT', ph.startDate, ph.endDate); }}>
+                            onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: phFinal.id }, 'RESIZE_LEFT', phFinal.startDate, phFinal.endDate); }}>
                             <span className="w-px h-3 bg-white/60 rounded-full" />
                           </div>
                         )}
-                        <span className="text-[11px] font-semibold text-white px-3 truncate pointer-events-none flex-1 min-w-0">{ph.name}</span>
+                        <span className="text-[11px] font-semibold text-white px-3 truncate pointer-events-none flex-1 min-w-0">{phFinal.name}</span>
                         <span className="text-[9px] text-white/70 pr-2 flex-shrink-0 pointer-events-none hidden md:block">
-                          {statusLabel(ph.status)}
+                          {statusLabel(phFinal.status)}
                         </span>
                         {canEdit && (
                           <div className="absolute right-0 top-0 bottom-0 w-2 cursor-e-resize z-20 flex items-center justify-center hover:bg-white/10"
-                            onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: ph.id }, 'RESIZE_RIGHT', ph.startDate, ph.endDate); }}>
+                            onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: phFinal.id }, 'RESIZE_RIGHT', phFinal.startDate, phFinal.endDate); }}>
                             <span className="w-px h-3 bg-white/60 rounded-full" />
                           </div>
                         )}
                       </div>
+                      {/* Actual date overlay — dim + marker pins */}
+                      {!isDragging && (phFinal.actualStartDate || phFinal.actualEndDate) && (
+                        <ActualOverlay
+                          plannedStart={phFinal.startDate}
+                          plannedEnd={phFinal.endDate}
+                          actualStart={phFinal.actualStartDate}
+                          actualEnd={phFinal.actualEndDate}
+                          ppd={PPD}
+                          barLeft={phBarLeft}
+                          barWidth={phBarWidth}
+                          rowHeight={ROW_H}
+                          markerColor={getStatusColor(phFinal.status)}
+                        />
+                      )}
                     </div>
                   </AnimatedRow>
                 );
@@ -988,15 +1263,39 @@ export function PlanTimeline({
 
               // task
               const tk = r.item as Task;
-              const ps = previewStyle(r.planId, tk.id, 'task', tk.startDate, tk.endDate);
-              const isDragging = barDrag?.target.kind === 'task' && (barDrag.target as any).taskId === tk.id;
+              // ─── DEV MOCK: xóa khối này sau khi test xong ──────────────
+              // Inject actual dates vào task ĐẦU TIÊN của mỗi phase để test visual
+              const _tkWithActual = rows.filter(x => x.type === 'task')[0]?.id === r.id
+                ? {
+                  ...tk,
+                  actualStartDate: addDays(tk.startDate, 2),  // bắt đầu trễ 2 ngày
+                  actualEndDate: addDays(tk.endDate, 1),      // kết thúc trễ 1 ngày
+                }
+                : tk;
+              const tkFinal = _tkWithActual;
+              // ─── END DEV MOCK ───────────────────────────────────────────
+              const ps = previewStyle(r.planId, tkFinal.id, 'task', tkFinal.startDate, tkFinal.endDate);
+              const isDragging = barDrag?.target.kind === 'task' && (barDrag.target as any).taskId === tkFinal.id;
+              const tkBarLeft = parseFloat(ps.left as string);
+              const tkBarWidth = parseFloat(ps.width as string);
               return (
                 <AnimatedRow key={r.id} visible={visible} rowHeight={ROW_H}>
                   <div
                     style={{ height: ROW_H, position: 'relative' }}
                     className={cn('border-b border-slate-50 cursor-pointer', isSelected ? 'bg-indigo-50/15' : 'hover:bg-slate-50/30')}
-                    onClick={() => onSelect({ type: 'TASK', id: tk.id, planId: r.planId, phaseId: r.phaseId })}
+                    onClick={() => onSelect({ type: 'TASK', id: tkFinal.id, planId: r.planId, phaseId: r.phaseId })}
                   >
+                    {/* BarTooltip hit-area */}
+                    <BarTooltip
+                      plannedStart={tkFinal.startDate}
+                      plannedEnd={tkFinal.endDate}
+                      actualStart={tkFinal.actualStartDate}
+                      actualEnd={tkFinal.actualEndDate}
+                      barLeft={tkBarLeft}
+                      barWidth={tkBarWidth}
+                      rowHeight={ROW_H}
+                    />
+
                     <div
                       className={cn(
                         'absolute rounded overflow-hidden z-10',
@@ -1005,7 +1304,7 @@ export function PlanTimeline({
                       )}
                       style={{
                         ...ps,
-                        backgroundColor: getStatusColor(tk.status),
+                        backgroundColor: getStatusColor(tkFinal.status),
                         top: '50%',
                         transform: 'translateY(-50%)',
                         height: 14,
@@ -1013,18 +1312,32 @@ export function PlanTimeline({
                         willChange: 'left, width',
                         transition: isDragging ? 'none' : 'left .15s ease-out, width .15s ease-out, background-color .2s ease',
                       }}
-                      onMouseDown={canEdit ? e => startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tk.id }, 'MOVE', tk.startDate, tk.endDate) : undefined}
-                      onClick={e => { e.stopPropagation(); onSelect({ type: 'TASK', id: tk.id, planId: r.planId, phaseId: r.phaseId }); }}
+                      onMouseDown={canEdit ? e => startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tkFinal.id }, 'MOVE', tkFinal.startDate, tkFinal.endDate) : undefined}
+                      onClick={e => { e.stopPropagation(); onSelect({ type: 'TASK', id: tkFinal.id, planId: r.planId, phaseId: r.phaseId }); }}
                     >
                       {canEdit && (
                         <>
                           <div className="absolute left-0 top-0 bottom-0 w-2 cursor-w-resize z-10"
-                            onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tk.id }, 'RESIZE_LEFT', tk.startDate, tk.endDate); }} />
+                            onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tkFinal.id }, 'RESIZE_LEFT', tkFinal.startDate, tkFinal.endDate); }} />
                           <div className="absolute right-0 top-0 bottom-0 w-2 cursor-e-resize z-10"
-                            onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tk.id }, 'RESIZE_RIGHT', tk.startDate, tk.endDate); }} />
+                            onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tkFinal.id }, 'RESIZE_RIGHT', tkFinal.startDate, tkFinal.endDate); }} />
                         </>
                       )}
                     </div>
+                    {/* Actual date overlay — dim + marker pins */}
+                    {!isDragging && (tkFinal.actualStartDate || tkFinal.actualEndDate) && (
+                      <ActualOverlay
+                        plannedStart={tkFinal.startDate}
+                        plannedEnd={tkFinal.endDate}
+                        actualStart={tkFinal.actualStartDate}
+                        actualEnd={tkFinal.actualEndDate}
+                        ppd={PPD}
+                        barLeft={tkBarLeft}
+                        barWidth={tkBarWidth}
+                        rowHeight={ROW_H}
+                        markerColor={getStatusColor(tkFinal.status)}
+                      />
+                    )}
                   </div>
                 </AnimatedRow>
               );
