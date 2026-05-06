@@ -71,28 +71,38 @@ public class TaskAssigneeService {
         if(taskAssigneeRepository.existsByTask_IdAndUser_Id(task.getId(), user.getId()))
             throw new AppException(ErrorCode.TASK_ASSIGNEE_ALREADY_USER);
 
+        TaskAssigneeEntity taskAssignee = taskAssigneeRepository
+                .findByTask_IdAndUser_Id(task.getId(), user.getId());
+
+        if(taskAssignee != null){
+            taskAssignee.setRemovalReason(null);
+            taskAssignee.setRemovedAt(null);
+            taskAssignee.setRemovedBy(null);
+        }
+        else taskAssignee = new TaskAssigneeEntity();
+
         if(!farmMemberRepository.existsByFarm_IdAndUser_Id(farmId, user.getId()))
             throw new AppException(ErrorCode.FARM_MEMBER_NOT_FOUND);
 
         // Chỉ so sánh lớn hơn, không tính 'bằng'
         if (LocalDate.now().isAfter(task.getEndDate())) {
-            throw new AppException(ErrorCode.TASK_IS_TERMINAL);
+            throw new AppException(ErrorCode.TASK_EXPIRED_CANNOT_ASSIGN);
         }
 
-        TaskAssigneeEntity taskAssigneeEntity = new TaskAssigneeEntity();
-        taskAssigneeEntity.setTask(task);
-        taskAssigneeEntity.setUser(user);
-        taskAssigneeEntity.setAssignedBy(assigneeBy);
-        taskAssigneeEntity.setAssignedAt(Instant.now());
 
-        taskAssigneeRepository.save(taskAssigneeEntity);
+        taskAssignee.setTask(task);
+        taskAssignee.setUser(user);
+        taskAssignee.setAssignedBy(assigneeBy);
+        taskAssignee.setAssignedAt(Instant.now());
+
+        taskAssigneeRepository.save(taskAssignee);
 
         return CreateTaskAssigneeResponse.builder()
-                .id(taskAssigneeEntity.getId())
+                .id(taskAssignee.getId())
                 .user(userMapper.toUserResponse(user))
                 .task(taskMapper.toSummaryResponse(task))
                 .assigneeBy(userMapper.toUserResponse(assigneeBy))
-                .assigneeAt(taskAssigneeEntity.getAssignedAt())
+                .assigneeAt(taskAssignee.getAssignedAt())
                 .build();
     }
 
@@ -127,8 +137,7 @@ public class TaskAssigneeService {
         taskAssignee.setRemovalReason(request.getRemovalReason()!=null?request.getRemovalReason():"");
         taskAssignee.setRemovedBy(userRepository.getReferenceById(securityUtils.getCurrentUserId()));
         taskAssignee.setRemovedAt(Instant.now());
-//        taskAssigneeRepository.save(taskAssignee);
-        taskAssigneeRepository.deleteById(taskAssignee.getId());
+        taskAssigneeRepository.save(taskAssignee);
         return TaskAssigneeResponse.builder()
                 .id(taskAssignee.getId())
                 .user(userMapper.toUserResponse(taskAssignee.getUser()))
