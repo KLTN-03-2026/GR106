@@ -139,7 +139,10 @@ public enum ErrorCode {
     FEATURE_NOT_AVAILABLE(403, "Tính năng này không có trong gói đăng ký hiện tại",HttpStatus.FORBIDDEN),
     PLOT_LIMIT_EXCEEDED(403, "Đã đạt giới hạn số lô đất của gói đăng ký",HttpStatus.FORBIDDEN),
     MEMBER_LIMIT_EXCEEDED(403, "Đã đạt giới hạn số thành viên của gói đăng ký",HttpStatus.FORBIDDEN),
-    PLAN_STAGE_IS_TERMINAL(409,"Gia đoạn này đã kết thúc" ,HttpStatus.CONFLICT ),;
+    PLAN_STAGE_IS_TERMINAL(409,"Gia đoạn này đã kết thúc" ,HttpStatus.CONFLICT ),
+    TASK_HAS_REFERENCE(409,"Công việc đã được chấm công hoặc đã được báo cáo (không thể xoá công việc)" ,HttpStatus.CONFLICT   ),
+    TASK_IS_TERMINAL_OR_EXPIRED_CANNOT_DELETE(409,"Không thể xoá công việc vì công việc đã kết thúc" ,HttpStatus.CONFLICT   ),
+    TASK_EXPIRED_CANNOT_ASSIGN(409,"Công việc đã hết hạn, không thể giao việc" ,HttpStatus.CONFLICT );
 
 
 

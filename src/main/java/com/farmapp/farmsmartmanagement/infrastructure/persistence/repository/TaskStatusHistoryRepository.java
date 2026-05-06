@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface TaskStatusHistoryRepository extends JpaRepository<TaskStatusHistoryEntity, UUID> {
     List<TaskStatusHistoryEntity> findAllByTask_Id(UUID taskId);
+
+    void deleteByTask_Id(UUID taskId);
 }

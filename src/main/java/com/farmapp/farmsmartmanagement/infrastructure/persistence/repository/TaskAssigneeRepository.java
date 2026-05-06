@@ -42,4 +42,8 @@ public interface TaskAssigneeRepository extends JpaRepository<TaskAssigneeEntity
     Optional<TaskAssigneeEntity> findByIdAndTaskIsNotTerminal(UUID assigneeId, UUID taskId);
 
     boolean existsByTask_IdAndUser_IdAndRemovedAtIsNull(UUID taskId, UUID employeeId);
+
+    void deleteByTask_Id(UUID taskId);
+
+    TaskAssigneeEntity findByTask_IdAndUser_Id(UUID id, UUID id1);
 }

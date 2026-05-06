@@ -9,4 +9,6 @@ import java.util.UUID;
 
 public interface TaskSkipDayRepository extends JpaRepository<TaskSkipDayEntity, UUID> {
     boolean existsByTask_IdAndSkipDate(UUID taskId, @NotNull(message = "Ngày làm việc không được để trống") LocalDate workDate);
+
+    void deleteByTask_Id(UUID taskId);
 }

@@ -1,7 +1,9 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskEntity;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -91,4 +93,18 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
     """)
     boolean existsByIdAndStatusIsNotTerminalAndPlanStageStatusIsNotTerminal(UUID taskId);
 
+    @Query(value = """
+            SELECT CASE
+            WHEN EXISTS (SELECT 1 FROM work_logs wl WHERE wl.task_id = :taskId)
+                OR EXISTS (SELECT 1 FROM warehouse_transactions wt WHERE wt.ref_task_id = :taskId)
+                OR EXISTS (SELECT 1 FROM disease_reports dr WHERE dr.task_id = :taskId)
+            THEN true
+            ELSE false
+            END
+        """, nativeQuery = true)
+    boolean existsAnyReference(UUID taskId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT t FROM TaskEntity t WHERE t.id = :id")
+    Optional<TaskEntity> findByIdForUpdate(@Param("id") UUID id);
 }
