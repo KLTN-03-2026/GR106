@@ -64,4 +64,9 @@ public class PlanStageEntity {
     @Column(name = "deleted_at")
     Instant deletedAt;
 
+    @Column(name = "actual_end_date")
+    LocalDate actualEndDate;
+
+    @Column(name = "actual_start_date")
+    LocalDate actualStartDate;
 }
