@@ -244,7 +244,10 @@ public class WorkLogService {
 
         // 3. Task chưa ở trạng thái terminal
         if (task.getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.TASK_IS_TERMINAL);
+            throw new AppException(ErrorCode.TASK_ALREADY_TERMINAL);
+
+        if(task.getActualEndDate()!=null && LocalDate.now().isAfter(task.getActualEndDate()))
+            throw new AppException(ErrorCode.TASK_ALREADY_EXPIRED);
 
         // 4. Employee được assign vào task và chưa bị remove
         if (!taskAssigneeRepository.existsByTask_IdAndUser_IdAndRemovedAtIsNull(taskId, employeeId))

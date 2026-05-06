@@ -54,7 +54,7 @@ public class PlanStageStatusService {
 
     public List<PlanStageStatusHistoryResponse> findAllPlanStageStatusHistory(UUID planId, UUID stageId) {
         PlanStageEntity stage = planStageRepository
-                .findByIdAndPlanIdAndStatusIsNotTerminal(stageId, planId)
+                .findByIdAndPlanId(stageId, planId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
 
         return planStageStatusHistoryMapper.toResponses(
@@ -71,32 +71,61 @@ public class PlanStageStatusService {
     }
 
     @Transactional
-    public PlanStageStatusHistoryResponse updatePlanStageStatus(UUID planId, UUID stageId, UUID toStatusId) {
+    public PlanStageStatusHistoryResponse updatePlanStageStatus(
+            UUID planId, UUID stageId, UUID toStatusId) {
+
         UUID farmId = securityUtils.getCurrentFarmId();
-        FarmEntity farm = farmRepository.getReferenceById(securityUtils.getCurrentFarmId());
+        FarmEntity farm = farmRepository.getReferenceById(farmId);
         UserEntity changedBy = userRepository.getReferenceById(securityUtils.getCurrentUserId());
 
+        // 1. Lock row — tránh race condition
         PlanStageEntity stage = planStageRepository
-                .findByIdAndPlanIdAndStatusIsNotTerminal(stageId, planId)
+                .findByIdForUpdate(stageId, planId, farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
 
+        // 2. Kiểm tra stage đã terminal chưa
         PlanStageStatusEntity currentStatus = stage.getStatus();
-        PlanStageStatusEntity toStatus = planStageStatusRepository.findById(toStatusId)
+        if (currentStatus.getIsTerminal())
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
+
+        // 3. Kiểm tra actualEndDate — stage đã kết thúc thực tế
+        if (stage.getActualEndDate() != null
+                && LocalDate.now().isAfter(stage.getActualEndDate()))
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
+
+        // 4. Kiểm tra toStatus tồn tại
+        PlanStageStatusEntity toStatus = planStageStatusRepository
+                .findById(toStatusId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_STATUS_NOT_FOUND));
 
-        planStageStatusTransitionRepository.findByFarm_IdAndFromStatus_IdAndToStatus_Id(
-                farmId, currentStatus.getId(), toStatus.getId()
-        ).orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_STATUS_TRANSITION_NOT_FOUND));
+        // 5. Kiểm tra transition hợp lệ (kể cả global farm_id IS NULL)
+        if (!planStageStatusTransitionRepository
+                .existsByFromAndToStatus(farmId, currentStatus.getId(), toStatus.getId()))
+            throw new AppException(ErrorCode.PLAN_STAGE_STATUS_TRANSITION_NOT_FOUND);
 
+        // 6. Set actualStartDate khi bắt đầu thực sự (initial → non-initial)
+        if (currentStatus.getIsInitial() && !toStatus.getIsInitial()
+                && stage.getActualStartDate() == null) {
+
+            if (planStageRepository.existsByPlanIdAndDateBetweenStartAndEndWithoutId(
+                    planId, LocalDate.now(), stage.getId()))
+                throw new AppException(ErrorCode.PLAN_STAGE_CANNOT_START_CAUSE_STAGE_IN_FUTURE);
+
+            stage.setActualStartDate(LocalDate.now());
+        }
+
+        // 7. Set actualEndDate khi terminal
+        if (toStatus.getIsTerminal()) {
+            if (stage.getActualStartDate() == null)
+                stage.setActualStartDate(LocalDate.now());
+
+            stage.setActualEndDate(LocalDate.now());
+        }
+
+        // 8. Update status
         stage.setStatus(toStatus);
 
-        if(currentStatus.getIsTerminal() && stage.getActualStartDate() == null)
-            stage.setActualStartDate(LocalDate.now());
-
-
-        if(toStatus.getIsTerminal())
-            stage.setActualEndDate(LocalDate.now());
-
+        // 9. Ghi lịch sử
         PlanStageStatusHistoryEntity history = new PlanStageStatusHistoryEntity();
         history.setPlanStage(stage);
         history.setFarm(farm);
@@ -105,6 +134,7 @@ public class PlanStageStatusService {
         history.setChangedBy(changedBy);
         history.setChangedAt(Instant.now());
 
-        return planStageStatusHistoryMapper.toResponse(planStageStatusHistoryRepository.save(history));
+        return planStageStatusHistoryMapper.toResponse(
+                planStageStatusHistoryRepository.save(history));
     }
 }

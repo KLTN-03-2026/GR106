@@ -56,6 +56,12 @@ public class TaskEntity {
     @Column(name = "end_date")
     LocalDate endDate;
 
+    @Column(name = "actual_start_date")
+    LocalDate actualStartDate;
+
+    @Column(name = "actual_end_date")
+    LocalDate actualEndDate;
+
     @Column(name = "progress_percent", nullable = false)
     BigDecimal progressPercent = BigDecimal.ZERO;
 

@@ -100,7 +100,7 @@ public enum ErrorCode {
     UNIT_NOT_FOUND(404,"Không tìm thấy đơn vị" ,HttpStatus.NOT_FOUND ),
     SUPPLIER_NOT_FOUND(404,"Không tìm thấy nhà cung cấp" ,HttpStatus.NOT_FOUND ),
     SKU_NOT_FOUND(404,"Không tìm thấy mã vật tư" , HttpStatus.NOT_FOUND),
-    TASK_IS_TERMINAL(409,"Công việc đã kết thúc" ,HttpStatus.CONFLICT ),
+    TASK_ALREADY_TERMINAL(409,"Công việc đã kết thúc" ,HttpStatus.CONFLICT ),
     TASK_MATERIAL_ALREADY_EXISTS(409, "Vật tư này đã được thêm vào task, vui lòng cập nhật số lượng thay vì thêm mới",  HttpStatus.CONFLICT ),
     INSUFFICIENT_STOCK_FOR_PLAN(409, "Số lượng tồn kho không đủ cho kế hoạch", HttpStatus.CONFLICT),
 
@@ -139,7 +139,7 @@ public enum ErrorCode {
     FEATURE_NOT_AVAILABLE(403, "Tính năng này không có trong gói đăng ký hiện tại",HttpStatus.FORBIDDEN),
     PLOT_LIMIT_EXCEEDED(403, "Đã đạt giới hạn số lô đất của gói đăng ký",HttpStatus.FORBIDDEN),
     MEMBER_LIMIT_EXCEEDED(403, "Đã đạt giới hạn số thành viên của gói đăng ký",HttpStatus.FORBIDDEN),
-    PLAN_STAGE_IS_TERMINAL(409,"Gia đoạn này đã kết thúc" ,HttpStatus.CONFLICT ),
+    PLAN_STAGE_ALREADY_TERMINAL(409,"Gia đoạn này đã kết thúc" ,HttpStatus.CONFLICT ),
     TASK_HAS_REFERENCE(409,"Công việc đã được chấm công hoặc đã được báo cáo (không thể xoá công việc)" ,HttpStatus.CONFLICT   ),
     TASK_IS_TERMINAL_OR_EXPIRED_CANNOT_DELETE(409,"Không thể xoá công việc vì công việc đã kết thúc" ,HttpStatus.CONFLICT   ),
     TASK_EXPIRED_CANNOT_ASSIGN(409,"Công việc đã hết hạn, không thể giao việc" ,HttpStatus.CONFLICT ),
@@ -149,7 +149,10 @@ public enum ErrorCode {
     CROP_STAGE_NOT_FOUND(404, "Không tìm thấy giai đoạn của cây trồng" ,HttpStatus.NOT_FOUND ),
     CROP_STAGE_NOT_BELONG_TO_PLAN_CROP(403,"Giai đoạn cây trồng này không thuộc cây trồng trong kế hoạch" ,HttpStatus.FORBIDDEN ),
     PLAN_PLOT_NOT_FOUND(404,"Không tìm thấy lô đất được gán vào kế hoạch" , HttpStatus.NOT_FOUND),
-    PLOT_IS_USING_BY_TASK(409,"Lô đất đang được sử dụng bởi công việc" ,HttpStatus.CONFLICT),;
+    PLOT_IS_USING_BY_TASK(409,"Lô đất đang được sử dụng bởi công việc" ,HttpStatus.CONFLICT),
+    PLAN_STAGE_CANNOT_START_CAUSE_STAGE_IN_FUTURE(409,"Giai đoạn không thể bắt đầu vì nó nằm ở tương lai" ,HttpStatus.CONFLICT),
+    TASK_ALREADY_EXPIRED(409,"Công việc đã quá hạn" , HttpStatus.CONFLICT),
+    TASK_DEPENDENCY_CIRCULAR_NOT_ALLOWED(409,"Công việc phụ thuộc bị nối vòng" ,HttpStatus.CONFLICT ),;
 
 
 

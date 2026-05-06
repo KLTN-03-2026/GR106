@@ -10,6 +10,7 @@ import com.farmapp.farmsmartmanagement.modules.task.dto.request.UpdateTaskReques
 import com.farmapp.farmsmartmanagement.modules.task.dto.request.UpdateTaskTimeRequest;
 import com.farmapp.farmsmartmanagement.modules.task.dto.response.TaskResponse;
 import com.farmapp.farmsmartmanagement.modules.task.mapper.TaskMapper;
+import com.farmapp.farmsmartmanagement.modules.task.validation.TaskValidator;
 import jakarta.persistence.EntityManager;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +48,8 @@ public class TaskService {
     TaskAssigneeRepository taskAssigneeRepository;
     DiseaseReportRepository diseaseReportRepository;
 
+    TaskValidator taskValidator;
+
     TaskMapper taskMapper;
     SecurityUtils securityUtils;
 
@@ -71,7 +74,7 @@ public class TaskService {
                 .orElseThrow(() -> new AppException(ErrorCode.FORBIDDEN));
 
         if(planStage.getStatus().getIsTerminal() || LocalDate.now().isBefore(planStage.getStartDate()))
-            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
 
         // check ownership
         if (!planStage.getPlan().getFarm().getId().equals(farmId)) {
@@ -125,8 +128,18 @@ public class TaskService {
                 .findByIdAndPlanIdAndPlan_Farm_Id(planStageId, planId, farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
 
+        // 1. Stage đã terminal
+        if (planStage.getStatus().getIsTerminal())
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
+
+        // 2. Stage đã qua actualEndDate (đã kết thúc thực tế)
+        if (planStage.getActualEndDate() != null
+                && LocalDate.now().isAfter(planStage.getActualEndDate()))
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
+        // Không kiểm tra endDate vì thực tế có thể làm trễ hơn
+
         if(planStage.getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
 
         if (request.getStartDate() != null && request.getEndDate() != null) {
             if (request.getStartDate().isBefore(planStage.getStartDate()) ||
@@ -135,8 +148,7 @@ public class TaskService {
             }
         }
 
-        TaskEntity task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));
+        TaskEntity task = taskValidator.validateTerminationAndExpiredAndGetTask(taskId);
 
         // Lớp 1: Bảo vệ lost update giữa các session — client phải gửi đúng version hiện tại
         if (!task.getVersion().equals(request.getVersion())) {
@@ -191,8 +203,15 @@ public class TaskService {
                 .findByIdAndPlanId(planStageId,planId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
 
-        if(planStage.getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
+        // 1. Stage đã terminal
+        if (planStage.getStatus().getIsTerminal())
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
+
+        // 2. Stage đã qua actualEndDate (đã kết thúc thực tế)
+        if (planStage.getActualEndDate() != null
+                && LocalDate.now().isAfter(planStage.getActualEndDate()))
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
+        // Không kiểm tra endDate vì thực tế có thể làm trễ hơn
 
         // check ownership
         if (!planStage.getPlan().getFarm().getId().equals(farmId)) {

@@ -27,7 +27,9 @@ public class TaskResponse {
     String description;
 
     LocalDate startDate;
+    LocalDate actualStartDate;
     LocalDate endDate;
+    LocalDate actualEndDate;
 
     BigDecimal progressPercent;
 

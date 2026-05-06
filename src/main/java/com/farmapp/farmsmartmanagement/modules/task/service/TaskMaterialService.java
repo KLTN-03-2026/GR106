@@ -3,6 +3,7 @@ package com.farmapp.farmsmartmanagement.modules.task.service;
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanStageEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskMaterialEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.WarehouseItemEntity;
@@ -16,6 +17,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -51,8 +53,23 @@ public class TaskMaterialService {
                 .findByIdAndStageIdAndPlanIdAndStatusIsNotTerminal(taskId,stageId,planId)
                 .orElseThrow(()->new AppException(ErrorCode.TASK_NOT_FOUND_OR_TASK_IS_TERMINAL));
 
-        if(task.getPlanStage().getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
+        if(task.getStatus().getIsTerminal())
+            throw new AppException(ErrorCode.TASK_ALREADY_TERMINAL);
+
+        if(task.getActualEndDate() != null && LocalDate.now().isAfter(task.getActualEndDate()))
+            throw new AppException(ErrorCode.TASK_ALREADY_EXPIRED);
+
+        // 3. Kiểm tra plan stage chưa terminal
+        PlanStageEntity planStage = task.getPlanStage();
+        // 1. Stage đã terminal
+        if (planStage.getStatus().getIsTerminal())
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
+
+        // 2. Stage đã qua actualEndDate (đã kết thúc thực tế)
+        if (planStage.getActualEndDate() != null
+                && LocalDate.now().isAfter(planStage.getActualEndDate()))
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
+        // Không kiểm tra endDate vì thực tế có thể làm trễ hơn
 
         // Vật tư là nullable = true
         WarehouseItemEntity warehouseItem = null;
@@ -62,7 +79,7 @@ public class TaskMaterialService {
                     .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_ITEM_NOT_FOUND));
 
             if(taskMaterialRepository.existsByTask_IdAndWarehouseItem_Id(task.getId(), request.getWarehouseItemId()))
-                throw new AppException(ErrorCode.TASK_IS_TERMINAL);
+                throw new AppException(ErrorCode.TASK_ALREADY_TERMINAL);
         }
 
 //        if(task.getStatus().getIsTerminal().equals(true))

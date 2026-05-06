@@ -7,7 +7,6 @@ import com.farmapp.farmsmartmanagement.domain.enums.PlanStageSource;
 import com.farmapp.farmsmartmanagement.domain.enums.PlanStatus;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
-import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanStageFromTemplateRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanStageRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdatePlanStageRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdatePlanStageTimeRequest;
@@ -203,7 +202,7 @@ public class PlanStageService {
             throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_EXISTS);
 
         if(stage.getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
 
         planStageMapper.updateEntityFromRequest(request, stage);
 
@@ -239,7 +238,7 @@ public class PlanStageService {
             throw new AppException(ErrorCode.PLAN_STAGE_NOT_COVER_TASK);
 
         if(planStage.getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
 
         planStage.setStartDate(request.getStartDate());
         planStage.setEndDate(request.getEndDate());

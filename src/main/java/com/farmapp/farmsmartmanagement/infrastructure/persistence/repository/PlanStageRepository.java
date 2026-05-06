@@ -1,8 +1,10 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanStageEntity;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -38,7 +40,7 @@ public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID
     AND p.id        <> :stageId
     AND p.deletedAt IS NULL
     AND :startDate <= COALESCE(p.actualEndDate, p.endDate)
-    AND :endDate   >= p.startDate
+    AND :endDate   >= COALESCE(p.actualStartDate, p.startDate)
 """)
     boolean existsOverlappingWithoutId(
             @Param("planId")    UUID planId,
@@ -89,4 +91,33 @@ public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID
     Optional<PlanStageEntity> findByIdAndPlanIdAndDeletedAtIsNull(UUID stageId, UUID planId);
 
     List<PlanStageEntity> findAllByPlanIdAndDeletedAtIsNullOrderByStartDateAsc(UUID planId);
+
+    @Query("""
+        SELECT CASE WHEN EXISTS (
+            SELECT 1
+            FROM PlanStageEntity p
+            WHERE p.plan.id = :planId
+              AND p.id <> :planStageId
+              AND :date >= COALESCE(p.actualStartDate, p.startDate)
+              AND :date <= COALESCE(p.actualEndDate, p.endDate)
+              AND p.deletedAt IS NULL
+        ) THEN true ELSE false END
+    """)
+    boolean existsByPlanIdAndDateBetweenStartAndEndWithoutId(
+            @Param("planId") UUID planId,
+            @Param("date") LocalDate date,
+            @Param("planStageId") UUID planStageId
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+    SELECT ps FROM PlanStageEntity ps
+    WHERE ps.id = :id
+      AND ps.plan.id = :planId
+      AND ps.plan.farm.id = :farmId
+    """)
+    Optional<PlanStageEntity> findByIdForUpdate(
+            @Param("id") UUID id,
+            @Param("planId") UUID planId,
+            @Param("farmId") UUID farmId);
 }

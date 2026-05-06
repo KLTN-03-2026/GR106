@@ -3,9 +3,9 @@ package com.farmapp.farmsmartmanagement.modules.task.service;
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanStageEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskAssigneeEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskEntity;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskMaterialEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.UserEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
 import com.farmapp.farmsmartmanagement.modules.task.dto.request.CreateTaskAssigneeRequest;
@@ -61,8 +61,23 @@ public class TaskAssigneeService {
                 .findByIdAndStageIdAndPlanIdAndStatusIsNotTerminal(taskId, stageId, planId)
                 .orElseThrow(()-> new AppException(ErrorCode.TASK_NOT_FOUND));
 
-        if(task.getPlanStage().getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
+        if(task.getStatus().getIsTerminal())
+            throw new AppException(ErrorCode.TASK_ALREADY_TERMINAL);
+
+        if(task.getActualEndDate()!=null && LocalDate.now().isAfter(task.getActualEndDate()))
+            throw new AppException(ErrorCode.TASK_ALREADY_EXPIRED);
+
+        // 3. Kiểm tra plan stage chưa terminal
+        PlanStageEntity planStage = task.getPlanStage();
+        // 1. Stage đã terminal
+        if (planStage.getStatus().getIsTerminal())
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
+
+        // 2. Stage đã qua actualEndDate (đã kết thúc thực tế)
+        if (planStage.getActualEndDate() != null
+                && LocalDate.now().isAfter(planStage.getActualEndDate()))
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
+        // Không kiểm tra endDate vì thực tế có thể làm trễ hơn
 
         UserEntity user = userRepository
                 .findById(request.getUserId())
@@ -130,7 +145,7 @@ public class TaskAssigneeService {
                 .orElseThrow(()->new AppException(ErrorCode.TASK_ASSIGNEE_NOT_FOUND_OR_TASK_IS_TERMINAL));
 
         if(taskAssignee.getTask().getPlanStage().getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
 
         taskAssignee.setRemovalReason(request.getRemovalReason()!=null?request.getRemovalReason():"");
         taskAssignee.setRemovedBy(userRepository.getReferenceById(securityUtils.getCurrentUserId()));

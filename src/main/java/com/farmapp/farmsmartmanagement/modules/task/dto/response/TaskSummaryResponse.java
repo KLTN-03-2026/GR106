@@ -17,6 +17,8 @@ public class TaskSummaryResponse {
     String name;
     Long version;
     LocalDate startDate;
+    LocalDate actualStartDate;
     LocalDate endDate;
+    LocalDate actualEndDate;
     TaskStatusResponse status;
 }

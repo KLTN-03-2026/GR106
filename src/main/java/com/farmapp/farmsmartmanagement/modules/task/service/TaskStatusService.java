@@ -18,7 +18,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,7 +51,7 @@ public class TaskStatusService {
     public List<TaskStatusHistoryResponse> findAllTaskStatusHistory(UUID planId, UUID stageId, UUID taskId){
 
         TaskEntity task = taskRepository
-                .findByIdAndStageIdAndPlanIdAndStatusIsNotTerminal(taskId,stageId, planId)
+                .findByIdAndPlanStage_IdAndPlan_Id(taskId,stageId, planId)
                 .orElseThrow(()->new AppException(ErrorCode.TASK_NOT_FOUND));
 
         return taskStatusHistoryMapper.toResponses(taskStatusHistoryRepository.findAllByTask_Id(task.getId()));
@@ -73,38 +75,74 @@ public class TaskStatusService {
     }
 
     @Transactional
-    public TaskStatusHistoryResponse updateTaskStatus(UUID planId, UUID stageId, UUID taskId, UUID taskStatusId){
-        UUID farmId = securityUtils.getCurrentFarmId();
+    public TaskStatusHistoryResponse updateTaskStatus(
+            UUID planId, UUID stageId, UUID taskId, UUID taskStatusId) {
 
+        UUID farmId = securityUtils.getCurrentFarmId();
         UserEntity changedBy = userRepository.getReferenceById(securityUtils.getCurrentUserId());
 
+        // 1. Lock row — tránh race condition
         TaskEntity task = taskRepository
-                .findByIdAndStageIdAndPlanIdAndStatusIsNotTerminal(taskId,stageId,planId)
-                .orElseThrow(()->new AppException(ErrorCode.TASK_NOT_FOUND));
+                .findByIdForUpdate(taskId, stageId, planId, farmId)
+                .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));
 
-        if(task.getPlanStage().getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
-
+        // 2. Kiểm tra task đã terminal chưa
         TaskStatusEntity currentStatus = task.getStatus();
+        if (currentStatus.getIsTerminal() || LocalDate.now().isAfter(task.getEndDate()))
+            throw new AppException(ErrorCode.TASK_ALREADY_TERMINAL);
 
+        // 3. Kiểm tra plan stage chưa terminal
+        PlanStageEntity planStage = task.getPlanStage();
+        // 1. Stage đã terminal
+        if (planStage.getStatus().getIsTerminal())
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
+
+        // 2. Stage đã qua actualEndDate (đã kết thúc thực tế)
+        if (planStage.getActualEndDate() != null
+                && LocalDate.now().isAfter(planStage.getActualEndDate()))
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
+        // Không kiểm tra endDate vì thực tế có thể làm trễ hơn
+
+
+        // 4. Kiểm tra toStatus tồn tại
         TaskStatusEntity toStatus = taskStatusRepository
                 .findById(taskStatusId)
-                .orElseThrow(()->new AppException(ErrorCode.TASK_STATUS_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.TASK_STATUS_NOT_FOUND));
 
-        TaskStatusTransitionEntity existStatusTransition = taskStatusTransitionRepository
-                .findByFarm_IdAndFromStatus_IdAndToStatus_Id(farmId, currentStatus.getId(), toStatus.getId())
-                .orElseThrow(()->new AppException(ErrorCode.TASK_STATUS_TRANSITION_NOT_FOUND));
+        // 5. Kiểm tra transition hợp lệ (kể cả global farm_id IS NULL)
+        if (!taskStatusTransitionRepository
+                .existsByFromAndToStatus(farmId, currentStatus.getId(), toStatus.getId()))
+            throw new AppException(ErrorCode.TASK_STATUS_TRANSITION_NOT_FOUND);
 
+        // 6. Set actualStartDate khi bắt đầu thực sự (initial → non-initial)
+        if (currentStatus.getIsInitial() && !toStatus.getIsInitial()
+                && task.getActualStartDate() == null) {
+            task.setActualStartDate(LocalDate.now());
+        }
+
+        // 7. Set actualEndDate và progress = 100 khi terminal
+        if (toStatus.getIsTerminal()) {
+            if (task.getActualStartDate() == null)
+                task.setActualStartDate(LocalDate.now());
+
+            task.setActualEndDate(LocalDate.now());
+            task.setCompletedAt(Instant.now());
+            task.setProgressPercent(new BigDecimal("100"));
+        }
+
+        // 8. Update status
         task.setStatus(toStatus);
 
-        TaskStatusHistoryEntity taskStatusHistory = new TaskStatusHistoryEntity();
-        taskStatusHistory.setTask(task);
-        taskStatusHistory.setFromStatus(currentStatus);
-        taskStatusHistory.setToStatus(toStatus);
-        taskStatusHistory.setChangedBy(changedBy);
-        taskStatusHistory.setChangedAt(Instant.now());
+        // 9. Ghi lịch sử
+        TaskStatusHistoryEntity history = new TaskStatusHistoryEntity();
+        history.setTask(task);
+        history.setFromStatus(currentStatus);
+        history.setToStatus(toStatus);
+        history.setChangedBy(changedBy);
+        history.setChangedAt(Instant.now());
 
-        return taskStatusHistoryMapper.toResponse(taskStatusHistoryRepository.save(taskStatusHistory));
+        return taskStatusHistoryMapper.toResponse(
+                taskStatusHistoryRepository.save(history));
     }
 
 }

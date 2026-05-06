@@ -27,13 +27,13 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
 
     @Query("""
     SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END
-    FROM TaskEntity t
-    WHERE t.planStage.id = :planStageId
-    AND (
-        t.startDate < :stageStartDate
-        OR t.endDate > :stageEndDate
-    )
-""")
+        FROM TaskEntity t
+        WHERE t.planStage.id = :planStageId
+        AND (
+            COALESCE(t.actualStartDate, t.startDate) < :stageStartDate
+            OR COALESCE(t.actualEndDate, t.endDate) > :stageEndDate
+        )
+    """)
     boolean existsTaskOutsideStage(
             @Param("planStageId") UUID planStageId,
             @Param("stageStartDate") LocalDate stageStartDate,
@@ -107,6 +107,20 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT t FROM TaskEntity t WHERE t.id = :id")
     Optional<TaskEntity> findByIdForUpdate(@Param("id") UUID id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+    SELECT t FROM TaskEntity t
+    WHERE t.id            = :taskId
+      AND t.planStage.id  = :stageId
+      AND t.planStage.plan.id = :planId
+      AND t.farm.id       = :farmId
+    """)
+    Optional<TaskEntity> findByIdForUpdate(
+            @Param("taskId")  UUID taskId,
+            @Param("stageId") UUID stageId,
+            @Param("planId")  UUID planId,
+            @Param("farmId")  UUID farmId);
 
     List<TaskEntity> findAllByPlanStage_IdAndDeletedAtIsNull(UUID stageId);
     @Query("""
