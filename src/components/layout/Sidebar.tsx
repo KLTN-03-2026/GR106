@@ -99,7 +99,7 @@ export default function Sidebar({
 
   const filterItem = (item: { key: string; roles?: string[] }) => {
     if (!currentFarmId) {
-      return ["dashboard", "tree", "wallet", "gemini", "subscription"].includes(item.key);
+      return ["dashboard", "tree", "wallet", "gemini"].includes(item.key);
     }
     if (!item.roles) return true;
     if (!effectiveRole) return false;
