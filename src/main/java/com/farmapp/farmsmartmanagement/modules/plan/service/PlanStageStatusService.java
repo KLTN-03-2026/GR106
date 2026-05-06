@@ -89,6 +89,13 @@ public class PlanStageStatusService {
 
         stage.setStatus(toStatus);
 
+        if(currentStatus.getIsTerminal() && stage.getActualStartDate() == null)
+            stage.setActualStartDate(LocalDate.now());
+
+
+        if(toStatus.getIsTerminal())
+            stage.setActualEndDate(LocalDate.now());
+
         PlanStageStatusHistoryEntity history = new PlanStageStatusHistoryEntity();
         history.setPlanStage(stage);
         history.setFarm(farm);
