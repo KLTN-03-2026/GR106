@@ -111,8 +111,7 @@ function ActualOverlay({
 
   const barH = rowHeight * 0.6;
   const markerH = rowHeight * 0.9;
-  const dimOpacity = 0.28;
-  const dimColor = '#475569';
+
 
   // ── Pins ─────────────────────────────────────────────────────────────────
   const pins: { kind: 'start' | 'end'; pxInBar: number; dateLabel: string }[] = [];
@@ -171,9 +170,9 @@ function ActualOverlay({
             width: Math.max(2, seg.width),
             top: topOffset,
             height: barH,
-            backgroundColor: dimColor,
-            opacity: dimOpacity,
-            borderRadius: 3,
+            backgroundColor: 'rgba(82, 100, 120, 0.25)', // Màu nền slate nhạt, chuyên nghiệp hơn
+            border: '1px solid #94a3b8', // Thêm border solid theo yêu cầu
+            borderRadius: 10,
           }}
         />
       ))}
@@ -1176,13 +1175,14 @@ export function PlanTimeline({
                 const ph = r.item as Phase;
                 // ─── DEV MOCK: xóa khối này sau khi test xong ──────────────
                 // Inject actual dates vào phase ĐẦU TIÊN để test visual
+              
                 const _phWithActual = rows.filter(x => x.type === 'phase')[0]?.id === r.id
-                  ? {
-                    ...ph,
-                    actualStartDate: ph.actualStartDate,  // bắt đầu trễ 5 ngày
-                    actualEndDate: ph.actualEndDate,      // kết thúc sớm 3 ngày
-                  }
-                  : ph;
+  ? {
+      ...ph,
+      actualStartDate: addDays(ph.startDate, -10),  // trễ 5 ngày so với planned
+      actualEndDate: addDays(ph.endDate, -3),     // sớm 3 ngày
+    }
+  : ph;
                 const phFinal = _phWithActual;
                 // ─── END DEV MOCK ───────────────────────────────────────────
                 const ps = previewStyle(r.planId, phFinal.id, 'phase', phFinal.startDate, phFinal.endDate);
