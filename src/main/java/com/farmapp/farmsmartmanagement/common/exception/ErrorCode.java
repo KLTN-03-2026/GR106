@@ -142,7 +142,14 @@ public enum ErrorCode {
     PLAN_STAGE_IS_TERMINAL(409,"Gia đoạn này đã kết thúc" ,HttpStatus.CONFLICT ),
     TASK_HAS_REFERENCE(409,"Công việc đã được chấm công hoặc đã được báo cáo (không thể xoá công việc)" ,HttpStatus.CONFLICT   ),
     TASK_IS_TERMINAL_OR_EXPIRED_CANNOT_DELETE(409,"Không thể xoá công việc vì công việc đã kết thúc" ,HttpStatus.CONFLICT   ),
-    TASK_EXPIRED_CANNOT_ASSIGN(409,"Công việc đã hết hạn, không thể giao việc" ,HttpStatus.CONFLICT );
+    TASK_EXPIRED_CANNOT_ASSIGN(409,"Công việc đã hết hạn, không thể giao việc" ,HttpStatus.CONFLICT ),
+    PLAN_IS_TERMINAL(409,"Kế hoạch đã kết thúc" ,HttpStatus.CONFLICT ),
+    PLAN_STAGE_HAS_HARVEST_RECORD(409,"Giai đoạn này đã có dữ liệu thu hoạch" ,HttpStatus.CONFLICT ),
+    PLAN_STAGE_HAS_LOCKED_WORK_LOG(409,"Giai đoạn này đã có chấm công bị khoá" ,HttpStatus.CONFLICT ),
+    CROP_STAGE_NOT_FOUND(404, "Không tìm thấy giai đoạn của cây trồng" ,HttpStatus.NOT_FOUND ),
+    CROP_STAGE_NOT_BELONG_TO_PLAN_CROP(403,"Giai đoạn cây trồng này không thuộc cây trồng trong kế hoạch" ,HttpStatus.FORBIDDEN ),
+    PLAN_PLOT_NOT_FOUND(404,"Không tìm thấy lô đất được gán vào kế hoạch" , HttpStatus.NOT_FOUND),
+    PLOT_IS_USING_BY_TASK(409,"Lô đất đang được sử dụng bởi công việc" ,HttpStatus.CONFLICT),;
 
 
 

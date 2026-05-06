@@ -4,10 +4,10 @@ import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
 import com.farmapp.farmsmartmanagement.domain.enums.PlanStageSource;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanEntity;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanStageEntity;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanStageStatusEntity;
+import com.farmapp.farmsmartmanagement.domain.enums.PlanStatus;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
+import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanStageFromTemplateRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.CreatePlanStageRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdatePlanStageRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdatePlanStageTimeRequest;
@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,6 +37,10 @@ public class PlanStageService {
     PlanStageStatusRepository planStageStatusRepository;
     FarmRepository farmRepository;
     TaskRepository taskRepository;
+    DiseaseReportRepository diseaseReportRepository;
+    WorkLogRepository workLogRepository;
+    HarvestRecordRepository harvestRecordRepository;
+    CropStageRepository cropStageRepository;
 
 
     PlanStageMapper planStageMapper;
@@ -50,144 +55,191 @@ public class PlanStageService {
     }
 
 
+    // =========================================================================
+    // READ
+    // =========================================================================
+
     @Transactional(readOnly = true)
-    public List<PlanStageResponse> findAllByPlanId(UUID planId){
+    public List<PlanStageResponse> findAllByPlanId(UUID planId) {
         UUID farmId = securityUtils.getCurrentFarmId();
 
-        if(!planRepository.existsByIdAndFarm_Id(planId, farmId))
-            throw new AppException(ErrorCode.FARM_NOT_FOUND);
+        getPlanOrThrow(planId, farmId);   // validate ownership
 
-        PlanEntity plan = planRepository.findById(planId)
-                .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
-
-        if (!plan.getFarm().getId().equals(farmId)) {
-            throw new AppException(ErrorCode.PLAN_NOT_FOUND);
-        }
-
-        return planStageMapper.toResponses(planStageRepository.findAllByPlanId(planId));
-    }
-
-    public PlanStageResponse findByIdAndPlanId(UUID id, UUID planId){
-        return planStageMapper.toResponse(
-                planStageRepository
-                        .findByIdAndPlanId(id,planId)
-                        .orElseThrow(()-> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND))
+        return planStageMapper.toResponses(
+                planStageRepository.findAllByPlanIdAndDeletedAtIsNullOrderByStartDateAsc(planId)
         );
     }
-    // plan -> previousStage(orderIndex) -> status -> save
-    @Transactional
-    public PlanStageResponse createPlanStageCustom(UUID planId, CreatePlanStageRequest request){
 
+    @Transactional(readOnly = true)
+    public PlanStageResponse findByIdAndPlanId(UUID stageId, UUID planId) {
         UUID farmId = securityUtils.getCurrentFarmId();
 
-        PlanEntity plan = planRepository.findByIdAndFarm_Id(planId,farmId)
-                .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
+        getPlanOrThrow(planId, farmId);
 
-        if (!plan.getFarm().getId().equals(farmId)) {
-            throw new AppException(ErrorCode.PLAN_NOT_FOUND);
-        }
+        return planStageMapper.toResponse(
+                getStageOrThrow(stageId, planId)
+        );
+    }
 
-        if(planStageRepository.existsByPlanIdAndNameAndDeletedAtIsNull(planId, request.getName()))
+    // =========================================================================
+    // CREATE — CUSTOM
+    // =========================================================================
+
+    @Transactional
+    public PlanStageResponse createPlanStageCustom(UUID planId,
+                                                   CreatePlanStageRequest request) {
+        UUID farmId = securityUtils.getCurrentFarmId();
+
+        PlanEntity plan = getPlanOrThrow(planId, farmId);
+
+        // Plan không được ở trạng thái terminal
+        checkPlanNotTerminal(plan);
+
+        // Tên không được trùng trong plan
+        if (planStageRepository.existsByPlanIdAndNameAndDeletedAtIsNull(planId, request.getName()))
             throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_EXISTS);
 
-        if(plan.getStartDate().isAfter(request.getStartDate())
-                || plan.getEndDate().isBefore(request.getEndDate()))
-            throw new AppException(ErrorCode.PLAN_STAGE_TIME_MUST_BE_IN_PLAN_TIME);
+        // startDate / endDate phải nằm trong plan
+        checkDatesWithinPlan(plan, request.getStartDate(), request.getEndDate());
 
-        if(planStageRepository.existsOverlapping(planId, request.getStartDate(), request.getEndDate()))
+        // Không được overlap với stage khác (bỏ qua deleted)
+        if (planStageRepository.existsOverlapping(planId, request.getStartDate(), request.getEndDate()))
             throw new AppException(ErrorCode.PLAN_STAGE_OVERLAP);
 
-        //Lấy giai đoạn trước đó -> để khởi tạo index
-        List<PlanStageEntity> previousStage = planStageRepository
-                .findPreviousStage(planId, request.getStartDate(), PageRequest.of(0,1));
+        PlanStageStatusEntity initialStatus = getInitialStatus();
 
-        int orderIndex = 1;
+        PlanStageEntity stage = new PlanStageEntity();
+        stage.setPlan(plan);
+        stage.setName(request.getName());
+        stage.setSource(PlanStageSource.CUSTOM);
+        stage.setStartDate(request.getStartDate());
+        stage.setEndDate(request.getEndDate());
+        stage.setStatus(initialStatus);
 
-        if(!previousStage.isEmpty()) orderIndex = previousStage.getFirst().getOrderIndex() + 1;
-
-        List<PlanStageStatusEntity> statusEntityList = planStageStatusRepository
-                .findByIsInitialTrue(PageRequest.of(0,1));
-
-        if(statusEntityList.isEmpty())
-            throw new AppException(ErrorCode.PLAN_STAGE_STATUS_INITIAL_NOT_FOUND);
-
-        PlanStageEntity newPlanStage = new PlanStageEntity();
-        newPlanStage.setPlan(plan);
-        newPlanStage.setName(request.getName());
-        newPlanStage.setSource(PlanStageSource.CUSTOM);
-        newPlanStage.setOrderIndex((short) orderIndex);
-        newPlanStage.setStartDate(request.getStartDate());
-        newPlanStage.setEndDate(request.getEndDate());
-        newPlanStage.setStatus(statusEntityList.getFirst());
-
-        return  planStageMapper.toResponse(planStageRepository.save(newPlanStage));
+        return planStageMapper.toResponse(planStageRepository.save(stage));
     }
+
+    // =========================================================================
+    // CREATE — TEMPLATE (admin only)
+    // =========================================================================
+
+//    @Transactional
+//    public PlanStageResponse createPlanStageFromTemplate(UUID planId,
+//                                                         CreatePlanStageFromTemplateRequest request) {
+//        UUID farmId = securityUtils.getCurrentFarmId();
+//
+//        PlanEntity plan = getPlanOrThrow(planId, farmId);
+//
+//        checkPlanNotTerminal(plan);
+//
+//        // Lấy crop_stage để tính end_date
+//        CropStageEntity cropStage = cropStageRepository
+//                .findById(request.getCropStageId())
+//                .orElseThrow(() -> new AppException(ErrorCode.CROP_STAGE_NOT_FOUND));
+//
+//        // Đảm bảo crop_stage thuộc crop của plan
+//        if (!cropStage.getCrop().getId().equals(plan.getCrop().getId()))
+//            throw new AppException(ErrorCode.CROP_STAGE_NOT_BELONG_TO_PLAN_CROP);
+//
+//        LocalDate startDate = request.getStartDate();
+//        LocalDate endDate   = startDate.plusDays(cropStage.getDurationDays());
+//
+//        // Kiểm tra nằm trong plan
+//        checkDatesWithinPlan(plan, startDate, endDate);
+//
+//        // Kiểm tra overlap
+//        if (planStageRepository.existsOverlapping(planId, startDate, endDate))
+//            throw new AppException(ErrorCode.PLAN_STAGE_OVERLAP);
+//
+//        PlanStageStatusEntity initialStatus = getInitialStatus();
+//
+//        PlanStageEntity stage = new PlanStageEntity();
+//        stage.setPlan(plan);
+//        stage.setCropStage(cropStage);
+//        stage.setName(cropStage.getName());
+//        stage.setSource(PlanStageSource.TEMPLATE);
+//        stage.setStartDate(startDate);
+//        stage.setEndDate(endDate);
+//        stage.setStatus(initialStatus);
+//
+//        return planStageMapper.toResponse(planStageRepository.save(stage));
+//    }
+
+    // =========================================================================
+    // UPDATE
+    // =========================================================================
 
     @Transactional
-    public PlanStageResponse updatePlanStageCustom(UUID planId, UUID planStageId, UpdatePlanStageRequest request){
+    public PlanStageResponse updatePlanStage(UUID planId,
+                                             UUID stageId,
+                                             UpdatePlanStageRequest request) {
         UUID farmId = securityUtils.getCurrentFarmId();
 
-        PlanEntity plan = planRepository.findByIdAndFarm_Id(planId, farmId)
-                .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
+        PlanEntity plan = getPlanOrThrow(planId, farmId);
 
-        PlanStageEntity planStage = planStageRepository.findByIdAndPlanId(planStageId, planId)
-                .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
+        checkPlanNotTerminal(plan);
 
-        if(plan.getStartDate().isAfter(request.getStartDate())
-                || plan.getEndDate().isBefore(request.getEndDate()))
-            throw new AppException(ErrorCode.PLAN_STAGE_TIME_MUST_BE_IN_PLAN_TIME);
+        PlanStageEntity stage = getStageOrThrow(stageId, planId);
 
-        if(request.getStartDate()!=null && request.getEndDate()!=null){
+        // Nếu có thay đổi thời gian
+        if (request.getStartDate() != null && request.getEndDate() != null) {
 
-            if(planStageRepository.existsOverlappingWithoutId(planId, planStageId, request.getStartDate(), request.getEndDate())) {
+            checkDatesWithinPlan(plan, request.getStartDate(), request.getEndDate());
+
+            if (planStageRepository.existsOverlappingWithoutId(
+                    planId, stageId, request.getStartDate(), request.getEndDate()))
                 throw new AppException(ErrorCode.PLAN_STAGE_OVERLAP);
-            }
 
-            if(taskRepository.existsTaskOutsideStage(planStageId,request.getStartDate(), request.getEndDate()))
+            // Task bên trong không được lệch ra ngoài khoảng thời gian mới
+            if (taskRepository.existsTaskOutsideStage(
+                    stageId, request.getStartDate(), request.getEndDate()))
                 throw new AppException(ErrorCode.PLAN_STAGE_NOT_COVER_TASK);
-
         }
 
+        // Tên mới không được trùng với stage khác trong plan
+        if (request.getName() != null
+                && !request.getName().equals(stage.getName())
+                && planStageRepository.existsByPlanIdAndNameAndDeletedAtIsNull(planId, request.getName()))
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_EXISTS);
 
+        if(stage.getStatus().getIsTerminal())
+            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
 
+        planStageMapper.updateEntityFromRequest(request, stage);
 
-        planStageMapper.updateEntityFromRequest(request, planStage);
-
-        return planStageMapper.toResponse(planStageRepository.save(planStage));
+        return planStageMapper.toResponse(planStageRepository.save(stage));
     }
+
+    // =========================================================================
+    // DELETE
+    // =========================================================================
+
 
     //
     @Transactional
-    public PlanStageResponse updatePlanStageTime(UUID planId, UUID planStageId, UpdatePlanStageTimeRequest request){
-
+    public PlanStageResponse updatePlanStageTime(UUID planId,
+                                                 UUID planStageId,
+                                                 UpdatePlanStageTimeRequest request) {
         UUID farmId = securityUtils.getCurrentFarmId();
 
-        PlanEntity plan = planRepository.findByIdAndFarm_Id(planId,farmId)
-                .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
+        PlanEntity plan = getPlanOrThrow(planId, farmId);
 
-        PlanStageEntity planStage = planStageRepository
-                .findByIdAndPlanId(planStageId, planId)
-                .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
+        checkPlanNotTerminal(plan);
 
-        if(plan.getStartDate().isAfter(request.getStartDate())
-                || plan.getEndDate().isBefore(request.getEndDate()))
-            throw new AppException(ErrorCode.PLAN_STAGE_TIME_MUST_BE_IN_PLAN_TIME);
+        PlanStageEntity planStage = getStageOrThrow(planStageId, planId);
 
-        if(planStageRepository.existsOverlappingWithoutId(
+        checkDatesWithinPlan(plan, request.getStartDate(), request.getEndDate());
+
+        if (planStageRepository.existsOverlappingWithoutId(
                 planId, planStageId, request.getStartDate(), request.getEndDate()))
             throw new AppException(ErrorCode.PLAN_STAGE_OVERLAP);
 
+        if (taskRepository.existsTaskOutsideStage(
+                planStageId, request.getStartDate(), request.getEndDate()))
+            throw new AppException(ErrorCode.PLAN_STAGE_NOT_COVER_TASK);
 
-        if(request.getStartDate()!=null && request.getEndDate()!=null){
-
-            if(planStageRepository.existsOverlappingWithoutId(planId, planStageId, request.getStartDate(), request.getEndDate())) {
-                throw new AppException(ErrorCode.PLAN_STAGE_OVERLAP);
-            }
-
-            if(taskRepository.existsTaskOutsideStage(planStageId,request.getStartDate(), request.getEndDate()))
-                throw new AppException(ErrorCode.PLAN_STAGE_NOT_COVER_TASK);
-
-        }
+        if(planStage.getStatus().getIsTerminal())
+            throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
 
         planStage.setStartDate(request.getStartDate());
         planStage.setEndDate(request.getEndDate());
@@ -196,16 +248,89 @@ public class PlanStageService {
     }
 
     @Transactional
-    public void deletePlanStageCustom(UUID stageId){
+    public void deletePlanStage(UUID planId, UUID stageId) {
+        UUID farmId = securityUtils.getCurrentFarmId();
 
-//        //Cleanup entity
-//        taskRepository.deleteByPlanStageId(stageId);
-        PlanStageEntity deletedStage = planStageRepository
-                .findById(stageId)
-                        .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
+        PlanEntity plan = getPlanOrThrow(planId, farmId);
 
-        deletedStage.setDeletedAt(Instant.now());
-        planStageRepository.save(deletedStage);
-//        planStageRepository.deleteById(stageId);
+        checkPlanNotTerminal(plan);
+
+        PlanStageEntity stage = getStageOrThrow(stageId, planId);
+
+        // Lớp 1 — Block nếu đã có harvest record
+        if (harvestRecordRepository.existsByPlanStage_Id(stageId))
+            throw new AppException(ErrorCode.PLAN_STAGE_HAS_HARVEST_RECORD);
+
+        List<TaskEntity> tasks =
+                taskRepository.findAllByPlanStage_IdAndDeletedAtIsNull(stageId);
+
+        Instant now = Instant.now();
+
+        for (TaskEntity task : tasks) {
+
+            // Lớp 2 — Block nếu có work_log đã lock
+            if (workLogRepository.existsByTask_IdAndLockedAtIsNotNull(task.getId()))
+                throw new AppException(ErrorCode.PLAN_STAGE_HAS_LOCKED_WORK_LOG);
+
+            // Lớp 3 — Soft delete work_log chưa lock
+            List<WorkLogEntity> workLogs =
+                    workLogRepository.findAllByTask_IdAndLockedAtIsNullAndDeletedAtIsNull(task.getId());
+            workLogs.forEach(wl -> wl.setDeletedAt(now));
+            workLogRepository.saveAll(workLogs);
+
+            // Soft delete disease_report
+            List<DiseaseReportEntity> reports =
+                    diseaseReportRepository.findAllByTask_IdAndDeletedAtIsNull(task.getId());
+            reports.forEach(r -> r.setDeletedAt(now));
+            diseaseReportRepository.saveAll(reports);
+
+            // Soft delete task
+            task.setDeletedAt(now);
+        }
+        taskRepository.saveAll(tasks);
+
+        // Soft delete stage
+        stage.setDeletedAt(now);
+        planStageRepository.save(stage);
+    }
+
+    // =========================================================================
+    // PRIVATE HELPERS
+    // =========================================================================
+
+    private PlanEntity getPlanOrThrow(UUID planId, UUID farmId) {
+        return planRepository
+                .findByIdAndFarm_IdAndDeletedAtIsNull(planId, farmId)
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
+    }
+
+    private PlanStageEntity getStageOrThrow(UUID stageId, UUID planId) {
+        return planStageRepository
+                .findByIdAndPlanIdAndDeletedAtIsNull(stageId, planId)
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
+    }
+
+    private void checkPlanNotTerminal(PlanEntity plan) {
+        if (PlanStatus.CANCELLED.equals(plan.getStatus())
+                || PlanStatus.COMPLETED.equals(plan.getStatus())
+                || PlanStatus.DRAFT.equals(plan.getStatus())) {
+            throw new AppException(ErrorCode.PLAN_IS_TERMINAL);
+        }
+    }
+
+    private void checkDatesWithinPlan(PlanEntity plan,
+                                      LocalDate startDate,
+                                      LocalDate endDate) {
+        if (startDate.isBefore(plan.getStartDate())
+                || endDate.isAfter(plan.getEndDate()))
+            throw new AppException(ErrorCode.PLAN_STAGE_TIME_MUST_BE_IN_PLAN_TIME);
+    }
+
+    private PlanStageStatusEntity getInitialStatus() {
+        return planStageStatusRepository
+                .findByIsInitialTrue(PageRequest.of(0, 1))
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_STATUS_INITIAL_NOT_FOUND));
     }
 }

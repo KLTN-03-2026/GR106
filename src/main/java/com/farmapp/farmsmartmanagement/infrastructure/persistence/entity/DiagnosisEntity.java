@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -51,8 +52,8 @@ public class DiagnosisEntity {
     @Column(name = "severity")
     private SeverityLevel severity;
 
-    @Column(name = "confidence", precision = 4, scale = 3)
-    private Double confidence;
+    @Column(name = "confidence", precision = 4, scale = 3, nullable = false)
+    private BigDecimal confidence = BigDecimal.ZERO;
 
     @Column(name = "treatment")
     private String treatment;

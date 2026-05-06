@@ -40,6 +40,8 @@ public class PlanService {
 
     PlanPlotRepository planPlotRepository;
 
+    TaskRepository taskRepository;
+
     SecurityUtils securityUtils;
 
 //    Tất cả farm mà user là member -> check file byPassRlsWithUser.txt

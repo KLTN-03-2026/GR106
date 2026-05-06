@@ -107,4 +107,13 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT t FROM TaskEntity t WHERE t.id = :id")
     Optional<TaskEntity> findByIdForUpdate(@Param("id") UUID id);
+
+    List<TaskEntity> findAllByPlanStage_IdAndDeletedAtIsNull(UUID stageId);
+    @Query("""
+            SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END
+            FROM TaskEntity t
+            WHERE t.planStage.plan.id = :planId
+            AND t.id = :id
+        """)
+    boolean existsByPlot_IdAndPlan_Id(@Param("id") UUID id,@Param("planId") UUID planId);
 }

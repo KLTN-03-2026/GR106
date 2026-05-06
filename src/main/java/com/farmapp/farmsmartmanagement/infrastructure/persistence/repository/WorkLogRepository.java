@@ -62,4 +62,8 @@ public interface WorkLogRepository extends JpaRepository<WorkLogEntity, UUID> {
             @Param("farmId") UUID farmId,
             @Param("from") LocalDate from,
             @Param("to") LocalDate to);
+
+    boolean existsByTask_IdAndLockedAtIsNotNull(UUID id);
+
+    List<WorkLogEntity> findAllByTask_IdAndLockedAtIsNullAndDeletedAtIsNull(UUID taskId);
 }

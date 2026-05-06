@@ -35,4 +35,6 @@ public interface PlanPlotRepository extends JpaRepository<PlanPlotEntity, UUID> 
             WHERE pp.plan.id = :planId
             """)
     List<UUID> findPlotIdsByPlanId(UUID planId);
+
+    void deleteByPlot_IdAndPlan_Id(UUID id, UUID planId);
 }

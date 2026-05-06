@@ -46,9 +46,6 @@ public class PlanStageEntity {
     @Column(name = "source", nullable = false)
     PlanStageSource source;
 
-    @Column(name = "order_index")
-    private Short orderIndex;
-
     @Column(name = "start_date")
     private LocalDate startDate;
 

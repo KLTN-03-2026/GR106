@@ -21,11 +21,10 @@ public class PlanStageSummaryResponse {
 
     PlanStageSource source;
 
-    Integer orderIndex;
-
     LocalDate startDate;
+    LocalDate actualStartDate;
     LocalDate endDate;
-
+    LocalDate actualEndDate;
     String aiSuggestionCache;
 
     PlanStageStatusResponse status;

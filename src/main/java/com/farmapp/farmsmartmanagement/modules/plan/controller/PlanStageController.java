@@ -83,7 +83,7 @@ public class PlanStageController {
             @RequestBody @Valid UpdatePlanStageRequest request
     ){
         return ResponseUtil.success(
-                planStageService.updatePlanStageCustom(planId, stageId, request)
+                planStageService.updatePlanStage(planId, stageId, request)
         );
     }
 
@@ -106,7 +106,7 @@ public class PlanStageController {
             @PathVariable("planId") UUID planId,
             @PathVariable("stageId") UUID stageId
     ){
-        planStageService.deletePlanStageCustom(stageId);
+        planStageService.deletePlanStage(planId,stageId);
         return  ResponseUtil.noContent();
     }
 }

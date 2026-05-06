@@ -37,4 +37,6 @@ public interface PlanRepository extends JpaRepository<PlanEntity, UUID> {
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate
     );
+
+    Optional<PlanEntity> findByIdAndFarm_IdAndDeletedAtIsNull(UUID planId, UUID farmId);
 }

@@ -9,6 +9,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 
@@ -43,6 +44,10 @@ public class WorkLogEntity {
     @Column(name = "work_date", nullable = false)
     LocalDate workDate;
 
+    @OneToMany(mappedBy = "workLog", cascade = CascadeType.ALL, orphanRemoval = true)
+    List<WorkLogMaterialEntity> materials;
+
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shift_id")
     WorkShiftEntity shift;
@@ -63,4 +68,7 @@ public class WorkLogEntity {
 
     @Column(name = "created_at", nullable = false)
     Instant createdAt = Instant.now();
+
+    @Column(name = "deleted_at")
+    Instant deletedAt;
 }

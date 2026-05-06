@@ -71,4 +71,7 @@ public class TaskEntity {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     Instant createdAt;
+
+    @Column(name = "deleted_at")
+    Instant deletedAt;
 }

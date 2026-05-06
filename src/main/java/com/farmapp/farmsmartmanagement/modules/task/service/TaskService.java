@@ -70,12 +70,12 @@ public class TaskService {
                 .findByIdAndPlanId(planStageId,planId)
                 .orElseThrow(() -> new AppException(ErrorCode.FORBIDDEN));
 
-        if(planStage.getStatus().getIsTerminal())
+        if(planStage.getStatus().getIsTerminal() || LocalDate.now().isBefore(planStage.getStartDate()))
             throw new AppException(ErrorCode.PLAN_STAGE_IS_TERMINAL);
 
         // check ownership
         if (!planStage.getPlan().getFarm().getId().equals(farmId)) {
-            throw new AppException(ErrorCode.CROP_ALREADY_EXISTS);
+            throw new AppException(ErrorCode.FORBIDDEN);
         }
 
         // validate date

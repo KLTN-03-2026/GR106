@@ -13,47 +13,40 @@ import java.util.UUID;
 
 public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID> {
 
-    List<PlanStageEntity> findByPlan_IdOrderByOrderIndexAsc(UUID planId);
-
     boolean existsByPlanIdAndNameAndDeletedAtIsNull(UUID planId, String name);
 
     // Sử dụng khi tạo mới
     @Query("""
-        SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END
-        FROM PlanStageEntity p
-        WHERE p.plan.id = :planId
-        AND p.deletedAt IS NULL
-        AND (
-            :startDate <= p.endDate
-            AND :endDate >= p.startDate
-        )
-    """)
+    SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END
+    FROM PlanStageEntity p
+    WHERE p.plan.id = :planId
+    AND p.deletedAt IS NULL
+    AND :startDate <= COALESCE(p.actualEndDate, p.endDate)
+    AND :endDate   >= p.startDate
+""")
     boolean existsOverlapping(
-            @Param("planId") UUID planId,
+            @Param("planId")    UUID planId,
             @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate
+            @Param("endDate")   LocalDate endDate
     );
 
-    // Sử dụng khi cập nhật
+    // Sử dụng khi update
     @Query("""
-        SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END
-        FROM PlanStageEntity p
-        WHERE p.plan.id = :planId
-        AND p.deletedAt IS NULL
-        AND p.id != :stageId
-        AND (
-            :startDate <= p.endDate
-            AND :endDate >= p.startDate
-        )
-    """)
+    SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END
+    FROM PlanStageEntity p
+    WHERE p.plan.id = :planId
+    AND p.id        <> :stageId
+    AND p.deletedAt IS NULL
+    AND :startDate <= COALESCE(p.actualEndDate, p.endDate)
+    AND :endDate   >= p.startDate
+""")
     boolean existsOverlappingWithoutId(
-            @Param("planId") UUID planId,
-            @Param("stageId") UUID stageId,
+            @Param("planId")    UUID planId,
+            @Param("stageId")   UUID stageId,
             @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate
+            @Param("endDate")   LocalDate endDate
     );
 
-    PlanStageEntity findByPlan_IdAndOrderIndex(UUID planId, int orderIndex);
 
 
     @Query("""
@@ -92,4 +85,8 @@ public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID
           AND pt.deletedAt IS NULL
     """)
     Optional<PlanStageEntity> findByIdAndPlanIdAndStatusIsNotTerminal(UUID stageId, UUID planId);
+
+    Optional<PlanStageEntity> findByIdAndPlanIdAndDeletedAtIsNull(UUID stageId, UUID planId);
+
+    List<PlanStageEntity> findAllByPlanIdAndDeletedAtIsNullOrderByStartDateAsc(UUID planId);
 }

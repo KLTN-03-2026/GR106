@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -49,7 +50,7 @@ public class DiseaseReportEntity {
     private String locationNotes;
 
     @Column(name = "affected_percent", precision = 5, scale = 2)
-    private Double affectedPercent;
+    private BigDecimal affectedPercent = BigDecimal.ZERO;
 
     @Column(name = "description")
     private String description;
@@ -61,4 +62,7 @@ public class DiseaseReportEntity {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
 }
