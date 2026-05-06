@@ -15,16 +15,15 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.annotations.CurrentTimestamp;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
-import java.util.Timer;
 import java.util.UUID;
 
 @Slf4j
@@ -40,6 +39,13 @@ public class TaskService {
     PlanPlotRepository planPlotRepository;
 
     UserRepository userRepository;
+
+    TaskDependencyRepository taskDependencyRepository;
+    TaskSkipDayRepository taskSkipDayRepository;
+    TaskStatusHistoryRepository taskStatusHistoryRepository;
+    TaskMaterialRepository taskMaterialRepository;
+    TaskAssigneeRepository taskAssigneeRepository;
+    DiseaseReportRepository diseaseReportRepository;
 
     TaskMapper taskMapper;
     SecurityUtils securityUtils;
@@ -229,10 +235,56 @@ public class TaskService {
         );
     }
 
+    // Only hard delete
     @Transactional
     public void deleteTask(UUID taskId) {
-        taskRepository.deleteById(taskId);
+        TaskEntity task = taskRepository
+                .findByIdForUpdate(taskId) // lấy lock
+                .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));
+
+        validateTaskTerminalOrExpired(task);
+        validateTaskReferences(taskId);
+
+        cleanupTask(taskId);
+
+        // kiểm tra lại để tránh race condition
+        validateTaskReferences(taskId);
+
+        taskRepository.delete(task);
     }
+
+    private void cleanupTask(UUID taskId) {
+        taskMaterialRepository.deleteByTask_Id(taskId);
+
+        taskAssigneeRepository.deleteByTask_Id(taskId);
+
+        taskDependencyRepository.deleteByTask_IdOrDependsOnTask_Id(taskId, taskId);
+
+        taskSkipDayRepository.deleteByTask_Id(taskId);
+
+        taskStatusHistoryRepository.deleteByTask_Id(taskId);
+
+        diseaseReportRepository.deleteByTask_Id(taskId);
+
+    }
+
+    private void validateTaskTerminalOrExpired(TaskEntity task) {
+        boolean isTerminal = task.getStatus().getIsTerminal();
+        boolean isExpired = LocalDate.now().isAfter(task.getEndDate());
+
+        if (isTerminal || isExpired) {
+            throw new AppException(ErrorCode.TASK_IS_TERMINAL_OR_EXPIRED_CANNOT_DELETE);
+        }
+    }
+
+    private void validateTaskReferences(UUID taskId) {
+        if (taskRepository.existsAnyReference(taskId)) {
+            throw new AppException(ErrorCode.TASK_HAS_REFERENCE);
+        }
+    }
+
+
+
 
 
 
