@@ -31,14 +31,8 @@ public class WorkLogController {
 
     WorkLogService workLogService;
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Tạo WorkLog
-    // ─────────────────────────────────────────────────────────────────────────
-    @Operation(
-            summary = "Tạo WorkLog mới",
-            description = "Tạo nhật ký công việc cho một Task",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
+    @Operation(summary = "Tạo WorkLog mới",
+            security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping("/api/v1/plans/{planId}/stages/{planStageId}/tasks/{taskId}/worklogs")
     @RequiresFarmToken
     public ResponseEntity<ApiResponse<WorkLogResponse>> createWorkLog(
@@ -47,85 +41,75 @@ public class WorkLogController {
             @PathVariable UUID taskId,
             @RequestBody @Valid CreateWorkLogRequest request
     ) {
-        return ResponseUtil.created(workLogService.createWorkLog(taskId, planStageId, planId, request));
+        return ResponseUtil.created(
+                workLogService.createWorkLog(taskId, planStageId, planId, request));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Lấy danh sách WorkLog theo Task
-    // ─────────────────────────────────────────────────────────────────────────
-    @Operation(
-            summary = "Lấy danh sách WorkLog theo Task",
-            description = "Trả về tất cả WorkLog của một Task, sắp xếp theo ngày giảm dần",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
-    @GetMapping("/api/v1/tasks/{taskId}/worklogs")
+    @Operation(summary = "Lấy danh sách WorkLog theo Task",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/api/v1/plans/{planId}/stages/{planStageId}/tasks/{taskId}/worklogs")
     @RequiresFarmToken
     public ResponseEntity<ApiResponse<List<WorkLogResponse>>> getWorkLogsByTask(
+            @PathVariable UUID planId,
+            @PathVariable UUID planStageId,
             @PathVariable UUID taskId
     ) {
         return ResponseUtil.success(workLogService.getWorkLogsByTask(taskId));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Xem chi tiết 1 WorkLog — bao gồm vật tư đã dùng
-    // ─────────────────────────────────────────────────────────────────────────
-    @Operation(
-            summary = "Xem chi tiết WorkLog",
-            description = "Trả về chi tiết một WorkLog bao gồm danh sách vật tư đã sử dụng",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
-    @GetMapping("/api/v1/tasks/{taskId}/worklogs/{workLogId}")
+    @Operation(summary = "Lấy danh sách WorkLog theo Plan (dùng cho AttendanceManagement)",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/api/v1/plans/{planId}/worklogs")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<List<WorkLogResponse>>> getWorkLogsByPlan(
+            @PathVariable UUID planId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+    ) {
+        return ResponseUtil.success(workLogService.getWorkLogsByPlan(planId, from, to));
+    }
+
+    @Operation(summary = "Xem chi tiết WorkLog",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/api/v1/worklogs/{workLogId}")
     @RequiresFarmToken
     public ResponseEntity<ApiResponse<WorkLogDetailResponse>> getWorkLogDetail(
-            @PathVariable UUID taskId,
             @PathVariable UUID workLogId
     ) {
         return ResponseUtil.success(workLogService.getWorkLogDetail(workLogId));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Lấy chấm công theo employee trong khoảng thời gian
-    // ─────────────────────────────────────────────────────────────────────────
-    @Operation(
-            summary = "Lấy WorkLog theo Employee",
-            description = "Trả về danh sách WorkLog của một nhân viên trong khoảng thời gian",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
+    @Operation(summary = "Lấy WorkLog theo Employee",
+            security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/api/v1/worklogs/employee/{employeeId}")
     @RequiresFarmToken
     public ResponseEntity<ApiResponse<List<WorkLogResponse>>> getWorkLogsByEmployee(
             @PathVariable UUID employeeId,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
     ) {
         return ResponseUtil.success(workLogService.getWorkLogsByEmployee(employeeId, from, to));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Lấy chấm công toàn farm
-    // ─────────────────────────────────────────────────────────────────────────
-    @Operation(
-            summary = "Lấy WorkLog toàn Farm",
-            description = "Trả về danh sách WorkLog của toàn Farm trong khoảng thời gian",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
+    @Operation(summary = "Lấy WorkLog toàn Farm",
+            security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/api/v1/worklogs")
     @RequiresFarmToken
     public ResponseEntity<ApiResponse<List<WorkLogResponse>>> getWorkLogsByFarm(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to
     ) {
         return ResponseUtil.success(workLogService.getWorkLogsByFarm(from, to));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Tổng hợp công theo employee — dùng cho tính lương
-    // ─────────────────────────────────────────────────────────────────────────
-    @Operation(
-            summary = "Tổng hợp công theo Employee",
-            description = "Trả về tổng hợp ngày công và lương của từng nhân viên trong khoảng thời gian. Tối đa 3 tháng.",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
+    @Operation(summary = "Tổng hợp công theo Employee (tính lương)",
+            security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/api/v1/worklogs/summary")
     @RequiresFarmToken
     public ResponseEntity<ApiResponse<List<WorkLogSummaryResponse>>> getWorkLogSummary(
@@ -135,17 +119,33 @@ public class WorkLogController {
         return ResponseUtil.success(workLogService.getWorkLogSummary(from, to));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Xóa WorkLog — chỉ xóa được khi chưa bị lock
-    // ─────────────────────────────────────────────────────────────────────────
-    @Operation(
-            summary = "Xóa WorkLog",
-            description = "Xóa một WorkLog. Không thể xóa nếu WorkLog đã bị khóa (locked_at != null)",
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
-    @DeleteMapping("/api/v1/tasks/{taskId}/worklogs/{workLogId}")
+    @Operation(summary = "Khoá WorkLog (cấp trên duyệt)",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @PatchMapping("/api/v1/worklogs/{workLogId}/lock")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<WorkLogResponse>> lockWorkLog(
+            @PathVariable UUID workLogId
+    ) {
+        return ResponseUtil.success(workLogService.lockWorkLog(workLogId));
+    }
+
+    @Operation(summary = "Mở khoá WorkLog",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @PatchMapping("/api/v1/worklogs/{workLogId}/unlock")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<WorkLogResponse>> unlockWorkLog(
+            @PathVariable UUID workLogId
+    ) {
+        return ResponseUtil.success(workLogService.unlockWorkLog(workLogId));
+    }
+
+    @Operation(summary = "Xóa WorkLog",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @DeleteMapping("/api/v1/plans/{planId}/stages/{planStageId}/tasks/{taskId}/worklogs/{workLogId}")
     @RequiresFarmToken
     public ResponseEntity<ApiResponse<Void>> deleteWorkLog(
+            @PathVariable UUID planId,
+            @PathVariable UUID planStageId,
             @PathVariable UUID taskId,
             @PathVariable UUID workLogId
     ) {

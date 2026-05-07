@@ -1,6 +1,5 @@
 package com.farmapp.farmsmartmanagement.modules.worklog.service;
 
-
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
@@ -51,28 +50,48 @@ public class WorkLogService {
     EntityManager entityManager;
     TaskValidator taskValidator;
 
-
+    // ─────────────────────────────────────────────────────────────────────────
+    // GET — danh sách theo task
+    // GET /plans/{planId}/stages/{stageId}/tasks/{taskId}/worklogs
+    // ─────────────────────────────────────────────────────────────────────────
     @Transactional(readOnly = true)
     public List<WorkLogResponse> getWorkLogsByTask(UUID taskId) {
         UUID farmId = securityUtils.getCurrentFarmId();
 
-        // Kiểm tra task thuộc farm
         TaskEntity task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));
 
         if (!task.getFarm().getId().equals(farmId))
             throw new AppException(ErrorCode.FORBIDDEN);
 
-        return workLogRepository.findAllByTask_IdOrderByWorkDateDesc(taskId)
+        return workLogRepository.findAllByTask_IdAndDeletedAtIsNullOrderByWorkDateDesc(taskId)
                 .stream()
                 .map(workLogMapper::toResponse)
                 .toList();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-// Xem chấm công của 1 employee trong 1 khoảng thời gian
-// GET /work-logs/employee?from=2026-01-01&to=2026-01-31
-// ─────────────────────────────────────────────────────────────────────────
+    // GET — danh sách theo plan (dùng cho AttendanceManagement)
+    // GET /plans/{planId}/worklogs?from=&to=
+    // ─────────────────────────────────────────────────────────────────────────
+    @Transactional(readOnly = true)
+    public List<WorkLogResponse> getWorkLogsByPlan(UUID planId, LocalDate from, LocalDate to) {
+        UUID farmId = securityUtils.getCurrentFarmId();
+
+        if (from != null && to != null && from.isAfter(to))
+            throw new AppException(ErrorCode.INVALID_DATE_RANGE);
+
+        return workLogRepository
+                .findAllByPlanIdAndFarmId(planId, farmId, from, to)
+                .stream()
+                .map(workLogMapper::toResponse)
+                .toList();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GET — danh sách theo employee
+    // GET /worklogs/employee/{employeeId}?from=&to=
+    // ─────────────────────────────────────────────────────────────────────────
     @Transactional(readOnly = true)
     public List<WorkLogResponse> getWorkLogsByEmployee(UUID employeeId,
                                                        LocalDate from,
@@ -83,7 +102,7 @@ public class WorkLogService {
             throw new AppException(ErrorCode.INVALID_DATE_RANGE);
 
         return workLogRepository
-                .findAllByEmployee_IdAndFarm_IdAndWorkDateBetweenOrderByWorkDateDesc(
+                .findAllByEmployee_IdAndFarm_IdAndWorkDateBetweenAndDeletedAtIsNullOrderByWorkDateDesc(
                         employeeId, farmId, from, to)
                 .stream()
                 .map(workLogMapper::toResponse)
@@ -91,9 +110,9 @@ public class WorkLogService {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-// Xem chấm công của toàn farm trong 1 khoảng thời gian
-// GET /work-logs?from=2026-01-01&to=2026-01-31
-// ─────────────────────────────────────────────────────────────────────────
+    // GET — danh sách toàn farm
+    // GET /worklogs?from=&to=
+    // ─────────────────────────────────────────────────────────────────────────
     @Transactional(readOnly = true)
     public List<WorkLogResponse> getWorkLogsByFarm(LocalDate from, LocalDate to) {
         UUID farmId = securityUtils.getCurrentFarmId();
@@ -102,16 +121,17 @@ public class WorkLogService {
             throw new AppException(ErrorCode.INVALID_DATE_RANGE);
 
         return workLogRepository
-                .findAllByFarm_IdAndWorkDateBetweenOrderByWorkDateDesc(farmId, from, to)
+                .findAllByFarm_IdAndWorkDateBetweenAndDeletedAtIsNullOrderByWorkDateDesc(
+                        farmId, from, to)
                 .stream()
                 .map(workLogMapper::toResponse)
                 .toList();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-// Xem chi tiết 1 work log — bao gồm vật tư đã dùng
-// GET /work-logs/{workLogId}
-// ─────────────────────────────────────────────────────────────────────────
+    // GET — chi tiết 1 worklog
+    // GET /tasks/{taskId}/worklogs/{workLogId}
+    // ─────────────────────────────────────────────────────────────────────────
     @Transactional(readOnly = true)
     public WorkLogDetailResponse getWorkLogDetail(UUID workLogId) {
         UUID farmId = securityUtils.getCurrentFarmId();
@@ -122,13 +142,16 @@ public class WorkLogService {
         if (!workLog.getFarm().getId().equals(farmId))
             throw new AppException(ErrorCode.FORBIDDEN);
 
+        if (workLog.getDeletedAt() != null)
+            throw new AppException(ErrorCode.WORK_LOG_NOT_FOUND);
+
         return workLogMapper.toDetailResponse(workLog);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-// Tổng hợp công theo employee trong khoảng thời gian — dùng cho tính lương
-// GET /work-logs/summary?from=2026-01-01&to=2026-01-31
-// ─────────────────────────────────────────────────────────────────────────
+    // GET — tổng hợp công theo employee (dùng tính lương)
+    // GET /worklogs/summary?from=&to=
+    // ─────────────────────────────────────────────────────────────────────────
     @Transactional(readOnly = true)
     public List<WorkLogSummaryResponse> getWorkLogSummary(LocalDate from, LocalDate to) {
         UUID farmId = securityUtils.getCurrentFarmId();
@@ -139,15 +162,19 @@ public class WorkLogService {
         if (from.isAfter(to))
             throw new AppException(ErrorCode.INVALID_DATE_RANGE);
 
-        // Giới hạn tối đa 3 tháng để tránh query nặng
         if (from.plusMonths(3).isBefore(to))
             throw new AppException(ErrorCode.DATE_RANGE_TOO_LARGE);
 
         return workLogRepository.summarizeByEmployee(farmId, from, to);
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // POST — tạo worklog (cấp trên chấm công thủ công cho nhân công)
+    // POST /plans/{planId}/stages/{stageId}/tasks/{taskId}/worklogs
+    // ─────────────────────────────────────────────────────────────────────────
     @Transactional
-    public WorkLogResponse createWorkLog(UUID taskId, UUID planStageId, UUID planId, CreateWorkLogRequest request) {
+    public WorkLogResponse createWorkLog(UUID taskId, UUID planStageId, UUID planId,
+                                         CreateWorkLogRequest request) {
         UUID farmId = securityUtils.getCurrentFarmId();
         UUID userId = securityUtils.getCurrentUserId();
 
@@ -155,10 +182,8 @@ public class WorkLogService {
         UserEntity employee = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        // Validate và lấy task — validate vật tư ở đây luôn
         TaskEntity task = validateAndGetTask(taskId, planStageId, planId, userId, farmId, request);
 
-        // Validate shift nếu có
         WorkShiftEntity shift = null;
         if (request.getShiftId() != null) {
             shift = workShiftRepository.findById(request.getShiftId())
@@ -168,7 +193,7 @@ public class WorkLogService {
                 throw new AppException(ErrorCode.FORBIDDEN);
         }
 
-        // Tạo work log
+        // Tạo worklog — KHÔNG lock ngay, để cấp trên review rồi mới lock
         WorkLogEntity workLog = WorkLogEntity.builder()
                 .task(task)
                 .farm(farm)
@@ -177,136 +202,74 @@ public class WorkLogService {
                 .shift(shift)
                 .type(request.getType())
                 .isOvertime(request.isOvertime())
-                .lockedAt(Instant.now()) // Khoá lại luôn
                 .notes(request.getNotes())
                 .createdAt(Instant.now())
                 .build();
 
         workLog = workLogRepository.save(workLog);
 
-        // Xử lý vật tư nếu có
+        // Xử lý vật tư
         if (request.getMaterials() != null && !request.getMaterials().isEmpty()) {
-            for (var material : request.getMaterials()) {
-
-                WarehouseItemEntity warehouseItem = warehouseItemRepository
-                        .findById(material.getWarehouseItemId())
-                        .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_ITEM_NOT_FOUND));
-
-                WarehouseLocationEntity fromLocation = warehouseLocationRepository
-                        .findById(material.getFromLocationId())
-                        .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_LOCATION_NOT_FOUND));
-
-                // Ghi work log material
-                WorkLogMaterialEntity workLogMaterial = WorkLogMaterialEntity.builder()
-                        .workLog(workLog)
-                        .warehouseItem(warehouseItem)
-                        .usedQty(material.getUsedQty())
-                        .deviationReason(material.getDeviationReason())
-                        .build();
-                workLogMaterialRepository.save(workLogMaterial);
-
-                // Tạo warehouse transaction → trigger fn_update_stock tự trừ kho
-                WarehouseTransactionEntity transaction = WarehouseTransactionEntity.builder()
-                        .farm(farm)
-                        .warehouse(warehouseItem.getWarehouse())
-                        .warehouseItem(warehouseItem)
-                        .fromLocation(fromLocation) // EXPORT_TASK cần from_location_id
-                        .toLocation(null)
-                        .type(WarehouseTxnType.EXPORT_TASK)
-                        .qtyChange(material.getUsedQty())
-                        .refWorkLog(workLog)
-                        .refTask(task)
-                        .performedBy(employee)
-                        .notes("Export vật tư cho task: " + task.getName())
-                        .build();
-
-                warehouseTransactionRepository.save(transaction);
-            }
-
-            // Flush để trigger fn_update_stock chạy trên DB
-            entityManager.flush();
+            workLog = processMaterials(workLog, request, farm, task, employee);
         }
 
         return workLogMapper.toResponse(workLog);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  Validate — chỉ validate, không tạo entity
+    // PATCH — lock worklog (cấp trên duyệt, khoá lại để tính lương)
+    // PATCH /worklogs/{workLogId}/lock
     // ─────────────────────────────────────────────────────────────────────────
-    private TaskEntity validateAndGetTask(UUID taskId, UUID  planStageId, UUID planId, UUID employeeId,
-                                          UUID farmId, CreateWorkLogRequest request) {
+    @Transactional
+    public WorkLogResponse lockWorkLog(UUID workLogId) {
+        UUID farmId = securityUtils.getCurrentFarmId();
 
-        // 1. Task tồn tại
-        TaskEntity task = taskValidator.validateAndGetTask(taskId, planStageId, planId, farmId);
+        WorkLogEntity workLog = workLogRepository.findById(workLogId)
+                .orElseThrow(() -> new AppException(ErrorCode.WORK_LOG_NOT_FOUND));
 
-        // 2. Task thuộc farm hiện tại
-        if (!task.getFarm().getId().equals(farmId))
+        if (!workLog.getFarm().getId().equals(farmId))
             throw new AppException(ErrorCode.FORBIDDEN);
 
+        if (workLog.getDeletedAt() != null)
+            throw new AppException(ErrorCode.WORK_LOG_NOT_FOUND);
 
-        // 4. Employee được assign vào task và chưa bị remove
-        if (!taskAssigneeRepository.existsByTask_IdAndUser_IdAndRemovedAtIsNull(taskId, employeeId))
-            throw new AppException(ErrorCode.FORBIDDEN);
+        if (workLog.getLockedAt() != null)
+            throw new AppException(ErrorCode.WORK_LOG_ALREADY_LOCKED);
 
-        // 5. Ngày làm việc không phải tương lai
-        if (request.getWorkDate().isAfter(LocalDate.now()))
-            throw new AppException(ErrorCode.WORK_DATE_CANNOT_BE_FUTURE);
+        workLog.setLockedAt(Instant.now());
 
-        // 6. Ngày không phải skip day của task
-        if (taskSkipDayRepository.existsByTask_IdAndSkipDate(taskId, request.getWorkDate()))
-            throw new AppException(ErrorCode.WORK_DATE_IS_SKIP_DAY);
-
-        // 7. Không trùng log (task + employee + date + shift)
-        if (workLogRepository.existsByTask_IdAndEmployee_IdAndWorkDateAndShift_Id(
-                taskId, employeeId, request.getWorkDate(), request.getShiftId()))
-            throw new AppException(ErrorCode.WORK_LOG_ALREADY_EXISTS);
-
-        // 8. Ngày trong khoảng thời gian task
-        if (task.getStartDate() != null
-                && request.getWorkDate().isBefore(task.getStartDate()))
-            throw new AppException(ErrorCode.WORK_DATE_OUT_OF_TASK_RANGE);
-
-        if (task.getEndDate() != null
-                && request.getWorkDate().isAfter(task.getEndDate()))
-            throw new AppException(ErrorCode.WORK_DATE_OUT_OF_TASK_RANGE);
-
-        // 9. Validate từng vật tư
-        if (request.getMaterials() != null && !request.getMaterials().isEmpty()) {
-            for (var material : request.getMaterials()) {
-
-                // Vật tư phải có trong task_materials của task này
-                if (!taskMaterialRepository.existsByTask_IdAndWarehouseItem_Id(
-                        taskId, material.getWarehouseItemId()))
-                    throw new AppException(ErrorCode.TASK_MATERIAL_NOT_FOUND);
-
-                // Location phải tồn tại
-                WarehouseLocationEntity location = warehouseLocationRepository
-                        .findById(material.getFromLocationId())
-                        .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_LOCATION_NOT_FOUND));
-
-                // Location phải thuộc cùng warehouse với item
-                WarehouseItemEntity item = warehouseItemRepository
-                        .findById(material.getWarehouseItemId())
-                        .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_ITEM_NOT_FOUND));
-
-                if (!location.getWarehouse().getId().equals(item.getWarehouse().getId()))
-                    throw new AppException(ErrorCode.LOCATION_NOT_IN_SAME_WAREHOUSE);
-
-                // Tồn kho tại location đó phải đủ
-                BigDecimal stockAtLocation = warehouseStockRepository
-                        .findQtyByWarehouseItemIdAndLocationId(
-                                material.getWarehouseItemId(),
-                                material.getFromLocationId());
-
-                if (stockAtLocation == null
-                        || stockAtLocation.compareTo(material.getUsedQty()) < 0)
-                    throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
-            }
-        }
-
-        return task;
+        return workLogMapper.toResponse(workLogRepository.save(workLog));
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // PATCH — unlock worklog (cấp trên mở khoá để chỉnh sửa)
+    // PATCH /worklogs/{workLogId}/unlock
+    // ─────────────────────────────────────────────────────────────────────────
+    @Transactional
+    public WorkLogResponse unlockWorkLog(UUID workLogId) {
+        UUID farmId = securityUtils.getCurrentFarmId();
+
+        WorkLogEntity workLog = workLogRepository.findById(workLogId)
+                .orElseThrow(() -> new AppException(ErrorCode.WORK_LOG_NOT_FOUND));
+
+        if (!workLog.getFarm().getId().equals(farmId))
+            throw new AppException(ErrorCode.FORBIDDEN);
+
+        if (workLog.getDeletedAt() != null)
+            throw new AppException(ErrorCode.WORK_LOG_NOT_FOUND);
+
+        if (workLog.getLockedAt() == null)
+            throw new AppException(ErrorCode.WORK_LOG_NOT_LOCKED);
+
+        workLog.setLockedAt(null);
+
+        return workLogMapper.toResponse(workLogRepository.save(workLog));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DELETE — soft delete worklog
+    // DELETE /tasks/{taskId}/worklogs/{workLogId}
+    // ─────────────────────────────────────────────────────────────────────────
     @Transactional
     public void deleteWorkLog(UUID taskId, UUID workLogId) {
         UUID farmId = securityUtils.getCurrentFarmId();
@@ -314,23 +277,130 @@ public class WorkLogService {
         WorkLogEntity workLog = workLogRepository.findById(workLogId)
                 .orElseThrow(() -> new AppException(ErrorCode.WORK_LOG_NOT_FOUND));
 
-        // Kiểm tra thuộc đúng task và farm
         if (!workLog.getTask().getId().equals(taskId))
             throw new AppException(ErrorCode.WORK_LOG_NOT_FOUND);
 
         if (!workLog.getFarm().getId().equals(farmId))
             throw new AppException(ErrorCode.FORBIDDEN);
 
-        // Không xóa được khi đã lock (đã tính lương)
+        if (workLog.getDeletedAt() != null)
+            throw new AppException(ErrorCode.WORK_LOG_NOT_FOUND);
+
         if (workLog.getLockedAt() != null)
             throw new AppException(ErrorCode.WORK_LOG_ALREADY_LOCKED);
 
-        // Xóa work log materials trước
-        workLogMaterialRepository.deleteAllByWorkLog_Id(workLogId);
+        // Soft delete — giữ lại để audit
+        workLog.setDeletedAt(Instant.now());
+        workLogRepository.save(workLog);
 
-        // Xóa warehouse transactions liên quan
-        warehouseTransactionRepository.deleteAllByRefWorkLog_Id(workLogId);
+        log.info("[WorkLog] Soft deleted workLogId={} by farmId={}", workLogId, farmId);
+    }
 
-        workLogRepository.delete(workLog);
+    // ─────────────────────────────────────────────────────────────────────────
+    // Private helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private TaskEntity validateAndGetTask(UUID taskId, UUID planStageId, UUID planId,
+                                          UUID employeeId, UUID farmId,
+                                          CreateWorkLogRequest request) {
+        TaskEntity task = taskValidator.validateAndGetTask(taskId, planStageId, planId, farmId);
+
+        if (!task.getFarm().getId().equals(farmId))
+            throw new AppException(ErrorCode.FORBIDDEN);
+
+        if (!taskAssigneeRepository.existsByTask_IdAndUser_IdAndRemovedAtIsNull(taskId, employeeId))
+            throw new AppException(ErrorCode.FORBIDDEN);
+
+        if (request.getWorkDate().isAfter(LocalDate.now()))
+            throw new AppException(ErrorCode.WORK_DATE_CANNOT_BE_FUTURE);
+
+        if (taskSkipDayRepository.existsByTask_IdAndSkipDate(taskId, request.getWorkDate()))
+            throw new AppException(ErrorCode.WORK_DATE_IS_SKIP_DAY);
+
+        if (workLogRepository.existsByTask_IdAndEmployee_IdAndWorkDateAndShift_IdAndDeletedAtIsNull(
+                taskId, employeeId, request.getWorkDate(), request.getShiftId()))
+            throw new AppException(ErrorCode.WORK_LOG_ALREADY_EXISTS);
+
+        if (task.getStartDate() != null && request.getWorkDate().isBefore(task.getStartDate()))
+            throw new AppException(ErrorCode.WORK_DATE_OUT_OF_TASK_RANGE);
+
+        if (task.getEndDate() != null && request.getWorkDate().isAfter(task.getEndDate()))
+            throw new AppException(ErrorCode.WORK_DATE_OUT_OF_TASK_RANGE);
+
+        if (request.getMaterials() != null && !request.getMaterials().isEmpty()) {
+            validateMaterials(taskId, request);
+        }
+
+        return task;
+    }
+
+    private void validateMaterials(UUID taskId, CreateWorkLogRequest request) {
+        for (var material : request.getMaterials()) {
+
+            if (!taskMaterialRepository.existsByTask_IdAndWarehouseItem_Id(
+                    taskId, material.getWarehouseItemId()))
+                throw new AppException(ErrorCode.TASK_MATERIAL_NOT_FOUND);
+
+            WarehouseLocationEntity location = warehouseLocationRepository
+                    .findById(material.getFromLocationId())
+                    .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_LOCATION_NOT_FOUND));
+
+            WarehouseItemEntity item = warehouseItemRepository
+                    .findById(material.getWarehouseItemId())
+                    .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_ITEM_NOT_FOUND));
+
+            if (!location.getWarehouse().getId().equals(item.getWarehouse().getId()))
+                throw new AppException(ErrorCode.LOCATION_NOT_IN_SAME_WAREHOUSE);
+
+            BigDecimal stockAtLocation = warehouseStockRepository
+                    .findQtyByWarehouseItemIdAndLocationId(
+                            material.getWarehouseItemId(),
+                            material.getFromLocationId());
+
+            if (stockAtLocation == null || stockAtLocation.compareTo(material.getUsedQty()) < 0)
+                throw new AppException(ErrorCode.INSUFFICIENT_STOCK);
+        }
+    }
+
+    private WorkLogEntity processMaterials(WorkLogEntity workLog, CreateWorkLogRequest request,
+                                           FarmEntity farm, TaskEntity task, UserEntity employee) {
+        for (var material : request.getMaterials()) {
+
+            WarehouseItemEntity warehouseItem = warehouseItemRepository
+                    .findById(material.getWarehouseItemId())
+                    .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_ITEM_NOT_FOUND));
+
+            WarehouseLocationEntity fromLocation = warehouseLocationRepository
+                    .findById(material.getFromLocationId())
+                    .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_LOCATION_NOT_FOUND));
+
+            WorkLogMaterialEntity workLogMaterial = WorkLogMaterialEntity.builder()
+                    .workLog(workLog)
+                    .warehouseItem(warehouseItem)
+                    .usedQty(material.getUsedQty())
+                    .deviationReason(material.getDeviationReason())
+                    .build();
+            workLogMaterialRepository.save(workLogMaterial);
+
+            WarehouseTransactionEntity transaction = WarehouseTransactionEntity.builder()
+                    .farm(farm)
+                    .warehouse(warehouseItem.getWarehouse())
+                    .warehouseItem(warehouseItem)
+                    .fromLocation(fromLocation)
+                    .toLocation(null)
+                    .type(WarehouseTxnType.EXPORT_TASK)
+                    .qtyChange(material.getUsedQty())
+                    .refWorkLog(workLog)
+                    .refTask(task)
+                    .performedBy(employee)
+                    .notes("Export vật tư cho task: " + task.getName())
+                    .build();
+            warehouseTransactionRepository.save(transaction);
+        }
+
+        // Flush để trigger fn_update_stock chạy trên DB
+        entityManager.flush();
+
+        return workLog;
     }
 }

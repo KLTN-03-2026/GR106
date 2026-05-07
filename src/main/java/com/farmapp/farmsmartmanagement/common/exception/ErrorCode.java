@@ -154,9 +154,14 @@ public enum ErrorCode {
     TASK_DEPENDENCY_CIRCULAR_NOT_ALLOWED(409,"Công việc phụ thuộc bị nối vòng" ,HttpStatus.CONFLICT ),
     PLAN_STAGE_ALREADY_EXPIRED(409,"Giai đoạn đã quá hạn" , HttpStatus.CONFLICT),
     TASK_START_DATE_AFTER_END_DATE(409, "Thời gian bắt đầu phải nằm trước thời gian kết thúc" ,HttpStatus.CONFLICT ),
-    PLAN_STAGE_ALREADY_STARTED(409,"Giai đoạn đã bắt đầu" ,HttpStatus.CONFLICT ),;
-
-
+    PLAN_STAGE_ALREADY_STARTED(409,"Giai đoạn đã bắt đầu" ,HttpStatus.CONFLICT ),
+    SESSION_ALREADY_OPEN(400, "Bạn đang có một phiên làm việc chưa kết thúc", HttpStatus.BAD_REQUEST),
+    SESSION_ALREADY_CLOSED(400, "Phiên làm việc này đã kết thúc", HttpStatus.BAD_REQUEST),
+    SESSION_NOT_FOUND(404, "Không tìm thấy phiên làm việc", HttpStatus.NOT_FOUND),
+    MANUAL_CHECKOUT_NOT_ALLOWED(403, "Farm này không cho phép tự điều chỉnh giờ check-out", HttpStatus.FORBIDDEN ),
+    INVALID_CHECKOUT_TIME(400, "Giờ check-out phải sau giờ check-in", HttpStatus.BAD_REQUEST),
+    WORK_LOG_NOT_LOCKED(400, "WorkLog chưa được khoá",HttpStatus.BAD_REQUEST),
+;
 
     private final int code;
     private final String message;

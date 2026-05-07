@@ -14,16 +14,40 @@ import java.util.UUID;
 
 public interface WorkLogRepository extends JpaRepository<WorkLogEntity, UUID> {
 
-    boolean existsByTask_IdAndEmployee_IdAndWorkDateAndShift_Id(UUID taskId, UUID employeeId, @NotNull(message = "Ngày làm việc không được để trống") LocalDate workDate, UUID shiftId);
+// Thêm vào WorkLogRepository
 
-    // WorkLogRepository
-    List<WorkLogEntity> findAllByTask_IdOrderByWorkDateDesc(UUID taskId);
+    // Thay existsByTask_IdAndEmployee_IdAndWorkDateAndShift_Id cũ
+    boolean existsByTask_IdAndEmployee_IdAndWorkDateAndShift_IdAndDeletedAtIsNull(
+            UUID taskId, UUID employeeId, LocalDate workDate, UUID shiftId);
 
-    List<WorkLogEntity> findAllByEmployee_IdAndFarm_IdAndWorkDateBetweenOrderByWorkDateDesc(
+    // Thay findAllByTask_IdOrderByWorkDateDesc cũ
+    List<WorkLogEntity> findAllByTask_IdAndDeletedAtIsNullOrderByWorkDateDesc(UUID taskId);
+
+    // Thay findAllByFarm_IdAndWorkDateBetweenOrderByWorkDateDesc cũ
+    List<WorkLogEntity> findAllByFarm_IdAndWorkDateBetweenAndDeletedAtIsNullOrderByWorkDateDesc(
+            UUID farmId, LocalDate from, LocalDate to);
+
+    // Thay findAllByEmployee cũ
+    List<WorkLogEntity> findAllByEmployee_IdAndFarm_IdAndWorkDateBetweenAndDeletedAtIsNullOrderByWorkDateDesc(
             UUID employeeId, UUID farmId, LocalDate from, LocalDate to);
 
-    List<WorkLogEntity> findAllByFarm_IdAndWorkDateBetweenOrderByWorkDateDesc(
-            UUID farmId, LocalDate from, LocalDate to);
+    // Query mới — theo plan
+    @Query("""
+        SELECT wl FROM WorkLogEntity wl
+        JOIN wl.task t
+        JOIN t.planStage ps
+        WHERE ps.plan.id  = :planId
+          AND wl.farm.id  = :farmId
+          AND wl.deletedAt IS NULL
+          AND (:from IS NULL OR wl.workDate >= :from)
+          AND (:to   IS NULL OR wl.workDate <= :to)
+        ORDER BY wl.workDate DESC
+    """)
+    List<WorkLogEntity> findAllByPlanIdAndFarmId(
+            @Param("planId") UUID planId,
+            @Param("farmId") UUID farmId,
+            @Param("from")   LocalDate from,
+            @Param("to")     LocalDate to);
 
     @Query("""
     SELECT w FROM WorkLogEntity w

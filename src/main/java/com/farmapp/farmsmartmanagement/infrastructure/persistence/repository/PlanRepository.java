@@ -22,7 +22,6 @@ public interface PlanRepository extends JpaRepository<PlanEntity, UUID> {
 
     Optional<PlanEntity> findByIdAndFarm_Id(UUID planId, UUID farmId);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             SELECT p FROM PlanEntity p
             WHERE p.id = :planId
