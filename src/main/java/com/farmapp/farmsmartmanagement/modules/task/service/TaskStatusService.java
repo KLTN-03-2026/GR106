@@ -5,12 +5,14 @@ import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
+import com.farmapp.farmsmartmanagement.modules.plan.validation.PlanStageValidator;
 import com.farmapp.farmsmartmanagement.modules.task.dto.response.TaskStatusHistoryResponse;
 import com.farmapp.farmsmartmanagement.modules.task.dto.response.TaskStatusResponse;
 import com.farmapp.farmsmartmanagement.modules.task.dto.response.TaskStatusTransitionResponse;
 import com.farmapp.farmsmartmanagement.modules.task.mapper.TaskStatusHistoryMapper;
 import com.farmapp.farmsmartmanagement.modules.task.mapper.TaskStatusMapper;
 import com.farmapp.farmsmartmanagement.modules.task.mapper.TaskStatusTransitionMapper;
+import com.farmapp.farmsmartmanagement.modules.task.validation.TaskValidator;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -43,6 +45,9 @@ public class TaskStatusService {
     UserRepository userRepository;
 
     SecurityUtils securityUtils;
+
+    PlanStageValidator planStageValidator;
+    TaskValidator taskValidator;
 
     public List<TaskStatusResponse> findAllTaskStatus(){
         return taskStatusMapper.toResponses(taskStatusRepository.findAll());
@@ -82,33 +87,14 @@ public class TaskStatusService {
         UserEntity changedBy = userRepository.getReferenceById(securityUtils.getCurrentUserId());
 
         // 1. Lock row — tránh race condition
-        TaskEntity task = taskRepository
-                .findByIdForUpdate(taskId, stageId, planId, farmId)
-                .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));
+        TaskEntity task = taskValidator.validateAndGetTaskForUpdate(taskId,stageId,planId,farmId);
 
-        // 2. Kiểm tra task đã terminal chưa
-        TaskStatusEntity currentStatus = task.getStatus();
-        if (currentStatus.getIsTerminal() || LocalDate.now().isAfter(task.getEndDate()))
-            throw new AppException(ErrorCode.TASK_ALREADY_TERMINAL);
-
-        // 3. Kiểm tra plan stage chưa terminal
-        PlanStageEntity planStage = task.getPlanStage();
-        // 1. Stage đã terminal
-        if (planStage.getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
-
-        // 2. Stage đã qua actualEndDate (đã kết thúc thực tế)
-        if (planStage.getActualEndDate() != null
-                && LocalDate.now().isAfter(planStage.getActualEndDate()))
-            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
-        // Không kiểm tra endDate vì thực tế có thể làm trễ hơn
-
-
-        // 4. Kiểm tra toStatus tồn tại
+        // 3. Kiểm tra toStatus tồn tại
         TaskStatusEntity toStatus = taskStatusRepository
                 .findById(taskStatusId)
                 .orElseThrow(() -> new AppException(ErrorCode.TASK_STATUS_NOT_FOUND));
 
+        TaskStatusEntity currentStatus = task.getStatus();
         // 5. Kiểm tra transition hợp lệ (kể cả global farm_id IS NULL)
         if (!taskStatusTransitionRepository
                 .existsByFromAndToStatus(farmId, currentStatus.getId(), toStatus.getId()))

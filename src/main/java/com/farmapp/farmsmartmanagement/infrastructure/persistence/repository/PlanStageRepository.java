@@ -24,7 +24,7 @@ public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID
     WHERE p.plan.id = :planId
     AND p.deletedAt IS NULL
     AND :startDate <= COALESCE(p.actualEndDate, p.endDate)
-    AND :endDate   >= p.startDate
+    AND :endDate   >= COALESCE(p.actualStartDate, p.startDate)
 """)
     boolean existsOverlapping(
             @Param("planId")    UUID planId,
@@ -76,8 +76,6 @@ public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID
             AND pt.deletedAt IS NULL
         """)
     Optional<PlanStageEntity> findByIdAndPlanId(@Param("planStageId") UUID planStageId,@Param("planId") UUID planId);
-
-    Optional<PlanStageEntity> findByIdAndPlanIdAndPlan_Farm_Id(UUID planStageId, UUID planId, UUID farmId);
 
     @Query("""
         SELECT pt FROM PlanStageEntity pt

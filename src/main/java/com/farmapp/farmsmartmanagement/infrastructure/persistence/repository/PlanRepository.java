@@ -1,7 +1,9 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanEntity;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -20,13 +22,22 @@ public interface PlanRepository extends JpaRepository<PlanEntity, UUID> {
 
     Optional<PlanEntity> findByIdAndFarm_Id(UUID planId, UUID farmId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            SELECT p FROM PlanEntity p
+            WHERE p.id = :planId
+            AND p.farm.id = :farmId
+        """)
+    Optional<PlanEntity> findByIdAndFarm_IdForUpdate(UUID planId, UUID farmId);
+
+
     boolean existsByIdAndFarm_Id(UUID planId, UUID farmId);
 
     @Query("""
     SELECT CASE WHEN COUNT(p) = 0 THEN true
         ELSE (
-            :startDate <= MIN(p.startDate)
-            AND :endDate >= MAX(p.endDate)
+            :startDate <= MIN(COALESCE(p.actualStartDate, p.startDate))
+            AND :endDate >= MAX(COALESCE(p.actualEndDate, p.endDate))
         )
     END
     FROM PlanStageEntity p

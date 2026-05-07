@@ -118,7 +118,6 @@ public enum ErrorCode {
     WAREHOUSE_ITEM_HAS_STOCK(409,"Vật tư vẫn còn số lượng trong kho" , HttpStatus.CONFLICT),
     WAREHOUSE_ITEM_IN_USE(409,"Vật tư đang được sử dụng" ,HttpStatus.CONFLICT ),
     CONCURRENT_MODIFICATION(409,"Dữ liệu đã thay đổi vui lòng load lại" ,HttpStatus.CONFLICT ),
-    TASK_ASSIGNEE_NOT_FOUND_OR_TASK_IS_TERMINAL(404,"Không tìm thấy việc được giao hoặc công việc đã kết thúc" ,HttpStatus.NOT_FOUND ),
     TASK_NOT_FOUND_OR_TASK_IS_TERMINAL(404,"Không tìm thấy công việc hoặc công việc đã kết thúc" ,HttpStatus.NOT_FOUND ),
     TASK_DEPENDENCY_ALREADY_EXISTS(409,"Đã có sự phụ thuộc giữa 2 công việc" ,HttpStatus.CONFLICT ),
     TASK_DEPENDENCY_NOT_FOUND(404,"Không tìm thấy sự phụ thuộc giữa 2 công việc" ,HttpStatus.NOT_FOUND ),
@@ -152,7 +151,10 @@ public enum ErrorCode {
     PLOT_IS_USING_BY_TASK(409,"Lô đất đang được sử dụng bởi công việc" ,HttpStatus.CONFLICT),
     PLAN_STAGE_CANNOT_START_CAUSE_STAGE_IN_FUTURE(409,"Giai đoạn không thể bắt đầu vì nó nằm ở tương lai" ,HttpStatus.CONFLICT),
     TASK_ALREADY_EXPIRED(409,"Công việc đã quá hạn" , HttpStatus.CONFLICT),
-    TASK_DEPENDENCY_CIRCULAR_NOT_ALLOWED(409,"Công việc phụ thuộc bị nối vòng" ,HttpStatus.CONFLICT ),;
+    TASK_DEPENDENCY_CIRCULAR_NOT_ALLOWED(409,"Công việc phụ thuộc bị nối vòng" ,HttpStatus.CONFLICT ),
+    PLAN_STAGE_ALREADY_EXPIRED(409,"Giai đoạn đã quá hạn" , HttpStatus.CONFLICT),
+    TASK_START_DATE_AFTER_END_DATE(409, "Thời gian bắt đầu phải nằm trước thời gian kết thúc" ,HttpStatus.CONFLICT ),
+    PLAN_STAGE_ALREADY_STARTED(409,"Giai đoạn đã bắt đầu" ,HttpStatus.CONFLICT ),;
 
 
 

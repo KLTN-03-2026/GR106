@@ -6,5 +6,12 @@ import com.farmapp.farmsmartmanagement.modules.worklog.dto.request.CreateWorkLog
 import java.util.UUID;
 
 public interface TaskValidator {
-    TaskEntity validateTerminationAndExpiredAndGetTask(UUID taskId);
+
+    // Dùng cho: read, createDependency, createWorkLog, updateTaskInfo
+    TaskEntity validateAndGetTask(
+            UUID taskId, UUID planStageId, UUID planId, UUID farmId);
+
+    // Dùng cho: updateStatus — cần lock tránh race condition
+    TaskEntity validateAndGetTaskForUpdate(
+            UUID taskId, UUID planStageId, UUID planId, UUID farmId);
 }

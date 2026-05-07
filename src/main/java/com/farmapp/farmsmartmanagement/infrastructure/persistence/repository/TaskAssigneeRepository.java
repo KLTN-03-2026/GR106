@@ -32,14 +32,7 @@ public interface TaskAssigneeRepository extends JpaRepository<TaskAssigneeEntity
         """)
     void deleteByIdAndPlan_IdAndStage_IdAndTask_Id(UUID assigneeId, UUID planId, UUID stageId, UUID taskId);
 
-    @Query("""
-        SELECT ta
-        FROM TaskAssigneeEntity ta
-        WHERE ta.id = :assigneeId
-          AND ta.task.id = :taskId
-          AND ta.task.status.isTerminal = FALSE
-    """)
-    Optional<TaskAssigneeEntity> findByIdAndTaskIsNotTerminal(UUID assigneeId, UUID taskId);
+    Optional<TaskAssigneeEntity> findByIdAndTask_Id(UUID id, UUID taskId);
 
     boolean existsByTask_IdAndUser_IdAndRemovedAtIsNull(UUID taskId, UUID employeeId);
 

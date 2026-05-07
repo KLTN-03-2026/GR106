@@ -7,6 +7,7 @@ import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
 import com.farmapp.farmsmartmanagement.domain.enums.WarehouseTxnType;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
+import com.farmapp.farmsmartmanagement.modules.task.validation.TaskValidator;
 import com.farmapp.farmsmartmanagement.modules.worklog.dto.request.CreateWorkLogRequest;
 import com.farmapp.farmsmartmanagement.modules.worklog.dto.response.WorkLogDetailResponse;
 import com.farmapp.farmsmartmanagement.modules.worklog.dto.response.WorkLogResponse;
@@ -48,6 +49,7 @@ public class WorkLogService {
     SecurityUtils securityUtils;
     WorkLogMapper workLogMapper;
     EntityManager entityManager;
+    TaskValidator taskValidator;
 
 
     @Transactional(readOnly = true)
@@ -145,7 +147,7 @@ public class WorkLogService {
     }
 
     @Transactional
-    public WorkLogResponse createWorkLog(UUID taskId, CreateWorkLogRequest request) {
+    public WorkLogResponse createWorkLog(UUID taskId, UUID planStageId, UUID planId, CreateWorkLogRequest request) {
         UUID farmId = securityUtils.getCurrentFarmId();
         UUID userId = securityUtils.getCurrentUserId();
 
@@ -154,7 +156,7 @@ public class WorkLogService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
         // Validate và lấy task — validate vật tư ở đây luôn
-        TaskEntity task = validateAndGetTask(taskId, userId, farmId, request);
+        TaskEntity task = validateAndGetTask(taskId, planStageId, planId, userId, farmId, request);
 
         // Validate shift nếu có
         WorkShiftEntity shift = null;
@@ -231,23 +233,16 @@ public class WorkLogService {
     // ─────────────────────────────────────────────────────────────────────────
     //  Validate — chỉ validate, không tạo entity
     // ─────────────────────────────────────────────────────────────────────────
-    private TaskEntity validateAndGetTask(UUID taskId, UUID employeeId,
+    private TaskEntity validateAndGetTask(UUID taskId, UUID  planStageId, UUID planId, UUID employeeId,
                                           UUID farmId, CreateWorkLogRequest request) {
 
         // 1. Task tồn tại
-        TaskEntity task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));
+        TaskEntity task = taskValidator.validateAndGetTask(taskId, planStageId, planId, farmId);
 
         // 2. Task thuộc farm hiện tại
         if (!task.getFarm().getId().equals(farmId))
             throw new AppException(ErrorCode.FORBIDDEN);
 
-        // 3. Task chưa ở trạng thái terminal
-        if (task.getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.TASK_ALREADY_TERMINAL);
-
-        if(task.getActualEndDate()!=null && LocalDate.now().isAfter(task.getActualEndDate()))
-            throw new AppException(ErrorCode.TASK_ALREADY_EXPIRED);
 
         // 4. Employee được assign vào task và chưa bị remove
         if (!taskAssigneeRepository.existsByTask_IdAndUser_IdAndRemovedAtIsNull(taskId, employeeId))

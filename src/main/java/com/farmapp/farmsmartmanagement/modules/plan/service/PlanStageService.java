@@ -12,6 +12,7 @@ import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdatePlanStageR
 import com.farmapp.farmsmartmanagement.modules.plan.dto.request.UpdatePlanStageTimeRequest;
 import com.farmapp.farmsmartmanagement.modules.plan.dto.response.PlanStageResponse;
 import com.farmapp.farmsmartmanagement.modules.plan.mapper.PlanStageMapper;
+import com.farmapp.farmsmartmanagement.modules.plan.validation.PlanStageValidator;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -43,6 +44,8 @@ public class PlanStageService {
 
 
     PlanStageMapper planStageMapper;
+
+    PlanStageValidator planStageValidator;
 
     SecurityUtils securityUtils;
 
@@ -178,7 +181,12 @@ public class PlanStageService {
 
         checkPlanNotTerminal(plan);
 
-        PlanStageEntity stage = getStageOrThrow(stageId, planId);
+        PlanStageEntity stage = planStageValidator.validateAndGetStageForUpdate(stageId, planId, farmId);
+        // Nếu stage đã bắt đầu thực tế, không cho phép dời startDate
+        if (stage.getActualStartDate() != null
+                && !request.getStartDate().equals(stage.getStartDate())) {
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_STARTED);
+        }
 
         // Nếu có thay đổi thời gian
         if (request.getStartDate() != null && request.getEndDate() != null) {
@@ -201,9 +209,6 @@ public class PlanStageService {
                 && planStageRepository.existsByPlanIdAndNameAndDeletedAtIsNull(planId, request.getName()))
             throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_EXISTS);
 
-        if(stage.getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
-
         planStageMapper.updateEntityFromRequest(request, stage);
 
         return planStageMapper.toResponse(planStageRepository.save(stage));
@@ -225,7 +230,13 @@ public class PlanStageService {
 
         checkPlanNotTerminal(plan);
 
-        PlanStageEntity planStage = getStageOrThrow(planStageId, planId);
+        PlanStageEntity planStage = planStageValidator.validateAndGetStageForUpdate(planStageId,planId,farmId);
+
+        // Nếu stage đã bắt đầu thực tế, không cho phép dời startDate
+        if (planStage.getActualStartDate() != null
+                && !request.getStartDate().equals(planStage.getStartDate())) {
+            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_STARTED);
+        }
 
         checkDatesWithinPlan(plan, request.getStartDate(), request.getEndDate());
 
@@ -236,9 +247,6 @@ public class PlanStageService {
         if (taskRepository.existsTaskOutsideStage(
                 planStageId, request.getStartDate(), request.getEndDate()))
             throw new AppException(ErrorCode.PLAN_STAGE_NOT_COVER_TASK);
-
-        if(planStage.getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
 
         planStage.setStartDate(request.getStartDate());
         planStage.setEndDate(request.getEndDate());

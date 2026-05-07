@@ -39,13 +39,15 @@ public class WorkLogController {
             description = "Tạo nhật ký công việc cho một Task",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    @PostMapping("/api/v1/tasks/{taskId}/worklogs")
+    @PostMapping("/api/v1/plans/{planId}/stages/{planStageId}/tasks/{taskId}/worklogs")
     @RequiresFarmToken
     public ResponseEntity<ApiResponse<WorkLogResponse>> createWorkLog(
+            @PathVariable UUID planId,
+            @PathVariable UUID planStageId,
             @PathVariable UUID taskId,
             @RequestBody @Valid CreateWorkLogRequest request
     ) {
-        return ResponseUtil.created(workLogService.createWorkLog(taskId, request));
+        return ResponseUtil.created(workLogService.createWorkLog(taskId, planStageId, planId, request));
     }
 
     // ─────────────────────────────────────────────────────────────────────────

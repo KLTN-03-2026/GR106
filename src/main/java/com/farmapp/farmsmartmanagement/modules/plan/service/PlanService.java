@@ -97,12 +97,14 @@ public class PlanService {
         return planMapper.toResponse(planRepository.save(newPlan));
     }
 
+    @PreAuthorize("hasAuthority('plan:update')")
     @Transactional
     public PlanResponse updatePlanTime( UUID planId, UpdatePlanTimeRequest request){
 
         UUID farmId = securityUtils.getCurrentFarmId();
 
-        PlanEntity plan = planRepository.findByIdAndFarm_Id(planId, farmId)
+        PlanEntity plan = planRepository
+                .findByIdAndFarm_IdForUpdate(planId, farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
         plan.setVersion(request.getVersion());
 

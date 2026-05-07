@@ -5,6 +5,7 @@ import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
 import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
+import com.farmapp.farmsmartmanagement.modules.plan.validation.PlanStageValidator;
 import com.farmapp.farmsmartmanagement.modules.task.dto.request.CreateTaskRequest;
 import com.farmapp.farmsmartmanagement.modules.task.dto.request.UpdateTaskRequest;
 import com.farmapp.farmsmartmanagement.modules.task.dto.request.UpdateTaskTimeRequest;
@@ -49,6 +50,7 @@ public class TaskService {
     DiseaseReportRepository diseaseReportRepository;
 
     TaskValidator taskValidator;
+    PlanStageValidator planStageValidator;
 
     TaskMapper taskMapper;
     SecurityUtils securityUtils;
@@ -124,39 +126,27 @@ public class TaskService {
 
         UUID farmId = securityUtils.getCurrentFarmId();
 
-        PlanStageEntity planStage = planStageRepository
-                .findByIdAndPlanIdAndPlan_Farm_Id(planStageId, planId, farmId)
-                .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
-
-        // 1. Stage đã terminal
-        if (planStage.getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
-
-        // 2. Stage đã qua actualEndDate (đã kết thúc thực tế)
-        if (planStage.getActualEndDate() != null
-                && LocalDate.now().isAfter(planStage.getActualEndDate()))
-            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
-        // Không kiểm tra endDate vì thực tế có thể làm trễ hơn
-
-        if(planStage.getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
+        PlanStageEntity planStage = planStageValidator.validateAndGetStage(planStageId,planId,farmId);
 
         if (request.getStartDate() != null && request.getEndDate() != null) {
-            if (request.getStartDate().isBefore(planStage.getStartDate()) ||
-                    request.getEndDate().isAfter(planStage.getEndDate())) {
+            LocalDate startDate = planStage.getActualStartDate() != null
+                    ? planStage.getActualStartDate()
+                    : planStage.getStartDate();
+            LocalDate endDate = planStage.getActualEndDate() != null
+                    ? planStage.getActualEndDate()
+                    : planStage.getEndDate();
+
+            if (request.getStartDate().isBefore(startDate) ||
+                    request.getEndDate().isAfter(endDate)) {
                 throw new AppException(ErrorCode.TASK_OUT_OF_TIME_PLAN_STAGE);
             }
         }
 
-        TaskEntity task = taskValidator.validateTerminationAndExpiredAndGetTask(taskId);
+        TaskEntity task = taskValidator.validateAndGetTask(taskId, planStage.getId(), planId, farmId);
 
         // Lớp 1: Bảo vệ lost update giữa các session — client phải gửi đúng version hiện tại
         if (!task.getVersion().equals(request.getVersion())) {
             throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
-        }
-
-        if (!task.getPlanStage().getId().equals(planStageId)) {
-            throw new AppException(ErrorCode.TASK_NOT_FOUND);
         }
 
         if (request.getPlotId() != null) {
@@ -185,57 +175,53 @@ public class TaskService {
 
 
     @Transactional
-    public TaskResponse updateTaskTime(UUID planId, UUID planStageId, UUID taskId, UpdateTaskTimeRequest request){
-
+    public TaskResponse updateTaskTime(
+            UUID planId, UUID planStageId, UUID taskId, UpdateTaskTimeRequest request) {
 
         UUID farmId = securityUtils.getCurrentFarmId();
-        UUID userId = securityUtils.getCurrentUserId();
 
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        // Stage còn active
+        PlanStageEntity planStage = planStageValidator
+                .validateAndGetStage(planStageId, planId, farmId);
 
-        // check farm
-        FarmEntity farm = farmRepository.findById(farmId)
-                .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
+        // Task còn active + lock
+        TaskEntity task = taskValidator
+                .validateAndGetTaskForUpdate(taskId, planStageId, planId, farmId);
 
-        // check planStage
-        PlanStageEntity planStage = planStageRepository
-                .findByIdAndPlanId(planStageId,planId)
-                .orElseThrow(() -> new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND));
-
-        // 1. Stage đã terminal
-        if (planStage.getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
-
-        // 2. Stage đã qua actualEndDate (đã kết thúc thực tế)
-        if (planStage.getActualEndDate() != null
-                && LocalDate.now().isAfter(planStage.getActualEndDate()))
-            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
-        // Không kiểm tra endDate vì thực tế có thể làm trễ hơn
-
-        // check ownership
-        if (!planStage.getPlan().getFarm().getId().equals(farmId)) {
-            throw new AppException(ErrorCode.PLAN_STAGE_NOT_FOUND);
-        }
-
-        // validate date
-        if (request.getStartDate().isBefore(planStage.getStartDate()) ||
-                request.getEndDate().isAfter(planStage.getEndDate())) {
-            throw new AppException(ErrorCode.TASK_OUT_OF_TIME_PLAN_STAGE);
-        }
-
-        TaskEntity updateTask = taskRepository.findById(taskId)
-                .orElseThrow(()-> new AppException(ErrorCode.TASK_NOT_FOUND));
-
-        if (!Objects.equals(updateTask.getVersion(), request.getVersion())) {
+        // Optimistic lock
+        if (!Objects.equals(task.getVersion(), request.getVersion()))
             throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
+
+        // Validate date với stage — dùng actual nếu có
+        if (request.getStartDate() != null || request.getEndDate() != null) {
+            LocalDate newStart = request.getStartDate() != null
+                    ? request.getStartDate() : task.getStartDate();
+            LocalDate newEnd = request.getEndDate() != null
+                    ? request.getEndDate() : task.getEndDate();
+
+            LocalDate stageStart = planStage.getActualStartDate() != null
+                    ? planStage.getActualStartDate() : planStage.getStartDate();
+            LocalDate stageEnd = planStage.getActualEndDate() != null
+                    ? planStage.getActualEndDate() : planStage.getEndDate();
+
+            if (newStart != null && newStart.isBefore(stageStart))
+                throw new AppException(ErrorCode.TASK_OUT_OF_TIME_PLAN_STAGE);
+
+            if (newEnd != null && stageEnd != null && newEnd.isAfter(stageEnd))
+                throw new AppException(ErrorCode.TASK_OUT_OF_TIME_PLAN_STAGE);
+
+            if (newStart != null && newEnd != null && newStart.isAfter(newEnd))
+                throw new AppException(ErrorCode.TASK_START_DATE_AFTER_END_DATE);
         }
 
-        updateTask.setStartDate(request.getStartDate());
-        updateTask.setEndDate(request.getEndDate());
+        if (request.getStartDate() != null)
+            task.setStartDate(request.getStartDate());
+
+        if (request.getEndDate() != null)
+            task.setEndDate(request.getEndDate());
 
         try {
-            return taskMapper.toResponse(taskRepository.saveAndFlush(updateTask));
+            return taskMapper.toResponse(taskRepository.saveAndFlush(task));
         } catch (ObjectOptimisticLockingFailureException e) {
             throw new AppException(ErrorCode.CONCURRENT_MODIFICATION);
         }
@@ -261,7 +247,7 @@ public class TaskService {
     @Transactional
     public void deleteTask(UUID taskId) {
         TaskEntity task = taskRepository
-                .findByIdForUpdate(taskId) // lấy lock
+                .findByIdForUpdateAndStatusIsNotTerminal(taskId) // lấy lock
                 .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));
 
         validateTaskTerminalOrExpired(task);

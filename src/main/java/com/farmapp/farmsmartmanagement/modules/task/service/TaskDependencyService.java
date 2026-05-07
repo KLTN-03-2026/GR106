@@ -8,11 +8,13 @@ import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskDep
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.TaskDependencyRepository;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.TaskRepository;
+import com.farmapp.farmsmartmanagement.modules.plan.validation.PlanStageValidator;
 import com.farmapp.farmsmartmanagement.modules.task.dto.request.CreateTaskDependencyRequest;
 import com.farmapp.farmsmartmanagement.modules.task.dto.response.CreateTaskDependencyResponse;
 import com.farmapp.farmsmartmanagement.modules.task.dto.response.TaskDependencyResponse;
 import com.farmapp.farmsmartmanagement.modules.task.mapper.TaskDependencyMapper;
 import com.farmapp.farmsmartmanagement.modules.task.mapper.TaskMapper;
+import com.farmapp.farmsmartmanagement.modules.task.validation.TaskValidator;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -33,37 +35,17 @@ public class TaskDependencyService {
     TaskDependencyMapper taskDependencyMapper;
     TaskMapper taskMapper;
     SecurityUtils securityUtils;
+    TaskValidator taskValidator;
+    PlanStageValidator planStageValidator;
 
     @Transactional
     public CreateTaskDependencyResponse createTaskDependency(
             UUID planId, UUID planStageId, UUID taskId, CreateTaskDependencyRequest request
     ) {
         UUID farmId = securityUtils.getCurrentFarmId();
-        TaskEntity task = taskRepository
-                .findByIdAndStageIdAndPlanIdAndFarmIdAndStatusIsNotTerminal(taskId,planStageId,planId,farmId)
-                .orElseThrow(()-> new AppException(ErrorCode.TASK_NOT_FOUND));
+        TaskEntity task = taskValidator.validateAndGetTask(taskId, planStageId, planId, farmId);
 
-        if(task.getActualEndDate() != null && LocalDate.now().isAfter(task.getActualEndDate()))
-            throw new AppException(ErrorCode.TASK_ALREADY_EXPIRED);
-
-        if(task.getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.TASK_ALREADY_TERMINAL);
-
-        // 3. Kiểm tra plan stage chưa terminal
-        PlanStageEntity planStage = task.getPlanStage();
-        // 1. Stage đã terminal
-        if (planStage.getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
-
-        // 2. Stage đã qua actualEndDate (đã kết thúc thực tế)
-        if (planStage.getActualEndDate() != null
-                && LocalDate.now().isAfter(planStage.getActualEndDate()))
-            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
-        // Không kiểm tra endDate vì thực tế có thể làm trễ hơn
-
-        TaskEntity dependencyOnTask = taskRepository
-                .findByIdAndStageIdAndPlanIdAndFarmIdAndStatusIsNotTerminal(request.getDependsOnTaskId(),planStageId,planId,farmId)
-                .orElseThrow(()-> new AppException(ErrorCode.TASK_NOT_FOUND));
+        TaskEntity dependencyOnTask = taskValidator.validateAndGetTask(taskId, planStageId, planId, farmId);
 
         if (task.getId().equals(dependencyOnTask.getId())) {
             throw new AppException(ErrorCode.TASK_DEPENDENCY_SELF_NOT_ALLOWED);
