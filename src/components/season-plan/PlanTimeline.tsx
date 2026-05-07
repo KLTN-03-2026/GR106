@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { SeasonPlan, Phase, Task } from '@/types/seasonPlan';
 import { ChevronDown, Plus, Trash2, GripVertical } from 'lucide-react';
 import { cn } from '@/utils/cn';
@@ -75,14 +76,10 @@ function getMonday(d: Date): Date { // Tính toán ngày thứ Hai gần nhất 
   return result;
 }
 
-// ─── ActualOverlay ───────────────────────────────────────────────────────────
-// Renders:
-//  - A dimmed region between planned date and actual date (when they differ)
-//  - A thin vertical marker line at the actual date with hover tooltip
 
-interface ActualOverlayProps {
+interface TimelineRowInteractionProps {
   plannedStart: string;
-  plannedEnd?: string;
+  plannedEnd: string;
   actualStart?: string | null;
   actualEnd?: string | null;
   barLeft: number;
@@ -90,276 +87,232 @@ interface ActualOverlayProps {
   ppd: number;
   rowHeight: number;
   markerColor: string;
+  onBarMouseDown?: (e: React.MouseEvent) => void;
+  onBarClick?: (e: React.MouseEvent) => void;
+  onResizeLeft?: (e: React.MouseEvent) => void;
+  onResizeRight?: (e: React.MouseEvent) => void;
+  canEdit?: boolean;
 }
 
-function ActualOverlay({ 
-  plannedStart, plannedEnd, actualStart, actualEnd, 
-  barLeft, barWidth, ppd, 
-  rowHeight, markerColor 
-}: ActualOverlayProps) {
-  const [hoveredPin, setHoveredPin] = React.useState<'p-start' | 'p-end' | 'a-start' | 'a-end' | null>(null);
+function TimelineRowInteraction({
+  plannedStart, plannedEnd, actualStart, actualEnd,
+  barLeft, barWidth, ppd,
+  rowHeight, markerColor,
+  onBarMouseDown, onBarClick,
+  onResizeLeft, onResizeRight,
+  canEdit
+}: TimelineRowInteractionProps) {
+  const [hoveredPin, setHoveredPin] = React.useState<string | null>(null);
+  const [isOverBar, setIsOverBar] = React.useState(false);
+  const [tooltipPos, setTooltipPos] = React.useState({ x: 0, y: 0 });
 
-  if (!actualStart && !actualEnd) return null;
+  // 1. Calculate hitBounds (covers both planned bar and actual dates)
+  const hitBounds = React.useMemo(() => {
+    const toPxLocal = (d: string) => diffDays(plannedStart, d) * ppd;
+    let minX = 0;
+    let maxX = barWidth;
+    if (actualStart) minX = Math.min(minX, toPxLocal(actualStart));
+    if (actualEnd) maxX = Math.max(maxX, toPxLocal(actualEnd));
+    return {
+      left: barLeft + minX,
+      width: maxX - minX
+    };
+  }, [plannedStart, actualStart, actualEnd, barLeft, barWidth, ppd]);
 
-  // px offset of a date relative to plannedStart (barLeft origin)
-  const toPx = (date: string) => {
-    const da = new Date(plannedStart);
-    const db = new Date(date);
-    return Math.round((db.getTime() - da.getTime()) / 86_400_000) * ppd;
-  };
+  // 2. Define Pins (Actual vs Planned)
+  const pins = React.useMemo(() => {
+    const p: { kind: string; pxInBar: number; label: string; dateLabel: string; isActual: boolean; color?: string }[] = [];
+    const fmt = (d: string) => new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const toPxLocal = (d: string) => diffDays(plannedStart, d) * ppd;
 
-  const barH = rowHeight * 0.6;
-  const markerH = rowHeight * 0.9;
+    const colorStart = `color-mix(in srgb, ${markerColor}, black 10%)`;
+    const colorEnd = `color-mix(in srgb, ${markerColor}, black 30%)`;
 
+    p.push({ kind: 'p-start', pxInBar: 0, label: '○ Kế hoạch bắt đầu', dateLabel: fmt(plannedStart), isActual: false });
+    p.push({ kind: 'p-end', pxInBar: barWidth, label: '□ Kế hoạch kết thúc', dateLabel: fmt(plannedEnd), isActual: false });
 
-  // ── Pins ─────────────────────────────────────────────────────────────────
-  const pins: { kind: 'p-start' | 'p-end' | 'a-start' | 'a-end'; pxInBar: number; dateLabel: string }[] = [];
+    if (actualStart) p.push({ kind: 'a-start', pxInBar: toPxLocal(actualStart), label: '▶ Thực tế bắt đầu', dateLabel: fmt(actualStart), isActual: true, color: colorStart });
+    if (actualEnd) p.push({ kind: 'a-end', pxInBar: toPxLocal(actualEnd), label: '⏹ Thực tế kết thúc', dateLabel: fmt(actualEnd), isActual: true, color: colorEnd });
 
-  // Planned Start/End Pins (Always show as reference)
-  pins.push({
-    kind: 'p-start',
-    pxInBar: 0,
-    dateLabel: new Date(plannedStart).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-  });
-  
-  // Calculate planned end date label from barWidth if plannedEnd prop is not perfect
-  const pEndDate = plannedEnd ? new Date(plannedEnd) : new Date(new Date(plannedStart).getTime() + (barWidth / ppd) * 86400000);
-  pins.push({
-    kind: 'p-end',
-    pxInBar: barWidth,
-    dateLabel: pEndDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-  });
+    return p;
+  }, [plannedStart, plannedEnd, actualStart, actualEnd, barWidth, ppd]);
 
-  // Actual Pins (If available)
-  if (actualStart) {
-    pins.push({
-      kind: 'a-start',
-      pxInBar: toPx(actualStart),
-      dateLabel: new Date(actualStart).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-    });
-  }
-  if (actualEnd) {
-    pins.push({
-      kind: 'a-end',
-      pxInBar: toPx(actualEnd),
-      dateLabel: new Date(actualEnd).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-    });
-  }
+  // 3. Actual Bar (Full range from actual start to actual end)
+  const actualBar = React.useMemo(() => {
+    if (!actualStart && !actualEnd) return null;
+    const toPxLocal = (d: string) => diffDays(plannedStart, d) * ppd;
 
-  // ── Dim segments ─────────────────────────────────────────────────────────
-  const segments: { left: number; width: number }[] = [];
+    // If only start is available, go from actualStart to plannedEnd
+    // If only end is available, go from plannedStart to actualEnd
+    const sX = actualStart ? toPxLocal(actualStart) : 0;
+    const eX = actualEnd ? toPxLocal(actualEnd) : barWidth;
 
-  if (actualStart) {
-    const aPx = toPx(actualStart);
-    if (aPx > 0) {
-      // actual later than planned → dim [plannedStart → actualStart]
-      segments.push({ left: barLeft, width: aPx });
-    } else if (aPx < 0) {
-      // actual earlier than planned → dim [actualStart → plannedStart]
-      segments.push({ left: barLeft + aPx, width: -aPx });
-    }
-  }
+    return { left: barLeft + sX, width: eX - sX };
+  }, [plannedStart, actualStart, actualEnd, barLeft, barWidth, ppd]);
 
-  if (actualEnd) {
-    const aPx = toPx(actualEnd);
-    if (aPx < barWidth) {
-      // actual ended earlier → dim [actualEnd → plannedEnd]
-      segments.push({ left: barLeft + aPx, width: barWidth - aPx });
-    } else if (aPx > barWidth) {
-      // actual ended later → dim [plannedEnd → actualEnd]
-      segments.push({ left: barLeft + barWidth, width: aPx - barWidth });
-    }
-  }
-
-  const topOffset = (rowHeight - barH) / 2;
-  const markerTop = (rowHeight - markerH) / 2;
+  const markerTop = (rowHeight - rowHeight * 0.7) / 2;
+  const markerH = rowHeight * 0.7;
 
   return (
     <>
-      {/* Dim segments */}
-      {segments.map((seg, i) => (
-        <div
-          key={i}
-          className="absolute pointer-events-none z-20"
+      {/* ── ACTUAL BAR VISUAL ── */}
+      {actualBar && (
+        <div className="absolute pointer-events-none opacity-45"
           style={{
-            left: seg.left,
-            width: Math.max(2, seg.width),
-            top: topOffset,
-            height: barH,
-            backgroundColor: 'rgba(29, 9, 55, 0.4)', // Màu nền slate nhạt, chuyên nghiệp hơn
-            border: '1px solid #94a3b8', // Thêm border solid theo yêu cầu
-            borderRadius: 10,
-          }}
-        />
-      ))}
+            left: actualBar.left, width: Math.max(2, actualBar.width),
+            top: (rowHeight - rowHeight * 0.5) / 2, height: rowHeight * 0.5,
+            background: `linear-gradient(to right, color-mix(in srgb, ${markerColor}, black 10%), color-mix(in srgb, ${markerColor}, black 30%))`,
+            borderRadius: 4, zIndex: 10,
+            border: `1.5px solid color-mix(in srgb, ${markerColor}, black 20%)`,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+          }} />
+      )}
 
-      {/* Marker pins */}
+      {/* ── BAR HIT AREA ── */}
+      <div
+        className="absolute"
+        style={{
+          left: hitBounds.left - 4,
+          width: hitBounds.width + 8,
+          top: 0,
+          height: rowHeight,
+          zIndex: 50,
+          cursor: isOverBar ? 'pointer' : 'default',
+          pointerEvents: 'auto',
+          background: 'rgba(26, 225, 19, 0)'
+        }}
+        onMouseMove={(e) => {
+          setTooltipPos({ x: e.clientX, y: e.clientY });
+          setIsOverBar(true);
+        }}
+        onMouseLeave={() => setIsOverBar(false)}
+        onMouseDown={onBarMouseDown}
+        onClick={onBarClick}
+      />
+
+      {/* ── PIN HIT AREAS & VISUALS ── */}
       {pins.map(pin => {
-        const isHovered = hoveredPin === pin.kind;
         const pinLeft = barLeft + pin.pxInBar;
-        const isActual = pin.kind.startsWith('a-');
-        const color = isActual ? markerColor : '#94a3b8'; // Actual uses status color, Planned uses slate-400
-        
+        const isHovered = hoveredPin === pin.kind;
+        const color = pin.isActual ? pin.color! : '#94a3b8';
+
         return (
           <React.Fragment key={pin.kind}>
-            {/* Wider hit-area for easier hovering */}
+            {/* Invisible wide hit area for the pin */}
             <div
-              className="absolute z-35 cursor-pointer"
+              className="absolute cursor-help"
               style={{
-                left: pinLeft - 8, // 16px wide hit area
-                top: markerTop,
-                width: 16,
-                height: markerH,
+                left: pinLeft - 10,
+                width: 20,
+                top: 0,
+                height: rowHeight,
+                zIndex: 100,
+                pointerEvents: 'auto',
+                background: 'rgba(16, 178, 78, 0)'
               }}
               onMouseEnter={() => setHoveredPin(pin.kind)}
+              onMouseMove={(e) => setTooltipPos({ x: e.clientX, y: e.clientY })}
               onMouseLeave={() => setHoveredPin(null)}
             />
-            {/* Vertical line visible part */}
+
+            {/* Visual: Vertical Line */}
             <div
-              className="absolute z-30 pointer-events-none"
+              className="absolute pointer-events-none"
               style={{
                 left: pinLeft - 1,
                 top: markerTop,
                 width: 2,
                 height: markerH,
                 backgroundColor: color,
-                opacity: isHovered ? 1 : (isActual ? 0.75 : 0.4),
+                opacity: isHovered ? 1 : (pin.isActual ? 0.75 : 0.35),
                 borderRadius: 1,
-                transition: 'all .15s',
+                transition: 'opacity .15s',
+                zIndex: 60
               }}
             />
-            {/* Diamond cap at top */}
+
+            {/* Visual: Diamond Cap */}
             <div
-              className="absolute z-30 pointer-events-none"
+              className="absolute pointer-events-none"
               style={{
                 left: pinLeft - 4,
                 top: markerTop - 4,
                 width: 8,
                 height: 8,
                 backgroundColor: color,
-                opacity: isHovered ? 1 : (isActual ? 0.8 : 0.5),
+                opacity: isHovered ? 1 : (pin.isActual ? 0.8 : 0.5),
                 transform: 'rotate(45deg)',
                 borderRadius: 1,
-                transition: 'all .15s',
+                transition: 'opacity .15s',
+                zIndex: 70
               }}
             />
-            {/* Tooltip on hover */}
-            {isHovered && (
-              <div
-                className="absolute z-50 pointer-events-none"
-                style={{ left: pinLeft + 12, top: markerTop - 6, whiteSpace: 'nowrap' }}
-              >
-                <div
-                  className="text-[10px] font-semibold px-2 py-1 rounded-md shadow-lg"
-                  style={{ backgroundColor: '#1e293b', color: '#f8fafc', border: `1px solid ${color}` }}
-                >
-                  {pin.kind === 'a-start' ? '▶ Thực tế bắt đầu' : 
-                   pin.kind === 'a-end' ? '⏹ Thực tế kết thúc' :
-                   pin.kind === 'p-start' ? '○ Kế hoạch bắt đầu' : '□ Kế hoạch kết thúc'}: {pin.dateLabel}
-                </div>
-              </div>
-            )}
           </React.Fragment>
         );
       })}
-    </>
-  );
-}
 
-// ─── BarTooltip ───────────────────────────────────────────────────────────────
-// Tooltip hiển thị khi hover vào thanh bar chính (planned start/end + actual nếu có)
+      {/* ── RESIZE HANDLES (Draggable) ── */}
+      {canEdit && !hoveredPin && (
+        <>
+          <div className="absolute pointer-events-auto cursor-w-resize z-[110]"
+            style={{ left: barLeft - 10, width: 20, top: 0, height: rowHeight }}
+            onMouseDown={onResizeLeft} />
+          <div className="absolute pointer-events-auto cursor-e-resize z-[110]"
+            style={{ left: barLeft + barWidth - 10, width: 20, top: 0, height: rowHeight }}
+            onMouseDown={onResizeRight} />
+        </>
+      )}
 
-interface BarTooltipProps {
-  plannedStart: string;
-  plannedEnd: string;
-  actualStart?: string | null;
-  actualEnd?: string | null;
-  /** Pixel left offset của bar — để hit-area khớp đúng vị trí bar */
-  barLeft: number;
-  /** Pixel width của bar */
-  barWidth: number;
-  /** Row height để căn giữa hit-area */
-  rowHeight: number;
-}
-
-function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-function BarTooltip({ plannedStart, plannedEnd, actualStart, actualEnd, barLeft, barWidth, rowHeight }: BarTooltipProps) {
-  const [show, setShow] = React.useState(false);
-  const [pos, setPos] = React.useState({ x: 0, y: 0 });
-
-  // Calculate full hit area (including actual dates if they are outside planned range)
-  const hitBounds = React.useMemo(() => {
-    if (!actualStart && !actualEnd) return { left: barLeft, width: barWidth };
-
-    const ppd = barWidth / diffDays(plannedStart, plannedEnd);
-    const toPx = (d: string) => diffDays(plannedStart, d) * ppd;
-
-    let minX = 0;
-    let maxX = barWidth;
-
-    if (actualStart) minX = Math.min(minX, toPx(actualStart));
-    if (actualEnd) maxX = Math.max(maxX, toPx(actualEnd));
-
-    return {
-      left: barLeft + minX,
-      width: maxX - minX
-    };
-  }, [plannedStart, plannedEnd, actualStart, actualEnd, barLeft, barWidth]);
-
-  return (
-    <>
-      {/* Invisible hit-area — extended to cover actuals */}
-      <div
-        className="absolute z-25 pointer-events-auto"
-        style={{
-          left: hitBounds.left - 4, // 4px padding
-          width: hitBounds.width + 8,
-          top: (rowHeight - rowHeight * 0.9) / 2,
-          height: rowHeight * 0.9,
-        }}
-        onMouseEnter={() => setShow(true)}
-        onMouseLeave={() => setShow(false)}
-        onMouseMove={e => setPos({ x: e.clientX, y: e.clientY })}
-      />
-      {/* Tooltip rendered at cursor via fixed positioning */}
-      {show && (
+      {/* ── PORTALED TOOLTIPS ── */}
+      {(hoveredPin || (isOverBar && !hoveredPin)) && createPortal(
         <div
-          className="fixed z-50 pointer-events-none"
-          style={{ left: pos.x + 14, top: pos.y - 10 }}
+          className="fixed z-[9999] pointer-events-none"
+          style={{ left: tooltipPos.x + 12, top: tooltipPos.y - 12 }}
         >
-          <div
-            className="text-[11px] font-medium px-2.5 py-1.5 rounded-lg shadow-xl"
-            style={{ backgroundColor: '#1e293b', color: '#f8fafc', border: '1px solid rgba(255,255,255,0.1)', whiteSpace: 'nowrap' }}
-          >
-            {/* Planned dates */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-slate-400 text-[9px] uppercase tracking-widest font-bold w-14">Kế hoạch</span>
-              <span>{fmtDate(plannedStart)}</span>
-              <span className="text-slate-400">→</span>
-              <span>{fmtDate(plannedEnd)}</span>
-            </div>
-            {/* Actual dates — only shown if at least one is present */}
-            {(actualStart || actualEnd) && (
-              <div className="flex items-center gap-1.5 mt-0.5 border-t border-white/10 pt-0.5">
-                <span className="text-amber-400 text-[9px] uppercase tracking-widest font-bold w-14">Thực tế</span>
-                <span className={actualStart ? 'text-amber-300' : 'text-slate-500 italic'}>
-                  {actualStart ? fmtDate(actualStart) : '–'}
-                </span>
-                <span className="text-slate-400">→</span>
-                <span className={actualEnd ? 'text-amber-300' : 'text-slate-500 italic'}>
-                  {actualEnd ? fmtDate(actualEnd) : '–'}
-                </span>
+          <div className="bg-slate-900/95 text-white px-3 py-2 rounded-lg shadow-2xl border border-white/10 backdrop-blur-sm min-w-[180px]">
+            {hoveredPin ? (
+              // PIN TOOLTIP
+              <div className="flex flex-col">
+                {(() => {
+                  const p = pins.find(x => x.kind === hoveredPin);
+                  if (!p) return null;
+                  return (
+                    <>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider whitespace-nowrap">
+                        {p.label}
+                      </span>
+                      <span className="text-sm font-mono mt-0.5 text-white">{p.dateLabel}</span>
+                    </>
+                  );
+                })()}
+              </div>
+            ) : (
+              // BAR TOOLTIP
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-1.5 border-b border-white/10 pb-1.5 mb-1">
+                  <span className="text-indigo-400 text-[10px] uppercase tracking-widest font-bold w-20 whitespace-nowrap">Kế hoạch</span>
+                  <span className="text-xs font-mono text-white/90">{new Date(plannedStart).toLocaleDateString('vi-VN')} → {new Date(plannedEnd).toLocaleDateString('vi-VN')}</span>
+                </div>
+                {(actualStart || actualEnd) && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-amber-400 text-[10px] uppercase tracking-widest font-bold w-20 whitespace-nowrap">Thực tế</span>
+                    <span className="text-xs font-mono text-amber-100/90">
+                      {actualStart ? new Date(actualStart).toLocaleDateString('vi-VN') : '...'} → {actualEnd ? new Date(actualEnd).toLocaleDateString('vi-VN') : '...'}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
 }
+
+
+
 
 // ─── AnimatedRow ──────────────────────────────────────────────────────────────
 
@@ -383,7 +336,8 @@ function AnimatedRow({ visible, rowHeight, children, className, style }: Animate
           ? 'height 220ms cubic-bezier(0.4,0,0.2,1), opacity 180ms ease-out 40ms'
           : 'height 200ms cubic-bezier(0.4,0,1,1), opacity 140ms ease-in',
         flexShrink: 0,
-        willChange: 'height, opacity',
+        // willChange bị xóa để tránh tạo stacking context mới,
+        // nếu không z-index của các marker sẽ bị giới hạn trong context này.
         ...style,
       }}
     >
@@ -503,8 +457,8 @@ export function PlanTimeline({
       if (e > max) max = e;
     });
     return {
-      minDate: new Date(min.getTime() - 20 * 86_400_000),
-      maxDate: new Date(max.getTime() + 50 * 86_400_000),
+      minDate: new Date(min.getTime() - 60 * 86_400_000),
+      maxDate: new Date(max.getTime() + 60 * 86_400_000),
     };
   }, [plans]);
 
@@ -1189,7 +1143,7 @@ export function PlanTimeline({
                 <>
                   {subLines.map((lx, i) => (
                     <div key={`s${i}`} className="absolute top-0 bottom-0 pointer-events-none"
-                      style={{ left: lx, width: 1, background: 'rgba(226,232,240,0.5)' }} />
+                      style={{ left: lx, width: 1, background: 'rgba(240, 234, 226, 0.5)' }} />
                   ))}
                   {topLines.map((lx, i) => (
                     <div key={`t${i}`} className="absolute top-0 bottom-0 pointer-events-none"
@@ -1225,14 +1179,14 @@ export function PlanTimeline({
                 const ph = r.item as Phase;
                 // ─── DEV MOCK: xóa khối này sau khi test xong ──────────────
                 // Inject actual dates vào phase ĐẦU TIÊN để test visual
-              
+
                 const _phWithActual = rows.filter(x => x.type === 'phase')[0]?.id === r.id
-  ? {
-      ...ph,
-      actualStartDate: addDays(ph.startDate, -10),  // trễ 5 ngày so với planned
-      actualEndDate: addDays(ph.endDate, -3),     // sớm 3 ngày
-    }
-  : ph;
+                  ? {
+                    ...ph,
+                    actualStartDate: addDays(ph.startDate, -10),  // trễ 5 ngày so với planned
+                    actualEndDate: addDays(ph.endDate, 10),     // sớm 3 ngày
+                  }
+                  : ph;
                 const phFinal = _phWithActual;
                 // ─── END DEV MOCK ───────────────────────────────────────────
                 const ps = previewStyle(r.planId, phFinal.id, 'phase', phFinal.startDate, phFinal.endDate);
@@ -1246,22 +1200,11 @@ export function PlanTimeline({
                       className={cn('border-b border-slate-100 cursor-pointer', isSelected ? 'bg-indigo-50/20' : 'hover:bg-slate-50/40')}
                       onClick={() => onSelect({ type: 'PHASE', id: phFinal.id, planId: r.planId })}
                     >
-                      {/* BarTooltip hit-area */}
-                      <BarTooltip
-                        plannedStart={phFinal.startDate}
-                        plannedEnd={phFinal.endDate}
-                        actualStart={phFinal.actualStartDate}
-                        actualEnd={phFinal.actualEndDate}
-                        barLeft={phBarLeft}
-                        barWidth={phBarWidth}
-                        rowHeight={ROW_H}
-                      />
-
+                      {/* Main Bar Visual */}
                       <div
                         className={cn(
-                          'absolute flex items-center overflow-hidden rounded-md z-10',
+                          'absolute flex items-center overflow-hidden rounded-md',
                           isDragging ? 'opacity-90 ring-2 ring-white/40' : '',
-                          canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
                         )}
                         style={{
                           ...ps,
@@ -1269,32 +1212,24 @@ export function PlanTimeline({
                           top: '50%',
                           transform: 'translateY(-50%)',
                           height: 24,
+                          zIndex: 1,
                           willChange: 'left, width',
                           transition: isDragging ? 'none' : 'left .15s ease-out, width .15s ease-out, background-color .2s ease',
+                          pointerEvents: 'none',
                         }}
-                        onMouseDown={canEdit ? e => startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: phFinal.id }, 'MOVE', phFinal.startDate, phFinal.endDate) : undefined}
-                        onClick={e => { e.stopPropagation(); onSelect({ type: 'PHASE', id: phFinal.id, planId: r.planId }); }}
+                        onMouseDown={undefined}
+                        onClick={undefined}
                       >
-                        {canEdit && (
-                          <div className="absolute left-0 top-0 bottom-0 w-2 cursor-w-resize z-20 flex items-center justify-center hover:bg-white/10"
-                            onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: phFinal.id }, 'RESIZE_LEFT', phFinal.startDate, phFinal.endDate); }}>
-                            <span className="w-px h-3 bg-white/60 rounded-full" />
-                          </div>
-                        )}
+                        {/* Tất cả children PHẢI có pointer-events: none vì parent có pointer-events: none nhưng CSS KHÔNG tự động kế thừa cho children */}
                         <span className="text-[11px] font-semibold text-white px-3 truncate pointer-events-none flex-1 min-w-0">{phFinal.name}</span>
                         <span className="text-[9px] text-white/70 pr-2 flex-shrink-0 pointer-events-none hidden md:block">
                           {statusLabel(phFinal.status)}
                         </span>
-                        {canEdit && (
-                          <div className="absolute right-0 top-0 bottom-0 w-2 cursor-e-resize z-20 flex items-center justify-center hover:bg-white/10"
-                            onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: phFinal.id }, 'RESIZE_RIGHT', phFinal.startDate, phFinal.endDate); }}>
-                            <span className="w-px h-3 bg-white/60 rounded-full" />
-                          </div>
-                        )}
                       </div>
-                      {/* Actual date overlay — dim + marker pins */}
-                      {!isDragging && (phFinal.actualStartDate || phFinal.actualEndDate) && (
-                        <ActualOverlay
+
+                      {/* Unified Timeline Interaction: Markers + Bar Tooltip */}
+                      {!isDragging && (
+                        <TimelineRowInteraction
                           plannedStart={phFinal.startDate}
                           plannedEnd={phFinal.endDate}
                           actualStart={phFinal.actualStartDate}
@@ -1304,6 +1239,11 @@ export function PlanTimeline({
                           barWidth={phBarWidth}
                           rowHeight={ROW_H}
                           markerColor={getStatusColor(phFinal.status)}
+                          canEdit={canEdit}
+                          onBarMouseDown={canEdit ? e => startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: phFinal.id }, 'MOVE', phFinal.startDate, phFinal.endDate) : undefined}
+                          onBarClick={e => { e.stopPropagation(); onSelect({ type: 'PHASE', id: phFinal.id, planId: r.planId }); }}
+                          onResizeLeft={canEdit ? e => startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: phFinal.id }, 'RESIZE_LEFT', phFinal.startDate, phFinal.endDate) : undefined}
+                          onResizeRight={canEdit ? e => startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: phFinal.id }, 'RESIZE_RIGHT', phFinal.startDate, phFinal.endDate) : undefined}
                         />
                       )}
                     </div>
@@ -1335,22 +1275,12 @@ export function PlanTimeline({
                     className={cn('border-b border-slate-50 cursor-pointer', isSelected ? 'bg-indigo-50/15' : 'hover:bg-slate-50/30')}
                     onClick={() => onSelect({ type: 'TASK', id: tkFinal.id, planId: r.planId, phaseId: r.phaseId })}
                   >
-                    {/* BarTooltip hit-area */}
-                    <BarTooltip
-                      plannedStart={tkFinal.startDate}
-                      plannedEnd={tkFinal.endDate}
-                      actualStart={tkFinal.actualStartDate}
-                      actualEnd={tkFinal.actualEndDate}
-                      barLeft={tkBarLeft}
-                      barWidth={tkBarWidth}
-                      rowHeight={ROW_H}
-                    />
 
+                    {/* Main Bar Visual */}
                     <div
                       className={cn(
-                        'absolute rounded overflow-hidden z-10',
+                        'absolute rounded overflow-hidden',
                         isDragging ? 'opacity-90 ring-2 ring-indigo-300' : '',
-                        canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
                       )}
                       style={{
                         ...ps,
@@ -1361,22 +1291,16 @@ export function PlanTimeline({
                         minWidth: 20,
                         willChange: 'left, width',
                         transition: isDragging ? 'none' : 'left .15s ease-out, width .15s ease-out, background-color .2s ease',
+                        zIndex: 1,
+                        pointerEvents: 'none',
                       }}
-                      onMouseDown={canEdit ? e => startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tkFinal.id }, 'MOVE', tkFinal.startDate, tkFinal.endDate) : undefined}
-                      onClick={e => { e.stopPropagation(); onSelect({ type: 'TASK', id: tkFinal.id, planId: r.planId, phaseId: r.phaseId }); }}
-                    >
-                      {canEdit && (
-                        <>
-                          <div className="absolute left-0 top-0 bottom-0 w-2 cursor-w-resize z-10"
-                            onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tkFinal.id }, 'RESIZE_LEFT', tkFinal.startDate, tkFinal.endDate); }} />
-                          <div className="absolute right-0 top-0 bottom-0 w-2 cursor-e-resize z-10"
-                            onMouseDown={e => { e.stopPropagation(); startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tkFinal.id }, 'RESIZE_RIGHT', tkFinal.startDate, tkFinal.endDate); }} />
-                        </>
-                      )}
-                    </div>
-                    {/* Actual date overlay — dim + marker pins */}
-                    {!isDragging && (tkFinal.actualStartDate || tkFinal.actualEndDate) && (
-                      <ActualOverlay
+                      onMouseDown={undefined}
+                      onClick={undefined}
+                    />
+
+                    {/* Unified Timeline Interaction: Markers + Bar Tooltip */}
+                    {!isDragging && (
+                      <TimelineRowInteraction
                         plannedStart={tkFinal.startDate}
                         plannedEnd={tkFinal.endDate}
                         actualStart={tkFinal.actualStartDate}
@@ -1386,6 +1310,11 @@ export function PlanTimeline({
                         barWidth={tkBarWidth}
                         rowHeight={ROW_H}
                         markerColor={getStatusColor(tkFinal.status)}
+                        onBarMouseDown={canEdit ? e => startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tkFinal.id }, 'MOVE', tkFinal.startDate, tkFinal.endDate) : undefined}
+                        onBarClick={e => { e.stopPropagation(); onSelect({ type: 'TASK', id: tkFinal.id, planId: r.planId, phaseId: r.phaseId }); }}
+                        onResizeLeft={canEdit ? e => startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tkFinal.id }, 'RESIZE_LEFT', tkFinal.startDate, tkFinal.endDate) : undefined}
+                        onResizeRight={canEdit ? e => startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tkFinal.id }, 'RESIZE_RIGHT', tkFinal.startDate, tkFinal.endDate) : undefined}
+                        canEdit={canEdit}
                       />
                     )}
                   </div>
