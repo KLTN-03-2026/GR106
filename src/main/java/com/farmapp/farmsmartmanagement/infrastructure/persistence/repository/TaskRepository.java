@@ -90,6 +90,29 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
             @Param("planId")  UUID planId,
             @Param("farmId")  UUID farmId);
 
+
+    @Query("""
+        SELECT t FROM TaskEntity t
+        JOIN FETCH t.planStage ps
+        JOIN FETCH ps.status
+        JOIN FETCH ps.plan p
+        JOIN FETCH t.status
+        WHERE t.id                   = :taskId
+          AND t.farm.id              = :farmId
+          AND ps.id                  = :stageId
+          AND p.id                   = :planId
+          AND t.status.isTerminal    = false
+          AND ps.status.isTerminal   = false
+          AND p.status NOT IN ('COMPLETED', 'CANCELLED')
+          AND p.deletedAt            IS NULL
+          AND t.deletedAt            IS NULL
+        """)
+    Optional<TaskEntity> findByIdForUpdateAndStatusIsNotTerminal(
+            @Param("taskId")  UUID taskId,
+            @Param("stageId") UUID stageId,
+            @Param("planId")  UUID planId,
+            @Param("farmId")  UUID farmId);
+
     @Query("""
         SELECT t FROM TaskEntity t
         WHERE t.id = :id
@@ -130,28 +153,6 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
     @Query("SELECT t FROM TaskEntity t WHERE t.id = :id")
     Optional<TaskEntity> findByIdForUpdateAndStatusIsNotTerminal(@Param("id") UUID id);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("""
-        SELECT t FROM TaskEntity t
-        JOIN FETCH t.planStage ps
-        JOIN FETCH ps.status
-        JOIN FETCH ps.plan p
-        JOIN FETCH t.status
-        WHERE t.id                   = :taskId
-          AND t.farm.id              = :farmId
-          AND ps.id                  = :stageId
-          AND p.id                   = :planId
-          AND t.status.isTerminal    = false
-          AND ps.status.isTerminal   = false
-          AND p.status NOT IN ('COMPLETED', 'CANCELLED')
-          AND p.deletedAt            IS NULL
-          AND t.deletedAt            IS NULL
-        """)
-    Optional<TaskEntity> findByIdForUpdateAndStatusIsNotTerminal(
-            @Param("taskId")  UUID taskId,
-            @Param("stageId") UUID stageId,
-            @Param("planId")  UUID planId,
-            @Param("farmId")  UUID farmId);
 
     List<TaskEntity> findAllByPlanStage_IdAndDeletedAtIsNull(UUID stageId);
     @Query("""
