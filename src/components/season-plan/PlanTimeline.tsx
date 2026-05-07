@@ -104,20 +104,9 @@ function TimelineRowInteraction({
 }: TimelineRowInteractionProps) {
   const [hoveredPin, setHoveredPin] = React.useState<string | null>(null);
   const [isOverBar, setIsOverBar] = React.useState(false);
+  const [hoveredBarSection, setHoveredBarSection] = React.useState<'planned' | 'actual' | null>(null);
   const [tooltipPos, setTooltipPos] = React.useState({ x: 0, y: 0 });
 
-  // 1. Calculate hitBounds (covers both planned bar and actual dates)
-  const hitBounds = React.useMemo(() => {
-    const toPxLocal = (d: string) => diffDays(plannedStart, d) * ppd;
-    let minX = 0;
-    let maxX = barWidth;
-    if (actualStart) minX = Math.min(minX, toPxLocal(actualStart));
-    if (actualEnd) maxX = Math.max(maxX, toPxLocal(actualEnd));
-    return {
-      left: barLeft + minX,
-      width: maxX - minX
-    };
-  }, [plannedStart, actualStart, actualEnd, barLeft, barWidth, ppd]);
 
   // 2. Define Pins (Actual vs Planned)
   const pins = React.useMemo(() => {
@@ -135,7 +124,7 @@ function TimelineRowInteraction({
     if (actualEnd) p.push({ kind: 'a-end', pxInBar: toPxLocal(actualEnd), label: '⏹ Thực tế kết thúc', dateLabel: fmt(actualEnd), isActual: true, color: colorEnd });
 
     return p;
-  }, [plannedStart, plannedEnd, actualStart, actualEnd, barWidth, ppd]);
+  }, [plannedStart, plannedEnd, actualStart, actualEnd, barWidth, ppd, markerColor]);
 
   // 3. Actual Bar (Full range from actual start to actual end)
   const actualBar = React.useMemo(() => {
@@ -168,27 +157,70 @@ function TimelineRowInteraction({
           }} />
       )}
 
-      {/* ── BAR HIT AREA ── */}
-      <div
-        className="absolute"
-        style={{
-          left: hitBounds.left - 4,
-          width: hitBounds.width + 8,
-          top: 0,
-          height: rowHeight,
-          zIndex: 50,
-          cursor: isOverBar ? 'pointer' : 'default',
-          pointerEvents: 'auto',
-          background: 'rgba(26, 225, 19, 0)'
-        }}
-        onMouseMove={(e) => {
-          setTooltipPos({ x: e.clientX, y: e.clientY });
-          setIsOverBar(true);
-        }}
-        onMouseLeave={() => setIsOverBar(false)}
-        onMouseDown={onBarMouseDown}
-        onClick={onBarClick}
-      />
+      {/* ── BAR HIT AREAS (Contextual segments) ── */}
+      {(() => {
+        const toPxLocal = (d: string) => diffDays(plannedStart, d) * ppd;
+        return (
+          <>
+            {/* 1. Actual Prefix (Before Planned) */}
+            {actualStart && toPxLocal(actualStart) < 0 && (
+              <div
+                className="absolute cursor-help"
+                style={{
+                  left: barLeft + toPxLocal(actualStart),
+                  width: -toPxLocal(actualStart),
+                  top: 0,
+                  height: rowHeight,
+                  zIndex: 50,
+                  pointerEvents: 'auto',
+                  background: 'transparent'
+                }}
+                onMouseEnter={() => { setIsOverBar(true); setHoveredBarSection('actual'); }}
+                onMouseMove={(e) => setTooltipPos({ x: e.clientX, y: e.clientY })}
+                onMouseLeave={() => { setIsOverBar(false); setHoveredBarSection(null); }}
+              />
+            )}
+
+            {/* 2. Main Planned Range */}
+            <div
+              className="absolute cursor-help"
+              style={{
+                left: barLeft,
+                width: barWidth,
+                top: 0,
+                height: rowHeight,
+                zIndex: 51,
+                pointerEvents: 'auto',
+                background: 'transparent'
+              }}
+              onMouseEnter={() => { setIsOverBar(true); setHoveredBarSection('planned'); }}
+              onMouseMove={(e) => setTooltipPos({ x: e.clientX, y: e.clientY })}
+              onMouseLeave={() => { setIsOverBar(false); setHoveredBarSection(null); }}
+              onMouseDown={onBarMouseDown}
+              onClick={onBarClick}
+            />
+
+            {/* 3. Actual Suffix (After Planned) */}
+            {actualEnd && toPxLocal(actualEnd) > barWidth && (
+              <div
+                className="absolute cursor-help"
+                style={{
+                  left: barLeft + barWidth,
+                  width: toPxLocal(actualEnd) - barWidth,
+                  top: 0,
+                  height: rowHeight,
+                  zIndex: 50,
+                  pointerEvents: 'auto',
+                  background: 'transparent'
+                }}
+                onMouseEnter={() => { setIsOverBar(true); setHoveredBarSection('actual'); }}
+                onMouseMove={(e) => setTooltipPos({ x: e.clientX, y: e.clientY })}
+                onMouseLeave={() => { setIsOverBar(false); setHoveredBarSection(null); }}
+              />
+            )}
+          </>
+        );
+      })()}
 
       {/* ── PIN HIT AREAS & VISUALS ── */}
       {pins.map(pin => {
@@ -200,20 +232,20 @@ function TimelineRowInteraction({
           <React.Fragment key={pin.kind}>
             {/* Invisible wide hit area for the pin */}
             <div
-              className="absolute cursor-help"
-              style={{
-                left: pinLeft - 10,
-                width: 20,
-                top: 0,
-                height: rowHeight,
-                zIndex: 100,
-                pointerEvents: 'auto',
-                background: 'rgba(16, 178, 78, 0)'
-              }}
-              onMouseEnter={() => setHoveredPin(pin.kind)}
-              onMouseMove={(e) => setTooltipPos({ x: e.clientX, y: e.clientY })}
-              onMouseLeave={() => setHoveredPin(null)}
-            />
+               className="absolute cursor-help"
+               style={{
+                left: pinLeft - 15,
+                width: 30,
+                 top: 0,
+                 height: rowHeight,
+                 zIndex: 100,
+                 pointerEvents: 'auto',
+                 background: 'rgba(16, 178, 78, 0)'
+               }}
+               onMouseEnter={() => setHoveredPin(pin.kind)}
+               onMouseMove={(e) => setTooltipPos({ x: e.clientX, y: e.clientY })}
+               onMouseLeave={() => setHoveredPin(null)}
+             />
 
             {/* Visual: Vertical Line */}
             <div
@@ -252,13 +284,19 @@ function TimelineRowInteraction({
       })}
 
       {/* ── RESIZE HANDLES (Draggable) ── */}
-      {canEdit && !hoveredPin && (
+      {canEdit && (
         <>
           <div className="absolute pointer-events-auto cursor-w-resize z-[110]"
-            style={{ left: barLeft - 10, width: 20, top: 0, height: rowHeight }}
+            style={{ left: barLeft - 15, width: 30, top: 0, height: rowHeight }}
+            onMouseEnter={() => setHoveredPin('p-start')}
+            onMouseMove={(e) => setTooltipPos({ x: e.clientX, y: e.clientY })}
+            onMouseLeave={() => setHoveredPin(null)}
             onMouseDown={onResizeLeft} />
           <div className="absolute pointer-events-auto cursor-e-resize z-[110]"
-            style={{ left: barLeft + barWidth - 10, width: 20, top: 0, height: rowHeight }}
+            style={{ left: barLeft + barWidth - 15, width: 30, top: 0, height: rowHeight }}
+            onMouseEnter={() => setHoveredPin('p-end')}
+            onMouseMove={(e) => setTooltipPos({ x: e.clientX, y: e.clientY })}
+            onMouseLeave={() => setHoveredPin(null)}
             onMouseDown={onResizeRight} />
         </>
       )}
@@ -286,8 +324,8 @@ function TimelineRowInteraction({
                   );
                 })()}
               </div>
-            ) : (
-              // BAR TOOLTIP
+            ) : hoveredBarSection === 'actual' ? (
+              // FULL TOOLTIP (In the actual-only segments outside plan)
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-1.5 border-b border-white/10 pb-1.5 mb-1">
                   <span className="text-indigo-400 text-[10px] uppercase tracking-widest font-bold w-20 whitespace-nowrap">Kế hoạch</span>
@@ -301,6 +339,14 @@ function TimelineRowInteraction({
                     </span>
                   </div>
                 )}
+              </div>
+            ) : (
+              // PLANNED-ONLY TOOLTIP (Inside the planned start/end range)
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-indigo-400 text-[10px] uppercase tracking-widest font-bold w-20 whitespace-nowrap">Kế hoạch</span>
+                  <span className="text-xs font-mono text-white/90">{new Date(plannedStart).toLocaleDateString('vi-VN')} → {new Date(plannedEnd).toLocaleDateString('vi-VN')}</span>
+                </div>
               </div>
             )}
           </div>
