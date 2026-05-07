@@ -1236,18 +1236,8 @@ export function PlanTimeline({
 
               if (r.type === 'phase') {
                 const ph = r.item as Phase;
-                // ─── DEV MOCK ──────────────────────────────────────────────
-                // Mock actual dates cho phase để test visual
-                const phFinal = {
-                  ...ph,
-                  // DEV MOCK: actualStart luôn TRƯỚC planned start (âm) để marker nằm BÊN TRÁI bar
-                  actualStartDate: ph.actualStartDate || addDays(ph.startDate, -2),
-                  // DEV MOCK: actualEnd luôn SAU planned end (dương) để marker nằm BÊN PHẢI bar
-                  actualEndDate: ph.actualEndDate || addDays(ph.endDate, 3),
-                };
-                // ─── END DEV MOCK ───────────────────────────────────────────
-                const ps = previewStyle(r.planId, phFinal.id, 'phase', phFinal.startDate, phFinal.endDate);
-                const isDragging = barDrag?.target.kind === 'phase' && (barDrag.target as any).phaseId === phFinal.id;
+                const ps = previewStyle(r.planId, ph.id, 'phase', ph.startDate, ph.endDate);
+                const isDragging = barDrag?.target.kind === 'phase' && (barDrag.target as any).phaseId === ph.id;
                 const phBarLeft = parseFloat(ps.left as string);
                 const phBarWidth = parseFloat(ps.width as string);
                 return (
@@ -1255,7 +1245,7 @@ export function PlanTimeline({
                     <div
                       style={{ height: ROW_H, position: 'relative' }}
                       className={cn('border-b border-slate-100 cursor-pointer', isSelected ? 'bg-indigo-50/20' : 'hover:bg-slate-50/40')}
-                      onClick={() => onSelect({ type: 'PHASE', id: phFinal.id, planId: r.planId })}
+                      onClick={() => onSelect({ type: 'PHASE', id: ph.id, planId: r.planId })}
                     >
                       {/* Main Bar Visual */}
                       <div
@@ -1265,7 +1255,7 @@ export function PlanTimeline({
                         )}
                         style={{
                           ...ps,
-                          backgroundColor: getStatusColor(phFinal.status),
+                          backgroundColor: getStatusColor(ph.status),
                           top: '50%',
                           transform: 'translateY(-50%)',
                           height: 24,
@@ -1279,27 +1269,27 @@ export function PlanTimeline({
                       >
                         {/* Tất cả children PHẢI có pointer-events: none vì parent có pointer-events: none nhưng CSS KHÔNG tự động kế thừa cho children */}
                         <span className="text-[10px] font-medium text-white px-3 truncate pointer-events-none flex-1 min-w-0">
-                          {statusLabel(phFinal.status)}
+                          {statusLabel(ph.status)}
                         </span>
                       </div>
 
                       {/* Unified Timeline Interaction: Markers + Bar Tooltip */}
                       {!isDragging && (
                         <TimelineRowInteraction
-                          plannedStart={phFinal.startDate}
-                          plannedEnd={phFinal.endDate}
-                          actualStart={phFinal.actualStartDate}
-                          actualEnd={phFinal.actualEndDate}
+                          plannedStart={ph.startDate}
+                          plannedEnd={ph.endDate}
+                          actualStart={ph.actualStartDate}
+                          actualEnd={ph.actualEndDate}
                           ppd={PPD}
                           barLeft={phBarLeft}
                           barWidth={phBarWidth}
                           rowHeight={ROW_H}
-                          markerColor={getStatusColor(phFinal.status)}
+                          markerColor={getStatusColor(ph.status)}
                           canEdit={canEdit}
-                          onBarMouseDown={canEdit ? e => startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: phFinal.id }, 'MOVE', phFinal.startDate, phFinal.endDate) : undefined}
-                          onBarClick={e => { e.stopPropagation(); onSelect({ type: 'PHASE', id: phFinal.id, planId: r.planId }); }}
-                          onResizeLeft={canEdit ? e => startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: phFinal.id }, 'RESIZE_LEFT', phFinal.startDate, phFinal.endDate) : undefined}
-                          onResizeRight={canEdit ? e => startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: phFinal.id }, 'RESIZE_RIGHT', phFinal.startDate, phFinal.endDate) : undefined}
+                          onBarMouseDown={canEdit ? e => startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: ph.id }, 'MOVE', ph.startDate, ph.endDate) : undefined}
+                          onBarClick={e => { e.stopPropagation(); onSelect({ type: 'PHASE', id: ph.id, planId: r.planId }); }}
+                          onResizeLeft={canEdit ? e => startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: ph.id }, 'RESIZE_LEFT', ph.startDate, ph.endDate) : undefined}
+                          onResizeRight={canEdit ? e => startBarDrag(e, { kind: 'phase', planId: r.planId, phaseId: ph.id }, 'RESIZE_RIGHT', ph.startDate, ph.endDate) : undefined}
                         />
                       )}
                     </div>
@@ -1309,18 +1299,8 @@ export function PlanTimeline({
 
               // task
               const tk = r.item as Task;
-              // ─── DEV MOCK ──────────────────────────────────────────────
-              // Mock actual dates cho task để test visual
-              const tkFinal = {
-                ...tk,
-                // DEV MOCK: actualStart luôn TRƯỚC planned start (âm) để marker nằm BÊN TRÁI bar
-                actualStartDate: tk.actualStartDate || addDays(tk.startDate, -2),
-                // DEV MOCK: actualEnd luôn SAU planned end (dương) để marker nằm BÊN PHẢI bar
-                actualEndDate: tk.actualEndDate || addDays(tk.endDate, 2),
-              };
-              // ─── END DEV MOCK ───────────────────────────────────────────
-              const ps = previewStyle(r.planId, tkFinal.id, 'task', tkFinal.startDate, tkFinal.endDate);
-              const isDragging = barDrag?.target.kind === 'task' && (barDrag.target as any).taskId === tkFinal.id;
+              const ps = previewStyle(r.planId, tk.id, 'task', tk.startDate, tk.endDate);
+              const isDragging = barDrag?.target.kind === 'task' && (barDrag.target as any).taskId === tk.id;
               const tkBarLeft = parseFloat(ps.left as string);
               const tkBarWidth = parseFloat(ps.width as string);
               return (
@@ -1328,7 +1308,7 @@ export function PlanTimeline({
                   <div
                     style={{ height: ROW_H, position: 'relative' }}
                     className={cn('border-b border-slate-50 cursor-pointer', isSelected ? 'bg-indigo-50/15' : 'hover:bg-slate-50/30')}
-                    onClick={() => onSelect({ type: 'TASK', id: tkFinal.id, planId: r.planId, phaseId: r.phaseId })}
+                    onClick={() => onSelect({ type: 'TASK', id: tk.id, planId: r.planId, phaseId: r.phaseId })}
                   >
 
                     {/* Main Bar Visual */}
@@ -1339,7 +1319,7 @@ export function PlanTimeline({
                       )}
                       style={{
                         ...ps,
-                        backgroundColor: getStatusColor(tkFinal.status),
+                        backgroundColor: getStatusColor(tk.status),
                         top: '50%',
                         transform: 'translateY(-50%)',
                         height: 18, // Tăng nhẹ chiều cao để chứa chữ rõ hơn (từ 14 lên 18)
@@ -1353,26 +1333,26 @@ export function PlanTimeline({
                       onClick={undefined}
                     >
                       <span className="text-[9px] font-medium text-white px-2 truncate pointer-events-none flex-1 min-w-0">
-                        {statusLabel(tkFinal.status)}
+                        {statusLabel(tk.status)}
                       </span>
                     </div>
 
                     {/* Unified Timeline Interaction: Markers + Bar Tooltip */}
                     {!isDragging && (
                       <TimelineRowInteraction
-                        plannedStart={tkFinal.startDate}
-                        plannedEnd={tkFinal.endDate}
-                        actualStart={tkFinal.actualStartDate}
-                        actualEnd={tkFinal.actualEndDate}
+                        plannedStart={tk.startDate}
+                        plannedEnd={tk.endDate}
+                        actualStart={tk.actualStartDate}
+                        actualEnd={tk.actualEndDate}
                         ppd={PPD}
                         barLeft={tkBarLeft}
                         barWidth={tkBarWidth}
                         rowHeight={ROW_H}
-                        markerColor={getStatusColor(tkFinal.status)}
-                        onBarMouseDown={canEdit ? e => startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tkFinal.id }, 'MOVE', tkFinal.startDate, tkFinal.endDate) : undefined}
-                        onBarClick={e => { e.stopPropagation(); onSelect({ type: 'TASK', id: tkFinal.id, planId: r.planId, phaseId: r.phaseId }); }}
-                        onResizeLeft={canEdit ? e => startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tkFinal.id }, 'RESIZE_LEFT', tkFinal.startDate, tkFinal.endDate) : undefined}
-                        onResizeRight={canEdit ? e => startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tkFinal.id }, 'RESIZE_RIGHT', tkFinal.startDate, tkFinal.endDate) : undefined}
+                        markerColor={getStatusColor(tk.status)}
+                        onBarMouseDown={canEdit ? e => startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tk.id }, 'MOVE', tk.startDate, tk.endDate) : undefined}
+                        onBarClick={e => { e.stopPropagation(); onSelect({ type: 'TASK', id: tk.id, planId: r.planId, phaseId: r.phaseId }); }}
+                        onResizeLeft={canEdit ? e => startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tk.id }, 'RESIZE_LEFT', tk.startDate, tk.endDate) : undefined}
+                        onResizeRight={canEdit ? e => startBarDrag(e, { kind: 'task', planId: r.planId, phaseId: r.phaseId!, taskId: tk.id }, 'RESIZE_RIGHT', tk.startDate, tk.endDate) : undefined}
                         canEdit={canEdit}
                       />
                     )}
