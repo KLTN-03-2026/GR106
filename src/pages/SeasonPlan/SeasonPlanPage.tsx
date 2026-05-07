@@ -415,16 +415,6 @@ export function SeasonPlanPage() {
 
     let plotId = data.plotId;
     if (!plotId && plan.plots?.length) plotId = plan.plots[0].plotId;
-
-    if (!plotId) {
-      setNotification({
-        isOpen: true,
-        type: 'error',
-        title: 'Thiếu thông tin lô đất',
-        message: 'Kế hoạch này chưa được gán lô đất nào. Vui lòng gán lô đất cho kế hoạch trước khi tạo công việc.'
-      });
-      return;
-    }
     try {
       await createSeasonTask(planId, phaseId, { ...data, plotId }).unwrap();
     } catch (err: any) {
@@ -498,15 +488,6 @@ export function SeasonPlanPage() {
   const handleUpdateTask = async (planId: string, stageId: string, task: Task, originalTask?: Task) => {
     const plan = plans.find(p => p.id === planId);
     const plotId = task.plotId || (plan?.plots?.length ? plan.plots[0].plotId : undefined);
-    if (!plotId) {
-      setNotification({
-        isOpen: true,
-        type: 'error',
-        title: 'Thiếu thông tin lô đất',
-        message: 'Công việc này thiếu thông tin lô đất và kế hoạch không có lô đất mặc định.'
-      });
-      return;
-    }
     try {
       if (!originalTask) {
         await updateSeasonTask(planId, stageId, task.id, {
