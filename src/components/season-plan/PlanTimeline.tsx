@@ -114,8 +114,8 @@ function TimelineRowInteraction({
     const fmt = (d: string) => new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
     const toPxLocal = (d: string) => diffDays(plannedStart, d) * ppd;
 
-    const colorStart = `color-mix(in srgb, ${markerColor}, black 10%)`;
-    const colorEnd = `color-mix(in srgb, ${markerColor}, black 30%)`;
+    const colorStart = '#c7b8a8ff'; // Orange - thực tế bắt đầu
+    const colorEnd = '#999085ff';   // Red - thực tế kết thúc
 
     p.push({ kind: 'p-start', pxInBar: 0, label: '○ Kế hoạch bắt đầu', dateLabel: fmt(plannedStart), isActual: false });
     p.push({ kind: 'p-end', pxInBar: barWidth, label: '□ Kế hoạch kết thúc', dateLabel: fmt(plannedEnd), isActual: false });
@@ -256,7 +256,8 @@ function TimelineRowInteraction({
                 width: 2,
                 height: markerH,
                 backgroundColor: color,
-                opacity: isHovered ? 1 : (pin.isActual ? 0.75 : 0.35),
+                opacity: isHovered ? 1 : (pin.isActual ? 1 : 0.4),
+                boxShadow: pin.isActual ? '0 0 4px rgba(0,0,0,0.2)' : 'none',
                 borderRadius: 1,
                 transition: 'opacity .15s',
                 zIndex: 60
@@ -272,7 +273,9 @@ function TimelineRowInteraction({
                 width: 8,
                 height: 8,
                 backgroundColor: color,
-                opacity: isHovered ? 1 : (pin.isActual ? 0.8 : 0.5),
+                opacity: isHovered ? 1 : (pin.isActual ? 1 : 0.6),
+                boxShadow: pin.isActual ? '0 0 4px rgba(0,0,0,0.2)' : 'none',
+                border: pin.isActual ? '1px solid white' : 'none',
                 transform: 'rotate(45deg)',
                 borderRadius: 1,
                 transition: 'opacity .15s',
@@ -1079,6 +1082,16 @@ export function PlanTimeline({
                       }}>
                       {statusLabel(r.item.status)}
                     </span>
+                    {r.item.actualStartDate && (
+                      <span className="ml-1 text-[9px] text-indigo-500 font-bold bg-indigo-50 px-1 rounded">
+                        ACTUAL: {r.item.actualStartDate.split('-').slice(1).reverse().join('/')}
+                      </span>
+                    )}
+                    {r.item.actualStartDate && (
+                      <span className="ml-1 text-[8px] text-indigo-400 font-mono">
+                        A: {r.item.actualStartDate.split('-').slice(1).join('/')}
+                      </span>
+                    )}
                   </div>
                 </AnimatedRow>
               );
@@ -1223,17 +1236,15 @@ export function PlanTimeline({
 
               if (r.type === 'phase') {
                 const ph = r.item as Phase;
-                // ─── DEV MOCK: xóa khối này sau khi test xong ──────────────
-                // Inject actual dates vào phase ĐẦU TIÊN để test visual
-
-                const _phWithActual = rows.filter(x => x.type === 'phase')[0]?.id === r.id
-                  ? {
-                    ...ph,
-                    actualStartDate: addDays(ph.startDate, -10),  // trễ 5 ngày so với planned
-                    actualEndDate: addDays(ph.endDate, 10),     // sớm 3 ngày
-                  }
-                  : ph;
-                const phFinal = _phWithActual;
+                // ─── DEV MOCK ──────────────────────────────────────────────
+                // Mock actual dates cho phase để test visual
+                const phFinal = {
+                  ...ph,
+                  // DEV MOCK: actualStart luôn TRƯỚC planned start (âm) để marker nằm BÊN TRÁI bar
+                  actualStartDate: ph.actualStartDate || addDays(ph.startDate, -2),
+                  // DEV MOCK: actualEnd luôn SAU planned end (dương) để marker nằm BÊN PHẢI bar
+                  actualEndDate: ph.actualEndDate || addDays(ph.endDate, 3),
+                };
                 // ─── END DEV MOCK ───────────────────────────────────────────
                 const ps = previewStyle(r.planId, phFinal.id, 'phase', phFinal.startDate, phFinal.endDate);
                 const isDragging = barDrag?.target.kind === 'phase' && (barDrag.target as any).phaseId === phFinal.id;
@@ -1267,8 +1278,7 @@ export function PlanTimeline({
                         onClick={undefined}
                       >
                         {/* Tất cả children PHẢI có pointer-events: none vì parent có pointer-events: none nhưng CSS KHÔNG tự động kế thừa cho children */}
-                        <span className="text-[11px] font-semibold text-white px-3 truncate pointer-events-none flex-1 min-w-0">{phFinal.name}</span>
-                        <span className="text-[9px] text-white/70 pr-2 flex-shrink-0 pointer-events-none hidden md:block">
+                        <span className="text-[10px] font-medium text-white px-3 truncate pointer-events-none flex-1 min-w-0">
                           {statusLabel(phFinal.status)}
                         </span>
                       </div>
@@ -1299,16 +1309,15 @@ export function PlanTimeline({
 
               // task
               const tk = r.item as Task;
-              // ─── DEV MOCK: xóa khối này sau khi test xong ──────────────
-              // Inject actual dates vào task ĐẦU TIÊN của mỗi phase để test visual
-              const _tkWithActual = rows.filter(x => x.type === 'task')[0]?.id === r.id
-                ? {
-                  ...tk,
-                  actualStartDate: addDays(tk.startDate, 2),  // bắt đầu trễ 2 ngày
-                  actualEndDate: addDays(tk.endDate, 1),      // kết thúc trễ 1 ngày
-                }
-                : tk;
-              const tkFinal = _tkWithActual;
+              // ─── DEV MOCK ──────────────────────────────────────────────
+              // Mock actual dates cho task để test visual
+              const tkFinal = {
+                ...tk,
+                // DEV MOCK: actualStart luôn TRƯỚC planned start (âm) để marker nằm BÊN TRÁI bar
+                actualStartDate: tk.actualStartDate || addDays(tk.startDate, -2),
+                // DEV MOCK: actualEnd luôn SAU planned end (dương) để marker nằm BÊN PHẢI bar
+                actualEndDate: tk.actualEndDate || addDays(tk.endDate, 2),
+              };
               // ─── END DEV MOCK ───────────────────────────────────────────
               const ps = previewStyle(r.planId, tkFinal.id, 'task', tkFinal.startDate, tkFinal.endDate);
               const isDragging = barDrag?.target.kind === 'task' && (barDrag.target as any).taskId === tkFinal.id;
@@ -1325,7 +1334,7 @@ export function PlanTimeline({
                     {/* Main Bar Visual */}
                     <div
                       className={cn(
-                        'absolute rounded overflow-hidden',
+                        'absolute flex items-center overflow-hidden rounded',
                         isDragging ? 'opacity-90 ring-2 ring-indigo-300' : '',
                       )}
                       style={{
@@ -1333,7 +1342,7 @@ export function PlanTimeline({
                         backgroundColor: getStatusColor(tkFinal.status),
                         top: '50%',
                         transform: 'translateY(-50%)',
-                        height: 14,
+                        height: 18, // Tăng nhẹ chiều cao để chứa chữ rõ hơn (từ 14 lên 18)
                         minWidth: 20,
                         willChange: 'left, width',
                         transition: isDragging ? 'none' : 'left .15s ease-out, width .15s ease-out, background-color .2s ease',
@@ -1342,7 +1351,11 @@ export function PlanTimeline({
                       }}
                       onMouseDown={undefined}
                       onClick={undefined}
-                    />
+                    >
+                      <span className="text-[9px] font-medium text-white px-2 truncate pointer-events-none flex-1 min-w-0">
+                        {statusLabel(tkFinal.status)}
+                      </span>
+                    </div>
 
                     {/* Unified Timeline Interaction: Markers + Bar Tooltip */}
                     {!isDragging && (
