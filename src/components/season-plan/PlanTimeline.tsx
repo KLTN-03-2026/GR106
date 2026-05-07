@@ -82,23 +82,22 @@ function getMonday(d: Date): Date { // Tính toán ngày thứ Hai gần nhất 
 
 interface ActualOverlayProps {
   plannedStart: string;
-  plannedEnd?: string; // kept for API symmetry but derived from barWidth in body
+  plannedEnd?: string;
   actualStart?: string | null;
   actualEnd?: string | null;
-  ppd: number;
   barLeft: number;
   barWidth: number;
+  ppd: number;
   rowHeight: number;
   markerColor: string;
 }
 
-function ActualOverlay({
-  plannedStart,
-  actualStart, actualEnd,
-  ppd, barLeft, barWidth,
-  rowHeight, markerColor,
+function ActualOverlay({ 
+  plannedStart, plannedEnd, actualStart, actualEnd, 
+  barLeft, barWidth, ppd, 
+  rowHeight, markerColor 
 }: ActualOverlayProps) {
-  const [hoveredPin, setHoveredPin] = React.useState<'start' | 'end' | null>(null);
+  const [hoveredPin, setHoveredPin] = React.useState<'p-start' | 'p-end' | 'a-start' | 'a-end' | null>(null);
 
   if (!actualStart && !actualEnd) return null;
 
@@ -114,17 +113,34 @@ function ActualOverlay({
 
 
   // ── Pins ─────────────────────────────────────────────────────────────────
-  const pins: { kind: 'start' | 'end'; pxInBar: number; dateLabel: string }[] = [];
+  const pins: { kind: 'p-start' | 'p-end' | 'a-start' | 'a-end'; pxInBar: number; dateLabel: string }[] = [];
+
+  // Planned Start/End Pins (Always show as reference)
+  pins.push({
+    kind: 'p-start',
+    pxInBar: 0,
+    dateLabel: new Date(plannedStart).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+  });
+  
+  // Calculate planned end date label from barWidth if plannedEnd prop is not perfect
+  const pEndDate = plannedEnd ? new Date(plannedEnd) : new Date(new Date(plannedStart).getTime() + (barWidth / ppd) * 86400000);
+  pins.push({
+    kind: 'p-end',
+    pxInBar: barWidth,
+    dateLabel: pEndDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+  });
+
+  // Actual Pins (If available)
   if (actualStart) {
     pins.push({
-      kind: 'start',
+      kind: 'a-start',
       pxInBar: toPx(actualStart),
       dateLabel: new Date(actualStart).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
     });
   }
   if (actualEnd) {
     pins.push({
-      kind: 'end',
+      kind: 'a-end',
       pxInBar: toPx(actualEnd),
       dateLabel: new Date(actualEnd).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }),
     });
@@ -181,23 +197,36 @@ function ActualOverlay({
       {pins.map(pin => {
         const isHovered = hoveredPin === pin.kind;
         const pinLeft = barLeft + pin.pxInBar;
+        const isActual = pin.kind.startsWith('a-');
+        const color = isActual ? markerColor : '#94a3b8'; // Actual uses status color, Planned uses slate-400
+        
         return (
           <React.Fragment key={pin.kind}>
-            {/* Vertical line — interactive for hover */}
+            {/* Wider hit-area for easier hovering */}
             <div
-              className="absolute z-30 cursor-default"
+              className="absolute z-35 cursor-pointer"
+              style={{
+                left: pinLeft - 8, // 16px wide hit area
+                top: markerTop,
+                width: 16,
+                height: markerH,
+              }}
+              onMouseEnter={() => setHoveredPin(pin.kind)}
+              onMouseLeave={() => setHoveredPin(null)}
+            />
+            {/* Vertical line visible part */}
+            <div
+              className="absolute z-30 pointer-events-none"
               style={{
                 left: pinLeft - 1,
                 top: markerTop,
                 width: 2,
                 height: markerH,
-                backgroundColor: markerColor,
-                opacity: isHovered ? 1 : 0.75,
+                backgroundColor: color,
+                opacity: isHovered ? 1 : (isActual ? 0.75 : 0.4),
                 borderRadius: 1,
-                transition: 'opacity .15s',
+                transition: 'all .15s',
               }}
-              onMouseEnter={() => setHoveredPin(pin.kind)}
-              onMouseLeave={() => setHoveredPin(null)}
             />
             {/* Diamond cap at top */}
             <div
@@ -207,24 +236,26 @@ function ActualOverlay({
                 top: markerTop - 4,
                 width: 8,
                 height: 8,
-                backgroundColor: markerColor,
-                opacity: isHovered ? 1 : 0.8,
+                backgroundColor: color,
+                opacity: isHovered ? 1 : (isActual ? 0.8 : 0.5),
                 transform: 'rotate(45deg)',
                 borderRadius: 1,
-                transition: 'opacity .15s',
+                transition: 'all .15s',
               }}
             />
             {/* Tooltip on hover */}
             {isHovered && (
               <div
                 className="absolute z-50 pointer-events-none"
-                style={{ left: pinLeft + 8, top: markerTop - 6, whiteSpace: 'nowrap' }}
+                style={{ left: pinLeft + 12, top: markerTop - 6, whiteSpace: 'nowrap' }}
               >
                 <div
                   className="text-[10px] font-semibold px-2 py-1 rounded-md shadow-lg"
-                  style={{ backgroundColor: '#1e293b', color: '#f8fafc', border: `1px solid ${markerColor}` }}
+                  style={{ backgroundColor: '#1e293b', color: '#f8fafc', border: `1px solid ${color}` }}
                 >
-                  {pin.kind === 'start' ? '▶ Thực tế bắt đầu' : '⏹ Thực tế kết thúc'}: {pin.dateLabel}
+                  {pin.kind === 'a-start' ? '▶ Thực tế bắt đầu' : 
+                   pin.kind === 'a-end' ? '⏹ Thực tế kết thúc' :
+                   pin.kind === 'p-start' ? '○ Kế hoạch bắt đầu' : '□ Kế hoạch kết thúc'}: {pin.dateLabel}
                 </div>
               </div>
             )}
@@ -259,16 +290,35 @@ function BarTooltip({ plannedStart, plannedEnd, actualStart, actualEnd, barLeft,
   const [show, setShow] = React.useState(false);
   const [pos, setPos] = React.useState({ x: 0, y: 0 });
 
+  // Calculate full hit area (including actual dates if they are outside planned range)
+  const hitBounds = React.useMemo(() => {
+    if (!actualStart && !actualEnd) return { left: barLeft, width: barWidth };
+
+    const ppd = barWidth / diffDays(plannedStart, plannedEnd);
+    const toPx = (d: string) => diffDays(plannedStart, d) * ppd;
+
+    let minX = 0;
+    let maxX = barWidth;
+
+    if (actualStart) minX = Math.min(minX, toPx(actualStart));
+    if (actualEnd) maxX = Math.max(maxX, toPx(actualEnd));
+
+    return {
+      left: barLeft + minX,
+      width: maxX - minX
+    };
+  }, [plannedStart, plannedEnd, actualStart, actualEnd, barLeft, barWidth]);
+
   return (
     <>
-      {/* Invisible hit-area — same size & position as the bar */}
+      {/* Invisible hit-area — extended to cover actuals */}
       <div
         className="absolute z-25 pointer-events-auto"
         style={{
-          left: barLeft,
-          width: barWidth,
-          top: (rowHeight - rowHeight * 0.8) / 2,
-          height: rowHeight * 0.8,
+          left: hitBounds.left - 4, // 4px padding
+          width: hitBounds.width + 8,
+          top: (rowHeight - rowHeight * 0.9) / 2,
+          height: rowHeight * 0.9,
         }}
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
