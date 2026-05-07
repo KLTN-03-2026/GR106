@@ -17,7 +17,6 @@ import { CreatePlotModal } from '@/components/land-plots/CreatePlotModal';
 import { EditPlotModal } from '@/components/land-plots/EditPlotModal';
 import { MapSidebar } from '@/components/map/MapSidebar';
 import { MapCanvas } from '@/components/map/MapCanvas';
-import { MapHint } from '@/components/map/MapHint';
 import { DeletePlotDialog } from '@/components/map/DeletePlotDialog';
 import { isSelfIntersecting, polygonsOverlap, getPlotPath } from '../../utils/plotUtils';
 
@@ -417,8 +416,6 @@ export function MapPage() {
           canSave={currentPath.length >= 3}
           overlappingPlotName={overlappingPlotName}
         />
-
-        <MapHint show={mode === 'none' && !selectedPlot} />
 
         <BoundaryConfirmDialog
           isOpen={isConfirmOpen}
