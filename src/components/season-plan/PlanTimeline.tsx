@@ -397,7 +397,7 @@ function AnimatedRow({ visible, rowHeight, children, className, style }: Animate
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function PlanTimeline({
+export const PlanTimeline = React.forwardRef<{ scrollToDate: (dateStr: string) => void }, PlanTimelineProps>(function PlanTimeline({
   plans,
   selectedId,
   onSelect,
@@ -408,7 +408,7 @@ export function PlanTimeline({
   onExpandPhase,
   preExpandedPlanId,
   canEdit = false,
-}: PlanTimelineProps) {
+}, ref) {
 
   // ── Sidebar resize ────────────────────────────────────────────────────────
   const SIDEBAR_MIN = 200;
@@ -658,14 +658,29 @@ export function PlanTimeline({
     syncRefs(sl);
   };
 
-  // ── Scroll to today ───────────────────────────────────────────────────────
+  // ── Scroll to today / specific date ───────────────────────────────────────
   const scrollToToday = useCallback(() => {
     if (todayLeft === null || !ganttBodyRef.current) return;
     const cw = ganttBodyRef.current.clientWidth;
     const target = Math.max(0, todayLeft - cw * 0.35);
-    ganttBodyRef.current.scrollLeft = target;
+    ganttBodyRef.current.scrollTo({ left: target, behavior: 'smooth' });
     syncRefs(target);
   }, [todayLeft, syncRefs]);
+
+  const scrollToDate = useCallback((dateStr: string) => {
+    if (!ganttBodyRef.current || !dateStr) return;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return;
+    const left = diffDays(minDate, d) * PPD;
+    const cw = ganttBodyRef.current.clientWidth;
+    const target = Math.max(0, left - cw * 0.2);
+    ganttBodyRef.current.scrollTo({ left: target, behavior: 'smooth' });
+    syncRefs(target);
+  }, [minDate, PPD, syncRefs]);
+
+  React.useImperativeHandle(ref, () => ({
+    scrollToDate
+  }));
 
   useEffect(() => { scrollToToday(); }, [timeScale]);
 
@@ -1036,14 +1051,18 @@ export function PlanTimeline({
                       <svg width="9" height="9" viewBox="0 0 10 10"><path d="M5 1l1.5 3h3l-2.5 2 1 3L5 7.5 2 9l1-3L.5 4h3z" fill="white" /></svg>
                     </div>
                     <span className="truncate text-[12px] font-semibold text-slate-700 flex-1 min-w-0">{r.item.name}</span>
-                    {canEdit && onDeletePlan && (
-                      <button
-                        className="opacity-0 group-hover:opacity-100 ml-1 p-1 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-all flex-shrink-0"
-                        onClick={e => { e.stopPropagation(); onDeletePlan(r.id); }}
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    )}
+                    <div className="flex items-center gap-0.5 ml-1 shrink-0">
+
+                      {canEdit && onDeletePlan && (
+                        <button
+                          className="p-1 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-all"
+                          title="Xóa kế hoạch"
+                          onClick={e => { e.stopPropagation(); onDeletePlan(r.id); }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </AnimatedRow>
               );
@@ -1092,6 +1111,7 @@ export function PlanTimeline({
                         A: {r.item.actualStartDate.split('-').slice(1).join('/')}
                       </span>
                     )}
+
                   </div>
                 </AnimatedRow>
               );
@@ -1129,6 +1149,7 @@ export function PlanTimeline({
                     }}>
                     {statusLabel(r.item.status)}
                   </span>
+
                 </div>
               </AnimatedRow>
             );
@@ -1408,6 +1429,6 @@ export function PlanTimeline({
       )}
     </div>
   );
-}
+});
 
 export default PlanTimeline;

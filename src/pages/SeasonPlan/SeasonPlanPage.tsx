@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSeasonPlans } from '../../hooks/seasonPlans/useSeasonPlans';
 import { SeasonPlan, Task } from '../../types/seasonPlan';
@@ -102,6 +102,7 @@ export function SeasonPlanPage() {
 
   const { user, accessToken } = useAuth();
   const canEdit = canEditPlan(user?.role, accessToken);
+  const timelineRef = useRef<{ scrollToDate: (dateStr: string) => void }>(null);
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<NavTab>('timeline');
@@ -748,6 +749,7 @@ export function SeasonPlanPage() {
               ) : (
                 <div className="flex-1 h-full min-h-0">
                   <PlanTimeline
+                    ref={timelineRef}
                     plans={filteredPlans}
                     onSelect={selection => setSelectedItem(selection)}
                     selectedId={selectedItem?.id}
@@ -767,6 +769,7 @@ export function SeasonPlanPage() {
             <PlanDetailPanel
               isOpen={!!selectedItem}
               selection={selectedData}
+              onScrollToDate={(dateStr) => timelineRef.current?.scrollToDate(dateStr)}
               onClose={() => {
                 setSelectedItem(null);
               }}
