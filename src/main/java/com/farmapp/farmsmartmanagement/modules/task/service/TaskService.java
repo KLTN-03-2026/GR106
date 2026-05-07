@@ -2,6 +2,7 @@ package com.farmapp.farmsmartmanagement.modules.task.service;
 
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
+import com.farmapp.farmsmartmanagement.common.response.PageableResponse;
 import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
@@ -17,6 +18,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -243,6 +246,33 @@ public class TaskService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public List<TaskResponse> findAssignedTasksForToday(UUID userId){
+        UUID farmId = securityUtils.getCurrentFarmId();
+        return taskMapper.toResponses(
+                taskRepository.findAssignedTasksForToday(userId, farmId)
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public PageableResponse<TaskResponse> findAssignedTasks(UUID userId, Pageable pageable) {
+        Page<TaskResponse> page = taskRepository
+                .findAssignedTaskByUser_Id(userId, pageable)
+                .map(taskMapper::toResponse);
+
+        return PageableResponse.of(page);
+    }
+
+    @Transactional(readOnly = true)
+    public PageableResponse<TaskResponse> findAssignedTasksByDate(UUID userId,LocalDate date, Pageable pageable) {
+        UUID farmId = securityUtils.getCurrentFarmId();
+        Page<TaskResponse> page = taskRepository
+                .findAssignedTaskByUser_IdAndDate(userId,farmId, date, pageable)
+                .map(taskMapper::toResponse);
+
+        return PageableResponse.of(page);
+    }
+
     // Only hard delete
     @Transactional
     public void deleteTask(UUID taskId) {
@@ -290,11 +320,6 @@ public class TaskService {
             throw new AppException(ErrorCode.TASK_HAS_REFERENCE);
         }
     }
-
-
-
-
-
 
     private boolean hasChanges(TaskEntity entity, UpdateTaskRequest request) {
         return !(Objects.equals(entity.getName(), request.getName())

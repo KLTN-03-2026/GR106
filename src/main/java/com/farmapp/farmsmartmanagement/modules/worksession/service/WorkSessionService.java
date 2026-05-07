@@ -7,6 +7,7 @@ import com.farmapp.farmsmartmanagement.domain.enums.ForceActionType;
 import com.farmapp.farmsmartmanagement.domain.enums.ForceTargetType;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
+import com.farmapp.farmsmartmanagement.modules.task.validation.TaskValidator;
 import com.farmapp.farmsmartmanagement.modules.worksession.dto.request.*;
 import com.farmapp.farmsmartmanagement.modules.worksession.dto.response.WorkSessionResponse;
 import com.farmapp.farmsmartmanagement.modules.worksession.mapper.WorkSessionMapper;
@@ -38,30 +39,22 @@ public class WorkSessionService {
     UserRepository userRepository;
     SecurityUtils securityUtils;
     WorkSessionMapper workSessionMapper;
+    TaskValidator taskValidator;
 
     // ─────────────────────────────────────────────────────────────────────────
     // CHECK-IN
     // POST /plans/{planId}/stages/{stageId}/tasks/{taskId}/sessions/check-in
     // ─────────────────────────────────────────────────────────────────────────
     @Transactional
-    public WorkSessionResponse checkIn(UUID taskId, CheckInRequest request) {
+    public WorkSessionResponse checkIn(UUID taskId, UUID planStageId, UUID planId, CheckInRequest request) {
         UUID farmId = securityUtils.getCurrentFarmId();
         UUID userId = securityUtils.getCurrentUserId();
 
-        TaskEntity task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));
-
-        if (!task.getFarm().getId().equals(farmId))
-            throw new AppException(ErrorCode.FORBIDDEN);
+        TaskEntity task = taskValidator.validateAndGetTask(taskId, planStageId, planId, farmId);
 
         // Phải là assignee của task
         if (!taskAssigneeRepository.existsByTask_IdAndUser_IdAndRemovedAtIsNull(taskId, userId))
             throw new AppException(ErrorCode.FORBIDDEN);
-
-        // Task phải đang hoạt động (không terminal)
-        String statusCode = task.getStatus().getCode();
-        if ("COMPLETED".equals(statusCode) || "CANCELLED".equals(statusCode))
-            throw new AppException(ErrorCode.TASK_ALREADY_TERMINAL);
 
         // Không được check-in 2 lần (unique index đã enforce, nhưng check trước để báo lỗi rõ)
         if (workSessionRepository.findByEmployee_IdAndCheckedOutAtIsNull(userId).isPresent())
@@ -254,7 +247,8 @@ public class WorkSessionService {
     // ─────────────────────────────────────────────────────────────────────────
 
     private WorkSessionEntity getOpenSessionOrThrow(UUID sessionId, UUID userId, UUID farmId) {
-        WorkSessionEntity session = workSessionRepository.findById(sessionId)
+        WorkSessionEntity session = workSessionRepository
+                .findById(sessionId)
                 .orElseThrow(() -> new AppException(ErrorCode.SESSION_NOT_FOUND));
 
         if (!session.getFarm().getId().equals(farmId))

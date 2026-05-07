@@ -1,7 +1,10 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.TaskEntity;
+import com.farmapp.farmsmartmanagement.modules.plot.mapper.PlotMapper;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -162,4 +165,40 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
             AND t.id = :id
         """)
     boolean existsByPlot_IdAndPlan_Id(@Param("id") UUID id,@Param("planId") UUID planId);
+
+    @Query("""
+        SELECT t FROM TaskEntity t
+        JOIN TaskAssigneeEntity ta ON ta.task.id = t.id
+        WHERE ta.user.id = :userId
+            AND ta.removedAt IS NULL
+            AND t.farm.id = :farmId
+            AND COALESCE(t.actualStartDate, t.startDate) <= CURRENT_DATE
+            AND COALESCE(t.actualStartDate, CURRENT_DATE) >= CURRENT_DATE
+            AND t.deletedAt IS NULL
+    """)
+    List<TaskEntity> findAssignedTasksForToday(@Param("userId") UUID userId,@Param("farmId") UUID farmId);
+
+    @Query("""
+        SELECT t FROM TaskEntity t
+        JOIN TaskAssigneeEntity ta ON ta.task.id = t.id
+        WHERE ta.user.id = :userId
+            AND ta.removedAt IS NULL
+            AND t.deletedAt IS NULL
+    """)
+    Page<TaskEntity> findAssignedTaskByUser_Id(@Param("userId") UUID userId, Pageable pageable);
+
+    @Query("""
+        SELECT t FROM TaskEntity t
+        JOIN TaskAssigneeEntity ta ON ta.task = t
+        WHERE ta.user.id = :userId
+          AND ta.removedAt IS NULL
+          AND t.farm.id = :farmId
+          AND :date BETWEEN COALESCE(t.actualStartDate, t.startDate)
+                       AND COALESCE(t.actualEndDate, t.endDate)
+          AND t.deletedAt IS NULL
+    """)
+    Page<TaskEntity> findAssignedTaskByUser_IdAndDate(@Param("userId") UUID userId,
+                                                      @Param("farmId") UUID farmId,
+                                                      @Param("date") LocalDate date,
+                                                      Pageable pageable);
 }

@@ -2,6 +2,8 @@ package com.farmapp.farmsmartmanagement.modules.task.controller;
 
 import com.farmapp.farmsmartmanagement.common.annotation.RequiresFarmToken;
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
+import com.farmapp.farmsmartmanagement.common.response.PageResponse;
+import com.farmapp.farmsmartmanagement.common.response.PageableResponse;
 import com.farmapp.farmsmartmanagement.common.response.ResponseUtil;
 import com.farmapp.farmsmartmanagement.modules.task.dto.request.CreateTaskRequest;
 import com.farmapp.farmsmartmanagement.modules.task.dto.request.UpdateTaskRequest;
@@ -15,9 +17,12 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -117,5 +122,56 @@ public class TaskController {
         taskService.deleteTask(taskId);
         return ResponseUtil.noContent();
     }
+
+    @Operation(
+            summary = "Lấy task được gắn hôm nay",
+            description = "API trả về danh sách công việc được assign cho user trong ngày hôm nay",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @GetMapping("/api/v1/tasks/assigned/today")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<List<TaskResponse>>> getAssignedTasksForToday(
+            @RequestParam("userId") UUID userId
+    ){
+        return ResponseUtil.success(
+                taskService.findAssignedTasksForToday(userId)
+        );
+    }
+
+
+    @Operation(
+            summary = "Lấy task được gắn theo user (Pageable)",
+            description = "API trả về danh sách công việc được assign cho user, có phân trang",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @GetMapping("/api/v1/tasks/assigned")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<PageableResponse<TaskResponse>>> getAssignedTasks(
+            @RequestParam("userId") UUID userId,
+            Pageable pageable
+    ){
+        return ResponseUtil.success(
+                taskService.findAssignedTasks(userId, pageable)
+        );
+    }
+
+
+    @Operation(
+            summary = "Lấy task được gắn theo ngày (Pageable)",
+            description = "API trả về danh sách công việc được assign cho user theo ngày cụ thể, có phân trang",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @GetMapping("/api/v1/tasks/assigned/by-date")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<PageableResponse<TaskResponse>>> getAssignedTasksByDate(
+            @RequestParam("userId") UUID userId,
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            Pageable pageable
+    ){
+        return ResponseUtil.success(
+                taskService.findAssignedTasksByDate(userId, date, pageable)
+        );
+    }
+
 
 }

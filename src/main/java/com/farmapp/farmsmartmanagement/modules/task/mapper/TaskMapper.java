@@ -14,6 +14,7 @@ public interface TaskMapper {
 
     @Mapping(target = "planStageId", source = "planStage.id")
     @Mapping(target = "farmId", source = "farm.id")
+    @Mapping(target = "farmName", source = "farm.name")
     @Mapping(target = "plotId", source = "plot.id", defaultExpression = "java(null)")
     @Mapping(target = "createdBy", source = "createdBy.id")
     TaskResponse toResponse(TaskEntity task);

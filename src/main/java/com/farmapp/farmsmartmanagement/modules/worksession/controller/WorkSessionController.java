@@ -37,7 +37,7 @@ public class WorkSessionController {
             @PathVariable UUID taskId,
             @RequestBody @Valid CheckInRequest request
     ) {
-        return ResponseUtil.created(workSessionService.checkIn(taskId, request));
+        return ResponseUtil.created(workSessionService.checkIn(taskId,stageId,planId, request));
     }
 
     @Operation(summary = "Check-out kết thúc làm việc",

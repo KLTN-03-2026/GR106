@@ -19,6 +19,7 @@ public class TaskResponse {
     Long version;
     UUID planStageId;
     UUID farmId;
+    String farmName;
     UUID plotId;
 
     TaskStatusResponse status;
