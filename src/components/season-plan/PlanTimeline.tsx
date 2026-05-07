@@ -47,7 +47,7 @@ interface PlanTimelineProps {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function toDateStr(d: Date): string {
+function toDateStr(d: Date): string { // hàm dùng để chuyển object Date sang string định dạng YYYY-MM-DD
   const year = d.getFullYear();
   const month = (d.getMonth() + 1).toString().padStart(2, '0');
   const day = d.getDate().toString().padStart(2, '0');
@@ -57,16 +57,16 @@ function toDateStr(d: Date): string {
 function addDaysToStr(dateStr: string, days: number): string {
   const d = new Date(dateStr);
   d.setDate(d.getDate() + days);
-  return toDateStr(d);
+  return toDateStr(d); // hàm Cộng thêm một số ngày vào chuỗi ngày tháng và trả về chuỗi mới.
 }
 
-function diffDays(a: string | Date, b: string | Date): number {
+function diffDays(a: string | Date, b: string | Date): number { // Tính toán số ngày chênh lệch giữa hai mốc thời gian.
   const da = typeof a === 'string' ? new Date(a) : a;
   const db = typeof b === 'string' ? new Date(b) : b;
   return Math.round((db.getTime() - da.getTime()) / 86_400_000);
 }
 
-function getMonday(d: Date): Date {
+function getMonday(d: Date): Date { // Tính toán ngày thứ Hai gần nhất trước hoặc bằng ngày hiện tại.
   const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   const result = new Date(d);
@@ -170,7 +170,7 @@ function ActualOverlay({
             width: Math.max(2, seg.width),
             top: topOffset,
             height: barH,
-            backgroundColor: 'rgba(82, 100, 120, 0.25)', // Màu nền slate nhạt, chuyên nghiệp hơn
+            backgroundColor: 'rgba(29, 9, 55, 0.4)', // Màu nền slate nhạt, chuyên nghiệp hơn
             border: '1px solid #94a3b8', // Thêm border solid theo yêu cầu
             borderRadius: 10,
           }}
