@@ -124,7 +124,7 @@ export interface Phase {
   duration: number; // in days, added for utility compatibility
   color?: string; // UI color
   description?: string; // Not in API snippet but useful
-  tasks: Task[]; // Usually fetched separately but managed together in UI
+  tasks?: Task[]; // Optional — tasks fetched separately
 }
 
 

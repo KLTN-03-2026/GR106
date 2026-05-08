@@ -76,6 +76,8 @@ export const apiPlanStageSchema = z.object({
   orderIndex: z.number().optional(),
   startDate: z.string(),
   endDate: z.string(),
+  actualStartDate: z.string().nullable().optional(),
+  actualEndDate: z.string().nullable().optional(),
   aiSuggestionCache: z.string().nullable().optional(),
   status: statusObjectSchema,
 });
@@ -115,7 +117,11 @@ export const apiResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
 export const getPlansResponseSchema = apiResponseSchema(z.array(apiPlanSchema));
 export const createPlanResponseSchema = apiResponseSchema(apiPlanSchema);
 export const getStagesResponseSchema = apiResponseSchema(z.array(apiPlanStageSchema));
+export const getStageResponseSchema = apiResponseSchema(apiPlanStageSchema);
 export const createStageResponseSchema = apiResponseSchema(apiPlanStageSchema);
+export const updateStageTimeResponseSchema = apiResponseSchema(apiPlanStageSchema);
+export const updateStageResponseSchema = apiResponseSchema(apiPlanStageSchema);
+export const deleteStageResponseSchema = apiResponseSchema(z.string());
 export const getTasksResponseSchema = apiResponseSchema(z.array(apiTaskSchema));
 export const createTaskResponseSchema = apiResponseSchema(apiTaskSchema);
 
@@ -149,12 +155,52 @@ export const createPlanRequestSchema = z.object({
   note: z.string().optional(),
 });
 
-// Schema cho Payload tạo Phase mới
-export const createPhaseSchema = z.object({
+// Schema cho Payload tạo Stage mới
+export const createStageSchema = z.object({
   name: z.string().trim().min(1, 'Vui lòng nhập tên giai đoạn'),
-  startDate: z.string().min(1, 'Vui lòng nhập ngày bắt đầu hợp lệ (dd/mm/yyyy)'),
-  endDate: z.string().min(1, 'Vui lòng nhập ngày kết thúc hợp lệ (dd/mm/yyyy)'),
-});
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày bắt đầu không hợp lệ (YYYY-MM-DD)'),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày kết thúc không hợp lệ (YYYY-MM-DD)'),
+}).refine(
+  (data) => data.startDate <= data.endDate,
+  {
+    message: 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc',
+    path: ['endDate'],
+  },
+);
+
+// Schema cho Payload cập nhật thời gian Stage (PUT /time)
+export const updateStageTimeSchema = z.object({
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày bắt đầu không hợp lệ'),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày kết thúc không hợp lệ'),
+}).refine(
+  (data) => data.startDate <= data.endDate,
+  {
+    message: 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc',
+    path: ['endDate'],
+  },
+);
+
+// Schema cho Payload cập nhật Stage (PATCH)
+export const updateStageSchema = z.object({
+  name: z.string().trim().min(1, 'Tên giai đoạn không được để trống').optional(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày bắt đầu không hợp lệ').optional(),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày kết thúc không hợp lệ').optional(),
+}).refine(
+  (data) => {
+    if (data.startDate && data.endDate) {
+      return data.startDate <= data.endDate;
+    }
+    return true;
+  },
+  {
+    message: 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc',
+    path: ['endDate'],
+  },
+);
+
+export type CreateStageInput = z.infer<typeof createStageSchema>;
+export type UpdateStageTimeInput = z.infer<typeof updateStageTimeSchema>;
+export type UpdateStageInput = z.infer<typeof updateStageSchema>;
 
 // Schema cho Payload clone Plan
 export const clonePlanSchema = z.object({
