@@ -5,7 +5,7 @@ const actorSchema = z.object({
   id: z.string().uuid(),
   fullName: z.string(),
   email: z.string(),
-  phone: z.string().nullable().optional(),
+  phone: z.string(),
   status: z.string(),
   isLocked: z.boolean(),
   createdAt: z.string(),
@@ -25,7 +25,7 @@ export const planStageStatusTransitionSchema = z.object({
   farmRole: z.object({
     id: z.string().uuid(),
     name: z.string(),
-    description: z.string().optional(),
+    description: z.string(),
   }),
   createdAt: z.string(),
 });
