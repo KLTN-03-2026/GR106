@@ -78,7 +78,8 @@ public class TaskService {
                 .findByIdAndPlanId(planStageId,planId)
                 .orElseThrow(() -> new AppException(ErrorCode.FORBIDDEN));
 
-        if(planStage.getStatus().getIsTerminal() || LocalDate.now().isBefore(planStage.getStartDate()))
+        if(planStage.getStatus().getIsTerminal() || (planStage.getActualEndDate() != null
+                && LocalDate.now().isAfter(planStage.getActualEndDate())))
             throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
 
         // check ownership
