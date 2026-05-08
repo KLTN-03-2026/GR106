@@ -12,7 +12,7 @@ import { ConfirmModal } from '../../components/ui/ConfirmModal'
 import { createSupplierSchema } from '../../schemas/supplierSchemas'
 import { Supplier } from '../../types/supplier/supplier'
 import { FarmSummary } from '../../types/farm/farm'
-import { extractErrorMessage } from '../../utils/errorUtils'
+import { extractSupplierCreateErrorMessage, extractErrorMessage } from '../../utils/errorUtils'
 import { cn } from '../../utils/cn'
 
 // ── Accent palette cycling per card ──────────────────────────────────────────
@@ -71,7 +71,8 @@ export function SupplierListPage() {
       setIsModalOpen(false)
       setNewSupplier({ code: '', name: '' })
     } catch (err) {
-      toast.error(extractErrorMessage(err))
+      // FE tự set message phù hợp cho supplier context
+      toast.error(extractSupplierCreateErrorMessage(err, newSupplier.code))
     } finally {
       setSubmitting(false)
     }
@@ -83,22 +84,22 @@ export function SupplierListPage() {
     setIsDeleteConfirmOpen(true)
   }
 
-  const handleConfirmDelete = async () => {
-    if (!farmId || !supplierToDelete) return
-    setIsDeleting(true)
-    try {
-      await deleteSupplier(farmId, supplierToDelete).unwrap()
-      toast.success('Đã xóa nhà cung cấp')
-    } catch (err) {
-      toast.error(extractErrorMessage(err))
-    } finally {
-      setIsDeleting(false)
-      setIsDeleteConfirmOpen(false)
-      setSupplierToDelete(null)
-    }
-  }
+   const handleConfirmDelete = async () => {
+     if (!farmId || !supplierToDelete) return
+     setIsDeleting(true)
+     try {
+       await deleteSupplier(farmId, supplierToDelete).unwrap()
+       toast.success('Đã xóa nhà cung cấp')
+     } catch (err) {
+       toast.error(extractErrorMessage(err))
+     } finally {
+       setIsDeleting(false)
+       setIsDeleteConfirmOpen(false)
+       setSupplierToDelete(null)
+     }
+   }
 
-  return (
+   return (
     <div className="flex flex-col h-full min-h-screen bg-slate-50">
 
       {/* ── Top bar ── */}

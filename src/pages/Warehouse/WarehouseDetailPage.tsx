@@ -366,7 +366,7 @@ export function WarehouseDetailPage() {
         minStockQty: 0,
         toLocationId: "",
       });
-    } catch (err: any) {
+    } catch (err) {
       toast.error(extractErrorMessage(err));
     } finally {
       setIsSubmitting(false);
@@ -385,7 +385,7 @@ export function WarehouseDetailPage() {
       await deleteItem(farmId, warehouseId, selectedItem.id).unwrap();
       toast.success("Đã xóa vật tư thành công");
       refreshAllTx();
-    } catch (err: any) {
+    } catch (err) {
       toast.error(extractErrorMessage(err));
     } finally {
       setIsSubmitting(false);
@@ -409,7 +409,7 @@ export function WarehouseDetailPage() {
       refreshAllTx();
       setIsLocationModalOpen(false);
       setLocationForm({ code: "", name: "", description: "", isActive: true });
-    } catch (err: any) {
+    } catch (err) {
       toast.error(extractErrorMessage(err));
     } finally {
       setIsSubmitting(false);
@@ -428,7 +428,7 @@ export function WarehouseDetailPage() {
       await deleteLocation(farmId, warehouseId, selectedLoc.id).unwrap();
       toast.success("Đã xóa vị trí thành công");
       refreshAllTx();
-    } catch (err: any) {
+    } catch (err) {
       toast.error(extractErrorMessage(err));
     } finally {
       setIsSubmitting(false);
