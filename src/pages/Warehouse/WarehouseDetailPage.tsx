@@ -1405,112 +1405,112 @@ export function WarehouseDetailPage() {
               onSubmit={handleCreateItem}
               className="space-y-4"
             >
-              <div>
-                <FieldLabel required>Tên vật tư</FieldLabel>
-                <input
-                  required
-                  value={itemForm.name}
-                  onChange={(e) =>
-                    setItemForm((p) => ({ ...p, name: e.target.value }))
-                  }
-                  className={inputCls}
-                  placeholder="VD: Phân bón NPK 20-20-15"
-                />
-              </div>
+               <div>
+                 <FieldLabel required>Tên vật tư</FieldLabel>
+                 <input
+                   // required
+                   value={itemForm.name}
+                   onChange={(e) =>
+                     setItemForm((p) => ({ ...p, name: e.target.value }))
+                   }
+                   className={inputCls}
+                   placeholder="VD: Phân bón NPK 20-20-15"
+                 />
+               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <FieldLabel required>Đơn vị tính</FieldLabel>
-                  <select
-                    required
-                    value={itemForm.unitId}
-                    onChange={(e) =>
-                      setItemForm((p) => ({ ...p, unitId: e.target.value }))
-                    }
-                    className={selectCls}
-                  >
-                    <option value="">Chọn đơn vị</option>
-                    {units.map((u: Unit) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name} ({u.code})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <FieldLabel required>Mã SKU</FieldLabel>
-                  <select
-                    required
-                    value={itemForm.sku}
-                    onChange={(e) =>
-                      setItemForm((p) => ({ ...p, sku: e.target.value }))
-                    }
-                    className={selectCls}
-                  >
-                    <option value="">Chọn SKU</option>
-                    {skus.map((s: Sku) => (
-                      <option key={s.sku} value={s.sku}>
-                        {s.sku}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+               <div className="grid grid-cols-2 gap-3">
+                 <div>
+                   <FieldLabel required>Đơn vị tính</FieldLabel>
+                   <select
+                     // required
+                     value={itemForm.unitId}
+                     onChange={(e) =>
+                       setItemForm((p) => ({ ...p, unitId: e.target.value }))
+                     }
+                     className={selectCls}
+                   >
+                     <option value="">Chọn đơn vị</option>
+                     {units.map((u: Unit) => (
+                       <option key={u.id} value={u.id}>
+                         {u.name} ({u.code})
+                       </option>
+                     ))}
+                   </select>
+                 </div>
+                 <div>
+                   <FieldLabel required>Mã SKU</FieldLabel>
+                   <select
+                     // required
+                     value={itemForm.sku}
+                     onChange={(e) =>
+                       setItemForm((p) => ({ ...p, sku: e.target.value }))
+                     }
+                     className={selectCls}
+                   >
+                     <option value="">Chọn SKU</option>
+                     {skus.map((s: Sku) => (
+                       <option key={s.sku} value={s.sku}>
+                         {s.sku}
+                       </option>
+                     ))}
+                   </select>
+                 </div>
+               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <FieldLabel>Nhà cung cấp</FieldLabel>
-                  <select
-                    value={itemForm.supplierId}
-                    onChange={(e) =>
-                      setItemForm((p) => ({ ...p, supplierId: e.target.value }))
-                    }
-                    className={selectCls}
-                  >
-                    <option value="">Chọn nhà cung cấp</option>
-                    {suppliers.map((s: Supplier) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <FieldLabel required>Vị trí trong kho</FieldLabel>
-                  <select
-                    required
-                    value={itemForm.toLocationId}
-                    onChange={(e) =>
-                      setItemForm((p) => ({
-                        ...p,
-                        toLocationId: e.target.value,
-                      }))
-                    }
-                    className={selectCls}
-                  >
-                    <option value="">Chọn vị trí</option>
-                    {locations
-                      .filter((l: WarehouseLocation) => l.isActive)
-                      .map((l: WarehouseLocation) => (
-                        <option key={l.id} value={l.id}>
-                          {l.name} [{l.code}]
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              </div>
+               <div className="grid grid-cols-2 gap-3">
+                 <div>
+                   <FieldLabel>Nhà cung cấp</FieldLabel>
+                   <select
+                     value={itemForm.supplierId}
+                     onChange={(e) =>
+                       setItemForm((p) => ({ ...p, supplierId: e.target.value }))
+                     }
+                     className={selectCls}
+                   >
+                     <option value="">Chọn nhà cung cấp</option>
+                     {suppliers.map((s: Supplier) => (
+                       <option key={s.id} value={s.id}>
+                         {s.name}
+                       </option>
+                     ))}
+                   </select>
+                 </div>
+                 <div>
+                   <FieldLabel required>Vị trí trong kho</FieldLabel>
+                   <select
+                     // required
+                     value={itemForm.toLocationId}
+                     onChange={(e) =>
+                       setItemForm((p) => ({
+                         ...p,
+                         toLocationId: e.target.value,
+                       }))
+                     }
+                     className={selectCls}
+                   >
+                     <option value="">Chọn vị trí</option>
+                     {locations
+                       .filter((l: WarehouseLocation) => l.isActive)
+                       .map((l: WarehouseLocation) => (
+                         <option key={l.id} value={l.id}>
+                           {l.name} [{l.code}]
+                         </option>
+                       ))}
+                   </select>
+                 </div>
+               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <FieldLabel required>Số lượng tồn</FieldLabel>
-                  <input
-                    required
-                    {...numericInput(itemForm.stock, (v) =>
-                      setItemForm((p) => ({ ...p, stock: v })),
-                    )}
-                    className={cn(inputCls, "font-bold text-emerald-700")}
-                  />
-                </div>
+               <div className="grid grid-cols-3 gap-3">
+                 <div>
+                   <FieldLabel required>Số lượng tồn</FieldLabel>
+                   <input
+                     // required
+                     {...numericInput(itemForm.stock, (v) =>
+                       setItemForm((p) => ({ ...p, stock: v })),
+                     )}
+                     className={cn(inputCls, "font-bold text-emerald-700")}
+                   />
+                 </div>
                 <div>
                   <FieldLabel>Đơn giá (₫)</FieldLabel>
                   <input
@@ -1569,40 +1569,40 @@ export function WarehouseDetailPage() {
             onClose={() => setIsLocationModalOpen(false)}
           />
 
-          <form
-            id="create-location-form"
-            onSubmit={handleCreateLocation}
-            className="px-6 py-5 space-y-4"
-          >
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <FieldLabel required>Mã vị trí</FieldLabel>
-                <input
-                  required
-                  value={locationForm.code}
-                  onChange={(e) =>
-                    setLocationForm((p) => ({
-                      ...p,
-                      code: e.target.value.toUpperCase(),
-                    }))
-                  }
-                  className={cn(inputCls, "font-mono uppercase")}
-                  placeholder="VD: A1, KEL-01"
-                  maxLength={20}
-                />
-              </div>
-              <div>
-                <FieldLabel required>Tên vị trí</FieldLabel>
-                <input
-                  required
-                  value={locationForm.name}
-                  onChange={(e) =>
-                    setLocationForm((p) => ({ ...p, name: e.target.value }))
-                  }
-                  className={inputCls}
-                  placeholder="VD: Kệ A hàng 1"
-                />
-              </div>
+           <form
+             id="create-location-form"
+             onSubmit={handleCreateLocation}
+             className="px-6 py-5 space-y-4"
+           >
+             <div className="grid grid-cols-2 gap-3">
+               <div>
+                 <FieldLabel required>Mã vị trí</FieldLabel>
+                 <input
+                   // required
+                   value={locationForm.code}
+                   onChange={(e) =>
+                     setLocationForm((p) => ({
+                       ...p,
+                       code: e.target.value.toUpperCase(),
+                     }))
+                   }
+                   className={cn(inputCls, "font-mono uppercase")}
+                   placeholder="VD: A1, KEL-01"
+                   maxLength={20}
+                 />
+               </div>
+               <div>
+                 <FieldLabel required>Tên vị trí</FieldLabel>
+                 <input
+                   // required
+                   value={locationForm.name}
+                   onChange={(e) =>
+                     setLocationForm((p) => ({ ...p, name: e.target.value }))
+                   }
+                   className={inputCls}
+                   placeholder="VD: Kệ A hàng 1"
+                 />
+               </div>
             </div>
 
             <div>

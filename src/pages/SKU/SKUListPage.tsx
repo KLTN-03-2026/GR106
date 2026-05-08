@@ -184,7 +184,7 @@ export function SKUListPage() {
                 <div>
                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Mã SKU</label>
                   <input
-                    required
+                    // required  ← bỏ browser native validation
                     value={newSku.sku}
                     onChange={e => setNewSku(prev => ({ ...prev, sku: e.target.value.toUpperCase().replace(/\s+/g, '-') }))}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 font-mono"

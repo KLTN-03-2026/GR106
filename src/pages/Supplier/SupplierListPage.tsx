@@ -70,7 +70,7 @@ export function SupplierListPage() {
       toast.success('Đã thêm nhà cung cấp mới')
       setIsModalOpen(false)
       setNewSupplier({ code: '', name: '' })
-    } catch (err: any) {
+    } catch (err) {
       toast.error(extractErrorMessage(err))
     } finally {
       setSubmitting(false)
@@ -89,7 +89,7 @@ export function SupplierListPage() {
     try {
       await deleteSupplier(farmId, supplierToDelete).unwrap()
       toast.success('Đã xóa nhà cung cấp')
-    } catch (err: any) {
+    } catch (err) {
       toast.error(extractErrorMessage(err))
     } finally {
       setIsDeleting(false)
@@ -296,12 +296,12 @@ export function SupplierListPage() {
 
             {/* Form */}
             <form onSubmit={handleCreate} className="px-6 py-5 space-y-4">
-              <div>
+               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
                   Mã nhà cung cấp <span className="text-rose-400">*</span>
                 </label>
                 <input
-                  required
+                  // required  ← đã bỏ
                   value={newSupplier.code}
                   onChange={e => setNewSupplier(p => ({ ...p, code: e.target.value.toUpperCase() }))}
                   className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-mono text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all uppercase"
@@ -314,7 +314,7 @@ export function SupplierListPage() {
                   Tên nhà cung cấp <span className="text-rose-400">*</span>
                 </label>
                 <input
-                  required
+                  // required  ← đã bỏ
                   value={newSupplier.name}
                   onChange={e => setNewSupplier(p => ({ ...p, name: e.target.value }))}
                   className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
