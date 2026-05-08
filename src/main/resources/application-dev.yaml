@@ -13,14 +13,12 @@ spring:
       ddl-auto: none
     show-sql: true
 
-logging:
-  level:
-    org:
-      hibernate:
-        SQL: DEBUG
-        orm:
-          jdbc:
-            bind: TRACE
+#logging:
+#  level:
+#    org:
+#      hibernate:
+#        SQL: DEBUG
+
 
   data:
     redis:
