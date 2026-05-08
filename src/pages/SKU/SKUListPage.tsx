@@ -36,14 +36,14 @@ export function SKUListPage() {
     if (farmId) fetchSkus(farmId)
   }, [fetchSkus, farmId])
 
-  const filteredSkus = skus.filter((s: Sku) => 
+  const filteredSkus = skus.filter((s: Sku) =>
     s.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.description.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     const validation = createSkuSchema.safeParse({
       sku: newSku.sku,
       description: newSku.description
@@ -55,7 +55,7 @@ export function SKUListPage() {
     }
 
     if (!farmId) return
-    
+
     setSubmitting(true)
     try {
       await createSku(farmId, { sku: newSku.sku, description: newSku.description }).unwrap()
@@ -95,7 +95,7 @@ export function SKUListPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4 bg-white p-6 transition-all duration-300">
         <div className="flex items-center gap-6 w-full text-left">
-          <button 
+          <button
             onClick={() => navigate(`/farms/${farmId}/actions`)}
             className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-all font-bold text-xs shrink-0"
           >

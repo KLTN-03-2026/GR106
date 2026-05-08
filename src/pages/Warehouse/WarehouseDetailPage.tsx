@@ -905,7 +905,7 @@ export function WarehouseDetailPage() {
                         >
                           <MapPin size={15} />
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex items-center gap-1">
                           {canManage && (
                             <button
                               onClick={(e) => {
@@ -913,14 +913,14 @@ export function WarehouseDetailPage() {
                                 handleDeleteLocation(loc);
                               }}
                               disabled={locLoading}
-                              className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all disabled:opacity-50"
+                              className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all disabled:opacity-50 shrink-0"
                             >
                               <Trash2 size={13} />
                             </button>
                           )}
                           <span
                             className={cn(
-                              "text-[10px] font-bold px-2 py-0.5 rounded-full",
+                              "inline-flex items-center justify-center text-[10px] font-bold px-2 h-5 rounded-full whitespace-nowrap",
                               loc.isActive
                                 ? c.badge
                                 : "bg-slate-100 text-slate-400",
