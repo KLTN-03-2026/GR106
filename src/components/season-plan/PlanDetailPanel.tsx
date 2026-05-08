@@ -214,6 +214,16 @@ export function PlanDetailPanel({
   const [newTaskStart, setNewTaskStart] = useState('');
   const [newTaskEnd, setNewTaskEnd] = useState('');
   const [newTaskPlotId, setNewTaskPlotId] = useState('');
+  
+  useEffect(() => {
+    if (isAddingTask && activeSelection?.type === 'PHASE') {
+      const phase = activeSelection.phase;
+      const plan = activeSelection.plan;
+      setNewTaskStart(phase.startDate);
+      setNewTaskEnd(phase.endDate);
+      setNewTaskPlotId(phase.plotId || plan.plots?.[0]?.plotId || '');
+    }
+  }, [isAddingTask, activeSelection]);
 
   const [showAddPlot, setShowAddPlot] = useState(false);
   const [selectedPlotIds, setSelectedPlotIds] = useState<string[]>([]);
