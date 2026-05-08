@@ -254,9 +254,9 @@ export const seasonPlanService = {
     * GET /api/v1/plan-stage-status-transitions
     * Lấy các transition trạng thái hợp lệ theo Farm
     */
-   async getPlanStageStatusTransitions(): Promise<PlanStageStatusTransition[]> {
-     const response = await axiosInstance.get('/api/v1/plan-stage-status-transitions');
-     const validated = getPlanStageStatusTransitionsResponseSchema.parse(response.data);
-     return validated.data;
-   },
- };
+    async getPlanStageStatusTransitions(): Promise<PlanStageStatusTransition[]> {
+      const response = await axiosInstance.get('/api/v1/plan-stage-status-transitions');
+      const validated = getPlanStageStatusTransitionsResponseSchema.parse(response.data);
+      return validated.data;
+    },
+  };

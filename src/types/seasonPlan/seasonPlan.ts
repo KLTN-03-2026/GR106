@@ -74,6 +74,30 @@ export interface TaskStatusObject extends StatusObject {
   isTerminal?: boolean;
 }
 
+/** Lịch sử thay đổi trạng thái của Task */
+export interface TaskStatusHistory {
+  fromStatus: StatusObject;
+  toStatus: StatusObject;
+  changedBy: UserObject;
+  changedAt: string;
+}
+
+/** Farm object (simplified) */
+export interface FarmObject {
+  id: string;
+  name: string;
+}
+
+/** Transition giữa các trạng thái Task (theo farm) */
+export interface TaskStatusTransition {
+  id: string;
+  farm: FarmObject;
+  fromStatus: StatusObject;
+  toStatus: StatusObject;
+  farmRole: FarmRoleObject;
+  createdAt: string;
+}
+
 export type PlanStatus = 'DRAFT' | 'ACTIVE' | 'READY_TO_HARVEST' | 'HARVESTING' | 'COMPLETED' | 'CANCELLED' | 'UNASSIGNED' | 'ASSIGNED' | 'OVERDUE';
 
 export interface PhaseConfig {

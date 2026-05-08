@@ -114,6 +114,36 @@ export const apiResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
     timestamp: z.string(),
   });
 
+// ── Task Status schemas ──
+export const farmObjectSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+});
+
+export const taskStatusHistorySchema = z.object({
+  fromStatus: statusObjectSchema,
+  toStatus: statusObjectSchema,
+  changedBy: userObjectSchema,
+  changedAt: z.string(),
+});
+
+export const taskStatusTransitionSchema = z.object({
+  id: z.string().uuid(),
+  farm: farmObjectSchema,
+  fromStatus: statusObjectSchema,
+  toStatus: statusObjectSchema,
+  farmRole: farmRoleObjectSchema,
+  createdAt: z.string(),
+});
+
+// Response schemas
+export const getTaskStatusesResponseSchema = apiResponseSchema(z.array(statusObjectSchema));
+export const getTaskStatusTransitionsResponseSchema = apiResponseSchema(z.array(taskStatusTransitionSchema));
+export const getTaskStatusHistoriesResponseSchema = apiResponseSchema(z.array(taskStatusHistorySchema));
+export const getAvailableTaskStatusesResponseSchema = apiResponseSchema(z.array(statusObjectSchema));
+export const updateTaskStatusResponseSchema = apiResponseSchema(taskStatusHistorySchema);
+
+// ── Existing response schemas ──
 export const getPlansResponseSchema = apiResponseSchema(z.array(apiPlanSchema));
 export const createPlanResponseSchema = apiResponseSchema(apiPlanSchema);
 export const getStagesResponseSchema = apiResponseSchema(z.array(apiPlanStageSchema));
@@ -212,10 +242,18 @@ export const clonePlanSchema = z.object({
 export const createTaskSchema = z.object({
   name: z.string().trim().min(1, 'Vui lòng nhập tên công việc'),
   description: z.string().optional(),
-  startDate: z.string().min(1, 'Vui lòng nhập ngày bắt đầu'),
-  endDate: z.string().min(1, 'Vui lòng nhập ngày kết thúc'),
-  plotId: z.string().nullable().optional(),
-});
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày bắt đầu không hợp lệ (YYYY-MM-DD)'),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày kết thúc không hợp lệ (YYYY-MM-DD)'),
+  plotId: z.string().uuid().nullable().optional(),
+}).refine(
+  (data) => data.startDate <= data.endDate,
+  {
+    message: 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc',
+    path: ['endDate'],
+  },
+);
+
+
 
 
 
