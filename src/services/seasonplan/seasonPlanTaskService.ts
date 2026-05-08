@@ -1,9 +1,13 @@
 import { axiosInstance } from '../../config/axios';
 import { Task } from '../../types/seasonPlan';
+import type { TaskDependencyCreateResponse, TaskDependenciesResponse } from '../../types/seasonPlan/seasonPlan';
 import { PagedData, PageableParams } from '../../types/common';
 import {
   getTasksResponseSchema,
   createTaskResponseSchema,
+  createTaskDependencyResponseSchema,
+  getTaskDependenciesResponseSchema,
+  deleteTaskDependencyResponseSchema,
 } from '../../schemas/seasonPlanSchemas';
 
 export interface CreateTaskRequest {
@@ -77,8 +81,10 @@ async function fetchTaskDependencyIds(taskId: string): Promise<string[]> {
   }
 }
 
-async function deleteTaskDependencyEdge(taskId: string, dependsOnTaskId: string): Promise<void> {
-  await axiosInstance.delete(`/api/v1/tasks/${taskId}/dependencies/${dependsOnTaskId}`);
+async function deleteTaskDependencyEdge(taskId: string, dependsOnTaskId: string): Promise<string> {
+  const response = await axiosInstance.delete(`/api/v1/tasks/${taskId}/dependencies/${dependsOnTaskId}`);
+  const validated = deleteTaskDependencyResponseSchema.parse(response.data);
+  return validated.data;
 }
 
 export const seasonPlanTaskService = {
@@ -143,21 +149,25 @@ export const seasonPlanTaskService = {
     await axiosInstance.delete(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}`);
   },
 
-  /** Lấy danh sách ID các công việc mà taskId phụ thuộc vào */
-  async getTaskDependencies(taskId: string): Promise<string[]> {
-    return fetchTaskDependencyIds(taskId);
-  },
-
   /** Thiết lập quan hệ phụ thuộc: taskId phụ thuộc vào dependsOnTaskId */
-  async addTaskDependency(planId: string, stageId: string, taskId: string, dependsOnTaskId: string): Promise<void> {
-    await axiosInstance.post(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}/dependencies`, {
+  async addTaskDependency(planId: string, stageId: string, taskId: string, dependsOnTaskId: string): Promise<TaskDependencyCreateResponse> {
+    const response = await axiosInstance.post(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}/dependencies`, {
       dependsOnTaskId
     });
+    const validated = createTaskDependencyResponseSchema.parse(response.data);
+    return validated.data;
   },
 
   /** Xóa quan hệ phụ thuộc giữa hai công việc */
-  async deleteTaskDependency(taskId: string, dependsOnTaskId: string): Promise<void> {
+  async deleteTaskDependency(taskId: string, dependsOnTaskId: string): Promise<string> {
     return deleteTaskDependencyEdge(taskId, dependsOnTaskId);
+  },
+
+  /** Lấy danh sách dependency của một Task (full objects) */
+  async getTaskDependencies(taskId: string): Promise<TaskDependenciesResponse> {
+    const response = await axiosInstance.get(`/api/v1/tasks/${taskId}/dependencies`);
+    const validated = getTaskDependenciesResponseSchema.parse(response.data);
+    return validated.data;
   },
 
   async getAssignedTasks(userId: string, params?: PageableParams): Promise<PagedData<Task>> {

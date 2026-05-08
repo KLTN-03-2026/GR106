@@ -196,3 +196,14 @@ export interface UpdateSeasonPlanRequest {
   status?: PlanStatus;
 }
 
+// Task Dependency responses
+export interface TaskDependencyCreateResponse {
+  task: Task;
+  dependsOnTask: Task;
+}
+
+export interface TaskDependenciesResponse {
+  task: Task;
+  dependsOnTasks: Task[];
+}
+

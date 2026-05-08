@@ -253,6 +253,24 @@ export const createTaskSchema = z.object({
   },
 );
 
+// ── Task Dependency schemas ──
+export const createTaskDependencyResponseSchema = apiResponseSchema(
+  z.object({
+    task: apiTaskSchema,
+    dependsOnTask: apiTaskSchema,
+  })
+);
+
+export const getTaskDependenciesResponseSchema = apiResponseSchema(
+  z.object({
+    task: apiTaskSchema,
+    dependsOnTasks: z.array(apiTaskSchema),
+  })
+);
+
+export const deleteTaskDependencyResponseSchema = apiResponseSchema(z.string());
+
+
 
 
 

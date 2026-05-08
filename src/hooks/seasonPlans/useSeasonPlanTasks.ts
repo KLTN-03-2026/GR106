@@ -118,12 +118,12 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
               prev.map((p) =>
                 p.id === planId
                   ? {
-                    ...p,
-                    phases: p.phases.map((ph) =>
-                      ph.id === stageId
-                        ? { ...ph, tasks: (ph.tasks ?? []).filter((t) => t.id !== taskId) }
-                        : ph,
-                    ),
+                      ...p,
+                      phases: p.phases.map((ph) =>
+                        ph.id === stageId
+                          ? { ...ph, tasks: (ph.tasks ?? []).filter((t) => t.id !== taskId) }
+                          : ph,
+                      ),
                   }
                   : p,
               ),
@@ -139,25 +139,48 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
           prev.map((p) =>
             p.id === payload.planId
               ? {
-                ...p,
-                phases: p.phases.map((ph) =>
-                  ph.id === payload.stageId
-                    ? {
-                      ...ph,
-                      tasks: (ph.tasks ?? []).map((t) =>
-                        t.id === payload.taskId
-                          ? { ...t, startDate: payload.startDate, endDate: payload.endDate }
-                          : t,
-                      ),
-                    }
-                    : ph,
-                ),
+                  ...p,
+                  phases: p.phases.map((ph) =>
+                    ph.id === payload.stageId
+                      ? {
+                          ...ph,
+                          tasks: (ph.tasks ?? []).map((t) =>
+                            t.id === payload.taskId
+                              ? { ...t, startDate: payload.startDate, endDate: payload.endDate }
+                              : t,
+                          ),
+                      }
+                      : ph,
+                  ),
               }
               : p,
           ),
         );
       },
       [updatePlansCache],
+    ),
+    addTaskDependency: useCallback(
+      (planId: string, stageId: string, taskId: string, dependsOnTaskId: string) =>
+        withUnwrap(
+          seasonPlanTaskService.addTaskDependency(planId, stageId, taskId, dependsOnTaskId).then((result) => {
+            return result;
+          }),
+        ),
+      [updatePlansCache],
+    ),
+    deleteTaskDependency: useCallback(
+      (taskId: string, dependsOnTaskId: string) =>
+        withUnwrap(
+          seasonPlanTaskService.deleteTaskDependency(taskId, dependsOnTaskId).then((result) => {
+            return result;
+          }),
+        ),
+      [updatePlansCache],
+    ),
+    getTaskDependencies: useCallback(
+      (taskId: string) =>
+        withUnwrap(seasonPlanTaskService.getTaskDependencies(taskId)),
+      [],
     ),
     fetchTaskStatuses: useCallback(
       () =>
