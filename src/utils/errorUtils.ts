@@ -75,3 +75,40 @@ export function extractDeletePhaseErrorMessage(error: any, statusName?: string, 
   
   return 'Đã có lỗi xảy ra khi xóa giai đoạn. Vui lòng thử lại sau.';
 }
+
+/**
+ * Extract error message for SKU creation.
+ * Backend có thể trả về generic "Dữ liệu đầu vào không hợp lệ" (409),
+ * nên cần tự set message dựa trên validation rules.
+ */
+export function extractSkuCreateErrorMessage(err: any, skuCode: string): string {
+  const statusCode = getErrorStatusCode(err);
+  const backendMessage = extractErrorMessage(err);
+
+  // Nếu backend có message cụ thể thì dùng luôn
+  if (backendMessage && !backendMessage.includes('Dữ liệu đầu vào không hợp lệ')) {
+    return backendMessage;
+  }
+
+  // Nếu backend trả về generic 409 → tự set message dựa trên context
+  if (statusCode === 409) {
+    // Kiểm tra duplicate SKU local (nếu có danh sách SKU trong error context)
+    // Ở đây đơn giản: giả sử 409 là do duplicate
+    return `Mã SKU "${skuCode}" đã tồn tại. Vui lòng thêm mã khác.`;
+  }
+
+  // Validation error (400)
+  if (statusCode === 400) {
+    // Có thể parse chi tiết từ err.response?.data?.errors
+    const errors = err.response?.data?.errors;
+    if (Array.isArray(errors)) {
+      const messages = errors.map((e: any) => e.message || e.code).join('; ');
+      if (messages) return messages;
+    }
+    return 'Dữ liệu nhập không hợp lệ. Vui lòng kiểm tra lại các trường.';
+  }
+
+  // Fallback
+  return backendMessage || 'Không thể tạo SKU. Vui lòng thử lại sau.';
+}
+

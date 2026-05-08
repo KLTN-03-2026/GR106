@@ -51,10 +51,10 @@ export interface WarehouseTransaction {
   toLocation: TransactionLocation;
   type: TransactionType;
   qtyChange: number;
-  refTransferId: string;
-  refWorkLogId: string;
-  refTaskId: string;
-  refHavestId: string;
+  refTransferId: string | null;
+  refWorkLogId: string | null;
+  refTaskId: string | null;
+  refHavestId: string | null;
   performedBy: TransactionPerformedBy;
   notes: string;
   createdAt: string;

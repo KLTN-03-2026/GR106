@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Tag, Plus, Trash2, Loader2, ArrowLeft, Search, Barcode } from 'lucide-react'
 import { toast } from 'sonner'
-import { extractErrorMessage } from '../../utils/errorUtils'
+import { extractSkuCreateErrorMessage, extractErrorMessage } from '../../utils/errorUtils'
 import { useAuth } from '../../hooks/auth/useAuth'
 import { useSkus } from '../../hooks/skus/useSkus'
 import { useFarms } from '../../hooks/farms/useFarms'
@@ -63,7 +63,8 @@ export function SKUListPage() {
       setIsModalOpen(false)
       setNewSku({ sku: '', description: '' })
     } catch (err: any) {
-      toast.error(extractErrorMessage(err))
+      // FE tự set message chi tiết thay vì dùng backend generic
+      toast.error(extractSkuCreateErrorMessage(err, newSku.sku))
     } finally {
       setSubmitting(false)
     }
