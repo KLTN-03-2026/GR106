@@ -28,6 +28,7 @@ import { AssigneesSection } from './detail/AssigneesSection';
 import { SubTasksSection } from './detail/SubTasksSection';
 import { DeleteConfirmModal } from './detail/DeleteConfirmModal';
 import { PlotManager } from './detail/PlotManager';
+import { PhasesSection } from './detail/PhasesSection';
 import { DependenciesSection } from './detail/DependenciesSection';
 import { statusCodeOf } from './detail/DetailCommon';
 import { useTaskDependencies } from '@/hooks/seasonPlans/useTaskDependencies';
@@ -54,6 +55,8 @@ interface PlanDetailPanelProps {
   onDeletePlan?: (planId: string) => void;
   onDeletePhase?: (planId: string, phaseId: string) => void;
   onDeleteTask?: (planId: string, phaseId: string, taskId: string) => void;
+  initialIsAddingPhase?: boolean;
+  onClearInitialIsAddingPhase?: () => void;
   onClone?: (plan: SeasonPlan) => void;
   onAddPlots?: (planId: string, plotIds: string[]) => void;
   canEdit?: boolean;
@@ -81,6 +84,8 @@ export function PlanDetailPanel({
   onDeletePlan,
   onDeletePhase,
   onDeleteTask,
+  initialIsAddingPhase,
+  onClearInitialIsAddingPhase,
   onAddPlots,
   canEdit = false,
   phaseStatusOptions = [],
@@ -155,6 +160,12 @@ export function PlanDetailPanel({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    if (initialIsAddingPhase) {
+      onClearInitialIsAddingPhase?.();
+    }
+  }, [initialIsAddingPhase]);
 
   const [availableStatuses, setAvailableStatuses] = useState<any[]>([]);
   const [isAvailableStatusesLoading, setIsAvailableStatusesLoading] = useState(false);
@@ -403,6 +414,8 @@ export function PlanDetailPanel({
     }
   };
 
+
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -421,7 +434,11 @@ export function PlanDetailPanel({
             onStartEdit={handleStartEdit}
             onSaveEdit={handleSaveEdit}
             onCancelEdit={handleCancelEdit}
-            onDelete={() => setShowDeleteConfirm(true)}
+            onDelete={() => {
+              if (sel.type === 'PLAN') onDeletePlan?.(sel.plan.id);
+              else if (sel.type === 'PHASE') onDeletePhase?.(sel.plan.id, sel.phase.id);
+              else if (sel.type === 'TASK') onDeleteTask?.(sel.plan.id, sel.phase.id, sel.task.id);
+            }}
             onSelectPhase={onSelectPhase}
           />
 
@@ -511,6 +528,12 @@ export function PlanDetailPanel({
                         loadingAddPlot={loadingAddPlot}
                         onAddPlots={handleAddPlotsSubmit}
                       />
+                      <PhasesSection
+                        plan={plan}
+                        canEdit={canEdit}
+                        onSelectPhase={onSelectPhase}
+                        onDeletePhase={(pid, phid) => onDeletePhase?.(pid, phid)}
+                      />
                     </>
                   )}
 
@@ -547,7 +570,6 @@ export function PlanDetailPanel({
                       setNewTaskPlotId={setNewTaskPlotId}
                       onAddTask={handleAddTaskSubmit}
                       onSelectTask={(taskId) => onSelectTask(plan.id, sel.phase.id, taskId)}
-                      onScrollToDate={onScrollToDate}
                     />
                   )}
                 </motion.div>

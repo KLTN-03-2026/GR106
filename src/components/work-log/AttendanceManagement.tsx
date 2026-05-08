@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  BookOpen, 
-  ChevronRight, 
-  Package, 
-  Loader2, 
+import {
+  BookOpen,
+  ChevronRight,
+  Package,
+  Loader2,
   Calendar,
   Users,
   TrendingUp,
@@ -13,8 +13,6 @@ import {
   Download,
   Filter,
   Search,
-  ArrowLeftToLine,
-  ArrowRightToLine,
 } from 'lucide-react';
 import { usePlanWorkLogs, useWorkLogSummary } from '@/hooks/workLog/useWorkLogs';
 import { WorkLog, WorkLogSummary } from '@/types/workLog/workLog';
@@ -38,7 +36,7 @@ export function AttendanceManagement({ plan }: AttendanceManagementProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<{ id: string; name: string } | null>(null);
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
-  
+
   // Cho phép người dùng tùy chỉnh khoảng thời gian lọc (mặc định lấy theo kế hoạch)
   const [dateRange, setDateRange] = useState({
     from: plan.startDate?.split('T')[0] || '',
@@ -57,14 +55,14 @@ export function AttendanceManagement({ plan }: AttendanceManagementProps) {
 
   const filteredLogs = useMemo((): WorkLog[] => {
     if (!workLogs) return [];
-    
+
     let logs = (workLogs as WorkLog[]);
 
     // 2. Lọc theo Search Term (API đã lọc theo Plan rồi)
     if (!searchTerm) return logs;
 
     const q = searchTerm.toLowerCase();
-    return logs.filter(log => 
+    return logs.filter(log =>
       (log.employee?.fullName || log.employeeName || '').toLowerCase().includes(q) ||
       (log.task?.name || log.taskName || '').toLowerCase().includes(q) ||
       (log.notes || '').toLowerCase().includes(q)
@@ -107,8 +105,8 @@ export function AttendanceManagement({ plan }: AttendanceManagementProps) {
             <div className="flex items-center gap-3">
               <div className="relative group">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="Tìm kiếm nhân sự, công việc..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -116,29 +114,28 @@ export function AttendanceManagement({ plan }: AttendanceManagementProps) {
                 />
               </div>
               <div className="flex bg-white shadow-sm rounded-lg overflow-hidden border border-slate-200">
-                <div className="relative group flex items-center gap-2 px-3 py-2 hover:bg-indigo-50 transition-colors">
-                  <ArrowLeftToLine size={14} className="text-indigo-500 opacity-70 group-hover:opacity-100" />
+                <div className="relative group flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition-colors">
+                  <Calendar size={14} className="text-slate-400" />
                   <span className="text-[12px] font-bold text-slate-700 tabular-nums min-w-[70px] text-center">
                     {dateRange.from ? formatDate(dateRange.from) : 'Bắt đầu'}
                   </span>
-                  <input 
-                    type="date" 
+                  <input
+                    type="date"
                     value={dateRange.from}
                     onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full"
                   />
                 </div>
 
-                {/* Thick separator line */}
-                <div className="w-[2px] bg-slate-200 self-stretch" />
+                <div className="w-[1px] bg-slate-200 self-stretch my-2" />
 
-                <div className="relative group flex items-center gap-2 px-3 py-2 hover:bg-emerald-50 transition-colors">
+                <div className="relative group flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition-colors">
                   <span className="text-[12px] font-bold text-slate-700 tabular-nums min-w-[70px] text-center">
                     {dateRange.to ? formatDate(dateRange.to) : 'Kết thúc'}
                   </span>
-                  <ArrowRightToLine size={14} className="text-emerald-500 opacity-70 group-hover:opacity-100" />
-                  <input 
-                    type="date" 
+                  <Calendar size={14} className="text-slate-400" />
+                  <input
+                    type="date"
                     value={dateRange.to}
                     onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full"
@@ -290,8 +287,8 @@ export function AttendanceManagement({ plan }: AttendanceManagementProps) {
                         </thead>
                         <tbody className="divide-y divide-slate-50">
                           {summary.map((emp) => (
-                            <tr 
-                              key={emp.employeeId} 
+                            <tr
+                              key={emp.employeeId}
                               className="hover:bg-slate-50/40 transition-colors group cursor-pointer"
                               onClick={() => {
                                 setSelectedEmployee({ id: emp.employeeId, name: emp.employeeName || 'N/A' });
@@ -370,8 +367,8 @@ export function AttendanceManagement({ plan }: AttendanceManagementProps) {
                             </div>
                             <span className={cn(
                               "text-[10px] px-2.5 py-1 rounded-xl font-black uppercase tracking-[1px] border",
-                              log.type === 'OVERTIME' 
-                                ? "bg-amber-50 text-amber-600 border-amber-100" 
+                              log.type === 'OVERTIME'
+                                ? "bg-amber-50 text-amber-600 border-amber-100"
                                 : "bg-indigo-50 text-indigo-600 border-indigo-100"
                             )}>
                               {log.type === 'OVERTIME' ? 'Tăng ca' : 'Chính thức'}
@@ -381,7 +378,7 @@ export function AttendanceManagement({ plan }: AttendanceManagementProps) {
                               <span className="truncate max-w-[240px]">{log.task?.name || log.taskName || 'Công việc'}</span>
                             </div>
                           </div>
-                          
+
                           <p className="text-[14px] text-slate-700 font-medium leading-[1.6] mb-4 pl-1">
                             {log.notes || <span className="text-slate-300 italic font-normal">Không có ghi chú cho phiên làm việc này</span>}
                           </p>
@@ -401,7 +398,7 @@ export function AttendanceManagement({ plan }: AttendanceManagementProps) {
                         </div>
 
                         <div className="flex flex-col items-end gap-3 self-center">
-                          <button 
+                          <button
                             onClick={() => handleShowDetail(log.id)}
                             className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 text-white hover:bg-indigo-600 rounded-2xl transition-all shadow-lg shadow-slate-200 hover:shadow-indigo-200"
                           >
