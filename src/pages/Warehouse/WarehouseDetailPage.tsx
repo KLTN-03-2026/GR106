@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Package,
   Plus,
@@ -34,6 +34,7 @@ import type {
   WarehouseTransaction,
   TransactionType,
 } from "../../types/warehouseTransaction/warehouseTransaction";
+import { PageableParams } from "../../types/common";
 import { toast } from "sonner";
 import { useAuth } from "../../hooks/auth/useAuth";
 import { useWarehouseItems } from "../../hooks/warehouseItems/useWarehouseItems";
@@ -200,6 +201,7 @@ export function WarehouseDetailPage() {
     warehouseId: string;
   }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { items, loading, fetchItems, createItem, deleteItem } =
     useWarehouseItems(farmId, warehouseId);
@@ -219,6 +221,50 @@ export function WarehouseDetailPage() {
     setPageSize: txSetPageSize,
     goToPage: txGoToPage,
   } = filterItemId ? itemTx : warehouseTx;
+
+  // ── Sync pagination with URL query params ───────────────────────────────────
+  const sortParam = searchParams.get('sort');
+  const urlPageable = useMemo<PageableParams>(() => ({
+    page: Number(searchParams.get('page')) || 0,
+    size: Number(searchParams.get('size')) || 20,
+    sort: sortParam ? [sortParam] : ['createdAt,desc'],
+  }), [searchParams, sortParam]);
+
+  // When URL changes externally, sync to hook state
+  useEffect(() => {
+    if (
+      urlPageable.page !== txPageable.page ||
+      urlPageable.size !== txPageable.size ||
+      (urlPageable.sort?.[0] ?? 'createdAt,desc') !== (txPageable.sort?.[0] ?? 'createdAt,desc')
+    ) {
+      txSetPageable(urlPageable);
+    }
+  }, [urlPageable, txPageable, txSetPageable]);
+
+  // Wrapped mutators that also update URL
+  const goToPage = (p: number) => {
+    txGoToPage(p);
+    const params = new URLSearchParams(searchParams);
+    params.set('page', String(p));
+    setSearchParams(params, { replace: true });
+  };
+
+  const setPageSize = (s: number) => {
+    txSetPageSize(s);
+    const params = new URLSearchParams(searchParams);
+    params.set('size', String(s));
+    params.set('page', '0');
+    setSearchParams(params, { replace: true });
+  };
+
+  const setSort = (sortKey: string) => {
+    txSetPageable({ page: 0, size: txPageable.size, sort: [sortKey] });
+    const params = new URLSearchParams(searchParams);
+    params.set('sort', sortKey);
+    params.set('page', '0');
+    setSearchParams(params, { replace: true });
+  };
+  // ──────────────────────────────────────────────────────────────────────────────
 
   const refreshAllTx = () => {
     warehouseTx.refresh();
@@ -1095,6 +1141,9 @@ export function WarehouseDetailPage() {
                       // Reset cả hai hook để tránh lệch trang khi switch filter
                       warehouseTx.goToPage(0);
                       itemTx.goToPage(0);
+                      const params = new URLSearchParams(searchParams);
+                      params.set('page', '0');
+                      setSearchParams(params, { replace: true });
                     }}
                     className="text-[12px] border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 py-1 pl-3 pr-8 min-w-[200px] bg-white shadow-sm"
                   >
@@ -1108,7 +1157,7 @@ export function WarehouseDetailPage() {
 
                   <select
                     value={txPageable.size ?? 20}
-                    onChange={(e) => txSetPageSize(Number(e.target.value))}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
                     className="text-[12px] border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 py-1 pl-3 pr-8 bg-white shadow-sm"
                     title="Số dòng mỗi trang"
                   >
@@ -1119,13 +1168,7 @@ export function WarehouseDetailPage() {
 
                   <select
                     value={txPageable.sort?.[0] ?? "createdAt,desc"}
-                    onChange={(e) =>
-                      txSetPageable((prev) => ({
-                        ...prev,
-                        page: 0,
-                        sort: [e.target.value],
-                      }))
-                    }
+                    onChange={(e) => setSort(e.target.value)}
                     className="text-[12px] border-slate-200 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 py-1 pl-3 pr-8 bg-white shadow-sm"
                     title="Sắp xếp"
                   >
@@ -1338,7 +1381,7 @@ export function WarehouseDetailPage() {
                   </p>
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => txGoToPage((txData.pageNumber ?? 0) - 1)}
+                      onClick={() => goToPage((txData.pageNumber ?? 0) - 1)}
                       disabled={txData.first || txData.totalPages <= 1}
                       className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                     >
@@ -1362,7 +1405,7 @@ export function WarehouseDetailPage() {
                         return (
                           <button
                             key={pageNum}
-                            onClick={() => txGoToPage(pageNum)}
+                            onClick={() => goToPage(pageNum)}
                             className={cn(
                               "w-7 h-7 text-[12px] font-semibold rounded-lg transition-all",
                               currentPage === pageNum
@@ -1376,7 +1419,7 @@ export function WarehouseDetailPage() {
                       },
                     )}
                     <button
-                      onClick={() => txGoToPage((txData.pageNumber ?? 0) + 1)}
+                      onClick={() => goToPage((txData.pageNumber ?? 0) + 1)}
                       disabled={txData.last || txData.totalPages <= 1}
                       className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                     >
