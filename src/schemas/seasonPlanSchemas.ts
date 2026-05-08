@@ -10,6 +10,40 @@ export const statusObjectSchema = z.object({
   isTerminal: z.boolean().optional(),
 });
 
+// Schema for User Object (in status history)
+export const userObjectSchema = z.object({
+  id: z.string().uuid(),
+  fullName: z.string(),
+  email: z.string(),
+  phone: z.string().nullable().optional(),
+  status: z.string(),
+  isLocked: z.boolean(),
+  createdAt: z.string(),
+});
+
+// Schema for Plan Stage Status History
+export const planStageStatusHistorySchema = z.object({
+  fromStatus: statusObjectSchema,
+  toStatus: statusObjectSchema,
+  changedBy: userObjectSchema,
+  changedAt: z.string(),
+});
+
+// Schema for Plan Stage Status Transition
+export const farmRoleObjectSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+});
+
+export const planStageStatusTransitionSchema = z.object({
+  id: z.string().uuid(),
+  fromStatus: statusObjectSchema,
+  toStatus: statusObjectSchema,
+  farmRole: farmRoleObjectSchema,
+  createdAt: z.string(),
+});
+
 // Enum for Plan Status (legacy/simple)
 export const planStatusSchema = z.enum(['DRAFT', 'ACTIVE', 'READY_TO_HARVEST', 'HARVESTING', 'COMPLETED', 'CANCELLED', 'UNASSIGNED', 'ASSIGNED', 'OVERDUE']);
 
@@ -97,6 +131,13 @@ export const addPlanPlotsResponseSchema = apiResponseSchema(z.object({
   planId: z.string().uuid(),
   addedPlots: z.array(planPlotSchema),
 }));
+
+// Plan Stage Status APIs
+export const updateStageStatusResponseSchema = apiResponseSchema(planStageStatusHistorySchema);
+export const getStageStatusHistoriesResponseSchema = apiResponseSchema(z.array(planStageStatusHistorySchema));
+export const getAvailableStatusesResponseSchema = apiResponseSchema(z.array(statusObjectSchema));
+export const getAllPlanStageStatusesResponseSchema = apiResponseSchema(z.array(statusObjectSchema));
+export const getPlanStageStatusTransitionsResponseSchema = apiResponseSchema(z.array(planStageStatusTransitionSchema));
 
 
 // Schema cho Payload tạo Plan mới

@@ -1,10 +1,20 @@
 import { axiosInstance } from '../../config/axios';
 import { SeasonPlan, CreateSeasonPlanRequest } from '../../types/seasonPlan';
+import type {
+  PlanStageStatusHistory,
+  StatusObject,
+  PlanStageStatusTransition,
+} from '../../types/seasonPlan';
 import {
   getPlansResponseSchema,
   createPlanResponseSchema,
   getPlanPlotsResponseSchema,
   addPlanPlotsResponseSchema,
+  updateStageStatusResponseSchema,
+  getStageStatusHistoriesResponseSchema,
+  getAvailableStatusesResponseSchema,
+  getAllPlanStageStatusesResponseSchema,
+  getPlanStageStatusTransitionsResponseSchema,
 } from '../../schemas/seasonPlanSchemas';
 
 /**
@@ -103,10 +113,70 @@ export const seasonPlanService = {
     } as SeasonPlan;
   },
 
-  /**
-   * Xóa kế hoạch
-   */
-  async deletePlan(planId: string): Promise<void> {
-    await axiosInstance.delete(`/api/v1/plans/${planId}`);
-  }
-};
+   /**
+    * Xóa kế hoạch
+    */
+   async deletePlan(planId: string): Promise<void> {
+     await axiosInstance.delete(`/api/v1/plans/${planId}`);
+   },
+
+   /**
+    * PUT /api/v1/plans/{planId}/stages/{stageId}/status/{statusId}
+    * Cập nhật trạng thái Plan Stage
+    */
+   async updateStageStatus(
+     planId: string,
+     stageId: string,
+     statusId: string
+   ): Promise<PlanStageStatusHistory> {
+     const response = await axiosInstance.put(
+       `/api/v1/plans/${planId}/stages/${stageId}/status/${statusId}`
+     );
+     const validated = updateStageStatusResponseSchema.parse(response.data);
+     return validated.data;
+   },
+
+   /**
+    * GET /api/v1/plans/{planId}/stages/{stageId}/status-histories
+    * Lấy lịch sử thay đổi trạng thái của Plan Stage
+    */
+   async getStageStatusHistories(planId: string, stageId: string): Promise<PlanStageStatusHistory[]> {
+     const response = await axiosInstance.get(
+       `/api/v1/plans/${planId}/stages/${stageId}/status-histories`
+     );
+     const validated = getStageStatusHistoriesResponseSchema.parse(response.data);
+     return validated.data;
+   },
+
+   /**
+    * GET /api/v1/plans/{planId}/stages/{stageId}/available-statuses
+    * Lấy danh sách trạng thái tiếp theo hợp lệ
+    */
+   async getAvailableStatuses(planId: string, stageId: string): Promise<StatusObject[]> {
+     const response = await axiosInstance.get(
+       `/api/v1/plans/${planId}/stages/${stageId}/available-statuses`
+     );
+     const validated = getAvailableStatusesResponseSchema.parse(response.data);
+     return validated.data;
+   },
+
+   /**
+    * GET /api/v1/plan-stage-statuses
+    * Lấy tất cả Plan Stage Status (danh sách master)
+    */
+   async getAllPlanStageStatuses(): Promise<StatusObject[]> {
+     const response = await axiosInstance.get('/api/v1/plan-stage-statuses');
+     const validated = getAllPlanStageStatusesResponseSchema.parse(response.data);
+     return validated.data;
+   },
+
+   /**
+    * GET /api/v1/plan-stage-status-transitions
+    * Lấy các transition trạng thái hợp lệ theo Farm
+    */
+   async getPlanStageStatusTransitions(): Promise<PlanStageStatusTransition[]> {
+     const response = await axiosInstance.get('/api/v1/plan-stage-status-transitions');
+     const validated = getPlanStageStatusTransitionsResponseSchema.parse(response.data);
+     return validated.data;
+   },
+ };
