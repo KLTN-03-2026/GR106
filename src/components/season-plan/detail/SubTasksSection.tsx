@@ -1,4 +1,4 @@
-import { CheckSquare, Plus, Calendar, Package, ChevronRight } from 'lucide-react';
+import { CheckSquare, Plus, Calendar, Package, ChevronRight, ArrowLeftToLine } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Phase, SeasonPlan } from '@/types/seasonPlan';
 import { DateInput } from '@/components/ui/DateInput';
@@ -23,6 +23,7 @@ interface SubTasksSectionProps {
   setNewTaskPlotId: (v: string) => void;
   onAddTask: () => void;
   onSelectTask: (taskId: string) => void;
+  onScrollToDate?: (dateStr: string) => void;
 }
 
 export function SubTasksSection({
@@ -42,7 +43,8 @@ export function SubTasksSection({
   newTaskPlotId,
   setNewTaskPlotId,
   onAddTask,
-  onSelectTask
+  onSelectTask,
+  onScrollToDate
 }: SubTasksSectionProps) {
   const tasks = phase.tasks || [];
 
@@ -158,7 +160,17 @@ export function SubTasksSection({
                 </span>
               </div>
               <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-400">
-                <span className="flex items-center gap-1"><Calendar size={10} /> {fmtDate(t.startDate)}</span>
+                <span className="flex items-center gap-1">
+                  <Calendar size={10} /> 
+                  {fmtDate(t.startDate)}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onScrollToDate?.(t.startDate); }}
+                    className="ml-1 p-0.5 hover:bg-indigo-50 text-indigo-500 rounded transition-all opacity-0 group-hover:opacity-100"
+                    title="Đi đến ngày"
+                  >
+                    <ArrowLeftToLine size={10} />
+                  </button>
+                </span>
                 {t.plotId && plan.plots && (
                   <span className="flex items-center gap-1 text-emerald-600 font-medium">
                     <Package size={10} /> {plan.plots.find(p => p.plotId === t.plotId)?.plotName || 'Lô đất'}

@@ -1,6 +1,6 @@
 # API REPORT - DANH SÁCH TẤT CẢ API TRONG DỰ ÁN
 
-Tổng cộng có **99** API đã được tìm thấy trong thư mục `src/services/`.
+Tổng cộng có **105** API đã được tìm thấy trong thư mục `src/services/`.
 
 ## 1. Auth Service (`src/services/auth/authService.ts`)
 1. `POST /api/v1/auth/register` - Đăng ký tài khoản
@@ -140,3 +140,11 @@ Tổng cộng có **99** API đã được tìm thấy trong thư mục `src/ser
 
 ## 20. Weather Service (`src/services/weather/weatherService.ts`)
 99. `GET https://api.openweathermap.org/data/2.5/weather` - Lấy thông tin thời tiết (External API)
+
+## 21. WorkLog Service (`src/services/workLog/workLogService.ts`)
+100. `GET /api/v1/plans/{planId}/stages/{planStageId}/tasks/{taskId}/worklogs` - Lấy WorkLog theo Task
+101. `GET /api/v1/worklogs` - Lấy WorkLog toàn Farm (Query: `from`, `to` định dạng `dd/mm/yyyy`)
+102. `GET /api/v1/worklogs/{workLogId}` - Xem chi tiết WorkLog
+103. `GET /api/v1/worklogs/summary` - Tổng hợp công theo Employee (tính lương) (Yêu cầu `from`, `to` định dạng `dd/mm/yyyy`)
+104. `GET /api/v1/worklogs/employee/{employeeId}` - Lấy WorkLog theo Employee (Query: `from`, `to` định dạng `dd/mm/yyyy`)
+105. `GET /api/v1/plans/{planId}/worklogs` - Lấy danh sách WorkLog theo Plan (Query: `from`, `to` định dạng `dd/mm/yyyy`)

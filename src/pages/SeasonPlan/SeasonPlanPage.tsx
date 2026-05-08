@@ -24,6 +24,8 @@ import {
   Share2,
   Zap,
   Bell,
+  ArrowLeftToLine,
+  ArrowRightToLine,
 } from 'lucide-react';
 
 import { Modal } from '../../components/ui/Modal';
@@ -593,9 +595,31 @@ export function SeasonPlanPage() {
             </h1>
             {currentPlan && (
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-[11px] text-slate-400">
-                  {formatDate(currentPlan.startDate)} — {formatDate(currentPlan.endDate)}
-                </span>
+                <div className="flex bg-white shadow-sm rounded-lg overflow-hidden border border-slate-200">
+                  <button
+                    onClick={() => timelineRef.current?.scrollToDate(currentPlan.startDate)}
+                    className="group flex items-center gap-1.5 px-2 py-0.5 hover:bg-indigo-50 text-indigo-500 transition-all"
+                    title="Đi đến ngày bắt đầu"
+                  >
+                    <ArrowLeftToLine size={14} className="opacity-70 group-hover:opacity-100" />
+                    <span className="text-[11px] font-bold text-slate-700 tabular-nums">
+                      {formatDate(currentPlan.startDate)}
+                    </span>
+                  </button>
+                  {/* Thick separator line */}
+                  <div className="w-[2px] bg-slate-200 self-stretch" />
+                  <button
+                    onClick={() => timelineRef.current?.scrollToDate(currentPlan.endDate)}
+                    className="group flex items-center gap-1.5 px-2 py-0.5 hover:bg-emerald-50 text-emerald-500 transition-all"
+                    title="Đi đến ngày kết thúc"
+                  >
+                    <span className="text-[11px] font-bold text-slate-700 tabular-nums">
+                      {formatDate(currentPlan.endDate)}
+                    </span>
+                    <ArrowRightToLine size={14} className="opacity-70 group-hover:opacity-100" />
+                  </button>
+                </div>
+
                 {getPlanPlotNames(currentPlan) && (
                   <span className="text-[11px] font-medium text-slate-500">
                     · {getPlanPlotNames(currentPlan)}
@@ -810,7 +834,6 @@ export function SeasonPlanPage() {
         {hasVisitedBacklog && currentPlan && (
           <div className={activeTab === 'backlog' ? 'flex-1 flex flex-col min-h-0 overflow-hidden' : 'hidden'}>
             <AttendanceManagement 
-              farmId={farmId || ''} 
               plan={currentPlan} 
             />
           </div>

@@ -145,10 +145,11 @@ export function PlanDetailPanel({
 
   const {
     workLogs,
-    loading: isWorkLogsLoading,
-    deleteWorkLog
+    loading: isWorkLogsLoading
   } = useWorkLogs(
-    activeSelection?.type === 'TASK' && activeTab === 'LOGS' ? activeSelection.task.id : undefined
+    activeSelection?.plan.id,
+    activeSelection?.type === 'TASK' ? (activeSelection as any).phase.id : undefined,
+    activeSelection?.type === 'TASK' ? (activeSelection as any).task.id : undefined
   );
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -546,6 +547,7 @@ export function PlanDetailPanel({
                       setNewTaskPlotId={setNewTaskPlotId}
                       onAddTask={handleAddTaskSubmit}
                       onSelectTask={(taskId) => onSelectTask(plan.id, sel.phase.id, taskId)}
+                      onScrollToDate={onScrollToDate}
                     />
                   )}
                 </motion.div>
@@ -593,12 +595,6 @@ export function PlanDetailPanel({
                   <WorkLogsSection
                     workLogs={workLogs}
                     loading={isWorkLogsLoading}
-                    canEdit={canEdit}
-                    onDelete={(logId) => {
-                      deleteWorkLog(sel.task.id, logId)
-                        .then(() => toast.success('Xóa nhật ký thành công'))
-                        .catch((err) => toast.error(extractErrorMessage(err)));
-                    }}
                     onViewDetail={(logId) => {
                       setSelectedWorkLogId(logId);
                       setIsWorkLogDetailModalOpen(true);
@@ -676,11 +672,10 @@ export function PlanDetailPanel({
               : "Hành động này sẽ xóa vĩnh viễn công việc này. Bạn có chắc chắn muốn tiếp tục?"}
           />
 
-          {sel.type === 'TASK' && selectedWorkLogId && (
+          {selectedWorkLogId && (
             <WorkLogDetailModal
               isOpen={isWorkLogDetailModalOpen}
               onClose={() => setIsWorkLogDetailModalOpen(false)}
-              taskId={sel.task.id}
               workLogId={selectedWorkLogId}
             />
           )}
