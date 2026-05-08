@@ -67,21 +67,24 @@ export function usePlots() {
     },
   });
 
-  return {
-    plots: plotsQuery.data ?? [],
-    plotsLoading: plotsQuery.isLoading || plotsQuery.isFetching,
-    error: plotsQuery.error,
-    createPlot: useCallback((data: CreatePlotRequest) => withUnwrap(createPlotMutation.mutateAsync(data)), [
-      createPlotMutation,
-    ]),
-    updatePlot: useCallback(
-      (plotId: string, data: UpdatePlotRequest) =>
-        withUnwrap(updatePlotMutation.mutateAsync({ plotId, data })),
-      [updatePlotMutation],
-    ),
-    deletePlot: useCallback((id: string) => withUnwrap(deletePlotMutation.mutateAsync(id)), [deletePlotMutation]),
-    refreshPlots: useCallback(() => {
-      void queryClient.invalidateQueries({ queryKey: ['plots'] });
-    }, [queryClient]),
-  };
+   return {
+     plots: plotsQuery.data ?? [],
+     plotsLoading: plotsQuery.isLoading || plotsQuery.isFetching,
+     error: plotsQuery.error,
+     fetchPlots: useCallback(() => {
+       void queryClient.invalidateQueries({ queryKey: PLOT_KEYS.list });
+     }, [queryClient]),
+     createPlot: useCallback((data: CreatePlotRequest) => withUnwrap(createPlotMutation.mutateAsync(data)), [
+       createPlotMutation,
+     ]),
+     updatePlot: useCallback(
+       (plotId: string, data: UpdatePlotRequest) =>
+         withUnwrap(updatePlotMutation.mutateAsync({ plotId, data })),
+       [updatePlotMutation],
+     ),
+     deletePlot: useCallback((id: string) => withUnwrap(deletePlotMutation.mutateAsync(id)), [deletePlotMutation]),
+     refreshPlots: useCallback(() => {
+       void queryClient.invalidateQueries({ queryKey: ['plots'] });
+     }, [queryClient]),
+   };
 }

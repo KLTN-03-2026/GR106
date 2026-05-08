@@ -1,6 +1,6 @@
 import { axiosInstance } from '../../config/axios';
 import { Task } from '../../types/seasonPlan';
-import type { TaskDependencyCreateResponse, TaskDependenciesResponse } from '../../types/seasonPlan/seasonPlan';
+import type { TaskDependencyCreateResponse, TaskDependenciesResponse, TaskAssignee, TaskAssigneeWithTask } from '../../types/seasonPlan/seasonPlan';
 import { PagedData, PageableParams } from '../../types/common';
 import {
   getTasksResponseSchema,
@@ -8,6 +8,9 @@ import {
   createTaskDependencyResponseSchema,
   getTaskDependenciesResponseSchema,
   deleteTaskDependencyResponseSchema,
+  getTaskAssigneesResponseSchema,
+  createTaskAssigneeResponseSchema,
+  removeTaskAssigneeResponseSchema,
 } from '../../schemas/seasonPlanSchemas';
 
 export interface CreateTaskRequest {
@@ -189,5 +192,41 @@ export const seasonPlanTaskService = {
       params: { ...params, userId, date },
     });
     return response.data.data;
+  },
+
+  // ── Task Assignee ──
+  async getTaskAssignees(planId: string, stageId: string, taskId: string): Promise<TaskAssignee[]> {
+    const response = await axiosInstance.get(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}/assignees`);
+    const validated = getTaskAssigneesResponseSchema.parse(response.data);
+    return validated.data;
+  },
+
+  async assignTask(
+    planId: string,
+    stageId: string,
+    taskId: string,
+    data: { userId: string }
+  ): Promise<TaskAssigneeWithTask> {
+    const response = await axiosInstance.post(
+      `/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}/assignees`,
+      data
+    );
+    const validated = createTaskAssigneeResponseSchema.parse(response.data);
+    return validated.data;
+  },
+
+  async unassignTask(
+    planId: string,
+    stageId: string,
+    taskId: string,
+    assigneeId: string,
+    data?: { removalReason?: string }
+  ): Promise<TaskAssignee> {
+    const response = await axiosInstance.delete(
+      `/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}/assignees/${assigneeId}`,
+      { data }
+    );
+    const validated = removeTaskAssigneeResponseSchema.parse(response.data);
+    return validated.data;
   },
 };

@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { SeasonPlan } from '../../types/seasonPlan';
+import type { TaskAssignee } from '../../types/seasonPlan/seasonPlan';
 import { seasonPlanTaskService, CreateTaskRequest, UpdateTaskRequest } from '../../services/seasonplan/seasonPlanTaskService';
 import { taskStatusService, TaskStatusTransition, TaskStatusChange, TaskStatusObject } from '../../services/seasonplan/taskStatusService';
 import { withUnwrap } from './seasonPlanShared';
@@ -12,11 +13,13 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
   const [taskStatuses, setTaskStatuses] = useState<TaskStatusObject[]>([]);
   const [taskStatusTransitions, setTaskStatusTransitions] = useState<TaskStatusTransition[]>([]);
   const [taskStatusHistoriesByTask, setTaskStatusHistoriesByTask] = useState<Record<string, TaskStatusChange[]>>({});
+  const [taskAssigneesByTask, setTaskAssigneesByTask] = useState<Record<string, TaskAssignee[]>>({});
 
   return {
     taskStatuses,
     taskStatusTransitions,
     taskStatusHistoriesByTask,
+    taskAssigneesByTask,
     error: null,
     fetchTasks: useCallback(
       (planId: string, stageId: string) =>
@@ -247,6 +250,42 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
     fetchAvailableStatuses: useCallback(
       (planId: string, stageId: string, taskId: string) =>
         withUnwrap(taskStatusService.getAvailableStatuses(planId, stageId, taskId)),
+      [],
+    ),
+    fetchTaskAssignees: useCallback(
+      (planId: string, stageId: string, taskId: string) =>
+        withUnwrap(
+          seasonPlanTaskService.getTaskAssignees(planId, stageId, taskId).then((assignees) => {
+            setTaskAssigneesByTask((prev) => ({ ...prev, [taskId]: assignees }));
+            return assignees;
+          })
+        ),
+      [],
+    ),
+    assignTaskAssignee: useCallback(
+      (planId: string, stageId: string, taskId: string, userId: string) =>
+        withUnwrap(
+          seasonPlanTaskService.assignTask(planId, stageId, taskId, { userId }).then((result) => {
+            setTaskAssigneesByTask((prev) => ({
+              ...prev,
+              [taskId]: [...(prev[taskId] ?? []), result],
+            }));
+            return result;
+          })
+        ),
+      [],
+    ),
+    unassignTaskAssignee: useCallback(
+      (planId: string, stageId: string, taskId: string, assigneeId: string, removalReason?: string) =>
+        withUnwrap(
+          seasonPlanTaskService.unassignTask(planId, stageId, taskId, assigneeId, { removalReason }).then((result) => {
+            setTaskAssigneesByTask((prev) => ({
+              ...prev,
+              [taskId]: (prev[taskId] ?? []).map((a) => (a.id === assigneeId ? { ...a, removedBy: result.removedBy, removedAt: result.removedAt } : a)),
+            }));
+            return result;
+          })
+        ),
       [],
     ),
   };

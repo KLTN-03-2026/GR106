@@ -270,6 +270,32 @@ export const getTaskDependenciesResponseSchema = apiResponseSchema(
 
 export const deleteTaskDependencyResponseSchema = apiResponseSchema(z.string());
 
+// ── Task Assignee schemas ──
+export const taskAssigneeSchema = z.object({
+  id: z.string().uuid(),
+  user: userObjectSchema,
+  assigneeBy: userObjectSchema,
+  assigneeAt: z.string(),
+  removedBy: userObjectSchema.optional(),
+  removedAt: z.string().nullable().optional(),
+});
+
+export const taskAssigneeWithTaskSchema = taskAssigneeSchema.extend({
+  task: apiTaskSchema,
+});
+
+export const createTaskAssigneeRequestSchema = z.object({
+  userId: z.string().uuid(),
+});
+
+export const removeTaskAssigneeRequestSchema = z.object({
+  removalReason: z.string().optional(),
+});
+
+export const getTaskAssigneesResponseSchema = apiResponseSchema(z.array(taskAssigneeSchema));
+export const createTaskAssigneeResponseSchema = apiResponseSchema(taskAssigneeWithTaskSchema);
+export const removeTaskAssigneeResponseSchema = apiResponseSchema(taskAssigneeSchema);
+
 
 
 

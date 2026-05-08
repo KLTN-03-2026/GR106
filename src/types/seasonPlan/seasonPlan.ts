@@ -207,3 +207,49 @@ export interface TaskDependenciesResponse {
   dependsOnTasks: Task[];
 }
 
+// Task Assignee
+export interface TaskAssignee {
+  id: string;
+  user: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone?: string;
+    status: string;
+    isLocked: boolean;
+    createdAt: string;
+  };
+  assigneeBy: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone?: string;
+    status: string;
+    isLocked: boolean;
+    createdAt: string;
+  };
+  assigneeAt: string;
+  removedBy?: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone?: string;
+    status: string;
+    isLocked: boolean;
+    createdAt: string;
+  };
+  removedAt?: string;
+}
+
+export interface CreateTaskAssigneeRequest {
+  userId: string;
+}
+
+export interface RemoveTaskAssigneeRequest {
+  removalReason?: string;
+}
+
+export interface TaskAssigneeWithTask extends TaskAssignee {
+  task: Task;
+}
+
