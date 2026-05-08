@@ -29,6 +29,7 @@ export interface Task {
   version?: number;
   planStageId: string;
   farmId?: string;
+  farmName?: string;
   plotId: string | null;
   name: string;
   description: string;

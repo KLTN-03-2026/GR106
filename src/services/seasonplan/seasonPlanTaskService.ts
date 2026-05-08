@@ -1,5 +1,6 @@
 import { axiosInstance } from '../../config/axios';
 import { Task } from '../../types/seasonPlan';
+import { PagedData, PageableParams } from '../../types/common';
 import {
   getTasksResponseSchema,
   createTaskResponseSchema,
@@ -105,7 +106,7 @@ export const seasonPlanTaskService = {
     return mapToTask(validated.data);
   },
 
-  async updateTaskTime(planId: string, stageId: string, taskId: string, data: { startDate: string; endDate: string; version?: number }): Promise<Task> {
+  async updateTaskTime(planId: string, stageId: string, taskId: string, data: { startDate: string; endDate: string; version: number }): Promise<Task> {
     const response = await axiosInstance.put(`/api/v1/plans/${planId}/stages/${stageId}/tasks/${taskId}/time`, data);
     const validated = createTaskResponseSchema.parse(response.data);
     return mapToTask(validated.data);
@@ -157,5 +158,26 @@ export const seasonPlanTaskService = {
   /** Xóa quan hệ phụ thuộc giữa hai công việc */
   async deleteTaskDependency(taskId: string, dependsOnTaskId: string): Promise<void> {
     return deleteTaskDependencyEdge(taskId, dependsOnTaskId);
+  },
+
+  async getAssignedTasks(userId: string, params?: PageableParams): Promise<PagedData<Task>> {
+    const response = await axiosInstance.get('/api/v1/tasks/assigned', { 
+      params: { ...params, userId } 
+    });
+    return response.data.data;
+  },
+
+  async getTodayTasks(userId: string): Promise<Task[]> {
+    const response = await axiosInstance.get('/api/v1/tasks/assigned/today', { 
+      params: { userId } 
+    });
+    return response.data.data;
+  },
+
+  async getTasksByDate(userId: string, date: string, params?: PageableParams): Promise<PagedData<Task>> {
+    const response = await axiosInstance.get('/api/v1/tasks/assigned/by-date', {
+      params: { ...params, userId, date },
+    });
+    return response.data.data;
   },
 };

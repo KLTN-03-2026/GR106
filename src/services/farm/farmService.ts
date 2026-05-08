@@ -1,7 +1,7 @@
 import { AxiosRequestConfig } from 'axios';
 import { axiosInstance } from '../../config/axios';
 import { ApiResponse } from '../../types/auth';
-import { Farm, CreateFarmRequest, UpdateFarmRequest } from '../../types/farm';
+import { Farm, CreateFarmRequest, UpdateFarmRequest, FarmSummary } from '../../types/farm';
 
 export const farmService = {
   async createFarm(data: CreateFarmRequest): Promise<ApiResponse<Farm>> {
@@ -19,13 +19,20 @@ export const farmService = {
     return response.data;
   },
 
-  /**
-   * Lấy thông tin tổng quan farm (Dashboard summary)
-   * GET /api/v1/farms/summary
-   */
-  async getFarmSummary(): Promise<ApiResponse<any[]>> {
-    const response = await axiosInstance.get<ApiResponse<any[]>>(
+  async getFarmSummary(): Promise<ApiResponse<FarmSummary[]>> {
+    const response = await axiosInstance.get<ApiResponse<FarmSummary[]>>(
       '/api/v1/farms/summary'
+    );
+    return response.data;
+  },
+
+  /**
+   * Lấy thông tin tóm tắt của 1 farm cụ thể (Admin)
+   * GET /api/v1/farms/{farmId}/summary
+   */
+  async getFarmSummaryById(farmId: string): Promise<ApiResponse<FarmSummary>> {
+    const response = await axiosInstance.get<ApiResponse<FarmSummary>>(
+      `/api/v1/farms/${farmId}/summary`
     );
     return response.data;
   },

@@ -85,7 +85,7 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
       [updatePlansCache],
     ),
     updateTaskTime: useCallback(
-      (planId: string, stageId: string, taskId: string, data: { startDate: string; endDate: string; version?: number }) =>
+      (planId: string, stageId: string, taskId: string, data: { startDate: string; endDate: string; version: number }) =>
         withUnwrap(
           seasonPlanTaskService.updateTaskTime(planId, stageId, taskId, data).then((task) => {
             updatePlansCache((prev) =>

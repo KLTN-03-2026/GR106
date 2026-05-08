@@ -41,5 +41,5 @@ export interface CreateFarmInput {
 export interface UpdateFarmRequest {
   name?: string;
   description?: string;
-  version: number; // Bắt buộc truyền version
+  version?: number;
 }
