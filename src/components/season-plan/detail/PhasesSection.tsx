@@ -19,7 +19,10 @@ export function PhasesSection({
 
   const fmtDate = (d: string) => {
     if (!d) return '—';
-    return new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    const date = new Date(d);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    return `${day}-${month}`;
   };
 
   return (
@@ -59,7 +62,7 @@ export function PhasesSection({
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1 transition-opacity">
                 {canEdit && (
                   <button
                     onClick={(e) => {
