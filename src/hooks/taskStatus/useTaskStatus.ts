@@ -54,7 +54,7 @@ export function useTaskStatus() {
       taskStatusId: string;
     }) => {
       const response = await taskStatusService.updateTaskStatus(planId, stageId, taskId, taskStatusId);
-      return response.data;
+      return response;
     },
     onSuccess: (_, { planId, stageId, taskId }) => {
       void queryClient.invalidateQueries({
@@ -92,8 +92,10 @@ export function useTaskStatusDetails(
   planId: string | undefined,
   stageId: string | undefined,
   taskId: string | undefined,
+  enabledArg: boolean = true
 ) {
-  const enabled = !!planId && !!stageId && !!taskId;
+  const queryClient = useQueryClient();
+  const enabled = enabledArg && !!planId && !!stageId && !!taskId;
 
   const historiesQuery = useQuery<TaskStatusHistory[]>({
     queryKey: enabled
@@ -122,8 +124,9 @@ export function useTaskStatusDetails(
   });
 
   return {
-    statusHistories: historiesQuery.data ?? [],
+    histories: historiesQuery.data ?? [],
     availableStatuses: availableQuery.data ?? [],
+    historiesLoading: historiesQuery.isLoading || historiesQuery.isFetching,
     loading: historiesQuery.isLoading || availableQuery.isLoading,
     error: historiesQuery.error || availableQuery.error,
     refetch: () => {

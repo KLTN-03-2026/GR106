@@ -2,7 +2,9 @@ import { useCallback, useState } from 'react';
 import { SeasonPlan } from '../../types/seasonPlan';
 import type { TaskAssignee } from '../../types/seasonPlan/seasonPlan';
 import { seasonPlanTaskService, CreateTaskRequest, UpdateTaskRequest } from '../../services/seasonplan/seasonPlanTaskService';
-import { taskStatusService, TaskStatusTransition, TaskStatusChange, TaskStatusObject } from '../../services/seasonplan/taskStatusService';
+import { TaskStatusTransition, TaskStatusHistory as TaskStatusChange, TaskStatusObject } from '../../types/seasonPlan/seasonPlan';
+import { taskStatusService } from '../../services/taskStatus/taskStatusService';
+
 import { withUnwrap } from './seasonPlanShared';
 
 interface UseSeasonPlanTasksProps {
@@ -249,7 +251,7 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
     ),
     fetchAvailableStatuses: useCallback(
       (planId: string, stageId: string, taskId: string) =>
-        withUnwrap(taskStatusService.getAvailableStatuses(planId, stageId, taskId)),
+        withUnwrap(taskStatusService.getAvailableTaskStatuses(planId, stageId, taskId)),
       [],
     ),
     fetchTaskAssignees: useCallback(

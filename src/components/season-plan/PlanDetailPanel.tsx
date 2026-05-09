@@ -35,6 +35,8 @@ import { useTaskDependencies } from '@/hooks/seasonPlans/useTaskDependencies';
 import { useWorkLogs } from '@/hooks/workLog/useWorkLogs';
 import { WorkLogsSection } from './detail/WorkLogsSection';
 import { WorkLogDetailModal } from '../work-log/WorkLogDetailModal';
+import { StatusHistorySection } from './detail/StatusHistorySection';
+import { useTaskStatusDetails } from '@/hooks/taskStatus/useTaskStatus';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -106,7 +108,7 @@ export function PlanDetailPanel({
   const { items: warehouseItems } = useWarehouseItems(targetFarmId, selectedWarehouseId || null);
   const { members, fetchMembers, loadingMembers } = useMembers();
 
-  const [activeTab, setActiveTab] = useState<'INFO' | 'MEMBERS' | 'MATERIALS' | 'LOGS'>('INFO');
+  const [activeTab, setActiveTab] = useState<'INFO' | 'MEMBERS' | 'MATERIALS' | 'LOGS' | 'HISTORY'>('INFO');
   const [activeSelection, setActiveSelection] = useState(selection);
 
   // Use dedicated hook for materials management
@@ -155,6 +157,16 @@ export function PlanDetailPanel({
     activeSelection?.plan.id,
     activeSelection?.type === 'TASK' ? (activeSelection as any).phase.id : undefined,
     activeSelection?.type === 'TASK' ? (activeSelection as any).task.id : undefined
+  );
+
+  const {
+    histories: taskStatusHistories,
+    historiesLoading: taskStatusHistoriesLoading
+  } = useTaskStatusDetails(
+    activeSelection?.plan.id,
+    activeSelection?.type === 'TASK' ? (activeSelection as any).phase.id : undefined,
+    activeSelection?.type === 'TASK' ? (activeSelection as any).task.id : undefined,
+    isOpen && activeTab === 'HISTORY' && activeSelection?.type === 'TASK'
   );
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -545,6 +557,17 @@ export function PlanDetailPanel({
               >
                 Giao việc
               </button>
+              {sel.type === 'TASK' && (
+                <button
+                  onClick={() => setActiveTab('HISTORY')}
+                  className={cn(
+                    "flex-1 px-1 py-3 text-[10px] font-bold uppercase tracking-wider transition-all border-b-2 whitespace-nowrap",
+                    activeTab === 'HISTORY' ? "text-indigo-600 border-indigo-600" : "text-slate-400 border-transparent hover:text-slate-600"
+                  )}
+                >
+                  Lịch sử
+                </button>
+              )}
             </div>
 
             <AnimatePresence mode="wait">
@@ -738,6 +761,20 @@ export function PlanDetailPanel({
                   <h3 className="text-[13px] font-bold text-slate-700 mb-1">Chọn một giai đoạn hoặc công việc</h3>
                   <p className="text-[11px] leading-relaxed">Bạn có thể vào giai đoạn để chọn công việc cần giao việc cho thành viên.</p>
                 </div>
+              )}
+              {activeTab === 'HISTORY' && sel.type === 'TASK' && (
+                <motion.div
+                  key="history"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <StatusHistorySection
+                    histories={taskStatusHistories}
+                    loading={taskStatusHistoriesLoading}
+                  />
+                </motion.div>
               )}
             </AnimatePresence>
 
