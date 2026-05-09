@@ -70,6 +70,8 @@ interface PlanDetailPanelProps {
   fetchTaskAvailableStatuses?: (planId: string, stageId: string, taskId: string) => Promise<any[]>;
   fetchPhaseAvailableStatuses?: (planId: string, stageId: string) => Promise<any[]>;
   onScrollToDate?: (dateStr: string) => void;
+  onFetchPhaseDetail?: (planId: string, stageId: string) => Promise<Phase>;
+  onFetchTaskDetail?: (planId: string, stageId: string, taskId: string) => Promise<Task>;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -98,6 +100,8 @@ export function PlanDetailPanel({
   fetchTaskAvailableStatuses,
   fetchPhaseAvailableStatuses,
   onScrollToDate,
+  onFetchPhaseDetail,
+  onFetchTaskDetail,
 }: PlanDetailPanelProps) {
   const { currentFarmId } = useAuth();
   const { selectedFarmId } = useSelector((state: RootState) => state.farm);
@@ -323,25 +327,34 @@ export function PlanDetailPanel({
 
 
   useEffect(() => {
-    setActiveSelection(selection);
-    setIsEditing(false);
-    setSelectedWarehouseId('');
-    setSelectedWarehouseItemId('');
-    setSelectedAssigneeUserId('');
-    setPlannedQty('');
-    // Reset về tab thông tin mỗi khi thay đổi lựa chọn để tránh lỗi UI
-    setActiveTab('INFO');
-
-    if (selection) {
-
-      setTempPlan(selection.plan);
-      if (selection.type === 'PHASE') setTempPhase(selection.phase);
-      if (selection.type === 'TASK') {
-        setTempPhase(selection.phase);
-        setTempTask(selection.task);
+    if (isOpen && selection?.plan.id) {
+      if (selection.type === 'PHASE' && selection.phase.id) {
+        onFetchPhaseDetail?.(selection.plan.id, selection.phase.id);
+      } else if (selection.type === 'TASK' && (selection as any).phase.id && (selection as any).task.id) {
+        onFetchTaskDetail?.(selection.plan.id, (selection as any).phase.id, (selection as any).task.id);
       }
     }
-  }, [selection]);
+  }, [selection, isOpen, onFetchPhaseDetail, onFetchTaskDetail]);
+
+useEffect(() => {
+  setActiveSelection(selection);
+  setIsEditing(false);
+  setSelectedWarehouseId('');
+  setSelectedWarehouseItemId('');
+  setSelectedAssigneeUserId('');
+  setPlannedQty('');
+  // Reset về tab thông tin mỗi khi thay đổi lựa chọn để tránh lỗi UI
+  setActiveTab('INFO');
+
+  if (selection) {
+    setTempPlan(selection.plan);
+    if (selection.type === 'PHASE') setTempPhase(selection.phase);
+    if (selection.type === 'TASK') {
+      setTempPhase(selection.phase);
+      setTempTask(selection.task);
+    }
+  }
+}, [selection]);
 
   const handleStartEdit = () => {
     if (!selection) return;

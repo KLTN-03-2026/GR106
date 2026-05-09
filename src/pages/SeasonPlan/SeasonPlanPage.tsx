@@ -95,7 +95,8 @@ export function SeasonPlanPage() {
     updateTask: updateSeasonTask, updateTaskTime, updateTaskStatus, deleteTask: removeSeasonTask,
     fetchTaskStatuses, fetchTaskStatusTransitions, taskStatuses, taskStatusTransitions,
     addPlotsToPlan, optimisticallyUpdatePhaseTime, optimisticallyUpdateTaskTime,
-    addPlanToState, fetchTaskAvailableStatuses, fetchPhaseAvailableStatuses
+    addPlanToState, fetchTaskAvailableStatuses, fetchPhaseAvailableStatuses,
+    getPhaseDetail, getTaskDetail
   } = useSeasonPlans();
 
   const { user, accessToken } = useAuth();
@@ -728,6 +729,8 @@ export function SeasonPlanPage() {
               onAddTask={handleAddTask}
               onUpdateTask={handleUpdateTask}
               onDeleteTask={handleDeleteTask}
+              onFetchPhaseDetail={getPhaseDetail}
+              onFetchTaskDetail={getTaskDetail}
               fetchTaskAvailableStatuses={fetchTaskAvailableStatuses}
               fetchPhaseAvailableStatuses={fetchPhaseAvailableStatuses}
               onSelectPhase={(_id, phaseId) =>

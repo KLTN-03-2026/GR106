@@ -20,6 +20,29 @@ export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesPro
     planStageStatusTransitions,
     planStageStatusHistoriesByStage,
     error: null,
+    getPhaseDetail: useCallback(
+      (planId: string, stageId: string) =>
+        withUnwrap(
+          seasonPlanPhaseService.getStageById(planId, stageId).then((phase) => {
+            updatePlansCache((prev) =>
+              prev.map((p) =>
+                p.id === planId
+                  ? {
+                    ...p,
+                    phases: (p.phases ?? []).map((ph) =>
+                      ph.id === stageId
+                        ? { ...ph, ...phase, tasks: ph.tasks } // Giữ lại danh sách task hiện có
+                        : ph,
+                    ),
+                  }
+                  : p,
+              ),
+            );
+            return phase;
+          }),
+        ),
+      [updatePlansCache],
+    ),
     fetchStages: useCallback(
       (planId: string) =>
         withUnwrap(
