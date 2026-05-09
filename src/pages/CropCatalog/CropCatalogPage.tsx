@@ -13,6 +13,7 @@ import { CropList } from '@/components/crop-catalog/CropList';
 import { CropForm } from '@/components/crop-catalog/CropForm';
 import { QuickAddCropTypeModal } from '@/components/crop-catalog/QuickAddCropTypeModal';
 import { CropDetailModal } from '@/components/crop-catalog/CropDetailModal';
+import { CropTypeDetailModal } from '@/components/crop-catalog/CropTypeDetailModal';
 
 export const CropCatalogPage: React.FC = () => {
   const navigate = useNavigate();
@@ -41,7 +42,8 @@ export const CropCatalogPage: React.FC = () => {
   const [view, setView] = useState<'list' | 'form'>('list');
   const [activeTab, setActiveTab] = useState<'crops' | 'types'>('crops');
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
-  const [selectedCropId, setSelectedCropId] = useState<string | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [selectedTypeId, setSelectedTypeId] = useState<string | null>(null);
   const [isFarmScope, setIsFarmScope] = useState(false);
   const [scopeFilter, setScopeFilter] = useState<'ALL' | 'SYSTEM' | 'FARM'>('ALL');
   const [filterTypeId, setFilterTypeId] = useState<string>('All');
@@ -67,9 +69,13 @@ export const CropCatalogPage: React.FC = () => {
   const handleAdd = () => activeTab === 'types' ? setIsTypeModalOpen(true) : setView('form');
   
   const handleViewDetail = (id: string, itemScope: string) => { 
-    setSelectedCropId(id); 
-    // Nếu đang ở tab Trang trại hoặc item có scope là FARM thì dùng API Farm
-    setIsFarmScope(scopeFilter === 'FARM' || itemScope === 'FARM'); 
+    if (activeTab === 'types') {
+      setSelectedTypeId(id);
+    } else {
+      setSelectedItemId(id); 
+      // Nếu đang ở tab Trang trại hoặc item có scope là FARM thì dùng API Farm
+      setIsFarmScope(scopeFilter === 'FARM' || itemScope === 'FARM'); 
+    }
   };
 
   const handleCancel = () => setView('list');
@@ -262,7 +268,8 @@ export const CropCatalogPage: React.FC = () => {
       </div>
 
       <QuickAddCropTypeModal isOpen={isTypeModalOpen} onClose={() => setIsTypeModalOpen(false)} onSave={handleSaveType} loading={loading} />
-      <CropDetailModal isOpen={!!selectedCropId} onClose={() => setSelectedCropId(null)} cropId={selectedCropId} isFarmScope={isFarmScope} />
+      <CropDetailModal isOpen={!!selectedItemId} onClose={() => setSelectedItemId(null)} cropId={selectedItemId} isFarmScope={isFarmScope} />
+      <CropTypeDetailModal isOpen={!!selectedTypeId} onClose={() => setSelectedTypeId(null)} cropTypeId={selectedTypeId} />
     </div>
   );
 };

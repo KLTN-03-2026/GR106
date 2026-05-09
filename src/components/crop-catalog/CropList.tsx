@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sprout, Trash2, Loader2, Tag, ChevronRight, Globe, Home } from 'lucide-react';
+import { Sprout, Trash2, Loader2, Tag, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/utils/cn';
 
@@ -106,14 +106,12 @@ export const CropList: React.FC<CropListProps> = ({
                   </td>
                   <td className="px-10 py-6 text-right">
                     <div className="flex items-center justify-end gap-3 transition-opacity duration-300">
-                      {mode === 'crops' && (
-                        <button
-                          onClick={() => onViewDetail?.(item.id, item.scope)}
-                          className="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-600 border border-slate-200 rounded-[14px] text-xs font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm"
-                        >
-                          Chi tiết <ChevronRight size={14} />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => onViewDetail?.(item.id, item.scope)}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-600 border border-slate-200 rounded-[14px] text-xs font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm"
+                      >
+                        Chi tiết <ChevronRight size={14} />
+                      </button>
                       {isAdmin && (
                         <button
                           onClick={() => setDeleteConfirmId(item.id)}
