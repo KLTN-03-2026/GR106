@@ -51,6 +51,8 @@ public class TaskService {
     TaskMaterialRepository taskMaterialRepository;
     TaskAssigneeRepository taskAssigneeRepository;
     DiseaseReportRepository diseaseReportRepository;
+    WorkSessionRepository workSessionRepository;
+    FarmConfigRepository farmConfigRepository;
 
     TaskValidator taskValidator;
     PlanStageValidator planStageValidator;
@@ -163,8 +165,22 @@ public class TaskService {
         if (request.getName() != null)
             task.setName(request.getName());
 
-        if (request.getDescription() != null)
+        if (request.getDescription() != null){
             task.setDescription(request.getDescription());
+        }
+
+        if(request.getStartDate() != null ||  request.getEndDate() != null
+        &&workSessionRepository
+                .existsOutsideRangeByTask_IdForCheckUpdateTaskTime(
+                        task.getId(),
+                        request.getStartDate(),
+                        request.getEndDate())
+        )
+        {
+
+                throw new AppException(ErrorCode.TASK_HAVE_SESSION_OUT_SIDE_NEW_DATE_RANGE);
+
+        }
 
         if (request.getStartDate() != null)
             task.setStartDate(request.getStartDate());
@@ -218,11 +234,15 @@ public class TaskService {
                 throw new AppException(ErrorCode.TASK_START_DATE_AFTER_END_DATE);
         }
 
-        if (request.getStartDate() != null)
-            task.setStartDate(request.getStartDate());
-
-        if (request.getEndDate() != null)
-            task.setEndDate(request.getEndDate());
+        if(workSessionRepository
+                .existsOutsideRangeByTask_IdForCheckUpdateTaskTime(
+                        task.getId(),
+                        request.getStartDate(),
+                        request.getEndDate())) {
+            throw new AppException(ErrorCode.TASK_HAVE_SESSION_OUT_SIDE_NEW_DATE_RANGE);
+        }
+        task.setStartDate(request.getStartDate());
+        task.setEndDate(request.getEndDate());
 
         try {
             return taskMapper.toResponse(taskRepository.saveAndFlush(task));

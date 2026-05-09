@@ -53,6 +53,8 @@ public class TaskAssigneeService {
     TaskValidator taskValidator;
     PlanStageValidator planStageValidator;
 
+    WorkSessionRepository workSessionRepository;
+
     UserMapper userMapper;
 
     @Transactional
@@ -133,13 +135,17 @@ public class TaskAssigneeService {
                 .findByIdAndTask_Id(assigneeId,task.getId())
                 .orElseThrow(()->new AppException(ErrorCode.TASK_ASSIGNEE_NOT_FOUND));
 
-        if(taskAssignee.getTask().getPlanStage().getStatus().getIsTerminal())
-            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
+//        if(taskAssignee.getTask().getPlanStage().getStatus().getIsTerminal())
+//            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
+
+        if(workSessionRepository.existsByEmployee_IdAndCheckedOutAtIsNull(taskAssignee.getUser().getId()))
+            throw new AppException(ErrorCode.EMPLOYEE_HAVE_OPEN_SESSION_CAN_NOT_DELETE_ASSIGNEE);
 
         taskAssignee.setRemovalReason(request.getRemovalReason()!=null?request.getRemovalReason():"");
         taskAssignee.setRemovedBy(userRepository.getReferenceById(securityUtils.getCurrentUserId()));
         taskAssignee.setRemovedAt(Instant.now());
         taskAssigneeRepository.save(taskAssignee);
+
         return TaskAssigneeResponse.builder()
                 .id(taskAssignee.getId())
                 .user(userMapper.toUserResponse(taskAssignee.getUser()))

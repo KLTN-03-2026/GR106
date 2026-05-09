@@ -42,6 +42,8 @@ public class TaskStatusService {
     TaskStatusTransitionMapper taskStatusTransitionMapper;
     TaskStatusTransitionRepository taskStatusTransitionRepository;
 
+    WorkSessionRepository workSessionRepository;
+
     UserRepository userRepository;
 
     SecurityUtils securityUtils;
@@ -94,8 +96,6 @@ public class TaskStatusService {
                 .findById(taskStatusId)
                 .orElseThrow(() -> new AppException(ErrorCode.TASK_STATUS_NOT_FOUND));
 
-        //TODO: if toStatus isTerminal And WorkSession existsOpenSessionByTask_Id throw TASK_HAVE_SESSION
-
         TaskStatusEntity currentStatus = task.getStatus();
         // 5. Kiểm tra transition hợp lệ (kể cả global farm_id IS NULL)
         if (!taskStatusTransitionRepository
@@ -110,6 +110,10 @@ public class TaskStatusService {
 
         // 7. Set actualEndDate và progress = 100 khi terminal
         if (toStatus.getIsTerminal()) {
+
+            if(workSessionRepository.existsByTask_IdAndCheckedOutAtIsNull(taskId))
+                throw new AppException(ErrorCode.TASK_HAVE_OPEN_SESSION_CANNOT_UPDATE_TO_STATUS_TERMINAL);
+
             if (task.getActualStartDate() == null)
                 task.setActualStartDate(LocalDate.now());
 
