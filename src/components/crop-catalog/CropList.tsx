@@ -41,7 +41,7 @@ export const CropList: React.FC<CropListProps> = ({
                   {mode === 'crops' ? 'Thông tin cây trồng' : 'Danh mục loại cây'}
                 </th>
                 <th className="px-10 py-5 text-left text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                  {mode === 'crops' ? 'Phân loại & Phạm vi' : 'Mô tả chi tiết'}
+                  {mode === 'crops' ? 'Danh mục' : 'Mô tả chi tiết'}
                 </th>
                 <th className="px-10 py-5 text-right text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Chi tiết</th>
               </tr>
