@@ -151,7 +151,7 @@ public class WarehouseItemService {
         // Validate warehouse thuộc farm
         WarehouseEntity warehouse = warehouseRepository.findById(warehouseId)
                 .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND));
-        if(request.getStock().equals(0))
+        if( request.getStock().compareTo(BigDecimal.ZERO) == 0 )
             throw new AppException(ErrorCode.WAREHOUSE_ITEM_MUST_HAVE_STOCK);
 
         if (!warehouse.getFarm().getId().equals(farmId))
