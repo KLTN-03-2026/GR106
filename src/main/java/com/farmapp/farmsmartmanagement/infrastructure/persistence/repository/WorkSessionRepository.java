@@ -1,13 +1,19 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.WorkSessionEntity;
+import com.farmapp.farmsmartmanagement.modules.plot.mapper.PlotMapper;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -107,4 +113,28 @@ public interface WorkSessionRepository extends JpaRepository<WorkSessionEntity, 
     Optional<WorkSessionEntity> findByIdForUpdate(@Param("sessionId") UUID sessionId);
 
     boolean existsByEmployee_IdAndCheckedOutAtIsNull(UUID userId);
+
+    List<WorkSessionEntity> findAllByTask_IdOrderByCheckedInAtDesc(UUID taskId);
+
+    Page<WorkSessionEntity> findAllByEmployee_Id(UUID userId, Pageable pageable);
+
+    // WorkSessionRepository.java
+    Page<WorkSessionEntity> findAllByFarm_IdAndCheckedOutAtIsNull(UUID farmId, Pageable pageable);
+
+    Page<WorkSessionEntity> findAllByTask_IdOrderByCheckedInAtDesc(UUID taskId, Pageable pageable);
+
+    Page<WorkSessionEntity> findAllByTask_IdAndEmployee_IdOrderByCheckedInAtDesc(UUID taskId, UUID employeeId, Pageable pageable);
+
+
+    @Query("""
+        SELECT CASE WHEN COUNT(ws) > 0 THEN TRUE ELSE FALSE END
+        FROM WorkSessionEntity ws
+        WHERE ws.task.id = :taskId
+          AND (CAST(ws.checkedInAt AS DATE) < COALESCE(:startDate,COALESCE(ws.task.actualStartDate, ws.task.startDate))
+           OR CAST(ws.checkedInAt AS DATE) > COALESCE(:endDate, ws.task.endDate))
+    """) // Không check actualEndDate vì nếu có nó tức task đã terminal
+    boolean existsOutsideRangeByTask_IdForCheckUpdateTaskTime(@Param("taskId") UUID taskId,
+                               @Param("startDate") LocalDate startDate,
+                               @Param("endDate") LocalDate endDate);
+
 }

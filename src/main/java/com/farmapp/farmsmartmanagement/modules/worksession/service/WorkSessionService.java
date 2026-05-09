@@ -2,6 +2,7 @@ package com.farmapp.farmsmartmanagement.modules.worksession.service;
 
 import com.farmapp.farmsmartmanagement.common.exception.AppException;
 import com.farmapp.farmsmartmanagement.common.exception.ErrorCode;
+import com.farmapp.farmsmartmanagement.common.response.PageableResponse;
 import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
 import com.farmapp.farmsmartmanagement.domain.enums.ForceActionType;
 import com.farmapp.farmsmartmanagement.domain.enums.ForceTargetType;
@@ -20,6 +21,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +52,7 @@ public class WorkSessionService {
     SecurityUtils securityUtils;
     WorkSessionMapper workSessionMapper;
     TaskValidator taskValidator;
+    FarmConfigRepository farmConfigRepository;
 
     // ─────────────────────────────────────────────────────────────────────────
     // CHECK-IN
@@ -103,12 +107,17 @@ public class WorkSessionService {
             throw new AppException(ErrorCode.SESSION_ALREADY_OPEN);
         }
 
+        FarmConfigEntity farmConfig = farmConfigRepository
+                .findByFarmId(farmId)
+                .orElseThrow(() -> new AppException(ErrorCode.FARM_CONFIG_NOT_FOUND));
+
+
         // create worklog after session success
         WorkLogEntity workLog = WorkLogEntity.builder()
                 .task(task)
                 .farm(farm)
                 .employee(employee)
-                .workDate(LocalDate.now(VIETNAM_ZONE))
+                .workDate(LocalDate.now(ZoneId.of(farmConfig.getTimezone)))
                 .type(WorkLogType.NORMAL)
                 .status(WorkLogStatus.WORKING)
                 .isOvertime(false)
@@ -299,24 +308,36 @@ public class WorkSessionService {
     // ─────────────────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-    public List<WorkSessionResponse> getOpenSessions() {
-
+    public PageableResponse<WorkSessionResponse> getOpenSessions(Pageable pageable) {
         UUID farmId = securityUtils.getCurrentFarmId();
 
-        return workSessionRepository
-                .findAllByFarm_IdAndCheckedOutAtIsNull(farmId)
-                .stream()
-                .map(workSessionMapper::toResponse)
-                .toList();
+        Page<WorkSessionResponse> page = workSessionRepository
+                .findAllByFarm_IdAndCheckedOutAtIsNull(farmId, pageable)
+                .map(workSessionMapper::toResponse);
+
+        return PageableResponse.of(page);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // GET TASK SESSION HISTORY
-    // ─────────────────────────────────────────────────────────────────────────
+    @Transactional(readOnly = true)
+    public PageableResponse<WorkSessionResponse> getSessionsByTask(UUID taskId, Pageable pageable) {
+        UUID farmId = securityUtils.getCurrentFarmId();
+
+        TaskEntity task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));
+
+        if (!task.getFarm().getId().equals(farmId)) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        Page<WorkSessionResponse> page = workSessionRepository
+                .findAllByTask_IdOrderByCheckedInAtDesc(taskId, pageable)
+                .map(workSessionMapper::toResponse);
+
+        return PageableResponse.of(page);
+    }
 
     @Transactional(readOnly = true)
-    public List<WorkSessionResponse> getSessionsByTask(UUID taskId) {
-
+    public PageableResponse<WorkSessionResponse> getSessionsByTaskAndMe(UUID taskId, Pageable pageable) {
         UUID farmId = securityUtils.getCurrentFarmId();
         UUID userId = securityUtils.getCurrentUserId();
 
@@ -327,11 +348,23 @@ public class WorkSessionService {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
 
-        return workSessionRepository
-                .findAllByTask_IdAndEmployee_IdOrderByCheckedInAtDesc(taskId, userId)
-                .stream()
-                .map(workSessionMapper::toResponse)
-                .toList();
+        Page<WorkSessionResponse> page = workSessionRepository
+                .findAllByTask_IdAndEmployee_IdOrderByCheckedInAtDesc(taskId, userId, pageable)
+                .map(workSessionMapper::toResponse);
+
+        return PageableResponse.of(page);
+    }
+
+    // getSessionsByMe giữ nguyên, chỉ đồng bộ style:
+    @Transactional(readOnly = true)
+    public PageableResponse<WorkSessionResponse> getSessionsByMe(Pageable pageable) {
+        UUID userId = securityUtils.getCurrentUserId();
+
+        Page<WorkSessionResponse> page = workSessionRepository
+                .findAllByEmployee_Id(userId, pageable)
+                .map(workSessionMapper::toResponse);
+
+        return PageableResponse.of(page);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -418,4 +451,6 @@ public class WorkSessionService {
 
         return forceLog;
     }
+
+
 }

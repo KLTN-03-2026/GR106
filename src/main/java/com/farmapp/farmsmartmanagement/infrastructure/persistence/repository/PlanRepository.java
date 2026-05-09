@@ -22,12 +22,6 @@ public interface PlanRepository extends JpaRepository<PlanEntity, UUID> {
 
     Optional<PlanEntity> findByIdAndFarm_Id(UUID planId, UUID farmId);
 
-    @Query("""
-            SELECT p FROM PlanEntity p
-            WHERE p.id = :planId
-            AND p.farm.id = :farmId
-        """)
-    Optional<PlanEntity> findByIdAndFarm_IdForUpdate(UUID planId, UUID farmId);
 
 
     boolean existsByIdAndFarm_Id(UUID planId, UUID farmId);

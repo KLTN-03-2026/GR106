@@ -35,6 +35,7 @@ public enum ErrorCode {
 
     // --- Not found ---
     FARM_NOT_FOUND(404, "Không tìm thấy trang trại", HttpStatus.NOT_FOUND),
+    FARM_CONFIG_NOT_FOUND(404, "Không tìm thấy cấu hình trang trại", HttpStatus.NOT_FOUND),
     FARM_SUBSCRIPTION_NOT_FOUND(404, "Không tìm thấy trang trại đang đăng ký gói nào", HttpStatus.NOT_FOUND),
     SUBSCRIPTION_PLAN_NOT_FOUND(404, "Không tìm thấy gói đăng ký", HttpStatus.NOT_FOUND),
     DEFAULT_SUBSCRIPTION_PLAN_NOT_FOUND(404, "Không tìm thấy gói đăng ký mặc định", HttpStatus.NOT_FOUND),
@@ -161,7 +162,17 @@ public enum ErrorCode {
     MANUAL_CHECKOUT_NOT_ALLOWED(403, "Farm này không cho phép tự điều chỉnh giờ check-out", HttpStatus.FORBIDDEN ),
     INVALID_CHECKOUT_TIME(400, "Giờ check-out phải sau giờ check-in", HttpStatus.BAD_REQUEST),
     WORK_LOG_NOT_LOCKED(400, "WorkLog chưa được khoá",HttpStatus.BAD_REQUEST),
-;
+    PLAN_HAVE_OPEN_SESSION_CANNOT_DELETE_PLAN(409,"Kế hoạch đang có nhân công đang làm việc, không thể xoá. Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình (Chấm công tự động)",HttpStatus.CONFLICT ),
+    PLAN_STAGE_HAVE_OPEN_SESSION_CANNOT_DELETE(409,"Giai đoạn đang có nhân công đang làm việc, không thể xoá. Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình (Chấm công tự động)",HttpStatus.CONFLICT ),
+    PLAN_STAGE_HAVE_OPEN_SESSION_CANNOT_UPDATE_TO_STATUS_TERMINAL(409,"Giai đoạn đang có nhân công đang làm việc, không thể đưa giai đoạn về trạng thái cuối. Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình (Chấm công tự động)",HttpStatus.CONFLICT ),
+    TASK_HAVE_OPEN_SESSION_CANNOT_UPDATE_TO_STATUS_TERMINAL(409,"Công việc đang có nhân công đang làm việc, không thể đưa công việc về trạng thái cuối. Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình (Chấm công tự động)",HttpStatus.CONFLICT ),
+    TASK_HAVE_SESSION_OUT_SIDE_NEW_DATE_RANGE(409,"Công việc đang có phiên làm việc nằm ngoài thời gian mới. Không thể cập nhật" , HttpStatus.CONFLICT ),
+    EMPLOYEE_HAVE_OPEN_SESSION_CAN_NOT_DELETE_ASSIGNEE(409,"Người này đang có phiên làm việc với công việc này. Không thể xoá phân công người này(Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình)" ,HttpStatus.CONFLICT  ),
+    EMPLOYEE_HAVE_OPEN_SESSION_CAN_NOT_DELETE_MEMBER(409,"Người này đang có phiên làm việc với công việc này. Không thể xoá thành viên này(Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình)" ,HttpStatus.CONFLICT  ),
+    WAREHOUSE_ITEM_MUST_HAVE_STOCK(409,"Số lượng vật tư phải lớn hơn 0" ,HttpStatus.CONFLICT  ),;
+
+
+
 
     private final int code;
     private final String message;

@@ -2,6 +2,7 @@ package com.farmapp.farmsmartmanagement.modules.worksession.controller;
 
 import com.farmapp.farmsmartmanagement.common.annotation.RequiresFarmToken;
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
+import com.farmapp.farmsmartmanagement.common.response.PageableResponse;
 import com.farmapp.farmsmartmanagement.common.response.ResponseUtil;
 import com.farmapp.farmsmartmanagement.modules.worksession.dto.request.*;
 import com.farmapp.farmsmartmanagement.modules.worksession.dto.response.WorkSessionResponse;
@@ -13,6 +14,7 @@ import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -72,17 +74,41 @@ public class WorkSessionController {
             security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/api/v1/sessions/open")
     @RequiresFarmToken
-    public ResponseEntity<ApiResponse<List<WorkSessionResponse>>> getOpenSessions() {
-        return ResponseUtil.success(workSessionService.getOpenSessions());
+    public ResponseEntity<ApiResponse<PageableResponse<WorkSessionResponse>>> getOpenSessions(
+            Pageable pageable
+    ) {
+        return ResponseUtil.success(workSessionService.getOpenSessions(pageable));
     }
 
     @Operation(summary = "Xem lịch sử session của task",
             security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/api/v1/tasks/{taskId}/sessions")
     @RequiresFarmToken
-    public ResponseEntity<ApiResponse<List<WorkSessionResponse>>> getSessionsByTask(
-            @PathVariable UUID taskId
+    public ResponseEntity<ApiResponse<PageableResponse<WorkSessionResponse>>> getSessionsByTask(
+            @PathVariable UUID taskId,
+            Pageable pageable
     ) {
-        return ResponseUtil.success(workSessionService.getSessionsByTask(taskId));
+        return ResponseUtil.success(workSessionService.getSessionsByTask(taskId, pageable));
+    }
+
+    @Operation(summary = "Xem lịch sử session của task và nhân công",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/api/v1/tasks/{taskId}/sessions/me")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<PageableResponse<WorkSessionResponse>>> getSessionsByTaskAndMe(
+            @PathVariable UUID taskId,
+            Pageable pageable
+    ) {
+        return ResponseUtil.success(workSessionService.getSessionsByTaskAndMe(taskId, pageable));
+    }
+
+    @Operation(summary = "Xem lịch sử session của bản thân",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/api/v1/sessions/me")
+    @RequiresFarmToken
+    public ResponseEntity<ApiResponse<PageableResponse<WorkSessionResponse>>> getSessionsByMe(
+            Pageable pageable
+    ) {
+        return ResponseUtil.success(workSessionService.getSessionsByMe(pageable));
     }
 }

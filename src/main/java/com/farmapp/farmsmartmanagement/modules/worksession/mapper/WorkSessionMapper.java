@@ -5,6 +5,8 @@ import com.farmapp.farmsmartmanagement.modules.worksession.dto.response.WorkSess
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+import java.util.List;
+
 @Mapper(componentModel = "spring")
 public interface WorkSessionMapper {
 
@@ -20,4 +22,6 @@ public interface WorkSessionMapper {
     @Mapping(target = "adjustedBy",      source = "adjustedBy.fullName")
     @Mapping(target = "workLogId",       source = "workLog.id")
     WorkSessionResponse toResponse(WorkSessionEntity entity);
+
+    List<WorkSessionResponse> toResponses(List<WorkSessionEntity> entities);
 }
