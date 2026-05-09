@@ -123,3 +123,55 @@ export const usePlanStageStatus = () => {
     }, [queryClient]),
   };
 };
+
+/**
+ * Hook for Phase (Stage) status histories and available statuses
+ */
+export const usePlanStageStatusDetails = (
+  planId: string | undefined,
+  stageId: string | undefined,
+  enabledArg: boolean = true
+) => {
+  const queryClient = useQueryClient();
+  const enabled = enabledArg && !!planId && !!stageId;
+
+  const historiesQuery = useQuery({
+    queryKey: enabled
+      ? STATUS_KEYS.histories(planId!, stageId!)
+      : ['planStageStatus', 'histories', 'none'],
+    queryFn: () => {
+      if (!planId || !stageId) throw new Error('Missing IDs');
+      return seasonPlanService.getStageStatusHistories(planId, stageId);
+    },
+    enabled,
+    staleTime: 0,
+    gcTime: 0,
+  });
+
+  const availableQuery = useQuery({
+    queryKey: enabled
+      ? STATUS_KEYS.available(planId!, stageId!)
+      : ['planStageStatus', 'available', 'none'],
+    queryFn: () => {
+      if (!planId || !stageId) throw new Error('Missing IDs');
+      return seasonPlanService.getAvailableStatuses(planId, stageId);
+    },
+    enabled,
+    staleTime: 0,
+    gcTime: 0,
+  });
+
+  return {
+    histories: historiesQuery.data ?? [],
+    historiesLoading: historiesQuery.isLoading || historiesQuery.isFetching,
+    availableStatuses: availableQuery.data ?? [],
+    loading: historiesQuery.isLoading || availableQuery.isLoading,
+    error: historiesQuery.error || availableQuery.error,
+    refetch: () => {
+      if (planId && stageId) {
+        void queryClient.invalidateQueries({ queryKey: STATUS_KEYS.histories(planId, stageId) });
+        void queryClient.invalidateQueries({ queryKey: STATUS_KEYS.available(planId, stageId) });
+      }
+    },
+  };
+};

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Users,
 } from 'lucide-react';
@@ -37,6 +38,7 @@ import { WorkLogsSection } from './detail/WorkLogsSection';
 import { WorkLogDetailModal } from '../work-log/WorkLogDetailModal';
 import { StatusHistorySection } from './detail/StatusHistorySection';
 import { useTaskStatusDetails } from '@/hooks/taskStatus/useTaskStatus';
+import { usePlanStageStatusDetails } from '@/hooks/seasonPlans/usePlanStageStatus';
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -68,8 +70,6 @@ interface PlanDetailPanelProps {
   phaseStatusTransitions?: import('@/services/seasonplan/planStageStatusService').PlanStageStatusTransition[];
   taskStatusOptions?: { id: string; code: string; label: string; color?: string }[];
   taskStatusTransitions?: any[];
-  fetchTaskAvailableStatuses?: (planId: string, stageId: string, taskId: string) => Promise<any[]>;
-  fetchPhaseAvailableStatuses?: (planId: string, stageId: string) => Promise<any[]>;
   onScrollToDate?: (dateStr: string) => void;
   onFetchPhaseDetail?: (planId: string, stageId: string) => Promise<Phase>;
   onFetchTaskDetail?: (planId: string, stageId: string, taskId: string) => Promise<Task>;
@@ -100,14 +100,13 @@ export function PlanDetailPanel({
   phaseStatusTransitions = [],
   taskStatusOptions = [],
   taskStatusTransitions = [],
-  fetchTaskAvailableStatuses,
-  fetchPhaseAvailableStatuses,
   onScrollToDate,
   onFetchPhaseDetail,
   onFetchTaskDetail,
   onUpdatePhaseStatus,
   onUpdateTaskStatus,
 }: PlanDetailPanelProps) {
+  const queryClient = useQueryClient();
   const { currentFarmId } = useAuth();
   const { selectedFarmId } = useSelector((state: RootState) => state.farm);
   const targetFarmId = currentFarmId || selectedFarmId;
@@ -168,13 +167,27 @@ export function PlanDetailPanel({
 
   const {
     histories: taskStatusHistories,
-    historiesLoading: taskStatusHistoriesLoading
+    historiesLoading: taskStatusHistoriesLoading,
+    availableStatuses: taskAvailableStatuses,
   } = useTaskStatusDetails(
     selection?.plan.id,
     selection?.type === 'TASK' ? (selection as any).phase.id : undefined,
     selection?.type === 'TASK' ? (selection as any).task.id : undefined,
-    isOpen && activeTab === 'HISTORY' && selection?.type === 'TASK'
+    isOpen && selection?.type === 'TASK'
   );
+  
+  const {
+    histories: phaseStatusHistories,
+    historiesLoading: phaseStatusHistoriesLoading,
+    availableStatuses: phaseAvailableStatuses,
+  } = usePlanStageStatusDetails(
+    selection?.plan.id,
+    selection?.type === 'PHASE' ? (selection as any).phase.id : undefined,
+    isOpen && selection?.type === 'PHASE'
+  );
+
+  const availableStatuses = selection?.type === 'TASK' ? taskAvailableStatuses : phaseAvailableStatuses;
+
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -186,32 +199,7 @@ export function PlanDetailPanel({
     }
   }, [initialIsAddingPhase]);
 
-  const [availableStatuses, setAvailableStatuses] = useState<any[]>([]);
 
-  useEffect(() => {
-    if (!isOpen || !selection) return;
-
-    const fetchStatuses = async () => {
-      setAvailableStatuses([]);
-      try {
-        if (selection.type === 'TASK' && fetchTaskAvailableStatuses) {
-          const statuses = await fetchTaskAvailableStatuses(
-            selection.plan.id,
-            (selection as any).phase.id,
-            selection.task.id
-          );
-          setAvailableStatuses(statuses);
-        } else if (selection.type === 'PHASE' && fetchPhaseAvailableStatuses) {
-          const statuses = await fetchPhaseAvailableStatuses(selection.plan.id, selection.phase.id);
-          setAvailableStatuses(statuses);
-        }
-      } catch (err) {
-        console.error('Lỗi khi lấy trạng thái khả dụng:', err);
-      }
-    };
-
-    fetchStatuses();
-  }, [selection?.plan.id, (selection as any)?.phase?.id, (selection as any)?.task?.id, isOpen, fetchTaskAvailableStatuses, fetchPhaseAvailableStatuses]);
 
   const [tempPlan, setTempPlan] = useState<SeasonPlan | null>(null);
   const [tempPhase, setTempPhase] = useState<Phase | null>(null);
@@ -490,6 +478,8 @@ export function PlanDetailPanel({
       if (selection.type === 'PHASE') {
         if (onUpdatePhaseStatus) {
           await onUpdatePhaseStatus(selection.plan.id, selection.phase.id, statusId);
+          // Invalidate Phase Status Cache
+          queryClient.invalidateQueries({ queryKey: ['planStageStatus'] });
         }
       } else {
         if (onUpdateTaskStatus) {
@@ -499,6 +489,9 @@ export function PlanDetailPanel({
             selection.task.id,
             statusId
           );
+          // Invalidate Task Status Cache
+          queryClient.invalidateQueries({ queryKey: ['taskStatusHistories'] });
+          queryClient.invalidateQueries({ queryKey: ['availableTaskStatuses'] });
         }
       }
       toast.success('Cập nhật trạng thái thành công');
@@ -597,7 +590,7 @@ export function PlanDetailPanel({
               >
                 Giao việc
               </button>
-              {sel.type === 'TASK' && (
+              {(sel.type === 'TASK' || sel.type === 'PHASE') && (
                 <button
                   onClick={() => setActiveTab('HISTORY')}
                   className={cn(
@@ -802,7 +795,7 @@ export function PlanDetailPanel({
                   <p className="text-[11px] leading-relaxed">Bạn có thể vào giai đoạn để chọn công việc cần giao việc cho thành viên.</p>
                 </div>
               )}
-              {activeTab === 'HISTORY' && sel.type === 'TASK' && (
+              {activeTab === 'HISTORY' && (sel.type === 'TASK' || sel.type === 'PHASE') && (
                 <motion.div
                   key="history"
                   initial={{ opacity: 0, y: 10 }}
@@ -811,8 +804,8 @@ export function PlanDetailPanel({
                   transition={{ duration: 0.2 }}
                 >
                   <StatusHistorySection
-                    histories={taskStatusHistories}
-                    loading={taskStatusHistoriesLoading}
+                    histories={sel.type === 'TASK' ? taskStatusHistories : phaseStatusHistories}
+                    loading={sel.type === 'TASK' ? taskStatusHistoriesLoading : phaseStatusHistoriesLoading}
                   />
                 </motion.div>
               )}
