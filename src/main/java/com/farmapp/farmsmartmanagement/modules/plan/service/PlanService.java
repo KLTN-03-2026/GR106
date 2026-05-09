@@ -104,7 +104,7 @@ public class PlanService {
         UUID farmId = securityUtils.getCurrentFarmId();
 
         PlanEntity plan = planRepository
-                .findByIdAndFarm_IdForUpdate(planId, farmId)
+                .findByIdAndFarm_Id(planId, farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
         plan.setVersion(request.getVersion());
 
