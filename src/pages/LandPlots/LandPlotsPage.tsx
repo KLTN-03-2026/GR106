@@ -17,7 +17,7 @@ import { DeletePlotDialog } from '@/components/land-plots/DeletePlotDialog';
 export function LandPlotsPage() {
   const navigate = useNavigate();
   const { currentFarmId } = useAuth();
-  const { plots, fetchPlots, createPlot, updatePlot, deletePlot } = usePlots();
+  const { plots, createPlot, updatePlot, deletePlot } = usePlots(currentFarmId || undefined);
 
   // Redirect to farm selection if no farmId
   if (!currentFarmId) {
@@ -60,7 +60,6 @@ export function LandPlotsPage() {
       await createPlot(plotData).unwrap();
       setIsCreateModalOpen(false);
       toast.success('Tạo lô đất mới thành công');
-      fetchPlots();
     } catch (err: any) {
       toast.error(extractErrorMessage(err));
     }
@@ -83,7 +82,6 @@ export function LandPlotsPage() {
       }).unwrap();
       setEditingPlot(null);
       toast.success('Cập nhật thông tin lô đất thành công');
-      fetchPlots();
     } catch (err: any) {
       toast.error(extractErrorMessage(err));
     }
@@ -92,10 +90,9 @@ export function LandPlotsPage() {
   const handleDeletePlot = async () => {
     if (deletingPlot && currentFarmId) {
       try {
-        await deletePlot(deletingPlot.id).unwrap(); // 2 tham số truyền vào, nhớ chỗ này, là 2, thằng này thuộc usePlot(cái m đã refactor)
+        await deletePlot(deletingPlot.id).unwrap(); 
         toast.success('Đã xóa lô đất thành công');
         setDeletingPlot(null);
-        fetchPlots();
       } catch (err: any) {
         toast.error(err.message || 'Không thể xóa lô đất');
       }

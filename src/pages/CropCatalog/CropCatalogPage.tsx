@@ -18,13 +18,14 @@ export const CropCatalogPage: React.FC = () => {
     crops, 
     loading, 
     error, 
+    fetchFarmCrops,
     fetchCrops, 
     fetchCropTypes, 
     createCrop, 
     createCropType, 
     deleteCropType 
   } = useCrops();
-  
+
   // Giải mã token để lấy quyền thực tế
   const roles = accessToken ? getRolesFromToken(accessToken) : [];
   const isAdmin = roles.includes('ROLE_ADMIN');
@@ -42,7 +43,11 @@ export const CropCatalogPage: React.FC = () => {
     if (!(currentFarmId || isAdmin)) return;
 
     if (activeTab === 'crops') {
-      fetchCrops();
+      if (currentFarmId) {
+        fetchFarmCrops(currentFarmId);
+      } else {
+        fetchCrops();
+      }
       fetchCropTypes();
       return;
     }
@@ -50,7 +55,7 @@ export const CropCatalogPage: React.FC = () => {
     if (activeTab === 'types') {
       fetchCropTypes();
     }
-  }, [fetchCropTypes, fetchCrops, currentFarmId, isAdmin, activeTab]);
+  }, [fetchCropTypes, fetchCrops, fetchFarmCrops, currentFarmId, isAdmin, activeTab]);
 
   useEffect(() => {
     if (error) {

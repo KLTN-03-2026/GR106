@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/auth/useAuth';
 import { usePlots } from '../../hooks/plots/usePlots';
 import { useCrops } from '../../hooks/crops/useCrops';
+import { useSeasonPlans } from '../../hooks/seasonPlans/useSeasonPlans';
 import {
   StatCard,
   WeatherCard,
@@ -19,22 +20,28 @@ import {
 function useDashboardData(farmId?: string) {
   const [isSyncing, setIsSyncing] = useState(false);
   
-  const { plots, plotsLoading, fetchPlots, clearPlots } = usePlots();
-  const { crops, cropTypes, loading: cropsLoading, cropTypesLoading, fetchCrops, fetchCropTypes } = useCrops();
+  const { plots, plotsLoading, clearPlots } = usePlots(farmId);
+  const { crops, cropTypes, loading: cropsLoading, cropTypesLoading, fetchFarmCrops, fetchCrops, fetchCropTypes } = useCrops();
+  const { plans, loading: plansLoading, fetchPlans } = useSeasonPlans(farmId);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        // 1. Luôn load danh mục cây trồng và loại cây (Global)
-        // Lưu ý: Cần Hub Token cho các API này. Nếu đang dùng Farm Token có thể bị 403.
-        await Promise.allSettled([fetchCrops(), fetchCropTypes()]);
+        // 1. Luôn load danh mục loại cây (Global Catalog)
+        await Promise.allSettled([fetchCropTypes()]);
         
         if (farmId) {
-          // 2a. CHẾ ĐỘ TRANG TRẠI: Load lô đất của farm này
-          fetchPlots();
+          // 2a. CHẾ ĐỘ TRANG TRẠI: Load dữ liệu của farm này
+          await Promise.allSettled([
+            fetchFarmCrops(farmId),
+            fetchPlans(farmId)
+          ]);
         } else {
-          // 2b. CHẾ ĐỘ HUB: Xóa plots hiện tại
+          // 2b. CHẾ ĐỘ HUB: Load dữ liệu hệ thống (Public crops)
           clearPlots();
+          await Promise.allSettled([
+            fetchCrops()
+          ]);
         }
       } catch (error) {
         console.error("Dashboard data sync error:", error);
@@ -44,19 +51,34 @@ function useDashboardData(farmId?: string) {
     };
 
     loadData();
-  }, [farmId, fetchCrops, fetchCropTypes, fetchPlots, clearPlots]);
+  }, [farmId, fetchCropTypes, fetchFarmCrops, fetchCrops, fetchPlans, clearPlots]);
 
-  const isLoading = (farmId && plotsLoading) || cropsLoading || cropTypesLoading || isSyncing;
+  const isLoading = (farmId && (plotsLoading || cropsLoading || plansLoading)) || cropTypesLoading || isSyncing;
+
+  // Tính toán tiến trình trung bình dựa trên status của plans
+  const calculatePerformance = () => {
+    if (!farmId || plans.length === 0) return 0;
+    const totalProgress = plans.reduce((acc, plan) => {
+      const status = typeof plan.status === 'string' ? plan.status : plan.status.code;
+      if (status === 'COMPLETED') return acc + 100;
+      if (status === 'ACTIVE' || status === 'HARVESTING') return acc + 50;
+      if (status === 'DRAFT' || status === 'READY_TO_HARVEST') return acc + 10;
+      return acc;
+    }, 0);
+    return Math.round(totalProgress / plans.length);
+  };
 
   return {
     stats: {
       totalPlots: farmId ? plots.length : 0,
-      totalCrops: cropTypes.length, 
+      totalCrops: farmId 
+        ? Array.from(new Set(crops.map(c => c.cropType.id))).length 
+        : cropTypes.length, 
       totalArea: farmId 
         ? plots.reduce((acc, p) => acc + (Number(p.areaHa) || 0), 0)
         : 0,
-      totalPlants: crops.length,
-      performancePct: 0, 
+      totalPlants: crops.length, // Trong Farm là số cây farm, trong Hub là số cây system
+      performancePct: calculatePerformance(), 
     },
     npkData: [], 
     isLoading
@@ -94,11 +116,11 @@ export default function MainPage() {
 
         {/* Row 1 */}
         <div className="flex flex-1 gap-3 min-h-0 overflow-hidden flex-col xl:flex-row">
-          <div className="grid grid-cols-2 gap-3 flex-1 min-h-0 overflow-hidden">
-            <StatCard label="Tổng lô đất" value={isLoading ? "..." : stats.totalPlots} unit="Lô" />
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-3 flex-1 min-h-0 overflow-hidden">
+            <StatCard label="Lô đất" value={isLoading ? "..." : stats.totalPlots} unit="Lô" />
             <StatCard label="Loại cây trồng" value={isLoading ? "..." : stats.totalCrops} unit="Loại" />
-            <StatCard label="Tổng diện tích" value={isLoading ? "..." : stats.totalArea.toFixed(1)} unit="ha" />
-            <StatCard label="Tổng số cây" value={isLoading ? "..." : stats.totalPlants} unit="Cây" />
+            <StatCard label="Diện tích" value={isLoading ? "..." : stats.totalArea.toFixed(1)} unit="ha" />
+            <StatCard label="Số lượng cây" value={isLoading ? "..." : stats.totalPlants} unit="Cây" />
           </div>
 
           <div className="flex-1 min-h-0 overflow-hidden">
