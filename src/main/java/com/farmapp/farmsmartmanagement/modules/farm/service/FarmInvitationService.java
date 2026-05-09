@@ -59,7 +59,8 @@ public class FarmInvitationService {
 
     SecurityUtils securityUtils;
 
-
+    WorkSessionRepository workSessionRepository;
+    TaskAssigneeRepository taskAssigneeRepository;
     AppProperties appProperties;
 
     public List<FarmRoleResponse> findAllFarmRole() {
@@ -305,6 +306,9 @@ public class FarmInvitationService {
         FarmMemberEntity member = farmMemberRepository
                 .findByFarm_IdAndUser_Id(farmId, memberId)
                 .orElseThrow(() -> new AppException(ErrorCode.FARM_MEMBER_NOT_FOUND));
+
+        if(workSessionRepository.existsByEmployee_IdAndCheckedOutAtIsNull(member.getUser().getId()))
+            throw new AppException(ErrorCode.EMPLOYEE_HAVE_OPEN_SESSION_CAN_NOT_DELETE_MEMBER);
 
         if (member.getFarmRole().getName().equals("OWNER"))
             throw new AppException(ErrorCode.CANNOT_REMOVE_OWNER);
