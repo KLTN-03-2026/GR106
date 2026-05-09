@@ -125,6 +125,9 @@ public class PlanService {
         PlanEntity plan = planRepository
                 .findByIdAndFarm_Id(planId, farmId)  // ← vừa tìm vừa check ownership
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
+        
+        if(workSessionRepository.existsOpenSessionByPlanId(plan.getId()))
+            throw new AppException(ErrorCode.PLAN_HAVE_OPEN_SESSION_CANNOT_DELETE_PLAN);
 
         plan.setDeletedAt(Instant.now());
         plan.setDeletedBy(userRepository.getReferenceById(securityUtils.getCurrentUserId()));
