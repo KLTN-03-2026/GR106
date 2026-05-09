@@ -17,6 +17,7 @@ export const useSeasonPlans = (farmId?: string) => {
     deleteError: plansPart.deleteError,
     updatePlanTimeError: plansPart.updatePlanTimeError,
     fetchPlans: plansPart.fetchPlans,
+    fetchPlan: plansPart.fetchPlan,
     createPlan: plansPart.createPlan,
     updatePlan: plansPart.updatePlan,
     deletePlan: plansPart.deletePlan,

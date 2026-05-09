@@ -75,6 +75,8 @@ interface PlanDetailPanelProps {
   onFetchTaskDetail?: (planId: string, stageId: string, taskId: string) => Promise<Task>;
   onUpdatePhaseStatus?: (planId: string, stageId: string, statusId: string) => Promise<any>;
   onUpdateTaskStatus?: (planId: string, stageId: string, taskId: string, statusId: string) => Promise<any>;
+  fetchTaskAvailableStatuses?: (planId: string, stageId: string, taskId: string) => Promise<any>;
+  fetchPhaseAvailableStatuses?: (planId: string, stageId: string) => Promise<any>;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────

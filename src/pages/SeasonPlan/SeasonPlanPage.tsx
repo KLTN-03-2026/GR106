@@ -89,7 +89,7 @@ export function SeasonPlanPage() {
 
   const {
     plans, loading, error,
-    fetchPlans, createPlan, deletePlan: removePlan, updatePlanTime,
+    fetchPlans, fetchPlan, createPlan, deletePlan: removePlan, updatePlanTime,
     fetchStages, fetchPlanPlots, createPhase, deletePhase: removePhase, updatePhase,
     updatePhaseTime, updatePhaseStatus, fetchPlanStageStatuses, fetchPlanStageStatusTransitions, planStageStatuses, planStageStatusTransitions, fetchTasks, createTask: createSeasonTask,
     updateTask: updateSeasonTask, updateTaskTime, updateTaskStatus, deleteTask: removeSeasonTask,
@@ -180,12 +180,16 @@ export function SeasonPlanPage() {
     fetchTaskStatusTransitions();
   }, [fetchTaskStatusTransitions]);
 
-  useEffect(() => {
-    if (currentPlan) {
-      setActiveTab('timeline');
+  const handleViewPlanDetail = async () => {
+    if (!currentPlan) return;
+    try {
+      // Trigger the detail API request when user clicks the button
+      await fetchPlan(currentPlan.id);
       setSelectedItem({ type: 'PLAN', id: currentPlan.id, planId: currentPlan.id });
+    } catch (err: any) {
+      showError('Lỗi tải chi tiết kế hoạch', err);
     }
-  }, [currentPlan?.id]);
+  };
 
   useEffect(() => {
     if (selectedItem?.planId) {
@@ -565,11 +569,15 @@ export function SeasonPlanPage() {
               <Info size={12} /> Chỉ xem
             </div>
           )}
-          <button className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
-            onClick={() => setSelectedItem(currentPlan ? { type: 'PLAN', id: currentPlan.id, planId: currentPlan.id } : null)}
-          >
-            <Settings2 size={15} />
-          </button>
+          {currentPlan && (
+            <button
+              className="h-7 px-2.5 text-[11px] font-bold text-indigo-600 border border-indigo-200 rounded-md hover:bg-indigo-50 flex items-center gap-1.5 transition-colors"
+              onClick={handleViewPlanDetail}
+            >
+              <Info size={13} />
+              Chi tiết
+            </button>
+          )}
 
         </div>
       </div>

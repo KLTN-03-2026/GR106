@@ -69,6 +69,23 @@ export const useSeasonPlanPlans = (farmId?: string) => {
       },
       [queryClient, activeFarmId],
     ),
+    fetchPlan: useCallback(
+      (planId: string) =>
+        withUnwrap(
+          queryClient.fetchQuery({
+            queryKey: PLAN_KEYS.detail(planId),
+            queryFn: async () => {
+              const plan = await seasonPlanService.getPlanById(planId);
+              // Update list cache with this new data
+              updatePlansCache((prev) =>
+                prev.map((p) => (p.id === planId ? { ...p, ...plan } : p)),
+              );
+              return plan;
+            },
+          }),
+        ),
+      [queryClient, updatePlansCache],
+    ),
     createPlan: useCallback((data: CreateSeasonPlanRequest) => withUnwrap(createPlanMutation.mutateAsync(data)), [createPlanMutation]),
     updatePlan: useCallback(
       (planId: string, data: Partial<SeasonPlan>) => withUnwrap(seasonPlanService.updatePlan(planId, data)),
