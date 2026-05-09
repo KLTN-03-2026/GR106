@@ -42,6 +42,8 @@ public class PlanStageService {
     HarvestRecordRepository harvestRecordRepository;
     CropStageRepository cropStageRepository;
 
+    WorkSessionRepository workSessionRepository;
+
 
     PlanStageMapper planStageMapper;
 
@@ -263,6 +265,9 @@ public class PlanStageService {
         checkPlanNotTerminal(plan);
 
         PlanStageEntity stage = getStageOrThrow(stageId, planId);
+
+        if(workSessionRepository.existsOpenSessionByStageId(stage.getId()))
+            throw new AppException(ErrorCode.PLAN_STAGE_HAVE_OPEN_SESSION_CANNOT_DELETE);
 
         // Lớp 1 — Block nếu đã có harvest record
         if (harvestRecordRepository.existsByPlanStage_Id(stageId))

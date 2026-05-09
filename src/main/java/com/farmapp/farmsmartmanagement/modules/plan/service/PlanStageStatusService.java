@@ -37,6 +37,7 @@ public class PlanStageStatusService {
 
     PlanStageStatusTransitionRepository planStageStatusTransitionRepository;
     PlanStageStatusTransitionMapper planStageStatusTransitionMapper;
+    WorkSessionRepository workSessionRepository;
 
     PlanStageRepository planStageRepository;
     UserRepository userRepository;
@@ -116,6 +117,12 @@ public class PlanStageStatusService {
 
         // 7. Set actualEndDate khi terminal
         if (toStatus.getIsTerminal()) {
+
+            // Đảm bảo rằng những session đang mở sẽ được chấm công
+            // Không cho đưa về trạng thái kết thúc nếu có người đang làm việc
+            if(workSessionRepository.existsOpenSessionByStageId(stage.getId()))
+                throw new AppException(ErrorCode.PLAN_STAGE_HAVE_OPEN_SESSION_CANNOT_UPDATE_TO_STATUS_TERMINAL);
+
             if (stage.getActualStartDate() == null)
                 stage.setActualStartDate(LocalDate.now());
 

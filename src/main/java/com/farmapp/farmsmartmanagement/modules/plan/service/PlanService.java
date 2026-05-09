@@ -43,6 +43,7 @@ public class PlanService {
     TaskRepository taskRepository;
 
     SecurityUtils securityUtils;
+    WorkSessionRepository workSessionRepository;
 
 //    Tất cả farm mà user là member -> check file byPassRlsWithUser.txt
 //    @Transactional
@@ -106,7 +107,6 @@ public class PlanService {
         PlanEntity plan = planRepository
                 .findByIdAndFarm_Id(planId, farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLAN_NOT_FOUND));
-        plan.setVersion(request.getVersion());
 
         if(!planRepository.isPlanCoverAllStages(planId, request.getStartDate(), request.getEndDate()))
             throw new AppException(ErrorCode.PLAN_TIME_CANNOT_LESS_STAGE);
