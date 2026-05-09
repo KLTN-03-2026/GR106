@@ -27,6 +27,7 @@ import {
   GitBranch,
 } from 'lucide-react';
 
+import { toast } from 'sonner';
 import { Modal } from '../../components/ui/Modal';
 import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { cn } from '../../utils/cn';
@@ -281,7 +282,7 @@ export function SeasonPlanPage() {
         ?.phases?.find((ph) => ph.id === stageId)
         ?.tasks?.find((t) => t.id === taskId)
         ?.version;
-      await updateTaskTime(planId, stageId, taskId, { ...data, version: taskVersion }).unwrap();
+      await updateTaskTime(planId, stageId, taskId, { ...data, version: taskVersion ?? 0 }).unwrap();
     } catch (err: any) {
       await fetchTasks(planId, stageId);
       showError('Lỗi cập nhật timeline công việc', err);
@@ -455,6 +456,7 @@ export function SeasonPlanPage() {
   const handleUpdateTask = async (planId: string, stageId: string, task: Task, originalTask?: Task) => {
     const plan = plans.find(p => p.id === planId);
     const plotId = task.plotId || (plan?.plots?.length ? plan.plots[0].plotId : undefined);
+    
     try {
       if (!originalTask) {
         await updateSeasonTask(planId, stageId, task.id, {
@@ -478,33 +480,34 @@ export function SeasonPlanPage() {
       const newStatusCode = (task as any).statusCode || (typeof task.status === 'string' ? task.status : task.status?.code);
       const isStatusChanged = !!newStatusCode && originalStatusCode !== newStatusCode;
 
-      if (isDateChanged) {
-        await updateTaskTime(planId, stageId, task.id, {
-          startDate: task.startDate,
-          endDate: task.endDate,
-          version: originalTask.version,
-        }).unwrap();
-      }
-
-      if (isContentChanged) {
-        await updateSeasonTask(planId, stageId, task.id, {
-          version: originalTask.version ?? 0,
+      // Gộp các thay đổi về nội dung và thời gian vào 1 lần gọi PATCH duy nhất
+      // Điều này tránh lỗi xung đột Version (409) khi gọi 2 API liên tiếp
+      let currentTaskVersion = originalTask.version;
+      
+      if (isDateChanged || isContentChanged) {
+        const result = await updateSeasonTask(planId, stageId, task.id, {
+          version: currentTaskVersion ?? 0,
           name: task.name,
           description: task.description || '',
           startDate: task.startDate,
           endDate: task.endDate,
           plotId,
         }).unwrap();
+        // Hook returns { planId, stageId, taskId, task }
+        currentTaskVersion = result.task.version ?? 0;
       }
 
+      // Cập nhật trạng thái (nếu có thay đổi) sau khi đã cập nhật nội dung
       if (isStatusChanged) {
         const targetStatus = taskStatuses.find(s => s.code === newStatusCode);
         if (targetStatus) {
-          await updateTaskStatus(planId, stageId, task.id, targetStatus.id);
+          await updateTaskStatus(planId, stageId, task.id, targetStatus.id).unwrap();
         } else {
           throw new Error(`Không tìm thấy status "${newStatusCode}" trong danh mục Task Status.`);
         }
       }
+      
+      toast.success('Cập nhật công việc thành công');
     } catch (err: any) {
       showError('Lỗi cập nhật', err);
     }

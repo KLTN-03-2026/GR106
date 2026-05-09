@@ -58,7 +58,8 @@ interface PlanDetailPanelProps {
   initialIsAddingPhase?: boolean;
   onClearInitialIsAddingPhase?: () => void;
   onClone?: (plan: SeasonPlan) => void;
-  onAddPlots?: (planId: string, plotIds: string[]) => void;
+  onAddPhase?: (planId: string, data: { name: string; startDate: string; endDate: string }) => Promise<void>;
+  onAddPlots?: (planId: string, plotIds: string[]) => Promise<void>;
   canEdit?: boolean;
   phaseStatusOptions?: { code: string; label: string }[];
   phaseStatusTransitions?: import('@/services/seasonplan/planStageStatusService').PlanStageStatusTransition[];
@@ -213,21 +214,27 @@ export function PlanDetailPanel({
   const [newTaskEnd, setNewTaskEnd] = useState('');
   const [newTaskPlotId, setNewTaskPlotId] = useState('');
   
+  // Track if we have already performed a "smart" suggestion for the current adding session
+  const [hasSuggested, setHasSuggested] = useState(false);
+
   useEffect(() => {
-    if (isAddingTask && activeSelection?.type === 'PHASE') {
+    if (!isAddingTask) {
+      setHasSuggested(false);
+      return;
+    }
+
+    if (activeSelection?.type === 'PHASE') {
       const phase = (activeSelection as any).phase;
       const plan = activeSelection.plan;
       
-      // Tìm phase và tasks từ nguồn tin cậy nhất
       const currentPhase = plan.phases?.find((p: any) => p.id === phase.id) || phase;
-      const tasks = Array.isArray(currentPhase.tasks) ? currentPhase.tasks : [];
+      const rawTasks = currentPhase.tasks; // undefined nếu đang tải, [] nếu rỗng
       
-      // Chỉ tự động điền nếu chưa có dữ liệu hoặc đang ở ngày mặc định của phase
-      const isDefault = !newTaskStart || newTaskStart === phase.startDate;
-      
-      if (isDefault) {
+      // Chỉ thực hiện gợi ý nếu chưa có dữ liệu hoặc chưa từng gợi ý "thông minh" trong phiên này
+      if (!hasSuggested && rawTasks !== undefined) {
+        const tasks = Array.isArray(rawTasks) ? rawTasks : [];
+        
         if (tasks.length > 0) {
-          // Tìm ngày kết thúc muộn nhất
           const latestEndDate = tasks.reduce((max: string, t: any) => {
             const ed = t.endDate?.substring(0, 10);
             if (!ed) return max;
@@ -235,7 +242,6 @@ export function PlanDetailPanel({
           }, tasks[0].endDate?.substring(0, 10) || phase.startDate);
           
           try {
-            // Tách ngày để tránh lỗi timezone
             const [y, m, d] = latestEndDate.split('-').map(Number);
             const nextDate = new Date(y, m - 1, d + 1);
             
@@ -244,7 +250,6 @@ export function PlanDetailPanel({
             const nextD = String(nextDate.getDate()).padStart(2, '0');
             const nextDateStr = `${nextY}-${nextM}-${nextD}`;
             
-            // Nếu ngày gợi ý nằm trong phase
             if (nextDateStr <= phase.endDate && nextDateStr >= phase.startDate) {
               setNewTaskStart(nextDateStr);
               setNewTaskEnd(nextDateStr);
@@ -260,13 +265,14 @@ export function PlanDetailPanel({
           setNewTaskStart(phase.startDate);
           setNewTaskEnd(phase.endDate);
         }
+        setHasSuggested(true);
       }
       
       if (!newTaskPlotId) {
         setNewTaskPlotId(phase.plotId || plan.plots?.[0]?.plotId || '');
       }
     }
-  }, [isAddingTask, activeSelection, newTaskStart]);
+  }, [isAddingTask, activeSelection, hasSuggested]);
 
   const [showAddPlot, setShowAddPlot] = useState(false);
   const [selectedPlotIds, setSelectedPlotIds] = useState<string[]>([]);
