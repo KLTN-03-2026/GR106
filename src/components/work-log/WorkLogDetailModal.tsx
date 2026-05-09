@@ -181,11 +181,11 @@ export function WorkLogDetailModal({ isOpen, onClose, workLogId }: WorkLogDetail
                       <InfoRow icon={<Clock size={12} />} label="Loại công">
                         <span className={cn(
                           'px-2 py-0.5 rounded-full text-[11px] font-bold',
-                          detail.type === 'OVERTIME'
+                          (detail.overtime || detail.type === 'OVERTIME')
                             ? 'bg-amber-100 text-amber-700'
                             : 'bg-blue-100 text-blue-700',
                         )}>
-                          {detail.type === 'OVERTIME' ? 'Tăng ca' : 'Chính thức'}
+                          {(detail.overtime || detail.type === 'OVERTIME') ? 'Tăng ca' : 'Chính thức'}
                         </span>
                       </InfoRow>
 
