@@ -189,9 +189,10 @@ public class PlanService {
                 .build();
     }
 
+    @Transactional
     public void deletePlotFromPlan(UUID planId, UUID plotId) {
         PlotEntity plot = planPlotRepository
-                .findPlotByPlanIdAndPlotId(planId, plotId)
+                .findPlotByPlanIdAndPlotIdForUpdate(planId, plotId)
                 .orElseThrow(()->new AppException(ErrorCode.PLAN_PLOT_NOT_FOUND));
 
         if(taskRepository.existsByPlot_IdAndPlan_Id(plot.getId(), planId))

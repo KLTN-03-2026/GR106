@@ -148,6 +148,7 @@ public class PlotService {
     @Transactional
     public void deletePlot(UUID farmId, UUID plotId) {
 
+        log.info("{}{}",farmId, plotId);
         PlotEntity plot = plotRepository.findByIdAndFarmId(plotId, farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLOT_NOT_FOUND));
 

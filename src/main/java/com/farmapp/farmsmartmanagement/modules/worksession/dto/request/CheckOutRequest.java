@@ -15,6 +15,6 @@ public class CheckOutRequest {
 
     String checkOutNote;
 
-    @NotNull(message = "Shift không được để trống")
+//    @NotNull(message = "Shift không được để trống")
     UUID shiftId; // xác định ca khi checkout để tạo work_log
 }

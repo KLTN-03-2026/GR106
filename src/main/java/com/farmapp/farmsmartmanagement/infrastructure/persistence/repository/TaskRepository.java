@@ -117,6 +117,19 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
             @Param("farmId")  UUID farmId);
 
     @Query("""
+            SELECT t FROM TaskEntity t
+                JOIN FETCH t.planStage ps
+                JOIN FETCH ps.status
+                JOIN FETCH ps.plan p
+                JOIN FETCH t.status
+            WHERE t.id = :taskId
+            AND t.farm.id = :farmId
+            AND t.status.isTerminal = false
+            AND t.actualEndDate IS NULL
+        """)
+    Optional<TaskEntity> findByIdAndStatusIsNotTerminal(@Param("taskId") UUID taskId, @Param("farmId") UUID farmId);
+
+    @Query("""
         SELECT t FROM TaskEntity t
         WHERE t.id = :id
           AND t.planStage.id = :planStageId
@@ -158,6 +171,7 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
 
 
     List<TaskEntity> findAllByPlanStage_IdAndDeletedAtIsNull(UUID stageId);
+
     @Query("""
             SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END
             FROM TaskEntity t
@@ -169,6 +183,8 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
     @Query("""
         SELECT t FROM TaskEntity t
         JOIN TaskAssigneeEntity ta ON ta.task.id = t.id
+        JOIN FETCH t.farm f
+        JOIN FETCH t.status ts
         WHERE ta.user.id = :userId
             AND ta.removedAt IS NULL
             AND t.farm.id = :farmId
@@ -181,6 +197,8 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
     @Query("""
         SELECT t FROM TaskEntity t
         JOIN TaskAssigneeEntity ta ON ta.task.id = t.id
+        JOIN FETCH t.farm f
+        JOIN FETCH t.status ts
         WHERE ta.user.id = :userId
             AND ta.removedAt IS NULL
             AND t.deletedAt IS NULL
@@ -190,6 +208,8 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
     @Query("""
         SELECT t FROM TaskEntity t
         JOIN TaskAssigneeEntity ta ON ta.task = t
+        JOIN FETCH t.farm f
+        JOIN FETCH t.status ts
         WHERE ta.user.id = :userId
           AND ta.removedAt IS NULL
           AND t.farm.id = :farmId
@@ -201,4 +221,6 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
                                                       @Param("farmId") UUID farmId,
                                                       @Param("date") LocalDate date,
                                                       Pageable pageable);
+
+    Optional<TaskEntity> findByIdAndFarm_IdAndDeletedAtIsNull(UUID taskId, UUID farmId);
 }

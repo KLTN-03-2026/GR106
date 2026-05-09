@@ -94,6 +94,8 @@ public class TaskStatusService {
                 .findById(taskStatusId)
                 .orElseThrow(() -> new AppException(ErrorCode.TASK_STATUS_NOT_FOUND));
 
+        //TODO: if toStatus isTerminal And WorkSession existsOpenSessionByTask_Id throw TASK_HAVE_SESSION
+
         TaskStatusEntity currentStatus = task.getStatus();
         // 5. Kiểm tra transition hợp lệ (kể cả global farm_id IS NULL)
         if (!taskStatusTransitionRepository

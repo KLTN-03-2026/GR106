@@ -1,7 +1,10 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.WorkSessionEntity;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -62,4 +65,46 @@ public interface WorkSessionRepository extends JpaRepository<WorkSessionEntity, 
     // Lịch sử session của employee theo task
     List<WorkSessionEntity> findAllByTask_IdAndEmployee_IdOrderByCheckedInAtDesc(
             UUID taskId, UUID employeeId);
+
+    @Modifying
+    @Query(value = """
+    INSERT INTO work_sessions (
+        id,
+        task_id,
+        farm_id,
+        employee_id,
+        checked_in_at,
+        check_in_note,
+        created_at
+    )
+    SELECT
+        gen_uuidv7(),
+        t.id,
+        t.farm_id,
+        :userId,
+        now(),
+        :note,
+        now()
+    FROM tasks t
+    WHERE t.id = :taskId
+      AND t.farm_id = :farmId
+      AND t.deleted_at IS NULL
+      AND t.status_code NOT IN ('COMPLETED', 'CANCELLED')
+      AND NOT EXISTS (
+            SELECT 1
+            FROM work_sessions ws
+            WHERE ws.employee_id = :userId
+              AND ws.checked_out_at IS NULL
+      )
+    """, nativeQuery = true)
+    int atomicCheckIn(UUID taskId,
+                      UUID farmId,
+                      UUID userId,
+                      String note);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT ws FROM WorkSessionEntity ws WHERE ws.id = :sessionId")
+    Optional<WorkSessionEntity> findByIdForUpdate(@Param("sessionId") UUID sessionId);
+
+    boolean existsByEmployee_IdAndCheckedOutAtIsNull(UUID userId);
 }

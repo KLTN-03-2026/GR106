@@ -11,6 +11,9 @@ public interface TaskValidator {
     TaskEntity validateAndGetTask(
             UUID taskId, UUID planStageId, UUID planId, UUID farmId);
 
+    // Dùng cho: read, createDependency, createWorkLog, updateTaskInfo
+    TaskEntity validateAndGetTaskById(UUID taskId, UUID farmId);
+
     // Dùng cho: updateStatus — cần lock tránh race condition
     TaskEntity validateAndGetTaskForUpdate(
             UUID taskId, UUID planStageId, UUID planId, UUID farmId);

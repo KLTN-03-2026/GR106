@@ -1,5 +1,6 @@
 package com.farmapp.farmsmartmanagement.infrastructure.persistence.entity;
 
+import com.farmapp.farmsmartmanagement.domain.enums.WorkLogStatus;
 import com.farmapp.farmsmartmanagement.domain.enums.WorkLogType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -43,6 +44,10 @@ public class WorkLogEntity {
 
     @Column(name = "work_date", nullable = false)
     LocalDate workDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private WorkLogStatus status;
 
     @OneToMany(mappedBy = "workLog", cascade = CascadeType.ALL, orphanRemoval = true)
     List<WorkLogMaterialEntity> materials;

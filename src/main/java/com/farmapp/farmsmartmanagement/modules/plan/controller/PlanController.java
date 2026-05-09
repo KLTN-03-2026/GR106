@@ -137,4 +137,19 @@ public class PlanController {
                 planService.getPlotsByPlan(planId)
         );
     }
+
+    @DeleteMapping("/api/v1/plans/{planId}/plots/{plotId}")
+    @RequiresFarmToken
+    @Operation(
+            summary = "Xoá plot của kế hoạch",
+            description = "API xoá plot thuộc một plan",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    public ResponseEntity<ApiResponse<Void>> deletePlotFromPlan(
+            @PathVariable("planId") UUID planId,
+            @PathVariable("plotId") UUID plotId
+    ) {
+                planService.deletePlotFromPlan(planId, plotId);
+        return ResponseUtil.noContent();
+    }
 }

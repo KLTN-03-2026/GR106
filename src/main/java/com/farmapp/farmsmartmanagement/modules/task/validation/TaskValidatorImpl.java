@@ -50,6 +50,20 @@ public class TaskValidatorImpl implements TaskValidator {
         return task;
     }
 
+    @Override
+    public TaskEntity validateAndGetTaskById(
+            UUID taskId,UUID farmId) {
+
+        TaskEntity task = taskRepository
+                .findByIdAndStatusIsNotTerminal(
+                        taskId, farmId)
+                .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));
+
+        validateExpiredAndStage(task);
+        return task;
+    }
+
+
     // ─────────────────────────────────────────────────────────────────────────
     // Private — dùng chung, không tốn query vì đã JOIN FETCH
     // ─────────────────────────────────────────────────────────────────────────

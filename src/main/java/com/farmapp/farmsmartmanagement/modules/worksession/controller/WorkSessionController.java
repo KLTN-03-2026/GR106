@@ -29,15 +29,13 @@ public class WorkSessionController {
 
     @Operation(summary = "Check-in bắt đầu làm việc",
             security = @SecurityRequirement(name = "bearerAuth"))
-    @PostMapping("/api/v1/plans/{planId}/stages/{stageId}/tasks/{taskId}/sessions/check-in")
+    @PostMapping("/api/v1/tasks/{taskId}/sessions/check-in")
     @RequiresFarmToken
     public ResponseEntity<ApiResponse<WorkSessionResponse>> checkIn(
-            @PathVariable UUID planId,
-            @PathVariable UUID stageId,
             @PathVariable UUID taskId,
             @RequestBody @Valid CheckInRequest request
     ) {
-        return ResponseUtil.created(workSessionService.checkIn(taskId,stageId,planId, request));
+        return ResponseUtil.created(workSessionService.checkIn(taskId, request));
     }
 
     @Operation(summary = "Check-out kết thúc làm việc",
