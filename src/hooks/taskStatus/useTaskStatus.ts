@@ -63,6 +63,10 @@ export function useTaskStatus() {
       void queryClient.invalidateQueries({
         queryKey: TASK_STATUS_KEYS.available(planId, stageId, taskId),
       });
+      // Quan trọng: Invalidate dữ liệu kế hoạch chính để cập nhật UI ngay lập tức
+      void queryClient.invalidateQueries({
+        queryKey: ['season-plans'],
+      });
       toast.success('Cập nhật trạng thái thành công');
     },
     onError: (err: unknown) => {

@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { SeasonPlan, StatusObject } from '../../types/seasonPlan';
 import { seasonPlanPhaseService } from '../../services/seasonplan/seasonPlanPhaseService';
 import { planStageStatusService, PlanStageStatusTransition, PlanStageStatusChange } from '../../services/seasonplan/planStageStatusService';
@@ -9,6 +10,7 @@ interface UseSeasonPlanPhasesProps {
 }
 
 export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesProps) => {
+  const queryClient = useQueryClient();
   const [planStageStatuses, setPlanStageStatuses] = useState<StatusObject[]>([]);
   const [planStageStatusTransitions, setPlanStageStatusTransitions] = useState<PlanStageStatusTransition[]>([]);
   const [planStageStatusHistoriesByStage, setPlanStageStatusHistoriesByStage] = useState<Record<string, PlanStageStatusChange[]>>({});
@@ -155,10 +157,12 @@ export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesPro
               ...prev,
               [stageId]: [result, ...(prev[stageId] ?? [])],
             }));
+            // Quan trọng: Invalidate dữ liệu kế hoạch chính để cập nhật UI ngay lập tức
+            void queryClient.invalidateQueries({ queryKey: ['season-plans'] });
             return result;
           }),
         ),
-      [updatePlansCache],
+      [updatePlansCache, queryClient],
     ),
     fetchAvailableStatuses: useCallback(
       (planId: string, stageId: string) =>
