@@ -38,6 +38,7 @@ import { WorkLogDetailModal } from '../work-log/WorkLogDetailModal';
 import { StatusHistorySection } from './detail/StatusHistorySection';
 import { useTaskStatusDetails } from '@/hooks/taskStatus/useTaskStatus';
 
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface PlanDetailPanelProps {
@@ -63,15 +64,17 @@ interface PlanDetailPanelProps {
   onAddPhase?: (planId: string, data: { name: string; startDate: string; endDate: string }) => Promise<void>;
   onAddPlots?: (planId: string, plotIds: string[]) => Promise<void>;
   canEdit?: boolean;
-  phaseStatusOptions?: { code: string; label: string }[];
+  phaseStatusOptions?: { id: string; code: string; label: string; color?: string }[];
   phaseStatusTransitions?: import('@/services/seasonplan/planStageStatusService').PlanStageStatusTransition[];
-  taskStatusOptions?: { code: string; label: string }[];
+  taskStatusOptions?: { id: string; code: string; label: string; color?: string }[];
   taskStatusTransitions?: any[];
   fetchTaskAvailableStatuses?: (planId: string, stageId: string, taskId: string) => Promise<any[]>;
   fetchPhaseAvailableStatuses?: (planId: string, stageId: string) => Promise<any[]>;
   onScrollToDate?: (dateStr: string) => void;
   onFetchPhaseDetail?: (planId: string, stageId: string) => Promise<Phase>;
   onFetchTaskDetail?: (planId: string, stageId: string, taskId: string) => Promise<Task>;
+  onUpdatePhaseStatus?: (planId: string, stageId: string, statusId: string) => Promise<any>;
+  onUpdateTaskStatus?: (planId: string, stageId: string, taskId: string, statusId: string) => Promise<any>;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -102,6 +105,8 @@ export function PlanDetailPanel({
   onScrollToDate,
   onFetchPhaseDetail,
   onFetchTaskDetail,
+  onUpdatePhaseStatus,
+  onUpdateTaskStatus,
 }: PlanDetailPanelProps) {
   const { currentFarmId } = useAuth();
   const { selectedFarmId } = useSelector((state: RootState) => state.farm);
@@ -113,19 +118,17 @@ export function PlanDetailPanel({
   const { members, fetchMembers, loadingMembers } = useMembers();
 
   const [activeTab, setActiveTab] = useState<'INFO' | 'MEMBERS' | 'MATERIALS' | 'LOGS' | 'HISTORY'>('INFO');
-  const [activeSelection, setActiveSelection] = useState(selection);
-
-  // Use dedicated hook for materials management
+  // Use dedicated hooks for management, using selection prop directly to avoid sync lag
   const {
     taskMaterials,
     taskMaterialsLoading,
     addTaskMaterial,
     deleteTaskMaterial
   } = useTaskMaterials(
-    activeSelection?.plan.id,
-    activeSelection?.type === 'TASK' ? (activeSelection as any).phase.id : undefined,
-    activeSelection?.type === 'TASK' ? (activeSelection as any).task.id : undefined,
-    isOpen && activeSelection?.type === 'TASK'
+    selection?.plan.id,
+    selection?.type === 'TASK' ? (selection as any).phase.id : undefined,
+    selection?.type === 'TASK' ? (selection as any).task.id : undefined,
+    isOpen && selection?.type === 'TASK'
   );
 
   const {
@@ -135,10 +138,10 @@ export function PlanDetailPanel({
     addAssignee,
     deleteAssignee,
   } = useTaskAssignees(
-    activeSelection?.plan.id,
-    activeSelection?.type === 'TASK' ? (activeSelection as any).phase.id : undefined,
-    activeSelection?.type === 'TASK' ? (activeSelection as any).task.id : undefined,
-    isOpen && activeSelection?.type === 'TASK'
+    selection?.plan.id,
+    selection?.type === 'TASK' ? (selection as any).phase.id : undefined,
+    selection?.type === 'TASK' ? (selection as any).task.id : undefined,
+    isOpen && selection?.type === 'TASK'
   );
 
   const {
@@ -148,29 +151,29 @@ export function PlanDetailPanel({
     addDependency,
     deleteDependency
   } = useTaskDependencies(
-    activeSelection?.plan.id,
-    activeSelection?.type === 'TASK' ? (activeSelection as any).phase.id : undefined,
-    activeSelection?.type === 'TASK' ? (activeSelection as any).task.id : undefined,
-    isOpen && activeTab === 'INFO' && activeSelection?.type === 'TASK'
+    selection?.plan.id,
+    selection?.type === 'TASK' ? (selection as any).phase.id : undefined,
+    selection?.type === 'TASK' ? (selection as any).task.id : undefined,
+    isOpen && activeTab === 'INFO' && selection?.type === 'TASK'
   );
 
   const {
     workLogs,
     loading: isWorkLogsLoading
   } = useWorkLogs(
-    activeSelection?.plan.id,
-    activeSelection?.type === 'TASK' ? (activeSelection as any).phase.id : undefined,
-    activeSelection?.type === 'TASK' ? (activeSelection as any).task.id : undefined
+    selection?.plan.id,
+    selection?.type === 'TASK' ? (selection as any).phase.id : undefined,
+    selection?.type === 'TASK' ? (selection as any).task.id : undefined
   );
 
   const {
     histories: taskStatusHistories,
     historiesLoading: taskStatusHistoriesLoading
   } = useTaskStatusDetails(
-    activeSelection?.plan.id,
-    activeSelection?.type === 'TASK' ? (activeSelection as any).phase.id : undefined,
-    activeSelection?.type === 'TASK' ? (activeSelection as any).task.id : undefined,
-    isOpen && activeTab === 'HISTORY' && activeSelection?.type === 'TASK'
+    selection?.plan.id,
+    selection?.type === 'TASK' ? (selection as any).phase.id : undefined,
+    selection?.type === 'TASK' ? (selection as any).task.id : undefined,
+    isOpen && activeTab === 'HISTORY' && selection?.type === 'TASK'
   );
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -186,37 +189,33 @@ export function PlanDetailPanel({
   const [availableStatuses, setAvailableStatuses] = useState<any[]>([]);
   const [isAvailableStatusesLoading, setIsAvailableStatusesLoading] = useState(false);
 
-  // Fetch available statuses when selection changes
   useEffect(() => {
-    if (!isOpen || !activeSelection) return;
+    if (!isOpen || !selection) return;
 
     const fetchStatuses = async () => {
       setAvailableStatuses([]);
       setIsAvailableStatusesLoading(true);
       try {
-        if (activeSelection.type === 'TASK' && fetchTaskAvailableStatuses) {
+        if (selection.type === 'TASK' && fetchTaskAvailableStatuses) {
           const statuses = await fetchTaskAvailableStatuses(
-            activeSelection.plan.id,
-            (activeSelection as any).phase.id,
-            (activeSelection as any).task.id
+            selection.plan.id,
+            (selection as any).phase.id,
+            selection.task.id
           );
           setAvailableStatuses(statuses);
-        } else if (activeSelection.type === 'PHASE' && fetchPhaseAvailableStatuses) {
-          const statuses = await fetchPhaseAvailableStatuses(
-            activeSelection.plan.id,
-            (activeSelection as any).phase.id
-          );
+        } else if (selection.type === 'PHASE' && fetchPhaseAvailableStatuses) {
+          const statuses = await fetchPhaseAvailableStatuses(selection.plan.id, selection.phase.id);
           setAvailableStatuses(statuses);
         }
-      } catch (error) {
-        console.error('Failed to fetch available statuses:', error);
+      } catch (err) {
+        console.error('Lỗi khi lấy trạng thái khả dụng:', err);
       } finally {
         setIsAvailableStatusesLoading(false);
       }
     };
 
     fetchStatuses();
-  }, [isOpen, activeSelection, fetchTaskAvailableStatuses, fetchPhaseAvailableStatuses]);
+  }, [selection?.plan.id, (selection as any)?.phase?.id, (selection as any)?.task?.id, isOpen, fetchTaskAvailableStatuses, fetchPhaseAvailableStatuses]);
 
   const [tempPlan, setTempPlan] = useState<SeasonPlan | null>(null);
   const [tempPhase, setTempPhase] = useState<Phase | null>(null);
@@ -224,30 +223,20 @@ export function PlanDetailPanel({
   const [selectedWorkLogId, setSelectedWorkLogId] = useState<string | null>(null);
   const [isWorkLogDetailModalOpen, setIsWorkLogDetailModalOpen] = useState(false);
 
-  // New task form
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskDesc, setNewTaskDesc] = useState('');
   const [newTaskStart, setNewTaskStart] = useState('');
   const [newTaskEnd, setNewTaskEnd] = useState('');
   const [newTaskPlotId, setNewTaskPlotId] = useState('');
   
-  // Track if we have already performed a "smart" suggestion for the current adding session
   const [hasSuggested, setHasSuggested] = useState(false);
 
   useEffect(() => {
-    if (!isAddingTask) {
-      setHasSuggested(false);
-      return;
-    }
-
-    if (activeSelection?.type === 'PHASE') {
-      const phase = (activeSelection as any).phase;
-      const plan = activeSelection.plan;
+    if (isAddingTask && selection?.type === 'PHASE') {
+      const plan = selection.plan;
+      const phase = selection.phase;
+      const rawTasks = selection.phase.tasks;
       
-      const currentPhase = plan.phases?.find((p: any) => p.id === phase.id) || phase;
-      const rawTasks = currentPhase.tasks; // undefined nếu đang tải, [] nếu rỗng
-      
-      // Chỉ thực hiện gợi ý nếu chưa có dữ liệu hoặc chưa từng gợi ý "thông minh" trong phiên này
       if (!hasSuggested && rawTasks !== undefined) {
         const tasks = Array.isArray(rawTasks) ? rawTasks : [];
         
@@ -289,7 +278,7 @@ export function PlanDetailPanel({
         setNewTaskPlotId(phase.plotId || plan.plots?.[0]?.plotId || '');
       }
     }
-  }, [isAddingTask, activeSelection, hasSuggested]);
+  }, [isAddingTask, selection, hasSuggested]);
 
   const [showAddPlot, setShowAddPlot] = useState(false);
   const [selectedPlotIds, setSelectedPlotIds] = useState<string[]>([]);
@@ -305,7 +294,6 @@ export function PlanDetailPanel({
     }
   }, [showAddPlot, targetFarmId, fetchPlots]);
 
-  // Tự động load dữ liệu khi mở panel
   useEffect(() => {
     if (isOpen && targetFarmId) {
       void fetchMembers(targetFarmId);
@@ -315,11 +303,11 @@ export function PlanDetailPanel({
 
   useEffect(() => {
     const isWarehouseTaskOpen =
-      isOpen && activeTab === 'MATERIALS' && activeSelection?.type === 'TASK';
+      isOpen && activeTab === 'MATERIALS' && selection?.type === 'TASK';
     if (isWarehouseTaskOpen && targetFarmId) {
       void fetchWarehouses(targetFarmId);
     }
-  }, [activeSelection?.type, activeTab, fetchWarehouses, isOpen, targetFarmId]);
+  }, [selection?.type, activeTab, fetchWarehouses, isOpen, targetFarmId]);
 
   useEffect(() => {
     setSelectedWarehouseItemId('');
@@ -334,11 +322,6 @@ export function PlanDetailPanel({
         onFetchTaskDetail?.(selection.plan.id, (selection as any).phase.id, (selection as any).task.id);
       }
     }
-  }, [selection, isOpen, onFetchPhaseDetail, onFetchTaskDetail]);
-
-useEffect(() => {
-  setActiveSelection(selection);
-  setIsEditing(false);
   setSelectedWarehouseId('');
   setSelectedWarehouseItemId('');
   setSelectedAssigneeUserId('');
@@ -386,8 +369,26 @@ useEffect(() => {
       if (selection.type === 'PLAN') {
         await onUpdatePlan(tempPlan);
       } else if (selection.type === 'PHASE' && tempPhase) {
+        // Kiểm tra nếu trạng thái thay đổi
+        const currentStatusCode = statusCodeOf(selection.phase.status);
+        const newStatusCode = statusCodeOf(tempPhase.status);
+        const newStatusId = (tempPhase.status as any)?.id;
+        
+        if (newStatusCode !== currentStatusCode && newStatusId) {
+          await handleUpdateStatus(newStatusId);
+        }
+        
         await onUpdatePhase(tempPlan.id, tempPhase, selection.phase);
       } else if (selection.type === 'TASK' && tempPhase && tempTask) {
+        // Kiểm tra nếu trạng thái thay đổi
+        const currentStatusCode = statusCodeOf(selection.task.status);
+        const newStatusCode = statusCodeOf(tempTask.status);
+        const newStatusId = (tempTask.status as any)?.id;
+
+        if (newStatusCode !== currentStatusCode && newStatusId) {
+          await handleUpdateStatus(newStatusId);
+        }
+
         await onUpdateTask(tempPlan.id, tempPhase.id, {
           ...tempTask,
           statusCode: statusCodeOf(tempTask.status)
@@ -399,11 +400,11 @@ useEffect(() => {
     }
   };
 
-  if (!activeSelection && !isOpen) return null;
-  if (!activeSelection) return null;
+  if (!selection && !isOpen) return null;
+  if (!selection) return null;
 
-  const { plan } = activeSelection;
-  const sel = activeSelection;
+  const { plan } = selection;
+  const sel = selection;
 
   const handleAddPlotsSubmit = async () => {
     if (!plan.id || selectedPlotIds.length === 0) return;
@@ -436,14 +437,14 @@ useEffect(() => {
   };
 
   const handleAddTaskSubmit = () => {
-    if (sel.type !== 'PHASE') return;
+    if (selection.type !== 'PHASE') return;
 
     const payload = {
       name: newTaskName,
       description: newTaskDesc,
-      startDate: newTaskStart || (sel as any).phase.startDate,
-      endDate: newTaskEnd || (sel as any).phase.endDate,
-      plotId: newTaskPlotId || (sel as any).phase.plotId || plan.plots?.[0]?.plotId || "",
+      startDate: newTaskStart || (selection as any).phase.startDate,
+      endDate: newTaskEnd || (selection as any).phase.endDate,
+      plotId: newTaskPlotId || (selection as any).phase.plotId || plan.plots?.[0]?.plotId || "",
     };
 
     const validation = createTaskSchema.safeParse(payload);
@@ -460,7 +461,7 @@ useEffect(() => {
   };
 
   const handleAddMaterialSubmit = async () => {
-    if (!activeSelection || activeSelection.type !== 'TASK') return;
+    if (!selection || selection.type !== 'TASK') return;
 
     const payload = {
       warehouseItemId: selectedWarehouseItemId,
@@ -483,8 +484,32 @@ useEffect(() => {
     }
   };
 
+  const handleUpdateStatus = async (statusId: string) => {
+    if (!selection || selection.type === 'PLAN') return;
+
+    try {
+      if (selection.type === 'PHASE') {
+        if (onUpdatePhaseStatus) {
+          await onUpdatePhaseStatus(selection.plan.id, selection.phase.id, statusId);
+        }
+      } else {
+        if (onUpdateTaskStatus) {
+          await onUpdateTaskStatus(
+            selection.plan.id,
+            (selection as any).phase.id,
+            selection.task.id,
+            statusId
+          );
+        }
+      }
+      toast.success('Cập nhật trạng thái thành công');
+    } catch (error: any) {
+      toast.error(extractErrorMessage(error));
+    }
+  };
+
   const handleAddAssigneeSubmit = async () => {
-    if (!activeSelection || activeSelection.type !== 'TASK') return;
+    if (!selection || selection.type !== 'TASK') return;
 
     const payload = { userId: selectedAssigneeUserId };
     const validation = createTaskAssigneeSchema.safeParse(payload);
@@ -612,6 +637,7 @@ useEffect(() => {
                     availableStatuses={availableStatuses}
                     isAvailableStatusesLoading={isAvailableStatusesLoading}
                     onScrollToDate={onScrollToDate}
+                    onUpdateStatus={handleUpdateStatus}
                   />
 
                   {sel.type === 'PLAN' && (

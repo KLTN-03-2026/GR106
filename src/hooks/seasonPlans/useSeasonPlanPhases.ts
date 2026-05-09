@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { SeasonPlan, StatusObject } from '../../types/seasonPlan';
 import { seasonPlanPhaseService } from '../../services/seasonplan/seasonPlanPhaseService';
 import { planStageStatusService, PlanStageStatusTransition, PlanStageStatusChange } from '../../services/seasonplan/planStageStatusService';
@@ -10,7 +9,6 @@ interface UseSeasonPlanPhasesProps {
 }
 
 export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesProps) => {
-  const queryClient = useQueryClient();
   const [planStageStatuses, setPlanStageStatuses] = useState<StatusObject[]>([]);
   const [planStageStatusTransitions, setPlanStageStatusTransitions] = useState<PlanStageStatusTransition[]>([]);
   const [planStageStatusHistoriesByStage, setPlanStageStatusHistoriesByStage] = useState<Record<string, PlanStageStatusChange[]>>({});
@@ -71,7 +69,7 @@ export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesPro
           seasonPlanPhaseService.deleteStage(planId, stageId).then(() => {
             updatePlansCache((prev) =>
               prev.map((p) =>
-                p.id === planId ? { ...p, phases: p.phases.filter((ph) => ph.id !== stageId) } : p,
+                p.id === planId ? { ...p, phases: (p.phases ?? []).filter((ph) => ph.id !== stageId) } : p,
               ),
             );
             return { planId, stageId };
@@ -86,7 +84,7 @@ export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesPro
             updatePlansCache((prev) =>
               prev.map((p) =>
                 p.id === planId
-                  ? { ...p, phases: p.phases.map((ph) => (ph.id === phase.id ? { ...ph, ...phase } : ph)) }
+                  ? { ...p, phases: (p.phases ?? []).map((ph) => (ph.id === phase.id ? { ...ph, ...phase } : ph)) }
                   : p,
               ),
             );
@@ -102,7 +100,7 @@ export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesPro
             updatePlansCache((prev) =>
               prev.map((p) =>
                 p.id === planId
-                  ? { ...p, phases: p.phases.map((ph) => (ph.id === phase.id ? { ...ph, ...phase } : ph)) }
+                  ? { ...p, phases: (p.phases ?? []).map((ph) => (ph.id === phase.id ? { ...ph, ...phase } : ph)) }
                   : p,
               ),
             );
@@ -118,7 +116,7 @@ export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesPro
             p.id === payload.planId
               ? {
                 ...p,
-                phases: p.phases.map((ph) =>
+                phases: (p.phases ?? []).map((ph) =>
                   ph.id === payload.stageId
                     ? { ...ph, startDate: payload.startDate, endDate: payload.endDate }
                     : ph,
@@ -169,7 +167,7 @@ export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesPro
                 p.id === planId
                   ? {
                     ...p,
-                    phases: p.phases.map((ph) =>
+                    phases: (p.phases ?? []).map((ph) =>
                       ph.id === stageId ? { ...ph, status: result.toStatus } : ph,
                     ),
                   }
@@ -180,12 +178,10 @@ export const useSeasonPlanPhases = ({ updatePlansCache }: UseSeasonPlanPhasesPro
               ...prev,
               [stageId]: [result, ...(prev[stageId] ?? [])],
             }));
-            // Quan trọng: Invalidate dữ liệu kế hoạch chính để cập nhật UI ngay lập tức
-            void queryClient.invalidateQueries({ queryKey: ['season-plans'] });
             return result;
           }),
         ),
-      [updatePlansCache, queryClient],
+      [updatePlansCache],
     ),
     fetchAvailableStatuses: useCallback(
       (planId: string, stageId: string) =>

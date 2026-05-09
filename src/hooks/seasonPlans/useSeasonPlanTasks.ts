@@ -58,7 +58,7 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
                 p.id === planId
                   ? {
                     ...p,
-                    phases: p.phases.map((ph) => (ph.id === stageId ? { ...ph, tasks } : ph)),
+                    phases: (p.phases ?? []).map((ph) => (ph.id === stageId ? { ...ph, tasks } : ph)),
                   }
                   : p,
               ),
@@ -77,7 +77,7 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
                 p.id === planId
                   ? {
                     ...p,
-                    phases: p.phases.map((ph) =>
+                    phases: (p.phases ?? []).map((ph) =>
                       ph.id === stageId ? { ...ph, tasks: [...(ph.tasks ?? []), task] } : ph,
                     ),
                   }
@@ -98,7 +98,7 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
                 p.id === planId
                   ? {
                     ...p,
-                    phases: p.phases.map((ph) =>
+                    phases: (p.phases ?? []).map((ph) =>
                       ph.id === stageId
                         ? {
                           ...ph,
@@ -124,7 +124,7 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
                 p.id === planId
                   ? {
                     ...p,
-                    phases: p.phases.map((ph) =>
+                    phases: (p.phases ?? []).map((ph) =>
                       ph.id === stageId
                         ? {
                           ...ph,
@@ -150,7 +150,7 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
                 p.id === planId
                   ? {
                     ...p,
-                    phases: p.phases.map((ph) =>
+                    phases: (p.phases ?? []).map((ph) =>
                       ph.id === stageId
                         ? {
                           ...ph,
@@ -174,7 +174,7 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
             p.id === payload.planId
               ? {
                 ...p,
-                phases: p.phases.map((ph) =>
+                phases: (p.phases ?? []).map((ph) =>
                   ph.id === payload.stageId
                     ? {
                       ...ph,
@@ -230,7 +230,7 @@ export const useSeasonPlanTasks = ({ updatePlansCache }: UseSeasonPlanTasksProps
                 p.id === planId
                   ? {
                     ...p,
-                    phases: p.phases.map((ph) =>
+                    phases: (p.phases ?? []).map((ph) =>
                       ph.id === stageId
                         ? {
                           ...ph,
