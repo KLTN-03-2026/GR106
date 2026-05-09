@@ -21,37 +21,32 @@ function useDashboardData(farmId?: string) {
   const [isSyncing, setIsSyncing] = useState(false);
   
   const { plots, plotsLoading, clearPlots } = usePlots(farmId);
-  const { crops, cropTypes, loading: cropsLoading, cropTypesLoading, fetchFarmCrops, fetchCrops, fetchCropTypes } = useCrops();
+  const { crops, systemCrops, cropTypes, loading: cropsLoading, cropTypesLoading, fetchFarmCrops } = useCrops();
   const { plans, loading: plansLoading, fetchPlans } = useSeasonPlans(farmId);
 
   useEffect(() => {
-    const loadData = async () => {
+    const syncFarmData = async () => {
+      if (!farmId) {
+        clearPlots();
+        return;
+      }
+
+      setIsSyncing(true);
       try {
-        // 1. Luôn load danh mục loại cây (Global Catalog)
-        await Promise.allSettled([fetchCropTypes()]);
-        
-        if (farmId) {
-          // 2a. CHẾ ĐỘ TRANG TRẠI: Load dữ liệu của farm này
-          await Promise.allSettled([
-            fetchFarmCrops(farmId),
-            fetchPlans(farmId)
-          ]);
-        } else {
-          // 2b. CHẾ ĐỘ HUB: Load dữ liệu hệ thống (Public crops)
-          clearPlots();
-          await Promise.allSettled([
-            fetchCrops()
-          ]);
-        }
+        // Fetch farm-specific data that might not be auto-fetching or needs explicit trigger
+        await Promise.allSettled([
+          fetchFarmCrops(farmId),
+          fetchPlans(farmId)
+        ]);
       } catch (error) {
-        console.error("Dashboard data sync error:", error);
+        console.error("Dashboard farm sync error:", error);
       } finally {
         setIsSyncing(false);
       }
     };
 
-    loadData();
-  }, [farmId, fetchCropTypes, fetchFarmCrops, fetchCrops, fetchPlans, clearPlots]);
+    syncFarmData();
+  }, [farmId, fetchFarmCrops, fetchPlans, clearPlots]);
 
   const isLoading = (farmId && (plotsLoading || cropsLoading || plansLoading)) || cropTypesLoading || isSyncing;
 
@@ -71,13 +66,11 @@ function useDashboardData(farmId?: string) {
   return {
     stats: {
       totalPlots: farmId ? plots.length : 0,
-      totalCrops: farmId 
-        ? Array.from(new Set(crops.map(c => c.cropType.id))).length 
-        : cropTypes.length, 
+      totalCrops: cropTypes.length > 0 ? cropTypes.length : (farmId ? Array.from(new Set(crops.map(c => c.cropType.id))).length : 0), 
       totalArea: farmId 
         ? plots.reduce((acc, p) => acc + (Number(p.areaHa) || 0), 0)
         : 0,
-      totalPlants: crops.length, // Trong Farm là số cây farm, trong Hub là số cây system
+      totalPlants: farmId ? crops.length : systemCrops.length, 
       performancePct: calculatePerformance(), 
     },
     npkData: [], 
@@ -88,8 +81,11 @@ function useDashboardData(farmId?: string) {
 export default function MainPage() {
   const { farmId: routeFarmId } = useParams<{ farmId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, currentFarmId } = useAuth();
   
+  // Ưu tiên farmId từ URL, nếu không có thì lấy farmId hiện tại từ context
+  const farmId = routeFarmId || currentFarmId || undefined;
+
   // Force Admin to system dashboard if they land here
   useEffect(() => {
     const role = (user?.role || '').toUpperCase();
@@ -97,9 +93,6 @@ export default function MainPage() {
       navigate('/admin/dashboard', { replace: true });
     }
   }, [user, navigate]);
-
-  // Chỉ sử dụng farmId nếu nó tồn tại trên URL (Route Param)
-  const farmId = routeFarmId || undefined;
 
   const { stats, npkData, isLoading } = useDashboardData(farmId);
 

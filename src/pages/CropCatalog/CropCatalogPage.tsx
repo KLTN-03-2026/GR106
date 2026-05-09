@@ -15,15 +15,16 @@ import { CreateCropTypeRequest } from '../../types/crop';
 export const CropCatalogPage: React.FC = () => {
   const { currentFarmId, accessToken } = useAuth();
   const { 
-    crops, 
-    loading, 
-    error, 
+    crops,
+    systemCrops,
+    loading,
+    error,
     fetchFarmCrops,
-    fetchCrops, 
-    fetchCropTypes, 
-    createCrop, 
-    createCropType, 
-    deleteCropType 
+    fetchCrops,
+    fetchCropTypes,
+    createCrop,
+    createCropType,
+    deleteCropType
   } = useCrops();
 
   // Giải mã token để lấy quyền thực tế
@@ -43,11 +44,14 @@ export const CropCatalogPage: React.FC = () => {
     if (!(currentFarmId || isAdmin)) return;
 
     if (activeTab === 'crops') {
+      // Luôn fetch danh mục hệ thống (Public API)
+      fetchCrops();
+      
+      // Nếu có farm context, fetch thêm cây trồng của farm
       if (currentFarmId) {
         fetchFarmCrops(currentFarmId);
-      } else {
-        fetchCrops();
       }
+      
       fetchCropTypes();
       return;
     }
@@ -133,7 +137,7 @@ export const CropCatalogPage: React.FC = () => {
             transition={{ duration: 0.15 }}
           >
             <CropList
-              crops={activeTab === 'crops' ? crops : []}
+              crops={activeTab === 'crops' ? (currentFarmId ? [...systemCrops, ...crops] : systemCrops) : []}
               mode={activeTab}
               onTabChange={setActiveTab}
               onAdd={handleAdd}

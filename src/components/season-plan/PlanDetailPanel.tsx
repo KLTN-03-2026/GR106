@@ -100,7 +100,7 @@ export function PlanDetailPanel({
   const { currentFarmId } = useAuth();
   const { selectedFarmId } = useSelector((state: RootState) => state.farm);
   const targetFarmId = currentFarmId || selectedFarmId;
-  const { plots, fetchPlots, plotsLoading } = usePlots();
+  const { plots, fetchPlots, plotsLoading } = usePlots(targetFarmId || undefined);
   const { warehouses, fetchWarehouses } = useWarehouses();
   const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
   const { items: warehouseItems } = useWarehouseItems(targetFarmId, selectedWarehouseId || null);
@@ -118,7 +118,8 @@ export function PlanDetailPanel({
   } = useTaskMaterials(
     activeSelection?.plan.id,
     activeSelection?.type === 'TASK' ? (activeSelection as any).phase.id : undefined,
-    activeSelection?.type === 'TASK' ? (activeSelection as any).task.id : undefined
+    activeSelection?.type === 'TASK' ? (activeSelection as any).task.id : undefined,
+    isOpen && activeSelection?.type === 'TASK'
   );
 
   const {
@@ -131,7 +132,7 @@ export function PlanDetailPanel({
     activeSelection?.plan.id,
     activeSelection?.type === 'TASK' ? (activeSelection as any).phase.id : undefined,
     activeSelection?.type === 'TASK' ? (activeSelection as any).task.id : undefined,
-    isOpen && activeTab === 'MEMBERS' && activeSelection?.type === 'TASK'
+    isOpen && activeSelection?.type === 'TASK'
   );
 
   const {
@@ -288,21 +289,21 @@ export function PlanDetailPanel({
     }
   }, [showAddPlot, targetFarmId, fetchPlots]);
 
+  // Tự động load dữ liệu khi mở panel
   useEffect(() => {
-    const isMaterialsTaskOpen =
+    if (isOpen && targetFarmId) {
+      void fetchMembers(targetFarmId);
+      void fetchPlots();
+    }
+  }, [isOpen, targetFarmId, fetchMembers, fetchPlots]);
+
+  useEffect(() => {
+    const isWarehouseTaskOpen =
       isOpen && activeTab === 'MATERIALS' && activeSelection?.type === 'TASK';
-    if (isMaterialsTaskOpen && targetFarmId) {
+    if (isWarehouseTaskOpen && targetFarmId) {
       void fetchWarehouses(targetFarmId);
     }
   }, [activeSelection?.type, activeTab, fetchWarehouses, isOpen, targetFarmId]);
-
-  useEffect(() => {
-    const isMembersTaskOpen =
-      isOpen && activeTab === 'MEMBERS' && activeSelection?.type === 'TASK';
-    if (isMembersTaskOpen && targetFarmId) {
-      void fetchMembers(targetFarmId);
-    }
-  }, [activeSelection?.type, activeTab, fetchMembers, isOpen, targetFarmId]);
 
   useEffect(() => {
     setSelectedWarehouseItemId('');
