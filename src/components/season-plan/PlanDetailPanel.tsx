@@ -99,7 +99,7 @@ export function PlanDetailPanel({
   const { currentFarmId } = useAuth();
   const { selectedFarmId } = useSelector((state: RootState) => state.farm);
   const targetFarmId = currentFarmId || selectedFarmId;
-  const { plots, fetchPlots, loading: plotsLoading } = usePlots();
+  const { plots, fetchPlots, plotsLoading } = usePlots();
   const { warehouses, fetchWarehouses } = useWarehouses();
   const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
   const { items: warehouseItems } = useWarehouseItems(targetFarmId, selectedWarehouseId || null);
@@ -110,16 +110,14 @@ export function PlanDetailPanel({
 
   // Use dedicated hook for materials management
   const {
-    materials: taskMaterials,
-    loading: isMaterialsQueryLoading,
-    adding: isAddingMaterial,
-    addMaterial,
-    deleteMaterial
+    taskMaterials,
+    taskMaterialsLoading,
+    addTaskMaterial,
+    deleteTaskMaterial
   } = useTaskMaterials(
     activeSelection?.plan.id,
     activeSelection?.type === 'TASK' ? (activeSelection as any).phase.id : undefined,
-    activeSelection?.type === 'TASK' ? (activeSelection as any).task.id : undefined,
-    isOpen && activeTab === 'MATERIALS' && activeSelection?.type === 'TASK'
+    activeSelection?.type === 'TASK' ? (activeSelection as any).task.id : undefined
   );
 
   const {
@@ -181,14 +179,14 @@ export function PlanDetailPanel({
         if (activeSelection.type === 'TASK' && fetchTaskAvailableStatuses) {
           const statuses = await fetchTaskAvailableStatuses(
             activeSelection.plan.id,
-            activeSelection.phase.id,
-            activeSelection.task.id
+            (activeSelection as any).phase.id,
+            (activeSelection as any).task.id
           );
           setAvailableStatuses(statuses);
         } else if (activeSelection.type === 'PHASE' && fetchPhaseAvailableStatuses) {
           const statuses = await fetchPhaseAvailableStatuses(
             activeSelection.plan.id,
-            activeSelection.phase.id
+            (activeSelection as any).phase.id
           );
           setAvailableStatuses(statuses);
         }
@@ -217,13 +215,58 @@ export function PlanDetailPanel({
   
   useEffect(() => {
     if (isAddingTask && activeSelection?.type === 'PHASE') {
-      const phase = activeSelection.phase;
+      const phase = (activeSelection as any).phase;
       const plan = activeSelection.plan;
-      setNewTaskStart(phase.startDate);
-      setNewTaskEnd(phase.endDate);
-      setNewTaskPlotId(phase.plotId || plan.plots?.[0]?.plotId || '');
+      
+      // Tìm phase và tasks từ nguồn tin cậy nhất
+      const currentPhase = plan.phases?.find((p: any) => p.id === phase.id) || phase;
+      const tasks = Array.isArray(currentPhase.tasks) ? currentPhase.tasks : [];
+      
+      // Chỉ tự động điền nếu chưa có dữ liệu hoặc đang ở ngày mặc định của phase
+      const isDefault = !newTaskStart || newTaskStart === phase.startDate;
+      
+      if (isDefault) {
+        if (tasks.length > 0) {
+          // Tìm ngày kết thúc muộn nhất
+          const latestEndDate = tasks.reduce((max: string, t: any) => {
+            const ed = t.endDate?.substring(0, 10);
+            if (!ed) return max;
+            return ed > max ? ed : max;
+          }, tasks[0].endDate?.substring(0, 10) || phase.startDate);
+          
+          try {
+            // Tách ngày để tránh lỗi timezone
+            const [y, m, d] = latestEndDate.split('-').map(Number);
+            const nextDate = new Date(y, m - 1, d + 1);
+            
+            const nextY = nextDate.getFullYear();
+            const nextM = String(nextDate.getMonth() + 1).padStart(2, '0');
+            const nextD = String(nextDate.getDate()).padStart(2, '0');
+            const nextDateStr = `${nextY}-${nextM}-${nextD}`;
+            
+            // Nếu ngày gợi ý nằm trong phase
+            if (nextDateStr <= phase.endDate && nextDateStr >= phase.startDate) {
+              setNewTaskStart(nextDateStr);
+              setNewTaskEnd(nextDateStr);
+            } else {
+              setNewTaskStart(phase.startDate);
+              setNewTaskEnd(phase.endDate);
+            }
+          } catch (e) {
+            setNewTaskStart(phase.startDate);
+            setNewTaskEnd(phase.endDate);
+          }
+        } else {
+          setNewTaskStart(phase.startDate);
+          setNewTaskEnd(phase.endDate);
+        }
+      }
+      
+      if (!newTaskPlotId) {
+        setNewTaskPlotId(phase.plotId || plan.plots?.[0]?.plotId || '');
+      }
     }
-  }, [isAddingTask, activeSelection]);
+  }, [isAddingTask, activeSelection, newTaskStart]);
 
   const [showAddPlot, setShowAddPlot] = useState(false);
   const [selectedPlotIds, setSelectedPlotIds] = useState<string[]>([]);
@@ -235,7 +278,7 @@ export function PlanDetailPanel({
 
   useEffect(() => {
     if (showAddPlot && targetFarmId) {
-      fetchPlots(targetFarmId);
+      fetchPlots();
     }
   }, [showAddPlot, targetFarmId, fetchPlots]);
 
@@ -350,10 +393,10 @@ export function PlanDetailPanel({
       onDeletePlan?.(plan.id);
       onClose();
     } else if (sel.type === 'PHASE') {
-      onDeletePhase?.(plan.id, sel.phase.id);
+      onDeletePhase?.(plan.id, (sel as any).phase.id);
       onClose();
     } else if (sel.type === 'TASK') {
-      onDeleteTask?.(plan.id, sel.phase.id, sel.task.id);
+      onDeleteTask?.(plan.id, (sel as any).phase.id, (sel as any).task.id);
     }
   };
 
@@ -363,9 +406,9 @@ export function PlanDetailPanel({
     const payload = {
       name: newTaskName,
       description: newTaskDesc,
-      startDate: newTaskStart || sel.phase.startDate,
-      endDate: newTaskEnd || sel.phase.endDate,
-      plotId: newTaskPlotId || sel.phase.plotId || plan.plots?.[0]?.plotId || "",
+      startDate: newTaskStart || (sel as any).phase.startDate,
+      endDate: newTaskEnd || (sel as any).phase.endDate,
+      plotId: newTaskPlotId || (sel as any).phase.plotId || plan.plots?.[0]?.plotId || "",
     };
 
     const validation = createTaskSchema.safeParse(payload);
@@ -374,7 +417,7 @@ export function PlanDetailPanel({
       return;
     }
 
-    onAddTask(plan.id, sel.phase.id, validation.data as any);
+    onAddTask(plan.id, (sel as any).phase.id, validation.data as any);
     setNewTaskName(''); setNewTaskDesc('');
     setNewTaskStart(''); setNewTaskEnd('');
     setNewTaskPlotId('');
@@ -395,7 +438,7 @@ export function PlanDetailPanel({
     }
 
     try {
-      await addMaterial(validation.data);
+      await addTaskMaterial(validation.data);
       setSelectedWarehouseItemId('');
       setPlannedQty('');
       toast.success('Thêm vật tư thành công');
@@ -446,8 +489,8 @@ export function PlanDetailPanel({
             onCancelEdit={handleCancelEdit}
             onDelete={() => {
               if (sel.type === 'PLAN') onDeletePlan?.(sel.plan.id);
-              else if (sel.type === 'PHASE') onDeletePhase?.(sel.plan.id, sel.phase.id);
-              else if (sel.type === 'TASK') onDeleteTask?.(sel.plan.id, sel.phase.id, sel.task.id);
+              else if (sel.type === 'PHASE') onDeletePhase?.(sel.plan.id, (sel as any).phase.id);
+              else if (sel.type === 'TASK') onDeleteTask?.(sel.plan.id, (sel as any).phase.id, (sel as any).task.id);
             }}
             onSelectPhase={onSelectPhase}
           />
@@ -549,21 +592,21 @@ export function PlanDetailPanel({
 
                   {sel.type === 'TASK' && (
                     <DependenciesSection
-                      taskId={sel.task.id}
-                      phase={sel.phase}
+                      taskId={(sel as any).task.id}
+                      phase={(sel as any).phase}
                       dependencies={dependencies}
                       loading={isDependenciesLoading}
                       adding={isAddingDependency}
                       canEdit={canEdit}
                       onAdd={addDependency}
                       onDelete={deleteDependency}
-                      onSelectTask={(tid) => onSelectTask(plan.id, sel.phase.id, tid)}
+                      onSelectTask={(tid) => onSelectTask(plan.id, (sel as any).phase.id, tid)}
                     />
                   )}
 
                   {sel.type === 'PHASE' && (
                     <SubTasksSection
-                      phase={sel.phase}
+                      phase={(sel as any).phase}
                       plan={plan}
                       canEdit={canEdit}
                       isAddingTask={isAddingTask}
@@ -579,7 +622,7 @@ export function PlanDetailPanel({
                       newTaskPlotId={newTaskPlotId}
                       setNewTaskPlotId={setNewTaskPlotId}
                       onAddTask={handleAddTaskSubmit}
-                      onSelectTask={(taskId) => onSelectTask(plan.id, sel.phase.id, taskId)}
+                      onSelectTask={(taskId) => onSelectTask(plan.id, (sel as any).phase.id, taskId)}
                     />
                   )}
                 </motion.div>
@@ -595,8 +638,8 @@ export function PlanDetailPanel({
                 >
                   <MaterialsSection
                     materials={taskMaterials}
-                    loading={isMaterialsQueryLoading}
-                    adding={isAddingMaterial}
+                    loading={taskMaterialsLoading}
+                    adding={false} // Hook doesn't export adding state yet
                     canEdit={canEdit}
                     warehouses={warehouses}
                     warehouseItems={warehouseItems}
@@ -608,9 +651,9 @@ export function PlanDetailPanel({
                     onQtyChange={setPlannedQty}
                     onAdd={handleAddMaterialSubmit}
                     onDelete={(id) => {
-                      deleteMaterial(id)
+                      deleteTaskMaterial(id)
                         .then(() => toast.success('Xóa vật tư thành công'))
-                        .catch((err) => toast.error(extractErrorMessage(err)));
+                        .catch((err: any) => toast.error(extractErrorMessage(err)));
                     }}
                   />
                 </motion.div>
@@ -648,7 +691,7 @@ export function PlanDetailPanel({
                   onDelete={(assigneeId) => {
                     deleteAssignee(assigneeId)
                       .then(() => toast.success('Gỡ giao việc thành công'))
-                      .catch((err) => toast.error(extractErrorMessage(err)));
+                      .catch((err: any) => toast.error(extractErrorMessage(err)));
                   }}
                 />
               )}
@@ -657,13 +700,13 @@ export function PlanDetailPanel({
                   <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                     <Users size={11} /> Giao việc theo công việc trong giai đoạn
                   </p>
-                  {sel.phase.tasks.length > 0 ? (
+                  {sel.phase.tasks && sel.phase.tasks.length > 0 ? (
                     <div className="space-y-2">
                       {sel.phase.tasks.map((task) => (
                         <button
                           key={task.id}
                           onClick={() => {
-                            onSelectTask(plan.id, sel.phase.id, task.id);
+                            onSelectTask(plan.id, (sel as any).phase.id, task.id);
                             setActiveTab('MEMBERS');
                           }}
                           className="w-full text-left p-3 bg-white border border-slate-100 rounded-xl hover:border-indigo-200 hover:shadow-sm transition-all"
