@@ -329,6 +329,9 @@ export function PlanDetailPanel({
     setSelectedWarehouseItemId('');
     setSelectedAssigneeUserId('');
     setPlannedQty('');
+    // Reset về tab thông tin mỗi khi thay đổi lựa chọn để tránh lỗi UI
+    setActiveTab('INFO');
+
     if (selection) {
 
       setTempPlan(selection.plan);
