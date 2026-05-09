@@ -187,14 +187,12 @@ export function PlanDetailPanel({
   }, [initialIsAddingPhase]);
 
   const [availableStatuses, setAvailableStatuses] = useState<any[]>([]);
-  const [isAvailableStatusesLoading, setIsAvailableStatusesLoading] = useState(false);
 
   useEffect(() => {
     if (!isOpen || !selection) return;
 
     const fetchStatuses = async () => {
       setAvailableStatuses([]);
-      setIsAvailableStatusesLoading(true);
       try {
         if (selection.type === 'TASK' && fetchTaskAvailableStatuses) {
           const statuses = await fetchTaskAvailableStatuses(
@@ -209,8 +207,6 @@ export function PlanDetailPanel({
         }
       } catch (err) {
         console.error('Lỗi khi lấy trạng thái khả dụng:', err);
-      } finally {
-        setIsAvailableStatusesLoading(false);
       }
     };
 
@@ -315,6 +311,7 @@ export function PlanDetailPanel({
 
 
   useEffect(() => {
+    setHasSuggested(false); // Reset suggestion state when selection changes
     if (isOpen && selection?.plan.id) {
       if (selection.type === 'PHASE' && selection.phase.id) {
         onFetchPhaseDetail?.(selection.plan.id, selection.phase.id);
@@ -374,26 +371,27 @@ export function PlanDetailPanel({
         const newStatusCode = statusCodeOf(tempPhase.status);
         const newStatusId = (tempPhase.status as any)?.id;
         
+        await onUpdatePhase(tempPlan.id, tempPhase, selection.phase);
+        
         if (newStatusCode !== currentStatusCode && newStatusId) {
           await handleUpdateStatus(newStatusId);
         }
-        
-        await onUpdatePhase(tempPlan.id, tempPhase, selection.phase);
       } else if (selection.type === 'TASK' && tempPhase && tempTask) {
         // Kiểm tra nếu trạng thái thay đổi
         const currentStatusCode = statusCodeOf(selection.task.status);
         const newStatusCode = statusCodeOf(tempTask.status);
         const newStatusId = (tempTask.status as any)?.id;
 
-        if (newStatusCode !== currentStatusCode && newStatusId) {
-          await handleUpdateStatus(newStatusId);
-        }
-
         await onUpdateTask(tempPlan.id, tempPhase.id, {
           ...tempTask,
           statusCode: statusCodeOf(tempTask.status)
         } as any, selection.task);
+
+        if (newStatusCode !== currentStatusCode && newStatusId) {
+          await handleUpdateStatus(newStatusId);
+        }
       }
+      
       setIsEditing(false);
     } catch (err) {
       console.error('Lỗi khi lưu:', err);
@@ -457,6 +455,7 @@ export function PlanDetailPanel({
     setNewTaskName(''); setNewTaskDesc('');
     setNewTaskStart(''); setNewTaskEnd('');
     setNewTaskPlotId('');
+    setHasSuggested(false);
     setIsAddingTask(false);
   };
 
@@ -635,7 +634,6 @@ export function PlanDetailPanel({
                     taskStatusOptions={taskStatusOptions}
                     taskStatusTransitions={taskStatusTransitions}
                     availableStatuses={availableStatuses}
-                    isAvailableStatusesLoading={isAvailableStatusesLoading}
                     onScrollToDate={onScrollToDate}
                     onUpdateStatus={handleUpdateStatus}
                   />

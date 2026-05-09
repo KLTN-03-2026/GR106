@@ -26,7 +26,6 @@ interface GeneralInfoProps {
   taskStatusOptions?: { id: string; code: string; label: string; color?: string }[];
   taskStatusTransitions?: any[]; // use any or import TaskStatusTransition
   availableStatuses?: any[];
-  isAvailableStatusesLoading?: boolean;
   onScrollToDate?: (dateStr: string) => void;
   onUpdateStatus?: (statusId: string) => void;
 }
@@ -46,7 +45,6 @@ export function GeneralInfo({
   taskStatusOptions,
   taskStatusTransitions,
   availableStatuses = [],
-  isAvailableStatusesLoading = false,
   onScrollToDate,
   onUpdateStatus,
 }: GeneralInfoProps) {
@@ -212,7 +210,7 @@ export function GeneralInfo({
                   onUpdateStatus(statusId);
                 }
               }}
-              canEdit={isEditing && (validPhaseOptions.length > 0 || availableStatuses.length > 0) && !isAvailableStatusesLoading}
+              canEdit={isEditing && (validPhaseOptions.length > 0 || availableStatuses.length > 0)}
             />
           )}
           {type === 'TASK' && (
@@ -227,7 +225,7 @@ export function GeneralInfo({
                   onUpdateStatus(statusId);
                 }
               }}
-              canEdit={isEditing && !isAvailableStatusesLoading}
+              canEdit={isEditing}
             />
           )}
         </div>
