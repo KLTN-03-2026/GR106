@@ -19,10 +19,7 @@ import {
   Archive,
   BookOpen,
   Link2,
-  MoreHorizontal,
-  Share2,
   Zap,
-  Bell,
   Calendar,
   GitBranch,
 } from 'lucide-react';
@@ -595,15 +592,12 @@ export function SeasonPlanPage() {
               <Info size={12} /> Chỉ xem
             </div>
           )}
-          <button className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"><Share2 size={15} /></button>
-          <button className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"><Bell size={15} /></button>
           <button className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"
-
             onClick={() => setSelectedItem(currentPlan ? { type: 'PLAN', id: currentPlan.id, planId: currentPlan.id } : null)}
-          ><Settings2 size={15} />
-
+          >
+            <Settings2 size={15} />
           </button>
-          <button className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 transition-colors"><MoreHorizontal size={15} /></button>
+
         </div>
       </div>
 
