@@ -117,7 +117,7 @@ public class WorkSessionService {
                 .task(task)
                 .farm(farm)
                 .employee(employee)
-                .workDate(LocalDate.now(ZoneId.of(farmConfig.getTimezone)))
+                .workDate(LocalDate.now(ZoneId.of(farmConfig.getTimezone())))
                 .type(WorkLogType.NORMAL)
                 .status(WorkLogStatus.WORKING)
                 .isOvertime(false)
