@@ -30,6 +30,10 @@ export function StatusHistorySection({ histories, loading }: StatusHistorySectio
     );
   }
 
+  const sortedHistories = [...histories].sort((a, b) => 
+    new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime()
+  );
+
   return (
     <div className="px-4 py-6">
       <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-6 flex items-center gap-1.5">
@@ -37,7 +41,7 @@ export function StatusHistorySection({ histories, loading }: StatusHistorySectio
       </p>
 
       <div className="relative space-y-8 before:absolute before:inset-0 before:ml-4 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-slate-100 before:via-slate-100 before:to-transparent">
-        {histories.map((item, idx) => (
+        {sortedHistories.map((item, idx) => (
           <motion.div
             key={`${item.changedAt}-${idx}`}
             initial={{ opacity: 0, x: -10 }}

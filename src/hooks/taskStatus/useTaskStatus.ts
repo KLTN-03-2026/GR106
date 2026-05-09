@@ -57,13 +57,15 @@ export function useTaskStatus() {
       return response;
     },
     onSuccess: (_, { planId, stageId, taskId }) => {
-      void queryClient.invalidateQueries({
+      // 1. Refetch lịch sử ngay lập tức
+      void queryClient.refetchQueries({
         queryKey: TASK_STATUS_KEYS.histories(planId, stageId, taskId),
       });
-      void queryClient.invalidateQueries({
+      // 2. Refetch danh sách trạng thái hợp lệ tiếp theo
+      void queryClient.refetchQueries({
         queryKey: TASK_STATUS_KEYS.available(planId, stageId, taskId),
       });
-      // Quan trọng: Invalidate dữ liệu kế hoạch chính để cập nhật UI ngay lập tức
+      // 3. Invalidate dữ liệu kế hoạch chính để cập nhật UI Timeline
       void queryClient.invalidateQueries({
         queryKey: ['season-plans'],
       });
@@ -111,7 +113,8 @@ export function useTaskStatusDetails(
       return response ?? [];
     },
     enabled,
-    staleTime: 1000 * 60 * 2,
+    staleTime: 0, // Luôn tải mới khi chuyển tab
+    gcTime: 0,    // Không giữ cache cũ
   });
 
   const availableQuery = useQuery<TaskStatusObject[]>({
@@ -124,7 +127,8 @@ export function useTaskStatusDetails(
       return response ?? [];
     },
     enabled,
-    staleTime: 1000 * 60 * 2,
+    staleTime: 0, // Luôn tải mới khi chuyển tab
+    gcTime: 0,    // Không giữ cache cũ
   });
 
   return {
