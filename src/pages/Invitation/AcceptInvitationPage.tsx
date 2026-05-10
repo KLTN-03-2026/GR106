@@ -48,50 +48,58 @@ export function AcceptInvitationPage() {
         mutationFn: (id: string) => farmInvitationService.acceptInvitation(id),
         onSuccess: () => {
             queryClient.invalidateQueries()
-            toast.success('Đã chấp nhận lời mời')
         },
         onError: (err: unknown) => {
-            toast.error(extractErrorMessage(err))
+            console.error('[AcceptInvitationPage] Error accepting invitation:', err)
         }
     })
 
     // Bước 1 — fetch thông tin invitation (public, không cần auth)
     useEffect(() => {
-        const fetchInvitation = async () => {
+        let isMounted = true;
+
+        const fetchAndAccept = async () => {
             try {
                 const preview = await farmInvitationService.getInvitationPreview(invitationId as string)
+                if (!isMounted) return;
+                
                 setInvitation(preview)
-                // Pre-fill email từ invitation
                 setEmail(preview.email)
+
+                // Kiểm tra đã login chưa
+                const token = sessionStorage.getItem('accessToken')
+                if (token) {
+                    if (hasAcceptedRef.current) return;
+                    hasAcceptedRef.current = true;
+                    
+                    setPhase('accepting')
+                    try {
+                        await acceptMutation.mutateAsync(invitationId as string)
+                        if (!isMounted) return;
+                        setPhase('success')
+                        toast.success('Đã chấp nhận lời mời thành công')
+                        setTimeout(() => navigate('/farms'), 3000)
+                    } catch (err: unknown) {
+                        if (!isMounted) return;
+                        setErrorMsg(extractErrorMessage(err))
+                        setPhase('error')
+                    }
+                } else {
+                    setPhase('login-required')
+                }
             } catch (err: unknown) {
+                if (!isMounted) return;
                 setErrorMsg(extractErrorMessage(err))
                 setPhase('error')
-                return
-            }
-
-            // Kiểm tra đã login chưa
-            const token = sessionStorage.getItem('accessToken')
-            if (token) {
-                // Đã login → accept luôn
-                if (hasAcceptedRef.current) return;
-                hasAcceptedRef.current = true;
-                
-                setPhase('accepting')
-                try {
-                    await acceptMutation.mutateAsync(invitationId as string)
-                    setPhase('success')
-                    setTimeout(() => navigate('/farms'), 4000)
-                } catch (err: unknown) {
-                    setErrorMsg(extractErrorMessage(err))
-                    setPhase('error')
-                    hasAcceptedRef.current = false; // Reset if error to allow retry if needed? Actually better keep it true to avoid multiple error toasts too.
-                }
-            } else {
-                setPhase('login-required')
             }
         }
-        void fetchInvitation()
-    }, [invitationId, navigate, acceptMutation])
+
+        void fetchAndAccept()
+
+        return () => {
+            isMounted = false;
+        }
+    }, [invitationId, navigate]); // Removed acceptMutation from dependencies to be safe
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -118,7 +126,8 @@ export function AcceptInvitationPage() {
                 try {
                     await acceptMutation.mutateAsync(invitationId as string)
                     setPhase('success')
-                    setTimeout(() => navigate('/farms'), 4000)
+                    toast.success('Đã chấp nhận lời mời thành công')
+                    setTimeout(() => navigate('/farms'), 3000)
                 } catch (err: unknown) {
                     setErrorMsg(extractErrorMessage(err))
                     setPhase('error')

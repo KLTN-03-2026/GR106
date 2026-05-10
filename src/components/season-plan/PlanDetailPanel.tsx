@@ -520,8 +520,23 @@ export function PlanDetailPanel({
       toast.error(extractErrorMessage(error));
     }
   };
+  const handleAddDependency = async (dependsOnTaskId: string) => {
+    try {
+      await addDependency(dependsOnTaskId);
+      toast.success('Đã thêm liên kết phụ thuộc');
+    } catch (error: any) {
+      toast.error(extractErrorMessage(error));
+    }
+  };
 
-
+  const handleDeleteDependency = async (dependsOnTaskId: string) => {
+    try {
+      await deleteDependency(dependsOnTaskId);
+      toast.success('Đã xóa liên kết phụ thuộc');
+    } catch (error: any) {
+      toast.error(extractErrorMessage(error));
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -663,8 +678,8 @@ export function PlanDetailPanel({
                       loading={isDependenciesLoading}
                       adding={isAddingDependency}
                       canEdit={canEdit}
-                      onAdd={addDependency}
-                      onDelete={deleteDependency}
+                      onAdd={handleAddDependency}
+                      onDelete={handleDeleteDependency}
                       onSelectTask={(tid) => onSelectTask(plan.id, (sel as any).phase.id, tid)}
                     />
                   )}

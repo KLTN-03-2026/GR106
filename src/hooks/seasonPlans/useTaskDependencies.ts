@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { seasonPlanTaskService } from '../../services/seasonplan/seasonPlanTaskService';
-import { extractErrorMessage } from '../../utils/errorUtils';
-import { toast } from 'sonner';
+
 
 export const useTaskDependencies = (
   planId: string | undefined,
@@ -40,9 +39,8 @@ export const useTaskDependencies = (
     try {
       await seasonPlanTaskService.addTaskDependency(planId, stageId, taskId, dependsOnTaskId);
       await fetchDependencies();
-      toast.success('Đã thêm liên kết phụ thuộc');
     } catch (error) {
-      toast.error(extractErrorMessage(error));
+      throw error;
     } finally {
       setAdding(false);
     }
@@ -53,9 +51,8 @@ export const useTaskDependencies = (
     try {
       await seasonPlanTaskService.deleteTaskDependency(taskId, dependsOnTaskId);
       await fetchDependencies();
-      toast.success('Đã xóa liên kết phụ thuộc');
     } catch (error) {
-      toast.error(extractErrorMessage(error));
+      throw error;
     }
   };
 
