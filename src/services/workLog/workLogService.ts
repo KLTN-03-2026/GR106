@@ -51,12 +51,14 @@ export const workLogService = {
   },
 
   async getPlanWorkLogs(planId: string, from?: string, to?: string): Promise<WorkLog[]> {
-    const response = await axiosInstance.get(`/api/v1/plans/${planId}/worklogs`, {
-      params: { 
-        from: formatApiDate(from), 
-        to: formatApiDate(to) 
-      }
-    });
+    const params = {
+      from: formatApiDate(from),
+      to: formatApiDate(to)
+    };
+    
+    console.log(`[WorkLogService] Fetching plan worklogs: /api/v1/plans/${planId}/worklogs`, params);
+    
+    const response = await axiosInstance.get(`/api/v1/plans/${planId}/worklogs`, { params });
     return unwrapData<WorkLog[]>(response);
   },
 
