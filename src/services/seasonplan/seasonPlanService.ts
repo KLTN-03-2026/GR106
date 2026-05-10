@@ -37,9 +37,8 @@ export const seasonPlanService = {
 
     return validated.data.map(plan => ({
       ...plan,
-      phases: [],
       description: plan.note || '',
-    })) as SeasonPlan[];
+    })) as any as SeasonPlan[];
   },
 
   /**
@@ -51,9 +50,8 @@ export const seasonPlanService = {
 
     return {
       ...validated.data,
-      phases: [],
       description: validated.data.note || '',
-    } as SeasonPlan;
+    } as any as SeasonPlan;
   },
 
   /**
@@ -122,9 +120,8 @@ export const seasonPlanService = {
     const validated = createPlanResponseSchema.parse(response.data);
     return {
       ...validated.data,
-      phases: [], // Response usually doesn't have phases
       description: validated.data.note || '',
-    } as SeasonPlan;
+    } as any as SeasonPlan;
   },
 
    /**

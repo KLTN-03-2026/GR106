@@ -264,7 +264,10 @@ export function PlanDetailPanel({
       }
       
       if (!newTaskPlotId) {
-        setNewTaskPlotId(phase.plotId || plan.plots?.[0]?.plotId || '');
+        // Chỉ tự động chọn nếu kế hoạch chỉ có đúng 1 lô đất. 
+        // Nếu có nhiều lô (>1), để trống để kích hoạt logic bắt buộc chọn/hiện modal.
+        const autoPlotId = (plan.plots && plan.plots.length === 1) ? plan.plots[0].plotId : '';
+        setNewTaskPlotId(phase.plotId || autoPlotId);
       }
     }
   }, [isAddingTask, selection, hasSuggested]);
@@ -427,15 +430,17 @@ export function PlanDetailPanel({
     }
   };
 
-  const handleAddTaskSubmit = () => {
+  const handleAddTaskSubmit = (plotIdOverride?: string | React.MouseEvent) => {
     if (selection.type !== 'PHASE') return;
+
+    const finalPlotId = (typeof plotIdOverride === 'string') ? plotIdOverride : newTaskPlotId;
 
     const payload = {
       name: newTaskName,
       description: newTaskDesc,
       startDate: newTaskStart || (selection as any).phase.startDate,
       endDate: newTaskEnd || (selection as any).phase.endDate,
-      plotId: newTaskPlotId || (selection as any).phase.plotId || plan.plots?.[0]?.plotId || "",
+      plotId: finalPlotId || (selection as any).phase.plotId || "",
     };
 
     const validation = createTaskSchema.safeParse(payload);
@@ -857,7 +862,6 @@ export function PlanDetailPanel({
               workLogId={selectedWorkLogId}
             />
           )}
-
         </motion.div>
       )}
     </AnimatePresence>

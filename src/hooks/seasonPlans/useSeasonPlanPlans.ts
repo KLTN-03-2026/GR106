@@ -22,6 +22,21 @@ export const useSeasonPlanPlans = (farmId?: string) => {
     queryKey: activeFarmId ? PLAN_KEYS.byFarm(activeFarmId) : PLAN_KEYS.list,
     queryFn: () => seasonPlanService.getPlans(),
     enabled: !!activeFarmId || !farmId,
+    // Merge existing phases/plots from cache when refetching list
+    select: (newData: SeasonPlan[]) => {
+      const currentData = queryClient.getQueryData<SeasonPlan[]>(
+        activeFarmId ? PLAN_KEYS.byFarm(activeFarmId) : PLAN_KEYS.list
+      );
+      
+      return newData.map(newPlan => {
+        const existing = currentData?.find(p => p.id === newPlan.id);
+        return {
+          ...newPlan,
+          phases: (newPlan.phases && newPlan.phases.length > 0) ? newPlan.phases : (existing?.phases ?? []),
+          plots: (newPlan.plots && newPlan.plots.length > 0) ? newPlan.plots : (existing?.plots ?? []),
+        };
+      });
+    }
   });
 
   const createPlanMutation = useMutation({
@@ -78,7 +93,12 @@ export const useSeasonPlanPlans = (farmId?: string) => {
               const plan = await seasonPlanService.getPlanById(planId);
               // Update list cache with this new data
               updatePlansCache((prev) =>
-                prev.map((p) => (p.id === planId ? { ...p, ...plan } : p)),
+                prev.map((p) => (p.id === planId ? { 
+                  ...p, 
+                  ...plan, 
+                  phases: (plan.phases && plan.phases.length > 0) ? plan.phases : p.phases,
+                  plots: (plan.plots && plan.plots.length > 0) ? plan.plots : p.plots 
+                } : p)),
               );
               return plan;
             },
