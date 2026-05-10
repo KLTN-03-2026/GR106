@@ -42,7 +42,7 @@ export function AttendanceManagement({ plan: initialPlan }: AttendanceManagement
   const [selectedEmployee, setSelectedEmployee] = useState<{ id: string; name: string } | null>(null);
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
 
-  // Gộp tất cả các tham số lọc vào một state duy nhất để tránh double request
+  // Filters state
   const [filters, setFilters] = useState({
     activePlanId: initialPlan.id,
     from: initialPlan.startDate?.split('T')[0] || '',
@@ -55,35 +55,34 @@ export function AttendanceManagement({ plan: initialPlan }: AttendanceManagement
     return plans.find(p => p.id === filters.activePlanId) || initialPlan;
   }, [plans, filters.activePlanId, initialPlan]);
 
-  // Khi đổi vụ mùa, cập nhật cả ID và ngày tháng trong cùng một lần setFilters
   const handlePlanChange = (newPlanId: string) => {
     const newPlan = plans.find(p => p.id === newPlanId);
-    setFilters({
+    setFilters(prev => ({
+      ...prev,
       activePlanId: newPlanId,
-      from: newPlan?.startDate?.split('T')[0] || filters.from,
-      to: newPlan?.endDate?.split('T')[0] || filters.to
-    });
-    setViewMode('PLAN_HISTORY');
+      from: newPlan?.startDate?.split('T')[0] || prev.from,
+      to: newPlan?.endDate?.split('T')[0] || prev.to
+    }));
   };
 
   const handleDateChange = (type: 'from' | 'to', value: string) => {
     setFilters(prev => ({ ...prev, [type]: value }));
   };
 
-  // Chỉ fetch khi người dùng mở đúng tab tương ứng
+  // Queries - Chỉ kích hoạt khi tab tương ứng được chọn và có đủ tham số lọc
   const { data: farmLogs = [], isLoading: farmLoading } = useFarmWorkLogs(
     initialPlan.farmId, filters.from, filters.to,
-    viewMode === 'HISTORY'
+    viewMode === 'HISTORY' && !!filters.from && !!filters.to
   );
 
-  const { data: planLogs = [], isLoading: planLoading } = usePlanWorkLogs(
+  const { data: planLogs = [], isLoading: planLoading, isError: planError, error: planErrorInfo } = usePlanWorkLogs(
     filters.activePlanId, filters.from, filters.to,
-    viewMode === 'PLAN_HISTORY'
+    viewMode === 'PLAN_HISTORY' && !!filters.activePlanId && !!filters.from && !!filters.to
   );
 
   const { data: summary = [], isLoading: summaryLoading, isError: summaryError, error: summaryErrorInfo } = useWorkLogSummary(
     filters.from, filters.to,
-    viewMode === 'SUMMARY'
+    viewMode === 'SUMMARY' && !!filters.from && !!filters.to
   );
 
   const workLogs = viewMode === 'HISTORY' ? farmLogs : planLogs;
@@ -155,29 +154,6 @@ export function AttendanceManagement({ plan: initialPlan }: AttendanceManagement
 
             <div className="flex items-center gap-3">
               <div className="relative group">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 z-10 pointer-events-none">
-                  <Package size={16} />
-                </div>
-                <select
-                  value={filters.activePlanId}
-                  onChange={(e) => handlePlanChange(e.target.value)}
-                  className="pl-10 pr-10 py-2.5 bg-indigo-50/50 border border-indigo-100 rounded-2xl text-[13px] font-black text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none cursor-pointer hover:bg-indigo-50 transition-all min-w-[200px]"
-                >
-                  {plans.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                  {!plans.find(p => p.id === initialPlan.id) && (
-                    <option value={initialPlan.id}>{initialPlan.name}</option>
-                  )}
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 pointer-events-none">
-                  <ChevronRight size={14} className="rotate-90" />
-                </div>
-              </div>
-
-              <div className="relative group">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
@@ -238,9 +214,9 @@ export function AttendanceManagement({ plan: initialPlan }: AttendanceManagement
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
                 className="space-y-8"
               >
+                {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {[
                     { label: 'Thời gian', title: 'Tổng ngày công', value: `${totalStats.workDays} ngày`, icon: Clock, color: 'indigo' },
@@ -267,6 +243,7 @@ export function AttendanceManagement({ plan: initialPlan }: AttendanceManagement
                   ))}
                 </div>
 
+                {/* Summary Table */}
                 <div className="bg-white rounded-[32px] border border-slate-200/60 shadow-sm overflow-hidden">
                   <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
                     <h3 className="text-[16px] font-black text-slate-900 flex items-center gap-2">
@@ -286,13 +263,6 @@ export function AttendanceManagement({ plan: initialPlan }: AttendanceManagement
                       </div>
                       <p className="text-[15px] font-bold">Lỗi khi tải bảng tổng hợp công</p>
                       <p className="text-[12px] opacity-70 mt-2">{extractErrorMessage(summaryErrorInfo)}</p>
-                    </div>
-                  ) : summary.length === 0 ? (
-                    <div className="py-24 flex flex-col items-center justify-center text-slate-400">
-                      <div className="w-20 h-20 bg-slate-50 rounded-[28px] flex items-center justify-center mb-6">
-                        <Calendar size={32} />
-                      </div>
-                      <p className="text-[15px] font-bold">Chưa có dữ liệu lao động trong khoảng thời gian này</p>
                     </div>
                   ) : (
                     <div className="overflow-x-auto">
@@ -355,30 +325,62 @@ export function AttendanceManagement({ plan: initialPlan }: AttendanceManagement
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-4"
+                className="space-y-6"
               >
-                <div className="flex items-center justify-between mb-4 px-2">
+                {/* Compact Plan Selection */}
+                {viewMode === 'PLAN_HISTORY' && (
+                  <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm mb-6">
+                    <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shrink-0">
+                      <Package size={20} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-0.5">Vụ mùa đang xem</p>
+                      <h3 className="text-[14px] font-bold text-slate-900 truncate">{currentPlan.name}</h3>
+                    </div>
+                    <div className="relative">
+                      <select
+                        value={filters.activePlanId}
+                        onChange={(e) => handlePlanChange(e.target.value)}
+                        className="bg-slate-50 text-slate-900 py-2 px-4 pr-10 rounded-xl font-bold text-[13px] border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none cursor-pointer hover:bg-slate-100 transition-colors min-w-[200px]"
+                      >
+                        {plans.map(p => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                      <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 rotate-90" size={14} />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between px-2">
                   <h4 className="text-[12px] font-black text-slate-400 uppercase tracking-[2px]">
-                    {viewMode === 'PLAN_HISTORY' ? `Nhật ký: ${currentPlan.name}` : 'Nhật ký toàn trang trại'}
+                    {viewMode === 'PLAN_HISTORY' ? `Dữ liệu: ${currentPlan.name}` : 'Dữ liệu toàn trang trại'}
                   </h4>
-                  <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-xl text-[11px] font-black border border-indigo-100/50">
-                    {filteredLogs.length} bản ghi
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="px-3 py-1 bg-white text-slate-600 rounded-xl text-[11px] font-black border border-slate-200 shadow-sm">
+                      {filteredLogs.length} bản ghi
+                    </span>
+                  </div>
                 </div>
 
+                {/* Logs List */}
                 {(planLoading || farmLoading) ? (
-                  <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[32px] border border-slate-100 shadow-sm">
+                  <div className="flex flex-col items-center justify-center py-24 bg-white rounded-[40px] border border-slate-100 shadow-sm">
                     <Loader2 size={40} className="animate-spin mb-4 text-indigo-500" />
-                    <p className="text-[14px] font-bold text-slate-500">Đang đồng bộ dữ liệu...</p>
+                    <p className="text-[14px] font-bold text-slate-500">Đang đồng bộ nhật ký...</p>
                   </div>
-                ) : (viewMode === 'PLAN_HISTORY' ? (planLogs.length === 0 && planLoading) : (farmLogs.length === 0 && farmLoading)) ? (
-                  <div className="text-center py-20 bg-red-50/30 rounded-[32px] border border-dashed border-red-200">
-                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                ) : planError ? (
+                   <div className="text-center py-20 bg-red-50/30 rounded-[32px] border border-dashed border-red-200 flex flex-col items-center">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 text-red-500">
                       <AlertCircle size={32} />
                     </div>
                     <p className="text-[16px] text-red-600 font-black mb-2">Lỗi máy chủ (500)</p>
-                    <p className="text-[14px] text-red-500 font-medium px-10">Backend không thể phản hồi yêu cầu này. Vui lòng kiểm tra lại Plan ID.</p>
+                    <p className="text-[14px] text-red-500 font-medium px-10 text-center max-w-md">
+                      Hệ thống gặp sự cố khi lấy nhật ký cho vụ mùa này. <br/>
+                      <span className="text-[12px] opacity-70 mt-2 block font-bold">
+                        Chi tiết: {extractErrorMessage(planErrorInfo)}
+                      </span>
+                    </p>
                   </div>
                 ) : filteredLogs.length > 0 ? (
                   <div className="space-y-4">
@@ -394,7 +396,7 @@ export function AttendanceManagement({ plan: initialPlan }: AttendanceManagement
                         <div className="flex items-start justify-between gap-6">
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-3 mb-4">
-                              <div className="px-3.5 py-1.5 bg-slate-900 text-white rounded-xl text-[11px] font-black tracking-wide shadow-lg shadow-slate-200">
+                              <div className="px-3.5 py-1.5 bg-slate-900 text-white rounded-xl text-[11px] font-black tracking-wide">
                                 {formatDate(log.workDate)}
                               </div>
                               <span className={cn(
@@ -417,53 +419,44 @@ export function AttendanceManagement({ plan: initialPlan }: AttendanceManagement
                             </div>
 
                             <p className="text-[14px] text-slate-600 font-medium leading-[1.7] mb-6 pl-1 border-l-2 border-slate-100 ml-1">
-                              {log.notes || <span className="text-slate-300 italic font-normal">Không có ghi chú chi tiết</span>}
+                              {log.notes || <span className="text-slate-300 italic font-normal">Không có ghi chú</span>}
                             </p>
 
                             <div className="flex items-center gap-6 pt-5 border-t border-slate-50">
                               <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-slate-50 to-white flex items-center justify-center text-slate-600 font-black text-[12px] border border-slate-100 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all duration-300 shadow-sm">
+                                <div className="w-9 h-9 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-600 font-black text-[12px] border border-slate-100 group-hover:bg-indigo-600 group-hover:text-white transition-all">
                                   {(log.employee?.fullName || log.employeeName || 'N').charAt(0)}
                                 </div>
                                 <div>
-                                  <div className="text-[14px] font-black text-slate-900 leading-none mb-1">{log.employee?.fullName || log.employeeName || 'Chưa xác định'}</div>
+                                  <div className="text-[14px] font-black text-slate-900 mb-0.5">{log.employee?.fullName || log.employeeName || 'Chưa xác định'}</div>
                                   <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Nhân sự thực hiện</div>
                                 </div>
                               </div>
                             </div>
                           </div>
 
-                          <div className="flex flex-col items-end gap-3 self-center">
-                            <div className="flex items-center gap-3">
-                              {log.lockedAt ? (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleToggleLock(log.id, true);
-                                  }}
-                                  disabled={isPatching}
-                                  className="flex items-center gap-2 px-4 py-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 rounded-2xl transition-all shadow-sm group/btn disabled:opacity-50"
-                                >
-                                  {isPatching ? <Loader2 size={16} className="animate-spin text-indigo-600" /> : <Unlock size={16} className="group-hover/btn:text-indigo-600" />}
-                                  <span className="text-[11px] font-black uppercase tracking-wider">Mở khóa</span>
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleToggleLock(log.id, false);
-                                  }}
-                                  disabled={isPatching}
-                                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-2xl transition-all shadow-lg shadow-emerald-100 disabled:opacity-50"
-                                >
-                                  {isPatching ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} />}
-                                  <span className="text-[11px] font-black uppercase tracking-wider">Chốt công</span>
-                                </button>
-                              )}
-                              <div className="flex items-center gap-2 px-5 py-3 bg-slate-900 text-white group-hover:bg-indigo-600 rounded-[20px] transition-all duration-300 shadow-xl shadow-slate-200 group-hover:shadow-indigo-200">
-                                <span className="text-[13px] font-black">Xem chi tiết</span>
-                                <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                              </div>
+                          <div className="flex items-center gap-3 self-center">
+                            {log.lockedAt ? (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleToggleLock(log.id, true); }}
+                                disabled={isPatching}
+                                className="flex items-center gap-2 px-4 py-2 bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 rounded-2xl transition-all"
+                              >
+                                {isPatching ? <Loader2 size={16} className="animate-spin text-indigo-600" /> : <Unlock size={16} />}
+                                <span className="text-[11px] font-black uppercase tracking-wider">Mở khóa</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleToggleLock(log.id, false); }}
+                                disabled={isPatching}
+                                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-2xl transition-all"
+                              >
+                                {isPatching ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} />}
+                                <span className="text-[11px] font-black uppercase tracking-wider">Chốt công</span>
+                              </button>
+                            )}
+                            <div className="p-3 bg-slate-900 text-white rounded-2xl group-hover:bg-indigo-600 transition-colors shadow-lg">
+                              <ChevronRight size={20} />
                             </div>
                           </div>
                         </div>
@@ -476,7 +469,7 @@ export function AttendanceManagement({ plan: initialPlan }: AttendanceManagement
                       <BookOpen size={48} />
                     </div>
                     <p className="text-[18px] text-slate-900 font-black mb-2">Trống nhật ký</p>
-                    <p className="text-[14px] text-slate-400 font-medium max-w-[280px]">Chưa có ghi nhận công việc nào cho vụ mùa này trong khoảng thời gian đã chọn.</p>
+                    <p className="text-[14px] text-slate-400 font-medium">Chưa có ghi nhận công việc nào.</p>
                   </div>
                 )}
               </motion.div>
