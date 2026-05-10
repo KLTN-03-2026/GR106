@@ -19,14 +19,19 @@ function unwrapData<T>(response: any): T {
 
 function formatApiDate(dateStr: string | undefined): string | undefined {
   if (!dateStr) return undefined;
-  // If already in dd/mm/yyyy format, return as is
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return dateStr;
-  // If in ISO format yyyy-mm-dd
-  const parts = dateStr.split('T')[0].split('-');
+  
+  // If it's already ISO (yyyy-mm-dd), return the date part
+  const isoMatch = dateStr.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (isoMatch) return isoMatch[1];
+
+  // If it's dd/mm/yyyy, convert to yyyy-mm-dd
+  const parts = dateStr.split('/');
   if (parts.length === 3) {
-    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    const [d, m, y] = parts;
+    return `${y}-${m}-${d}`;
   }
-  return dateStr;
+
+  return dateStr.split('T')[0];
 }
 
 export const workLogService = {

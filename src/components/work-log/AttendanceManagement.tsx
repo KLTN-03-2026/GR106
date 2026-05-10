@@ -14,7 +14,7 @@ import {
   Filter,
   Search,
 } from 'lucide-react';
-import { usePlanWorkLogs, useWorkLogSummary } from '@/hooks/workLog/useWorkLogs';
+import { useFarmWorkLogs, useWorkLogSummary } from '@/hooks/workLog/useWorkLogs';
 import { WorkLog, WorkLogSummary } from '@/types/workLog/workLog';
 import { formatDate, formatCurrency } from '@/utils/format';
 import { SeasonPlan } from '@/types/seasonPlan';
@@ -43,9 +43,9 @@ export function AttendanceManagement({ plan }: AttendanceManagementProps) {
     to: plan.endDate?.split('T')[0] || ''
   });
   // Chỉ fetch khi người dùng mở đúng tab tương ứng
-  // Sử dụng API lấy nhật ký theo Plan (chuẩn theo tài liệu backend)
-  const { data: workLogs = [], isLoading: historyLoading } = usePlanWorkLogs(
-    plan.id, dateRange.from, dateRange.to,
+  // Sử dụng API lấy nhật ký toàn Farm (theo yêu cầu mới)
+  const { data: workLogs = [], isLoading: historyLoading } = useFarmWorkLogs(
+    plan.farmId, dateRange.from, dateRange.to,
     viewMode === 'HISTORY'
   );
   const { data: summary = [], isLoading: summaryLoading, isError: summaryError, error: summaryErrorInfo } = useWorkLogSummary(
@@ -98,7 +98,7 @@ export function AttendanceManagement({ plan }: AttendanceManagementProps) {
                 </h2>
               </div>
               <p className="text-[13px] text-slate-500 font-medium ml-[52px]">
-                Theo dõi chi tiết công và lương của nhân sự trong dự án
+                Theo dõi chi tiết công và lương của nhân sự toàn trang trại
               </p>
             </div>
 
