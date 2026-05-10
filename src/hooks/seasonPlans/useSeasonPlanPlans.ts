@@ -118,12 +118,25 @@ export const useSeasonPlanPlans = (farmId?: string) => {
                 const incoming = result.addedPlots ?? [];
                 const merged = [...current];
                 incoming.forEach((item: { plotId: string; plotName: string }) => {
-                  if (!merged.some((m) => m.plotId === item.plotId)) merged.push(item);
+                   if (!merged.some((m) => m.plotId === item.plotId)) merged.push(item);
                 });
                 return { ...p, plots: merged };
               }),
             );
             return { planId, addedPlots: result.addedPlots ?? [] };
+          }),
+        ),
+      [updatePlansCache],
+    ),
+    deletePlotFromPlan: useCallback(
+      (planId: string, plotId: string) =>
+        withUnwrap(
+          seasonPlanService.removePlotFromPlan(planId, plotId).then(() => {
+            updatePlansCache((prev) =>
+              prev.map((p) =>
+                p.id === planId ? { ...p, plots: p.plots?.filter((pt) => pt.plotId !== plotId) } : p,
+              ),
+            );
           }),
         ),
       [updatePlansCache],

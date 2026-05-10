@@ -53,6 +53,7 @@ interface PlanDetailPanelProps {
   onClose: () => void;
   onUpdatePlan: (plan: SeasonPlan) => void;
   onUpdatePhase: (planId: string, phase: Phase, originalPhase?: Phase) => void;
+  onClone?: (plan: SeasonPlan) => void;
   onAddTask: (planId: string, phaseId: string, data: { name: string; description: string; startDate: string; endDate: string; plotId: string }) => void;
   onUpdateTask: (planId: string, phaseId: string, task: Task, originalTask?: Task) => void;
   onSelectPhase: (planId: string, phaseId: string) => void;
@@ -62,9 +63,9 @@ interface PlanDetailPanelProps {
   onDeleteTask?: (planId: string, phaseId: string, taskId: string) => void;
   initialIsAddingPhase?: boolean;
   onClearInitialIsAddingPhase?: () => void;
-  onClone?: (plan: SeasonPlan) => void;
   onAddPhase?: (planId: string, data: { name: string; startDate: string; endDate: string }) => Promise<void>;
   onAddPlots?: (planId: string, plotIds: string[]) => Promise<void>;
+  onDeletePlot?: (planId: string, plotId: string) => Promise<void>;
   canEdit?: boolean;
   phaseStatusOptions?: { id: string; code: string; label: string; color?: string }[];
   phaseStatusTransitions?: import('@/services/seasonplan/planStageStatusService').PlanStageStatusTransition[];
@@ -87,6 +88,7 @@ export function PlanDetailPanel({
   onClose,
   onUpdatePlan,
   onUpdatePhase,
+  onClone,
   onAddTask,
   onUpdateTask,
   onSelectPhase,
@@ -107,6 +109,7 @@ export function PlanDetailPanel({
   onFetchTaskDetail,
   onUpdatePhaseStatus,
   onUpdateTaskStatus,
+  onDeletePlot,
 }: PlanDetailPanelProps) {
   const queryClient = useQueryClient();
   const { currentFarmId } = useAuth();
@@ -562,6 +565,9 @@ export function PlanDetailPanel({
               else if (sel.type === 'TASK') onDeleteTask?.(sel.plan.id, (sel as any).phase.id, (sel as any).task.id);
             }}
             onSelectPhase={onSelectPhase}
+            onClone={() => {
+              if (sel.type === 'PLAN') onClone?.(sel.plan);
+            }}
           />
 
           <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
@@ -646,6 +652,7 @@ export function PlanDetailPanel({
                     availableStatuses={availableStatuses}
                     onScrollToDate={onScrollToDate}
                     onUpdateStatus={handleUpdateStatus}
+                    canEdit={canEdit}
                   />
 
                   {sel.type === 'PLAN' && (
@@ -660,6 +667,8 @@ export function PlanDetailPanel({
                         setSelectedPlotIds={setSelectedPlotIds}
                         loadingAddPlot={loadingAddPlot}
                         onAddPlots={handleAddPlotsSubmit}
+                        onDeletePlot={(pid) => onDeletePlot?.(plan.id, pid)}
+                        canEdit={canEdit}
                       />
                       <PhasesSection
                         plan={plan}

@@ -24,6 +24,7 @@ export const useSeasonPlans = (farmId?: string) => {
     updatePlanTime: plansPart.updatePlanTime,
     fetchPlanPlots: plansPart.fetchPlanPlots,
     addPlotsToPlan: plansPart.addPlotsToPlan,
+    deletePlotFromPlan: plansPart.deletePlotFromPlan,
     addPlanToState: plansPart.addPlanToState,
     getPhaseDetail: phasePart.getPhaseDetail,
     fetchStages: phasePart.fetchStages,

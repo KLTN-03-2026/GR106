@@ -94,7 +94,7 @@ export function SeasonPlanPage() {
     updatePhaseTime, updatePhaseStatus, fetchPlanStageStatuses, fetchPlanStageStatusTransitions, planStageStatuses, planStageStatusTransitions, fetchTasks, createTask: createSeasonTask,
     updateTask: updateSeasonTask, updateTaskTime, updateTaskStatus, deleteTask: removeSeasonTask,
     fetchTaskStatuses, fetchTaskStatusTransitions, taskStatuses, taskStatusTransitions,
-    addPlotsToPlan, optimisticallyUpdatePhaseTime, optimisticallyUpdateTaskTime,
+    addPlotsToPlan, deletePlotFromPlan, optimisticallyUpdatePhaseTime, optimisticallyUpdateTaskTime,
     addPlanToState, fetchTaskAvailableStatuses, fetchPhaseAvailableStatuses,
     getPhaseDetail, getTaskDetail
   } = useSeasonPlans(farmId);
@@ -440,11 +440,19 @@ export function SeasonPlanPage() {
     }
   };
 
+  const handleDeletePlotFromPlan = async (planId: string, plotId: string) => {
+    try {
+      await deletePlotFromPlan(planId, plotId).unwrap();
+    } catch (err: any) {
+      showError('Lỗi xóa lô đất', err);
+    }
+  };
+
 
   const handleUpdateTask = async (planId: string, stageId: string, task: Task, originalTask?: Task) => {
     const plan = plans.find(p => p.id === planId);
     const plotId = task.plotId || (plan?.plots?.length ? plan.plots[0].plotId : undefined);
-    
+
     try {
       if (!originalTask) {
         await updateSeasonTask(planId, stageId, task.id, {
@@ -467,7 +475,7 @@ export function SeasonPlanPage() {
       // Gộp các thay đổi về nội dung và thời gian vào 1 lần gọi PATCH duy nhất
       // Điều này tránh lỗi xung đột Version (409) khi gọi 2 API liên tiếp
       let currentTaskVersion = originalTask.version;
-      
+
       if (isDateChanged || isContentChanged) {
         const result = await updateSeasonTask(planId, stageId, task.id, {
           version: currentTaskVersion ?? 0,
@@ -480,7 +488,7 @@ export function SeasonPlanPage() {
         // Hook returns { planId, stageId, taskId, task }
         currentTaskVersion = result.task.version ?? 0;
       }
-      
+
       toast.success('Cập nhật công việc thành công');
     } catch (err: any) {
       showError('Lỗi cập nhật', err);
@@ -720,8 +728,9 @@ export function SeasonPlanPage() {
               onSelectTask={(_pid, stageId, taskId) =>
                 setSelectedItem({ type: 'TASK', id: taskId, phaseId: stageId, planId: _pid })}
               onDeletePlan={handleDeletePlan}
-              onClone={p => setCloneSourcePlan(p)}
+              onClone={(p: SeasonPlan) => setCloneSourcePlan(p)}
               onAddPlots={handleAddPlotsToPlan}
+              onDeletePlot={handleDeletePlotFromPlan}
               canEdit={canEdit}
               phaseStatusOptions={phaseStatusOptions}
               phaseStatusTransitions={planStageStatusTransitions}

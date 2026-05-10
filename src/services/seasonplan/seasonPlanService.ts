@@ -97,6 +97,13 @@ export const seasonPlanService = {
   },
 
   /**
+   * Xóa lô đất khỏi kế hoạch
+   */
+  async removePlotFromPlan(planId: string, plotId: string): Promise<void> {
+    await axiosInstance.delete(`/api/v1/plans/${planId}/plots/${plotId}`);
+  },
+
+  /**
    * Cập nhật thông tin kế hoạch
    */
   async updatePlan(planId: string, _: Partial<SeasonPlan>): Promise<SeasonPlan> {
