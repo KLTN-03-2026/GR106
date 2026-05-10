@@ -1,4 +1,4 @@
-import { BookOpen, Loader2, AlertCircle } from 'lucide-react';
+import { BookOpen, Loader2, AlertCircle, Lock, Unlock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { WorkLog } from '@/types/workLog/workLog';
 import { formatDate } from '@/utils/format';
@@ -39,25 +39,42 @@ export function WorkLogsSection({
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[12px] font-bold text-slate-800">
-                      {formatDate(log.workDate)}
-                    </span>
-                    <span className={cn(
-                      "text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase",
-                      (log.isOverTime || log.type === 'OVERTIME') ? "bg-amber-50 text-amber-600" : "bg-blue-50 text-blue-600"
-                    )}>
-                      {(log.isOverTime || log.type === 'OVERTIME') ? 'Tăng ca' : 'Chính thức'}
-                    </span>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[12px] font-bold text-slate-800">
+                        {formatDate(log.workDate)}
+                      </span>
+                      <span className={cn(
+                        "text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase",
+                        (log.isOverTime || log.type === 'OVERTIME') ? "bg-amber-50 text-amber-600" : "bg-blue-50 text-blue-600"
+                      )}>
+                        {(log.isOverTime || log.type === 'OVERTIME') ? 'Tăng ca' : 'Chính thức'}
+                      </span>
+                    </div>
+
+                    {/* Status Badge */}
+                    {log.lockedAt ? (
+                      <div className="flex items-center gap-1 text-amber-500 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">
+                        <Lock size={10} />
+                        <span className="text-[9px] font-black uppercase">Đã chốt</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100/50">
+                        <Unlock size={10} />
+                        <span className="text-[9px] font-black uppercase tracking-tight">Chờ duyệt</span>
+                      </div>
+                    )}
                   </div>
+
                   <p className="text-[11px] text-slate-500 mt-1 line-clamp-1 italic">
                     {log.notes || 'Không có ghi chú'}
                   </p>
+                  
                   <div className="flex items-center gap-2 mt-2">
-                    <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[9px] font-bold text-slate-600">
+                    <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[9px] font-bold text-slate-600 shrink-0 border border-slate-200/50">
                       {(log.employee?.fullName || log.employeeName || 'C').charAt(0)}
                     </div>
-                    <span className="text-[11px] text-slate-600">
+                    <span className="text-[11px] text-slate-600 font-medium truncate">
                       {log.employee?.fullName || log.employeeName || 'Chưa xác định'}
                     </span>
                   </div>
