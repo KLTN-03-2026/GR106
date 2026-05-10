@@ -24,7 +24,8 @@ export const useCrops = (farmId?: string) => {
     queryKey: CROP_KEYS.system,
     queryFn: async () => {
       const response = await cropService.getCrops();
-      return response.data ?? [];
+      const crops = response.data ?? [];
+      return crops.map(c => ({ ...c, scope: c.scope || 'SYSTEM' }));
     },
     staleTime: 0,
   });
@@ -35,7 +36,8 @@ export const useCrops = (farmId?: string) => {
     queryFn: async () => {
       if (!activeFarmId) return [];
       const response = await cropService.getFarmCrops(activeFarmId);
-      return response.data ?? [];
+      const crops = response.data ?? [];
+      return crops.map(c => ({ ...c, scope: c.scope || 'FARM' }));
     },
     enabled: !!activeFarmId,
     staleTime: 0,
@@ -101,9 +103,13 @@ export const useCrops = (farmId?: string) => {
   );
 
   // Use stable refetch functions
-  const fetchCrops = useCallback(() => {
-    return systemCropsQuery.refetch();
-  }, [systemCropsQuery.refetch]);
+  const fetchCrops = useCallback(async () => {
+    const results = await Promise.all([
+      systemCropsQuery.refetch(),
+      farmCropsQuery.refetch()
+    ]);
+    return results[0]; 
+  }, [systemCropsQuery.refetch, farmCropsQuery.refetch]);
 
   const fetchFarmCrops = useCallback((_id: string) => {
     return farmCropsQuery.refetch();

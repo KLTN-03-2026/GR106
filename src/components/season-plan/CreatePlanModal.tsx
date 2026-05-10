@@ -6,6 +6,7 @@ import { CreateSeasonPlanRequest } from '@/types/seasonPlan';
 import { createPlanRequestSchema } from '@/schemas/seasonPlanSchemas';
 import { Button } from '@/components/ui/button';
 import { DateInput } from '@/components/ui/DateInput';
+import { cn } from '@/utils/cn';
 
 interface CreatePlanModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export function CreatePlanModal({
   const [endDate, setEndDate] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+  const [cropTab, setCropTab] = useState<'SYSTEM' | 'FARM'>('SYSTEM');
 
   useEffect(() => {
     if (isOpen) {
@@ -117,8 +119,39 @@ export function CreatePlanModal({
               </div>
             )}
 
-            <div className="space-y-2">
-              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Cây trồng mục tiêu</label>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-1">
+                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Cây trồng mục tiêu</label>
+                <div className="flex bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCropTab('SYSTEM');
+                      setCropId('');
+                    }}
+                    className={cn(
+                      "px-3 py-1 text-[10px] font-bold rounded-md transition-all",
+                      cropTab === 'SYSTEM' ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                    )}
+                  >
+                    Hệ thống
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCropTab('FARM');
+                      setCropId('');
+                    }}
+                    className={cn(
+                      "px-3 py-1 text-[10px] font-bold rounded-md transition-all",
+                      cropTab === 'FARM' ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                    )}
+                  >
+                    Trang trại
+                  </button>
+                </div>
+              </div>
+
               <div className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors">
                   <Sprout size={18} />
@@ -126,15 +159,24 @@ export function CreatePlanModal({
                 <select
                   value={cropId}
                   onChange={(e) => setCropId(e.target.value)}
-                  className="w-full bg-slate-50 border-2 border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl py-3 pl-12 pr-4 outline-none transition-all font-bold text-slate-700 appearance-none disabled:opacity-50"
+                  className={cn(
+                    "w-full border-2 border-transparent rounded-2xl py-3 pl-12 pr-4 outline-none transition-all font-bold text-slate-700 appearance-none disabled:opacity-50",
+                    cropTab === 'SYSTEM' ? "bg-indigo-50/50 focus:border-indigo-500/20 focus:bg-white" : "bg-emerald-50/50 focus:border-emerald-500/20 focus:bg-white"
+                  )}
                   disabled={cropsLoading}
                 >
-                  <option value="">{cropsLoading ? 'Đang tải cây trồng...' : 'Chọn cây trồng muốn canh tác'}</option>
-                  {allCrops.map((crop) => (
-                    <option key={crop.id} value={crop.id}>
-                      {crop.name}
-                    </option>
-                  ))}
+                  <option value="">
+                    {cropsLoading ? 'Đang tải cây trồng...' : `Chọn cây trồng ${cropTab === 'SYSTEM' ? 'hệ thống' : 'của trang trại'}`}
+                  </option>
+                  
+                  {allCrops
+                    .filter(c => c.scope === cropTab)
+                    .map((crop) => (
+                      <option key={crop.id} value={crop.id}>
+                        {crop.name}
+                      </option>
+                    ))
+                  }
                 </select>
               </div>
             </div>
