@@ -167,7 +167,8 @@ export function PlanDetailPanel({
   } = useWorkLogs(
     selection?.plan.id,
     selection?.type === 'TASK' ? (selection as any).phase.id : undefined,
-    selection?.type === 'TASK' ? (selection as any).task.id : undefined
+    selection?.type === 'TASK' ? (selection as any).task.id : undefined,
+    activeTab === 'LOGS'
   );
 
   const {

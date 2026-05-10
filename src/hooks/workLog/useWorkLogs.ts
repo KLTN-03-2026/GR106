@@ -15,13 +15,13 @@ const WORKLOG_KEYS = {
 const withUnwrap = <T,>(promise: Promise<T>) =>
   Object.assign(promise, { unwrap: () => promise });
 
-export const useWorkLogs = (planId?: string, stageId?: string, taskId?: string) => {
+export const useWorkLogs = (planId?: string, stageId?: string, taskId?: string, enabled = true) => {
   const queryClient = useQueryClient();
 
   const taskWorkLogsQuery = useQuery({
     queryKey: taskId ? WORKLOG_KEYS.byTask(taskId) : ['worklogs', 'inactive'],
     queryFn: () => workLogService.getTaskWorkLogs(planId!, stageId!, taskId!),
-    enabled: !!taskId && !!planId && !!stageId,
+    enabled: enabled && !!taskId && !!planId && !!stageId,
   });
 
   return {
