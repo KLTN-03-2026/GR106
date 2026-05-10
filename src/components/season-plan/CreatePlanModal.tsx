@@ -18,7 +18,7 @@ export function CreatePlanModal({
   onClose,
   onSave,
 }: CreatePlanModalProps) {
-  const { crops, fetchCrops, loading: cropsLoading } = useCrops();
+  const { allCrops, fetchCrops, loading: cropsLoading } = useCrops();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [cropId, setCropId] = useState('');
@@ -53,8 +53,11 @@ export function CreatePlanModal({
       return;
     }
 
-    const crop = crops.find(c => c.id === cropId);
-    if (!crop) return;
+    const crop = allCrops.find(c => c.id === cropId);
+    if (!crop) {
+      setError('Vui lòng chọn cây trồng hợp lệ từ danh sách');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -127,7 +130,7 @@ export function CreatePlanModal({
                   disabled={cropsLoading}
                 >
                   <option value="">{cropsLoading ? 'Đang tải cây trồng...' : 'Chọn cây trồng muốn canh tác'}</option>
-                  {crops.map((crop) => (
+                  {allCrops.map((crop) => (
                     <option key={crop.id} value={crop.id}>
                       {crop.name}
                     </option>

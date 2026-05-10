@@ -70,8 +70,9 @@ export const createWarehouseItemSchema = z.object({
 
 export const updateWarehouseItemSchema = createWarehouseItemSchema.omit({
   stock: true,
+  toLocationId: true,
 }).extend({
-  version: z.number().int().min(0, 'Version không hợp lệ'),
+  toLocationId: z.string().optional(),
 });
 
 export type CreateWarehouseItemInput = z.infer<typeof createWarehouseItemSchema>;

@@ -73,6 +73,7 @@ export const seasonPlanService = {
 
     return {
       ...validated.data,
+      cropId: (validated.data as any).cropId || data.cropId,
       phases: [],
       description: validated.data.note || '',
     } as SeasonPlan;
@@ -94,9 +95,6 @@ export const seasonPlanService = {
     const response = await axiosInstance.post(`/api/v1/plans/${planId}/plots`, { plotIds });
     return addPlanPlotsResponseSchema.parse(response.data).data;
   },
-
-
-
 
   /**
    * Cập nhật thông tin kế hoạch
@@ -259,4 +257,4 @@ export const seasonPlanService = {
       const validated = getPlanStageStatusTransitionsResponseSchema.parse(response.data);
       return validated.data;
     },
-  };
+};

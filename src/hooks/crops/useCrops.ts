@@ -109,9 +109,17 @@ export const useCrops = (farmId?: string) => {
     return farmCropsQuery.refetch();
   }, [farmCropsQuery.refetch]);
 
+  const allCrops = useMemo(() => {
+    const merged = [...(farmCropsQuery.data ?? []), ...(systemCropsQuery.data ?? [])];
+    // Remove duplicates by ID
+    const unique = Array.from(new Map(merged.map(c => [c.id, c])).values());
+    return unique;
+  }, [farmCropsQuery.data, systemCropsQuery.data]);
+
   return {
     crops: farmCropsQuery.data ?? [],
     systemCrops: systemCropsQuery.data ?? [],
+    allCrops,
     cropTypes: cropTypesQuery.data ?? [],
     loading,
     systemCropsLoading: systemCropsQuery.isFetching,

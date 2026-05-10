@@ -61,7 +61,7 @@ export const apiPlanSchema = z.object({
   createdById: z.string().uuid().nullable().optional(),
   createdAt: z.string().optional(),
   deletedAt: z.string().nullable().optional(),
-  // cropId và plotId không trực tiếp trên Plan object trong Swagger mới
+  cropId: z.string().uuid().nullable().optional(),
 });
 
 
@@ -128,8 +128,8 @@ export const taskStatusHistorySchema = z.object({
 });
 
 export const taskStatusTransitionSchema = z.object({
-  id: z.string().uuid(),
-  farm: farmObjectSchema,
+  id: z.string().optional(),
+  farm: farmObjectSchema.optional(),
   fromStatus: statusObjectSchema,
   toStatus: statusObjectSchema,
   farmRole: farmRoleObjectSchema,

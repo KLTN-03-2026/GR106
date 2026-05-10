@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Loader2, CheckCircle2, XCircle, Eye, EyeOff, Sprout } from 'lucide-react'
 import { toast } from 'sonner'
@@ -41,6 +41,7 @@ export function AcceptInvitationPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [loginError, setLoginError] = useState('')
     const [isLoggingIn, setIsLoggingIn] = useState(false)
+    const hasAcceptedRef = useRef(false)
 
     // Accept invitation mutation — invalidates all queries on success
     const acceptMutation = useMutation({
@@ -72,6 +73,9 @@ export function AcceptInvitationPage() {
             const token = sessionStorage.getItem('accessToken')
             if (token) {
                 // Đã login → accept luôn
+                if (hasAcceptedRef.current) return;
+                hasAcceptedRef.current = true;
+                
                 setPhase('accepting')
                 try {
                     await acceptMutation.mutateAsync(invitationId as string)
@@ -80,6 +84,7 @@ export function AcceptInvitationPage() {
                 } catch (err: unknown) {
                     setErrorMsg(extractErrorMessage(err))
                     setPhase('error')
+                    hasAcceptedRef.current = false; // Reset if error to allow retry if needed? Actually better keep it true to avoid multiple error toasts too.
                 }
             } else {
                 setPhase('login-required')
@@ -106,6 +111,9 @@ export function AcceptInvitationPage() {
                 // Dispatch vào Redux — giống hệt useLogin hook
                 dispatch(loginSuccess(response.data))
                 // Sau khi store có auth → accept invitation
+                if (hasAcceptedRef.current) return;
+                hasAcceptedRef.current = true;
+
                 setPhase('accepting')
                 try {
                     await acceptMutation.mutateAsync(invitationId as string)
@@ -114,6 +122,7 @@ export function AcceptInvitationPage() {
                 } catch (err: unknown) {
                     setErrorMsg(extractErrorMessage(err))
                     setPhase('error')
+                    hasAcceptedRef.current = false;
                 }
             } else {
                 setLoginError('Email hoặc mật khẩu không đúng')
