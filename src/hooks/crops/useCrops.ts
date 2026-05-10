@@ -103,6 +103,14 @@ export const useCrops = (farmId?: string) => {
   );
 
   // Use stable refetch functions
+  const fetchSystemCrops = useCallback(() => {
+    return systemCropsQuery.refetch();
+  }, [systemCropsQuery.refetch]);
+
+  const fetchFarmCrops = useCallback(() => {
+    return farmCropsQuery.refetch();
+  }, [farmCropsQuery.refetch]);
+
   const fetchCrops = useCallback(async () => {
     const results = await Promise.all([
       systemCropsQuery.refetch(),
@@ -110,10 +118,6 @@ export const useCrops = (farmId?: string) => {
     ]);
     return results[0]; 
   }, [systemCropsQuery.refetch, farmCropsQuery.refetch]);
-
-  const fetchFarmCrops = useCallback((_id: string) => {
-    return farmCropsQuery.refetch();
-  }, [farmCropsQuery.refetch]);
 
   const allCrops = useMemo(() => {
     const merged = [...(farmCropsQuery.data ?? []), ...(systemCropsQuery.data ?? [])];
@@ -132,6 +136,7 @@ export const useCrops = (farmId?: string) => {
     cropTypesLoading,
     error,
     fetchCrops,
+    fetchSystemCrops,
     fetchFarmCrops,
     fetchCropTypes: useCallback(
       () =>

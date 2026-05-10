@@ -19,7 +19,7 @@ export function CreatePlanModal({
   onClose,
   onSave,
 }: CreatePlanModalProps) {
-  const { allCrops, fetchCrops, loading: cropsLoading } = useCrops();
+  const { allCrops, fetchSystemCrops, fetchFarmCrops, loading: cropsLoading } = useCrops();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [cropId, setCropId] = useState('');
@@ -31,11 +31,11 @@ export function CreatePlanModal({
 
   useEffect(() => {
     if (isOpen) {
-      fetchCrops();
+      if (cropTab === 'SYSTEM') fetchSystemCrops();
+      else fetchFarmCrops();
       setError(''); // Clear error when opening
     }
-  }, [isOpen, fetchCrops]);
-
+  }, [isOpen, cropTab, fetchSystemCrops, fetchFarmCrops]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -128,6 +128,7 @@ export function CreatePlanModal({
                     onClick={() => {
                       setCropTab('SYSTEM');
                       setCropId('');
+                      fetchSystemCrops();
                     }}
                     className={cn(
                       "px-3 py-1 text-[10px] font-bold rounded-md transition-all",
@@ -141,6 +142,7 @@ export function CreatePlanModal({
                     onClick={() => {
                       setCropTab('FARM');
                       setCropId('');
+                      fetchFarmCrops();
                     }}
                     className={cn(
                       "px-3 py-1 text-[10px] font-bold rounded-md transition-all",
