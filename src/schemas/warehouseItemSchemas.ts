@@ -73,6 +73,7 @@ export const updateWarehouseItemSchema = createWarehouseItemSchema.omit({
   toLocationId: true,
 }).extend({
   toLocationId: z.string().optional(),
+  version: z.number({ required_error: 'Version không được để trống' }),
 });
 
 export type CreateWarehouseItemInput = z.infer<typeof createWarehouseItemSchema>;
