@@ -24,7 +24,8 @@ export const useCrops = (farmId?: string) => {
     queryKey: CROP_KEYS.system,
     queryFn: async () => {
       const response = await cropService.getCrops();
-      return response.data ?? [];
+      const crops = response.data ?? [];
+      return crops.map(c => ({ ...c, scope: c.scope || 'SYSTEM' }));
     },
     staleTime: 0,
   });
@@ -35,7 +36,8 @@ export const useCrops = (farmId?: string) => {
     queryFn: async () => {
       if (!activeFarmId) return [];
       const response = await cropService.getFarmCrops(activeFarmId);
-      return response.data ?? [];
+      const crops = response.data ?? [];
+      return crops.map(c => ({ ...c, scope: c.scope || 'FARM' }));
     },
     enabled: !!activeFarmId,
     staleTime: 0,
@@ -101,23 +103,40 @@ export const useCrops = (farmId?: string) => {
   );
 
   // Use stable refetch functions
-  const fetchCrops = useCallback(() => {
+  const fetchSystemCrops = useCallback(() => {
     return systemCropsQuery.refetch();
   }, [systemCropsQuery.refetch]);
 
-  const fetchFarmCrops = useCallback((_id: string) => {
+  const fetchFarmCrops = useCallback(() => {
     return farmCropsQuery.refetch();
   }, [farmCropsQuery.refetch]);
+
+  const fetchCrops = useCallback(async () => {
+    const results = await Promise.all([
+      systemCropsQuery.refetch(),
+      farmCropsQuery.refetch()
+    ]);
+    return results[0]; 
+  }, [systemCropsQuery.refetch, farmCropsQuery.refetch]);
+
+  const allCrops = useMemo(() => {
+    const merged = [...(farmCropsQuery.data ?? []), ...(systemCropsQuery.data ?? [])];
+    // Remove duplicates by ID
+    const unique = Array.from(new Map(merged.map(c => [c.id, c])).values());
+    return unique;
+  }, [farmCropsQuery.data, systemCropsQuery.data]);
 
   return {
     crops: farmCropsQuery.data ?? [],
     systemCrops: systemCropsQuery.data ?? [],
+    allCrops,
     cropTypes: cropTypesQuery.data ?? [],
     loading,
     systemCropsLoading: systemCropsQuery.isFetching,
     cropTypesLoading,
     error,
     fetchCrops,
+    fetchSystemCrops,
     fetchFarmCrops,
     fetchCropTypes: useCallback(
       () =>
