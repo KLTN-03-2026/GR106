@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Home,
   BarChart3,
@@ -19,6 +19,7 @@ import {
   Settings,
   LogOut,
   Key,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "../../utils/cn";
@@ -70,7 +71,7 @@ const FOOTER_ITEMS = [
     title: "Hệ thống",
     items: [
       { key: "subscription", label: "Gói cước & Dịch vụ", icon: CreditCard, roles: ["owner"] },
-  { key: "config", label: "Cấu hình", icon: Settings, roles: ["owner", "admin", "manager", "employee"] },
+      { key: "config", label: "Cấu hình", icon: Settings, roles: ["owner", "admin", "manager", "employee"] },
     ],
   },
 ];
@@ -84,6 +85,8 @@ export default function Sidebar({
   const { farmSummary, farms } = useFarms();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [showScrollHint, setShowScrollHint] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const currentFarm = currentFarmId
     ? farms.find((f: any) => f.id === currentFarmId) ||
@@ -97,6 +100,24 @@ export default function Sidebar({
     : null;
 
   const effectiveRole = currentFarmId && myFarmRole ? myFarmRole : user?.role;
+
+  const checkScroll = () => {
+    if (scrollRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+      const canScroll = scrollHeight > clientHeight;
+      const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10;
+      setShowScrollHint(canScroll && !isAtBottom);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(checkScroll, 100); // Delay small to ensure DOM is ready
+    window.addEventListener("resize", checkScroll);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", checkScroll);
+    };
+  }, [effectiveRole, currentFarmId, active]); // Re-check when items or active tab change
 
   const filterItem = (item: { key: string; roles?: string[] }) => {
     if (!currentFarmId) {
@@ -119,69 +140,68 @@ export default function Sidebar({
 
   /* ── COMPACT variant ── */
   if (variant === "compact") {
+    const allNavItems = NAV_GROUPS.flatMap((g) => g.items).filter(filterItem);
+    const allFooterItems = FOOTER_ITEMS.flatMap((g) => g.items).filter(filterItem);
+
     return (
       <>
-        <aside className="flex flex-col items-center justify-between h-full w-16 bg-white shrink-0 rounded-3xl shadow-sm border border-slate-100 py-6 px-2">
-          <div className="flex flex-col items-center gap-2 w-full flex-1 overflow-y-auto custom-scrollbar no-scrollbar">
-            {NAV_GROUPS.flatMap((g) => g.items)
-              .concat(FOOTER_ITEMS.flatMap((g) => g.items))
-              .filter(filterItem)
-              .map((item) => (
-                <Button
-                  key={item.key}
-                  onClick={() => setActive(item.key)}
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "w-10 h-10 rounded-xl transition-all duration-200 shrink-0",
-                    active === item.key
-                      ? "bg-emerald-50 text-emerald-700"
-                      : "text-slate-400 hover:bg-slate-50 hover:text-slate-600"
-                  )}
-                >
-                  <item.icon
-                    size={20}
-                    className={active === item.key ? "text-emerald-600" : ""}
-                  />
-                </Button>
-              ))}
-          </div>
-
-          <div className="mt-auto pt-4 relative w-full flex justify-center shrink-0">
-            {!currentFarmId && (
-              <div className="relative">
-                <Button
-                  onClick={() => setIsSettingsOpen((p) => !p)}
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "w-10 h-10 rounded-xl transition-all duration-200",
-                    isSettingsOpen ? "bg-slate-100 text-slate-700" : "text-slate-400 hover:bg-slate-50"
-                  )}
-                >
-                  <Settings size={20} />
-                </Button>
-                {isSettingsOpen && (
-                  <div className="absolute bottom-0 left-full ml-2 w-52 rounded-2xl border border-slate-200 bg-white shadow-xl p-2 z-50">
-                    <button
-                      onClick={handleChangePassword}
-                      className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                    >
-                      <Key size={15} />
-                      Đổi mật khẩu
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
-                    >
-                      <LogOut size={15} />
-                      Đăng xuất
-                    </button>
-                  </div>
+        <aside className="flex flex-col items-center h-full w-16 bg-white shrink-0 rounded-3xl shadow-sm border border-slate-100 py-6 px-2 relative">
+          <div 
+            ref={scrollRef}
+            onScroll={checkScroll}
+            className="flex flex-col items-center gap-2 w-full flex-1 min-h-0 overflow-y-auto no-scrollbar pb-4"
+          >
+            {allNavItems.map((item) => (
+              <Button
+                key={item.key}
+                onClick={() => setActive(item.key)}
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "w-10 h-10 rounded-xl transition-all duration-200 shrink-0",
+                  active === item.key
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "text-slate-600 hover:bg-emerald-50/40"
                 )}
+              >
+                <item.icon
+                  size={20}
+                  className="text-emerald-600"
+                />
+              </Button>
+            ))}
+            
+            {allFooterItems.length > 0 && (
+              <div className="w-full flex flex-col items-center gap-2 pt-2 border-t border-slate-100 mt-2 shrink-0">
+                {allFooterItems.map((item) => (
+                  <Button
+                    key={item.key}
+                    onClick={() => setActive(item.key)}
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "w-10 h-10 rounded-xl transition-all duration-200 shrink-0",
+                      active === item.key
+                        ? "bg-emerald-50 text-emerald-700"
+                        : "text-slate-600 hover:bg-emerald-50/40 hover:text-emerald-700"
+                    )}
+                  >
+                    <item.icon
+                      size={20}
+                      className="text-emerald-600"
+                    />
+                  </Button>
+                ))}
               </div>
             )}
           </div>
+
+          {/* Scroll Hint — Compact */}
+          {showScrollHint && (
+            <div className="absolute bottom-16 left-[90px] animate-bounce text-emerald-600 pointer-events-none drop-shadow-md">
+              <ChevronDown size={22} strokeWidth={3.5} />
+            </div>
+          )}
         </aside>
 
         <ConfirmModal
@@ -211,119 +231,130 @@ export default function Sidebar({
             <Trees size={16} className="text-emerald-600" />
           </div>
           <p className="text-sm font-semibold text-slate-900 truncate">
-            {currentFarm ? (currentFarm as any).farmName || (currentFarm as any).name : "Trang Trại"}
+            {currentFarm
+              ? (currentFarm as any).farmName || (currentFarm as any).name
+              : "Trang Trại"}
           </p>
         </div>
 
-        {/* Nav */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
+        {/* Main Content — All scrollable together */}
+        <div 
+          ref={scrollRef}
+          onScroll={checkScroll}
+          className="flex-1 min-h-0 overflow-y-auto custom-scrollbar relative group"
+        >
           <nav className="flex flex-col gap-1 px-3 py-1">
-          {NAV_GROUPS.map((group) => {
-            const visibleItems = group.items.filter(filterItem);
-            if (!visibleItems.length) return null;
-            return (
-              <div key={group.title} className="flex flex-col gap-0">
-                <p className="px-4 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest opacity-70">
-                  {group.title}
-                </p>
-                <div className="flex flex-col gap-0.5">
-                  {visibleItems.map((item) => (
-                    <button
-                      key={item.key}
-                      onClick={() => setActive(item.key)}
-                      className={cn(
-                        "flex items-center gap-3 w-full px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-150 group",
-                        active === item.key
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "text-slate-500 hover:bg-slate-50 hover:text-emerald-600"
-                      )}
-                    >
-                      <item.icon
-                        size={15}
+            {NAV_GROUPS.map((group) => {
+              const visibleItems = group.items.filter(filterItem);
+              if (!visibleItems.length) return null;
+              return (
+                <div key={group.title} className="flex flex-col gap-0">
+                  <p className="px-4 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest opacity-70">
+                    {group.title}
+                  </p>
+                  <div className="flex flex-col gap-0.5">
+                    {visibleItems.map((item) => (
+                      <button
+                        key={item.key}
+                        onClick={() => setActive(item.key)}
                         className={cn(
-                          "shrink-0 transition-colors",
-                          active === item.key ? "text-emerald-600" : "text-slate-400 group-hover:text-emerald-500"
+                          "flex items-center gap-3 w-full px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-150 group",
+                          active === item.key
+                            ? "bg-emerald-50 text-emerald-700 shadow-sm"
+                            : "text-slate-600 hover:bg-emerald-50/40 hover:text-emerald-700"
                         )}
-                      />
-                      <span className="truncate">{item.label}</span>
-                    </button>
-                  ))}
+                      >
+                        <item.icon
+                          size={16}
+                          className="shrink-0 text-emerald-600"
+                        />
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </nav>
-        </div>
+              );
+            })}
+          </nav>
 
-        {/* Footer */}
-        <div className="px-3 pt-1 pb-3 border-t border-slate-100 flex flex-col gap-1 shrink-0 relative">
-          {FOOTER_ITEMS.map((group) => {
-            const visibleItems = group.items.filter(filterItem);
-            if (!visibleItems.length) return null;
-            return (
-              <div key={group.title} className="flex flex-col gap-0">
-                <p className="px-4 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest opacity-70">
-                  {group.title}
-                </p>
-                <div className="flex flex-col gap-0.5">
-                  {visibleItems.map((item) => (
-                    <button
-                      key={item.key}
-                      onClick={() => setActive(item.key)}
-                      className={cn(
-                        "flex items-center gap-3 w-full px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-150 group",
-                        active === item.key
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "text-slate-500 hover:bg-slate-50 hover:text-emerald-600"
-                      )}
-                    >
-                      <item.icon
-                        size={15}
+          <div className="px-3 pt-1 pb-10 flex flex-col gap-1 shrink-0 relative">
+            <div className="h-px bg-slate-100 mx-3 my-2" />
+            {FOOTER_ITEMS.map((group) => {
+              const visibleItems = group.items.filter(filterItem);
+              if (!visibleItems.length) return null;
+              return (
+                <div key={group.title} className="flex flex-col gap-0">
+                  <p className="px-4 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest opacity-70">
+                    {group.title}
+                  </p>
+                  <div className="flex flex-col gap-0.5">
+                    {visibleItems.map((item) => (
+                      <button
+                        key={item.key}
+                        onClick={() => setActive(item.key)}
                         className={cn(
-                          "shrink-0 transition-colors",
-                          active === item.key ? "text-emerald-600" : "text-slate-400 group-hover:text-emerald-500"
+                          "flex items-center gap-3 w-full px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-150 group",
+                          active === item.key
+                            ? "bg-emerald-50 text-emerald-700 shadow-sm"
+                            : "text-slate-600 hover:bg-emerald-50/40 hover:text-emerald-700"
                         )}
-                      />
-                      <span className="truncate">{item.label}</span>
-                    </button>
-                  ))}
+                      >
+                        <item.icon
+                          size={16}
+                          className="shrink-0 text-emerald-600"
+                        />
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
 
-          {/* Settings Popup */}
-          {!currentFarmId && (
-            <div className="relative mt-0">
-              <button
-                onClick={() => setIsSettingsOpen((p) => !p)}
-                className={cn(
-                  "flex items-center gap-3 w-full px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-150",
-                  isSettingsOpen ? "bg-slate-100 text-slate-700 shadow-sm" : "text-slate-500 hover:bg-slate-50"
+            {/* Settings popup — wide only */}
+            {!currentFarmId && (
+              <div className="relative mt-0">
+                <button
+                  onClick={() => setIsSettingsOpen((p) => !p)}
+                  className={cn(
+                    "flex items-center gap-3 w-full px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-150",
+                    isSettingsOpen
+                      ? "bg-slate-100 text-slate-700 shadow-sm"
+                      : "text-slate-500 hover:bg-slate-50"
+                  )}
+                >
+                  <Settings size={15} className="shrink-0 text-slate-400" />
+                  <span>Cài đặt</span>
+                </button>
+
+                {isSettingsOpen && (
+                  <div className="absolute bottom-full mb-2 left-0 w-full rounded-2xl border border-slate-200 bg-white shadow-xl p-1.5 z-50">
+                    <button
+                      onClick={handleChangePassword}
+                      className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      <Key size={15} className="text-slate-400" />
+                      Đổi mật khẩu
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut size={15} />
+                      Đăng xuất
+                    </button>
+                  </div>
                 )}
-              >
-                <Settings size={15} className="shrink-0 text-slate-400" />
-                <span>Cài đặt</span>
-              </button>
+              </div>
+            )}
+          </div>
 
-              {isSettingsOpen && (
-                <div className="absolute bottom-full mb-2 left-0 w-full rounded-2xl border border-slate-200 bg-white shadow-xl p-1.5 z-50">
-                  <button
-                    onClick={handleChangePassword}
-                    className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                  >
-                    <Key size={15} className="text-slate-400" />
-                    Đổi mật khẩu
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
-                  >
-                    <LogOut size={15} />
-                    Đăng xuất
-                  </button>
-                </div>
-              )}
+          {/* Scroll Hint — Wide */}
+          {showScrollHint && (
+            <div className="sticky bottom-0 left-0 right-0 h-14 flex items-center pointer-events-none bg-gradient-to-t from-white via-white to-transparent z-20">
+              <div className="animate-bounce text-emerald-600 mb-1 drop-shadow-md ml-[200px]">
+                <ChevronDown size={24} strokeWidth={3.5} />
+              </div>
             </div>
           )}
         </div>

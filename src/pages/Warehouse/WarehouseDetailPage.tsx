@@ -960,13 +960,13 @@ export function WarehouseDetailPage() {
                       <div className="flex items-start justify-between">
                         <div
                           className={cn(
-                            "w-8 h-8 rounded-lg flex items-center justify-center",
+                            "w-8 h-8 rounded-lg flex items-center justify-center bg-opacity-10",
                             c.badge,
                           )}
                         >
                           <MapPin size={15} />
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2">
                           {canManage && (
                             <button
                               onClick={(e) => {
@@ -991,8 +991,8 @@ export function WarehouseDetailPage() {
                           </span>
                         </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-[13px] font-bold text-slate-800 leading-tight">
+                      <div className="flex-1 min-h-[40px]">
+                        <p className="text-[14px] font-black text-slate-800 leading-tight">
                           {loc.name}
                         </p>
                         {loc.description && (
@@ -1010,8 +1010,8 @@ export function WarehouseDetailPage() {
                               {loc.code}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 text-[10px] font-bold text-violet-600 bg-violet-50 px-2 py-1 rounded-lg shadow-sm border border-violet-100/50 transition-all hover:bg-violet-100">
-                            <span>Chi tiết</span>
+                          <div className="flex items-center gap-1 text-[10px] font-bold text-violet-600 bg-violet-50 px-2 h-6 rounded-lg shadow-sm border border-violet-100/50 transition-all hover:bg-violet-100 shrink-0">
+                            <span className="leading-none">Chi tiết</span>
                             <ChevronRight size={10} />
                           </div>
                         </div>
