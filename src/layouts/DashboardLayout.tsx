@@ -90,7 +90,7 @@ export default function DashboardLayout() {
 
   const [active, setActive] = useState(getActive());
 
-  const wideSidebarPaths = ["/members", "/land-plots", "/map", "/subscription", "/crop-catalog", "/season-plans", "/warehouses", "/suppliers", "/skus"];
+  const wideSidebarPaths = ["/members", "/land-plots", "/map", "/subscription", "/crop-catalog", "/season-plans", "/warehouses", "/suppliers", "/skus", "/config"];
   const isWideSidebarPage =
     wideSidebarPaths.some(path => location.pathname.includes(path)) ||
     (location.pathname.startsWith("/farms") && location.pathname !== "/farms");
@@ -165,8 +165,14 @@ export default function DashboardLayout() {
       return;
     }
 
+
     if (key === "change-password") {
       navigate("/change-password");
+      return;
+    }
+
+    if (key === "config") {
+      navigate("/config");
       return;
     }
 
