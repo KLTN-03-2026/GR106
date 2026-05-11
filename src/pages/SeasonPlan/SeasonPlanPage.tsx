@@ -217,7 +217,7 @@ export function SeasonPlanPage() {
   const handleCreatePlan = async (newPlanData: any) => {
     try {
       const { plotId, ...planPayload } = newPlanData;
-      const plan = await createPlan(planPayload).unwrap();
+      const plan = await createPlan(planPayload) as any;
       if (plotId && plan.id) {
         await addPlotsToPlan(plan.id, [plotId]).unwrap();
         fetchPlanPlots(plan.id);
@@ -261,11 +261,7 @@ export function SeasonPlanPage() {
   ) => {
     try {
       optimisticallyUpdatePhaseTime({ planId, stageId, startDate: data.startDate, endDate: data.endDate });
-      const stageVersion = plans
-        .find((p) => p.id === planId)
-        ?.phases?.find((ph) => ph.id === stageId)
-        ?.version;
-      await updatePhaseTime(planId, stageId, { ...data, version: stageVersion }).unwrap();
+      await updatePhaseTime(planId, stageId, data).unwrap();
       await fetchStages(planId).unwrap();
     } catch (err: any) {
       await fetchStages(planId);
@@ -312,12 +308,15 @@ export function SeasonPlanPage() {
         await updatePhaseTime(planId, stageId, {
           startDate: data.startDate,
           endDate: data.endDate,
-          version: originalPhase.version,
         }).unwrap();
       }
 
       if (isNameChanged) {
-        await updatePhase(planId, stageId, { ...data, version: originalPhase.version }).unwrap();
+        await updatePhase(planId, stageId, {
+          name: data.name,
+          startDate: data.startDate,
+          endDate: data.endDate,
+        }).unwrap();
       }
     } catch (err: any) {
       showError('Lỗi cập nhật giai đoạn', err);

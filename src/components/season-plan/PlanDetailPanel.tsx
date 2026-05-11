@@ -20,6 +20,7 @@ import { createTaskSchema } from '@/schemas/seasonPlanSchemas';
 import { createTaskMaterialSchema } from '@/schemas/taskMaterialSchemas';
 import { createTaskAssigneeSchema } from '@/schemas/taskAssigneeSchemas';
 import { extractErrorMessage } from '@/utils/errorUtils';
+import { PlanStageStatusTransition } from '@/services/plan/planStageStatusService';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 import { DetailHeader } from './detail/DetailHeader';
@@ -68,7 +69,7 @@ interface PlanDetailPanelProps {
   onDeletePlot?: (planId: string, plotId: string) => Promise<void>;
   canEdit?: boolean;
   phaseStatusOptions?: { id: string; code: string; label: string; color?: string }[];
-  phaseStatusTransitions?: import('@/services/seasonplan/planStageStatusService').PlanStageStatusTransition[];
+  phaseStatusTransitions?: PlanStageStatusTransition[];
   taskStatusOptions?: { id: string; code: string; label: string; color?: string }[];
   taskStatusTransitions?: any[];
   onScrollToDate?: (dateStr: string) => void;
@@ -316,22 +317,22 @@ export function PlanDetailPanel({
         onFetchTaskDetail?.(selection.plan.id, (selection as any).phase.id, (selection as any).task.id);
       }
     }
-  setSelectedWarehouseId('');
-  setSelectedWarehouseItemId('');
-  setSelectedAssigneeUserId('');
-  setPlannedQty('');
-  // Reset về tab thông tin mỗi khi thay đổi lựa chọn để tránh lỗi UI
-  setActiveTab('INFO');
+    setSelectedWarehouseId('');
+    setSelectedWarehouseItemId('');
+    setSelectedAssigneeUserId('');
+    setPlannedQty('');
+    // Reset về tab thông tin mỗi khi thay đổi lựa chọn để tránh lỗi UI
+    setActiveTab('INFO');
 
-  if (selection) {
-    setTempPlan(selection.plan);
-    if (selection.type === 'PHASE') setTempPhase(selection.phase);
-    if (selection.type === 'TASK') {
-      setTempPhase(selection.phase);
-      setTempTask(selection.task);
+    if (selection) {
+      setTempPlan(selection.plan);
+      if (selection.type === 'PHASE') setTempPhase(selection.phase);
+      if (selection.type === 'TASK') {
+        setTempPhase(selection.phase);
+        setTempTask(selection.task);
+      }
     }
-  }
-}, [selection]);
+  }, [selection, isOpen, onFetchPhaseDetail, onFetchTaskDetail]);
 
   const handleStartEdit = () => {
     if (!selection) return;
