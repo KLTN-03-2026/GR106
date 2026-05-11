@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "farm_configs")
@@ -15,7 +16,7 @@ public class FarmConfigEntity {
 
     @Id
     @Column(name = "farm_id")
-    private java.util.UUID farmId;
+    private UUID farmId;
 
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId

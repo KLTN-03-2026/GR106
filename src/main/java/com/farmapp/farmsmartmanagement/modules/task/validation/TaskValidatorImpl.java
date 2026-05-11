@@ -31,7 +31,7 @@ public class TaskValidatorImpl implements TaskValidator {
         TaskEntity task = taskRepository
                 .findByIdAndStageIdAndPlanIdAndFarmIdAndStatusIsNotTerminal(
                         taskId, planStageId, planId, farmId)
-                .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND_OR_TASK_IS_TERMINAL));
 
         validateExpiredAndStage(task);
         return task;
@@ -44,7 +44,7 @@ public class TaskValidatorImpl implements TaskValidator {
         TaskEntity task = taskRepository
                 .findByIdForUpdateAndStatusIsNotTerminal(
                         taskId, planStageId, planId, farmId)
-                .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND_OR_TASK_IS_TERMINAL));
 
         validateExpiredAndStage(task);
         return task;
@@ -57,7 +57,7 @@ public class TaskValidatorImpl implements TaskValidator {
         TaskEntity task = taskRepository
                 .findByIdAndStatusIsNotTerminal(
                         taskId, farmId)
-                .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));
+                .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND_OR_TASK_IS_TERMINAL));
 
         validateExpiredAndStage(task);
         return task;

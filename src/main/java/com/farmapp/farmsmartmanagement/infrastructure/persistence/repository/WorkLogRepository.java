@@ -31,23 +31,23 @@ public interface WorkLogRepository extends JpaRepository<WorkLogEntity, UUID> {
     List<WorkLogEntity> findAllByEmployee_IdAndFarm_IdAndWorkDateBetweenAndDeletedAtIsNullOrderByWorkDateDesc(
             UUID employeeId, UUID farmId, LocalDate from, LocalDate to);
 
-    // Query mới — theo plan
     @Query("""
-        SELECT wl FROM WorkLogEntity wl
-        JOIN wl.task t
-        JOIN t.planStage ps
-        WHERE ps.plan.id  = :planId
-          AND wl.farm.id  = :farmId
-          AND wl.deletedAt IS NULL
-          AND (:from IS NULL OR wl.workDate >= :from)
-          AND (:to   IS NULL OR wl.workDate <= :to)
-        ORDER BY wl.workDate DESC
-    """)
+    SELECT wl FROM WorkLogEntity wl
+    JOIN wl.task t
+    JOIN t.planStage ps
+    WHERE ps.plan.id = :planId
+      AND wl.farm.id = :farmId
+      AND wl.deletedAt IS NULL
+      AND (CAST(:from AS date) IS NULL OR wl.workDate >= :from)
+      AND (CAST(:to AS date) IS NULL OR wl.workDate <= :to)
+    ORDER BY wl.workDate DESC
+""")
     List<WorkLogEntity> findAllByPlanIdAndFarmId(
             @Param("planId") UUID planId,
             @Param("farmId") UUID farmId,
-            @Param("from")   LocalDate from,
-            @Param("to")     LocalDate to);
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to
+    );
 
     @Query("""
     SELECT w FROM WorkLogEntity w

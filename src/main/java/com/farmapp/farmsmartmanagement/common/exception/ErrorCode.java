@@ -169,7 +169,13 @@ public enum ErrorCode {
     TASK_HAVE_SESSION_OUT_SIDE_NEW_DATE_RANGE(409,"Công việc đang có phiên làm việc nằm ngoài thời gian mới. Không thể cập nhật" , HttpStatus.CONFLICT ),
     EMPLOYEE_HAVE_OPEN_SESSION_CAN_NOT_DELETE_ASSIGNEE(409,"Người này đang có phiên làm việc với công việc này. Không thể xoá phân công người này(Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình)" ,HttpStatus.CONFLICT  ),
     EMPLOYEE_HAVE_OPEN_SESSION_CAN_NOT_DELETE_MEMBER(409,"Người này đang có phiên làm việc với công việc này. Không thể xoá thành viên này(Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình)" ,HttpStatus.CONFLICT  ),
-    WAREHOUSE_ITEM_MUST_HAVE_STOCK(409,"Số lượng vật tư phải lớn hơn 0" ,HttpStatus.CONFLICT  ),;
+    WAREHOUSE_ITEM_MUST_HAVE_STOCK(409,"Số lượng vật tư phải lớn hơn 0" ,HttpStatus.CONFLICT  ),
+    WORK_SHIFT_IN_USE(409,"Ca làm việc này đang được sử dụng (Xoá hoặc cập nhật sẽ gây sai sót dữ liệu)" ,HttpStatus.CONFLICT ),
+    WORK_SHIFT_INVALID_TIME_RANGE(409,"Thời gian ca làm việc không hợp lệ" ,HttpStatus.CONFLICT ), WORK_SHIFT_NAME_ALREADY_EXISTS(409,"Tên ca làm việc đã tồn tại" ,HttpStatus.CONFLICT ),
+    WORK_SHIFT_LIMIT_EXCEEDED(409,"Tối đa chỉ tạo 24 ca làm việc" ,HttpStatus.CONFLICT ),
+    WAGE_CONFIG_NOT_FOUND(404, "Không tìm thấy cấu hình lương",HttpStatus.CONFLICT ),
+    WAGE_CONFIG_ALREADY_EXISTS(409, "Cấu hình lương đã tồn tại cho ngày hiệu lực này",HttpStatus.CONFLICT ),
+    WAGE_CONFIG_IN_USE(409, "Cấu hình lương đã được sử dụng trong chấm công, không thể xóa",HttpStatus.CONFLICT ),;
 
 
 

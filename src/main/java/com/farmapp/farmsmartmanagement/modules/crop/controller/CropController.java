@@ -64,7 +64,7 @@ public class CropController {
     }
 
     @Operation(
-            summary = "PUBLIC Lấy danh sách cây trồng hệ thống",
+            summary = "PUBLIC Lấy chi tiết 1 cây trồng hệ thống",
             description = "API trả về tất cả cây trồng thuộc phạm vi hệ thống (SYSTEM scope)"
     )
     @GetMapping("/api/v1/crops/{cropId}")

@@ -31,4 +31,6 @@ public interface FarmMemberRepository extends JpaRepository<FarmMemberEntity, UU
       AND fm.isActive = true
     """)
     long countActiveByFarmId(@Param("farmId") UUID farmId);
+
+    boolean existsByFarm_IdAndUser_IdAndIsActiveTrue(UUID farmId, UUID userId);
 }
