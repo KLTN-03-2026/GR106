@@ -227,3 +227,20 @@ export interface RemoveTaskAssigneeRequest {
 export interface TaskAssigneeWithTask extends TaskAssignee {
   task: Task;
 }
+
+export interface PagedData<T> {
+  content: T[];
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+  first: boolean;
+  empty: boolean;
+}
+
+export interface PageableParams {
+  page: number;
+  size: number;
+  sort?: string[];
+}
