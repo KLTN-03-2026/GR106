@@ -45,7 +45,7 @@ public class TaskDependencyService {
         UUID farmId = securityUtils.getCurrentFarmId();
         TaskEntity task = taskValidator.validateAndGetTask(taskId, planStageId, planId, farmId);
 
-        TaskEntity dependencyOnTask = taskValidator.validateAndGetTask(taskId, planStageId, planId, farmId);
+        TaskEntity dependencyOnTask = taskValidator.validateAndGetTask(request.getDependsOnTaskId(), planStageId, planId, farmId);
 
         if (task.getId().equals(dependencyOnTask.getId())) {
             throw new AppException(ErrorCode.TASK_DEPENDENCY_SELF_NOT_ALLOWED);
