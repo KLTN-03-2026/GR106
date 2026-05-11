@@ -63,7 +63,7 @@ import {
   LocationDetailModal,
 } from "../../components/warehouse";
 
-type ActiveTab = "items" | "locations" | "transactions";
+type ActiveTab = "items" | "locations" | "transactions" | "item-history";
 
 const LOCATION_COLORS = [
   {
@@ -156,16 +156,6 @@ const inputCls =
 const selectCls =
   "w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all";
 
-// Helper functions for transactions
-function isSystemNote(note?: string | null) {
-  if (!note) return true;
-  const normalized = note.trim().toUpperCase();
-  return (
-    normalized === "IMPORT WAREHOUSE ITEM MANUAL" ||
-    normalized === "IMPORT_WAREHOUSE_ITEM_MANUAL" ||
-    normalized === "IMPORT WAREHOUSE ITEM"
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -181,6 +171,7 @@ export function WarehouseDetailPage() {
     useWarehouseItems(farmId, warehouseId);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("items");
+  const [logItemId, setLogItemId] = useState<string | null>(searchParams.get("itemId"));
   const [filterItemId, setFilterItemId] = useState<string | null>(null);
 
   // Conditionally fetch transactions based on filter
@@ -188,8 +179,8 @@ export function WarehouseDetailPage() {
     enabled: activeTab === "transactions" && !filterItemId
   });
 
-  const itemTx = useTransactionsByItem(filterItemId, undefined, { 
-    enabled: activeTab === "transactions" && !!filterItemId
+  const itemTx = useTransactionsByItem(logItemId || filterItemId, undefined, { 
+    enabled: (activeTab === "transactions" && !!filterItemId) || (activeTab === "item-history" && !!logItemId)
   });
 
   const {
@@ -200,7 +191,7 @@ export function WarehouseDetailPage() {
     setPageable: txSetPageable,
     setPageSize: txSetPageSize,
     goToPage: txGoToPage,
-  } = filterItemId ? itemTx : warehouseTx;
+  } = (activeTab === "item-history" || !!filterItemId) ? itemTx : warehouseTx;
 
   // ── Sync pagination with URL query params ───────────────────────────────────
   const sortParam = searchParams.get('sort');
@@ -279,8 +270,8 @@ export function WarehouseDetailPage() {
   const [selectedLoc, setSelectedLoc] = useState<WarehouseLocation | null>(
     null,
   );
-  const [isDetailLocModalOpen, setIsDetailLocModalOpen] = useState(false);
   const [selectedLocId, setSelectedLocId] = useState<string | null>(null);
+  const [isDetailLocModalOpen, setIsDetailLocModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const currentWarehouse = useMemo(
@@ -746,18 +737,28 @@ export function WarehouseDetailPage() {
                       return (
                         <tr
                           key={item.id}
-                          className="hover:bg-slate-50/60 transition-colors group"
+                          className="hover:bg-slate-50/60 transition-colors group cursor-pointer"
+                          onClick={() => {
+                            setLogItemId(item.id);
+                            setActiveTab("item-history");
+                            const params = new URLSearchParams(searchParams);
+                            params.set("itemId", item.id);
+                            params.set("tab", "item-history");
+                            params.set("page", "0");
+                            setSearchParams(params, { replace: true });
+                          }}
                         >
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600 shrink-0">
+                              <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600 shrink-0 group-hover:bg-emerald-100 transition-colors">
                                 <Package size={14} />
                               </div>
-                              <div>
-                                <p className="text-[13px] font-semibold text-slate-800 leading-tight">
+                              <div className="group/name relative">
+                                <p className="text-[13px] font-semibold text-slate-800 leading-tight group-hover/name:text-emerald-600 transition-colors flex items-center gap-1.5">
                                   {item.name}
+                                  <ChevronRight size={12} className="opacity-0 group-hover/name:opacity-100 group-hover/name:translate-x-0.5 transition-all text-emerald-400" />
                                 </p>
-                                <p className="text-[11px] text-emerald-600 font-mono mt-0.5">
+                                <p className="text-[11px] text-emerald-600 font-mono mt-0.5 group-hover/name:underline underline-offset-2 transition-all">
                                   {item.sku?.sku || "N/A"}
                                 </p>
                               </div>
@@ -821,6 +822,24 @@ export function WarehouseDetailPage() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  setLogItemId(item.id);
+                                  setActiveTab("item-history");
+                                  const params = new URLSearchParams(searchParams);
+                                  params.set("itemId", item.id);
+                                  params.set("tab", "item-history");
+                                  params.set("page", "0");
+                                  setSearchParams(params, { replace: true });
+                                }}
+                                className="p-1.5 text-emerald-500 hover:text-white hover:bg-emerald-600 rounded-lg transition-all shadow-sm border border-emerald-100 flex items-center gap-1.5 group/log h-8 px-2"
+                                title="Xem chi tiết biến động"
+                              >
+                                <History size={13} className="group-hover/log:rotate-12 transition-transform" />
+                                <span className="text-[11px] font-bold uppercase tracking-wider">Chi tiết</span>
+                              </button>
+                              <div className="w-px h-4 bg-slate-100 mx-0.5" />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   handleEditItem(item);
                                 }}
                                 className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
@@ -828,7 +847,10 @@ export function WarehouseDetailPage() {
                                 <Edit2 size={13} />
                               </button>
                               <button
-                                onClick={() => handleDeleteItem(item)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteItem(item);
+                                }}
                                 disabled={loading}
                                 className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-50"
                               >
@@ -1075,7 +1097,7 @@ export function WarehouseDetailPage() {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-end gap-1">
-                              <button 
+                              <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleViewLocationDetail(loc.id);
@@ -1085,19 +1107,14 @@ export function WarehouseDetailPage() {
                               >
                                 <Eye size={13} />
                               </button>
-                              <button 
+                              <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  // logic sửa nếu có
+                                  handleDeleteLocation(loc);
                                 }}
-                                className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                              >
-                                <Edit2 size={13} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteLocation(loc)}
                                 disabled={locLoading}
                                 className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors disabled:opacity-50"
+                                title="Xóa vị trí"
                               >
                                 <Trash2 size={13} />
                               </button>
@@ -1113,82 +1130,124 @@ export function WarehouseDetailPage() {
           </div>
         )}
 
-        {/* ══ TRANSACTIONS tab ══ */}
+        {/* ══ TRANSACTIONS tab (Farm Wide) ══ */}
         {activeTab === "transactions" && (
           <div className="flex flex-col h-full space-y-4 min-h-0">
-            {/* Header */}
             <div className="flex items-center justify-between">
               <p className="text-[13px] text-slate-600">
-                <span className="font-bold text-slate-900">
-                  {txData?.totalElements ?? 0}
-                </span>{" "}
-                giao dịch
+                <span className="font-bold text-slate-900">{warehouseTx.data?.totalElements ?? 0}</span> giao dịch kho
               </p>
             </div>
-
-            {/* Table Area (Scrollable) */}
-            <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden shadow-sm">
               <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
                 <div className="flex items-center gap-2">
-                  <History size={16} className="text-slate-400" />
-                  <span className="text-[14px] font-bold text-slate-700">
-                    Chi tiết giao dịch
-                  </span>
+                  <History size={16} className="text-emerald-500" />
+                  <span className="text-[14px] font-bold text-slate-700">Lịch sử giao dịch chung</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  {/* Lọc vật tư */}
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
-                      Lọc:
-                    </span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Lọc vật tư:</span>
                     <select
                       value={filterItemId || ""}
-                      onChange={(e) => {
-                        const newItemId = e.target.value || null;
-                        setFilterItemId(newItemId);
-                        warehouseTx.goToPage(0);
-                        itemTx.goToPage(0);
-                        const params = new URLSearchParams(searchParams);
-                        if (newItemId) params.set('itemId', newItemId);
-                        else params.delete('itemId');
-                        params.set('page', '0');
-                        setSearchParams(params, { replace: true });
-                      }}
+                      onChange={(e) => setFilterItemId(e.target.value || null)}
                       className="text-[12px] border-slate-200 rounded-lg py-1 px-2 bg-white shadow-sm outline-none focus:border-emerald-400 min-w-[150px]"
                     >
                       <option value="">Tất cả vật tư</option>
-                      {items.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.name}
-                        </option>
-                      ))}
+                      {items.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
                     </select>
                   </div>
+                </div>
+              </div>
+              
+              {warehouseTx.loading ? (
+                <div className="flex-1 flex items-center justify-center py-20"><Loader2 className="animate-spin text-emerald-500" /></div>
+              ) : (
+                <div className="flex-1 overflow-auto">
+                   <table className="w-full text-left">
+                     <thead className="sticky top-0 bg-white border-b border-slate-100 z-10">
+                        <tr className="text-[10px] font-bold text-slate-400 uppercase">
+                          <th className="px-6 py-3">Vật tư</th>
+                          <th className="px-6 py-3 text-right">Số lượng</th>
+                          <th className="px-6 py-3">Lộ trình</th>
+                          <th className="px-6 py-3">Thời gian</th>
+                        </tr>
+                     </thead>
+                     <tbody className="divide-y divide-slate-50">
+                        {warehouseTx.transactions.map(tx => (
+                          <tr key={tx.id} className="hover:bg-slate-50/50">
+                            <td className="px-6 py-4 font-bold text-slate-700 text-[13px]">{tx.warehouseItem.name}</td>
+                            <td className={cn("px-6 py-4 text-right font-black text-[13px]", tx.qtyChange > 0 ? "text-emerald-600" : "text-rose-600")}>
+                              {tx.qtyChange > 0 ? "+" : ""}{tx.qtyChange} {tx.warehouseItem.unit.code}
+                            </td>
+                            <td className="px-6 py-4 text-[12px] text-slate-500">
+                              {tx.fromLocation?.name || "—"} → {tx.toLocation?.name || "—"}
+                            </td>
+                            <td className="px-6 py-4 text-[12px] text-slate-400">
+                              {new Date(tx.createdAt).toLocaleString("vi-VN")}
+                            </td>
+                          </tr>
+                        ))}
+                     </tbody>
+                   </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
-                  <div className="h-4 w-px bg-slate-200 mx-1" />
+        {/* ══ ITEM HISTORY tab ══ */}
+        {activeTab === "item-history" && logItemId && (
+          <div className="flex flex-col h-full space-y-4 min-h-0">
+             {/* Header with Back Button */}
+             <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setActiveTab("items");
+                    setLogItemId(null);
+                    const params = new URLSearchParams(searchParams);
+                    params.delete("itemId");
+                    params.delete("tab");
+                    setSearchParams(params, { replace: true });
+                  }}
+                  className="p-2 hover:bg-white rounded-xl text-slate-500 hover:text-slate-900 transition-all border border-transparent hover:border-slate-200 shadow-sm hover:shadow-md"
+                >
+                  <ArrowLeft size={18} />
+                </button>
+                <div>
+                  <h3 className="text-[16px] font-bold text-slate-900 flex items-center gap-2">
+                    <History size={18} className="text-emerald-500" />
+                    Chi tiết: <span className="text-emerald-600">{items.find(i => i.id === logItemId)?.name || "Vật tư"}</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-medium">Chi tiết lịch sử biến động kho của vật tư này</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                 <p className="text-[13px] text-slate-600">
+                  <span className="font-bold text-slate-900">{txData?.totalElements ?? 0}</span> giao dịch
+                </p>
+              </div>
+            </div>
 
-                  {/* Sắp xếp */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
-                      Sắp xếp:
-                    </span>
-                    <select
-                      value={txPageable.sort?.[0] || "createdAt,desc"}
-                      onChange={(e) => updateSort(e.target.value)}
-                      className="text-[12px] border-slate-200 rounded-lg py-1 px-2 bg-white shadow-sm outline-none focus:border-emerald-400"
-                    >
-                      <option value="createdAt,desc">Mới nhất</option>
-                      <option value="createdAt,asc">Cũ nhất</option>
-                    </select>
+            <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden shadow-sm">
+               {/* Toolbar */}
+               <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sắp xếp:</span>
+                      <select
+                        value={txPageable.sort?.[0] || "createdAt,desc"}
+                        onChange={(e) => updateSort(e.target.value)}
+                        className="text-[12px] border-slate-200 rounded-lg py-1 px-2 bg-white shadow-sm outline-none focus:border-emerald-400"
+                      >
+                        <option value="createdAt,desc">Mới nhất</option>
+                        <option value="createdAt,asc">Cũ nhất</option>
+                      </select>
+                    </div>
                   </div>
 
-                  <div className="h-4 w-px bg-slate-200 mx-1" />
-
-                  {/* Size */}
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
-                      Size:
-                    </span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Size:</span>
                     <select
                       value={txPageable.size}
                       onChange={(e) => updatePageSize(Number(e.target.value))}
@@ -1199,239 +1258,136 @@ export function WarehouseDetailPage() {
                       <option value={50}>50</option>
                     </select>
                   </div>
-                </div>
-              </div>
+               </div>
 
-              {txLoading ? (
-                <div className="flex flex-col items-center justify-center py-16 gap-3">
-                  <Loader2
-                    size={28}
-                    className="animate-spin text-emerald-500"
-                  />
-                  <p className="text-[12px] text-slate-400">
-                    Đang tải giao dịch...
-                  </p>
-                </div>
-              ) : transactions.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-                  <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center">
-                    <History size={24} className="text-slate-300" />
-                  </div>
-                  <div>
-                    <p className="text-[14px] font-semibold text-slate-700">
-                      Chưa có giao dịch nào
-                    </p>
-                    <p className="text-[12px] text-slate-400 mt-1">
-                      Giao dịch sẽ xuất hiện khi nhập/xuất vật tư
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex-1 overflow-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="sticky top-0 z-10">
-                      <tr className="bg-slate-50 border-b border-slate-100">
-                        {!filterItemId && (
-                          <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-left">
-                            Tên vật tư
-                          </th>
-                        )}
-                        <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">
-                          Số lượng
-                        </th>
-                        <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">
-                          Đơn giá
-                        </th>
-                        <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">
-                          Thành tiền
-                        </th>
-                        <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-left">
-                          Vị trí (Từ / Đến)
-                        </th>
-                        <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-left">
-                          Người thực hiện
-                        </th>
-                        <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-left">
-                          Thời gian
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {transactions.map((tx: WarehouseTransaction) => {
-                        const isImport = tx.qtyChange > 0;
-                        const itemPrice = tx.warehouseItem.unitPrice ?? 0;
-                        const totalValue = Math.abs(tx.qtyChange) * itemPrice;
+               {txLoading ? (
+                 <div className="flex-1 flex flex-col items-center justify-center py-16 gap-3">
+                   <Loader2 size={32} className="animate-spin text-emerald-500" />
+                   <p className="text-[13px] text-slate-400 font-medium">Đang truy xuất nhật ký...</p>
+                 </div>
+               ) : transactions.length === 0 ? (
+                 <div className="flex-1 flex flex-col items-center justify-center py-16 gap-3 text-center">
+                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-2">
+                      <History size={32} className="text-slate-200" />
+                    </div>
+                    <p className="text-[15px] font-bold text-slate-700">Chưa có giao dịch</p>
+                    <p className="text-[12px] text-slate-400">Vật tư này hiện chưa có biến động kho nào</p>
+                 </div>
+               ) : (
+                 <div className="flex-1 overflow-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-100">
+                        <tr>
+                          <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vật tư</th>
+                          <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Biến động</th>
+                          <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">Đơn vị</th>
+                          <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Đơn giá</th>
+                          <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Giá trị</th>
+                          <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Từ Vị trí</th>
+                          <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Đến Vị trí</th>
+                          <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Người thực hiện</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {transactions.map((tx: WarehouseTransaction) => {
+                          const isImport = tx.qtyChange > 0;
+                          const itemPrice = tx.warehouseItem.unitPrice ?? 0;
+                          const totalValue = Math.abs(tx.qtyChange) * itemPrice;
 
-                        return (
-                          <tr
-                            key={tx.id}
-                            className="hover:bg-slate-50/60 transition-colors border-b border-slate-50 last:border-0"
-                          >
-                            {!filterItemId && (
-                              <td className="px-4 py-4">
-                                <div className="flex flex-col">
-                                  <span className="text-[14px] font-semibold text-slate-900">
-                                    {tx.warehouseItem.name}
-                                  </span>
-                                  {!isSystemNote(tx.notes) && (
-                                    <p className="text-[11px] text-slate-400 italic mt-1">
-                                      "{tx.notes}"
-                                    </p>
-                                  )}
-                                </div>
+                          return (
+                            <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="px-6 py-4">
+                                <span className="text-[13px] font-bold text-slate-700">{tx.warehouseItem.name}</span>
                               </td>
-                            )}
-                            {filterItemId && !isSystemNote(tx.notes) && (
-                              <td className="px-4 py-4">
-                                <p className="text-[11px] text-slate-400 italic">
-                                  "{tx.notes}"
-                                </p>
-                              </td>
-                            )}
-
-                            <td className="px-4 py-4 text-right">
-                              <div className="flex flex-col items-end">
-                                <div className="flex items-center gap-1.5">
+                              <td className="px-6 py-4 text-right">
+                                <div className="flex flex-col items-end">
                                   <span className={cn(
-                                    "text-[14px] font-bold",
+                                    "text-[14px] font-black",
                                     isImport ? "text-emerald-600" : "text-rose-600"
                                   )}>
-                                    {isImport ? "+" : "-"}
-                                    {Math.abs(tx.qtyChange).toLocaleString("vi-VN")}
+                                    {isImport ? "+" : "-"} {Math.abs(tx.qtyChange).toLocaleString("vi-VN")}
                                   </span>
-                                  <span className="text-[11px] font-medium text-slate-400">
-                                    {tx.warehouseItem.unit.code}
-                                  </span>
-                                </div>
-                                {isImport ? (
-                                  <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-tighter">Nhập kho</span>
-                                ) : (
-                                  <span className="text-[9px] font-bold text-rose-500 uppercase tracking-tighter">Xuất kho</span>
-                                )}
-                              </div>
-                            </td>
-
-                            <td className="px-4 py-4 text-right">
-                              <span className="text-[13px] font-medium text-slate-600">
-                                {itemPrice > 0 ? itemPrice.toLocaleString("vi-VN") + " ₫" : "—"}
-                              </span>
-                            </td>
-
-                            <td className="px-4 py-4 text-right">
-                              <span className={cn(
-                                "text-[13px] font-bold",
-                                isImport ? "text-emerald-700" : "text-rose-700"
-                              )}>
-                                {totalValue > 0 ? (isImport ? "+" : "-") + totalValue.toLocaleString("vi-VN") + " ₫" : "—"}
-                              </span>
-                            </td>
-
-                            <td className="px-4 py-4">
-                              <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[12px] text-slate-400">
-                                    Từ: {tx.fromLocation ? tx.fromLocation.name : "—"}
+                                  <span className={cn(
+                                    "text-[9px] font-bold px-1.5 rounded uppercase tracking-tighter w-fit",
+                                    isImport ? "bg-emerald-50 text-emerald-500" : "bg-rose-50 text-rose-500"
+                                  )}>
+                                    {isImport ? "Nhập kho" : "Xuất kho"}
                                   </span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[12px] text-slate-700 font-medium">
-                                    Đến: {tx.toLocation ? tx.toLocation.name : "—"}
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                <span className="text-[12px] font-medium text-slate-600">{tx.warehouseItem.unit.name}</span>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <span className="text-[13px] font-medium text-slate-600">
+                                  {itemPrice > 0 ? itemPrice.toLocaleString("vi-VN") + " ₫" : "—"}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <span className={cn(
+                                  "text-[13px] font-bold",
+                                  isImport ? "text-emerald-700" : "text-rose-700"
+                                )}>
+                                  {totalValue > 0 ? (isImport ? "+" : "-") + totalValue.toLocaleString("vi-VN") + " ₫" : "—"}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="text-[12px] text-slate-500 font-medium truncate max-w-[120px] block">
+                                  {tx.fromLocation?.name || "—"}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="text-[12px] text-slate-700 font-bold truncate max-w-[120px] block">
+                                  {tx.toLocation?.name || "—"}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex flex-col">
+                                  <span className="text-[12px] font-bold text-slate-700 whitespace-nowrap">
+                                    {tx.performedBy?.fullName || "Hệ thống"}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 truncate max-w-[150px]">
+                                    {tx.performedBy?.email || "N/A"}
                                   </span>
                                 </div>
-                              </div>
-                            </td>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                 </div>
+               )}
 
-                            <td className="px-4 py-4">
-                              <div className="flex flex-col">
-                                <span className="text-[13px] font-medium text-slate-700">
-                                  {tx.performedBy?.fullName ?? "Hệ thống"}
-                                </span>
-                                {tx.performedBy?.email && (
-                                  <span className="text-[11px] text-slate-400 mt-0.5 max-w-[150px] truncate">
-                                    {tx.performedBy.email}
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-
-                            <td className="px-4 py-4">
-                              <div className="flex flex-col">
-                                <span className="text-[12px] text-slate-600 font-medium">
-                                  {new Date(tx.createdAt).toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                                <span className="text-[11px] text-slate-400 mt-0.5">
-                                  {new Date(tx.createdAt).toLocaleDateString("vi-VN")}
-                                </span>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-                {txData && (
+               {/* Pagination */}
+               {txData && (
                   <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-white shrink-0">
-                    <div className="flex items-center gap-4">
-                      <div className="text-[12px] text-slate-500">
-                        Tổng: <span className="font-semibold text-slate-700">{txData.totalElements}</span> giao dịch
-                      </div>
-                      
-                      <div className="h-4 w-px bg-slate-200" />
-                      
-                      <div className="flex items-center gap-2">
-                        <span className="text-[12px] text-slate-400">Số dòng:</span>
-                        <select 
-                          value={txPageable.size}
-                          onChange={(e) => updatePageSize(Number(e.target.value))}
-                          className="text-[12px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 outline-none focus:border-emerald-400 cursor-pointer"
-                        >
-                          <option value={10}>10</option>
-                          <option value={20}>20</option>
-                          <option value={50}>50</option>
-                        </select>
-                      </div>
+                    <div className="text-[12px] text-slate-500">
+                      Hiển thị trang <span className="font-bold text-slate-700">{txData.pageNumber + 1}</span> / {txData.totalPages || 1}
                     </div>
-
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[12px] text-slate-400 mr-2">
-                        Trang {txData.pageNumber + 1} / {txData.totalPages || 1}
-                      </span>
-                      
                       <button
                         onClick={() => goToPage(txData.pageNumber - 1)}
                         disabled={txData.first || txData.totalPages <= 1}
-                        className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-slate-200"
+                        className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 transition-all"
                       >
                         <ChevronLeft size={16} />
                       </button>
                       
                       <div className="flex items-center gap-1">
-                        {Array.from(
-                          { length: Math.min(Math.max(txData.totalPages, 1), 5) },
+                        {Array.from({ length: Math.min(5, txData.totalPages) }).map(
                           (_, i) => {
-                            const currentPage = txData.pageNumber ?? 0;
-                            const total = Math.max(txData.totalPages, 1);
-                            let pageNum: number;
-                            if (total <= 5) {
-                              pageNum = i;
-                            } else if (currentPage < 3) {
-                              pageNum = i;
-                            } else if (currentPage >= total - 2) {
-                              pageNum = total - 5 + i;
-                            } else {
-                              pageNum = currentPage - 2 + i;
-                            }
+                            const pageNum = i;
+                            const isActive = txData.pageNumber === pageNum;
                             return (
                               <button
                                 key={pageNum}
                                 onClick={() => goToPage(pageNum)}
                                 className={cn(
-                                  "w-7 h-7 text-[12px] font-semibold rounded-lg transition-all",
-                                  currentPage === pageNum
-                                    ? "bg-emerald-600 text-white"
-                                    : "text-slate-600 hover:bg-slate-100",
+                                  "w-8 h-8 rounded-lg text-[12px] font-semibold transition-all",
+                                  isActive
+                                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-200"
+                                    : "text-slate-500 hover:bg-slate-100"
                                 )}
                               >
                                 {pageNum + 1}
