@@ -91,9 +91,9 @@ export default function Sidebar({
     : null;
 
   const myFarmRole = currentFarm
-    ? currentFarm.myRole?.toLowerCase() === "worker"
+    ? (currentFarm as any).myRole?.toLowerCase() === "worker"
       ? "employee"
-      : currentFarm.myRole?.toLowerCase()
+      : (currentFarm as any).myRole?.toLowerCase()
     : null;
 
   const effectiveRole = currentFarmId && myFarmRole ? myFarmRole : user?.role;
@@ -211,7 +211,7 @@ export default function Sidebar({
             <Trees size={16} className="text-emerald-600" />
           </div>
           <p className="text-sm font-semibold text-slate-900 truncate">
-            {currentFarm ? currentFarm.farmName || currentFarm.name : "Trang Trại"}
+            {currentFarm ? (currentFarm as any).farmName || (currentFarm as any).name : "Trang Trại"}
           </p>
         </div>
 
