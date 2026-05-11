@@ -56,5 +56,9 @@ export const useSeasonPlans = (farmId?: string) => {
     updateTaskStatus: taskPart.updateTaskStatus,
     fetchTaskAvailableStatuses: taskPart.fetchAvailableStatuses,
     fetchPhaseAvailableStatuses: phasePart.fetchAvailableStatuses,
+    fetchTaskDependencies: taskPart.fetchTaskDependencies,
+    addTaskDependency: taskPart.addTaskDependency,
+    deleteTaskDependency: taskPart.deleteTaskDependency,
+    updatePlansCache: plansPart.updatePlansCache,
   };
 };

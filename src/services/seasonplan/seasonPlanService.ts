@@ -59,6 +59,24 @@ export const seasonPlanService = {
   },
 
   /**
+   * Cập nhật thông tin kế hoạch (PATCH /api/v1/plans/{planId})
+   */
+  async updatePlan(planId: string, data: Partial<SeasonPlan>): Promise<SeasonPlan> {
+    const payload = {
+      name: data.name,
+      note: data.description || (data as any).note,
+      startDate: data.startDate,
+      endDate: data.endDate,
+    };
+    const response = await axiosInstance.patch(`/api/v1/plans/${planId}`, payload);
+    const validated = createPlanResponseSchema.parse(response.data);
+    return {
+      ...validated.data,
+      description: validated.data.note || '',
+    } as any as SeasonPlan;
+  },
+
+  /**
    * Lấy danh sách lô đất của kế hoạch
    */
   async getPlanPlots(planId: string): Promise<{ plotId: string; plotName: string }[]> {

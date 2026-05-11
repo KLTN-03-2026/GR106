@@ -79,6 +79,7 @@ interface PlanDetailPanelProps {
   onUpdateTaskStatus?: (planId: string, stageId: string, taskId: string, statusId: string) => Promise<any>;
   fetchTaskAvailableStatuses?: (planId: string, stageId: string, taskId: string) => Promise<any>;
   fetchPhaseAvailableStatuses?: (planId: string, stageId: string) => Promise<any>;
+  updatePlansCache?: (updater: (prev: any[]) => any[]) => void;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -111,6 +112,7 @@ export function PlanDetailPanel({
   onUpdatePhaseStatus,
   onUpdateTaskStatus,
   onDeletePlot,
+  updatePlansCache,
 }: PlanDetailPanelProps) {
   const queryClient = useQueryClient();
   const { currentFarmId } = useAuth();
@@ -159,7 +161,8 @@ export function PlanDetailPanel({
     selection?.plan.id,
     selection?.type === 'TASK' ? (selection as any).phase.id : undefined,
     selection?.type === 'TASK' ? (selection as any).task.id : undefined,
-    isOpen && activeTab === 'INFO' && selection?.type === 'TASK'
+    isOpen && activeTab === 'INFO' && selection?.type === 'TASK',
+    updatePlansCache
   );
 
   const {
@@ -531,20 +534,19 @@ export function PlanDetailPanel({
     }
   };
   const handleAddDependency = async (dependsOnTaskId: string) => {
+    console.error("EVENT: Bắt đầu thêm tiền nhiệm cho Task:", (selection as any)?.task?.id, "với ID phụ thuộc:", dependsOnTaskId);
     try {
       await addDependency(dependsOnTaskId);
-      toast.success('Đã thêm liên kết phụ thuộc');
     } catch (error: any) {
-      toast.error(extractErrorMessage(error));
+      // Error is already handled with toast in useTaskDependencies
     }
   };
 
   const handleDeleteDependency = async (dependsOnTaskId: string) => {
     try {
       await deleteDependency(dependsOnTaskId);
-      toast.success('Đã xóa liên kết phụ thuộc');
     } catch (error: any) {
-      toast.error(extractErrorMessage(error));
+      // Error already handled
     }
   };
 

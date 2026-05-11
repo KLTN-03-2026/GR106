@@ -96,7 +96,7 @@ export function SeasonPlanPage() {
     fetchTaskStatuses, fetchTaskStatusTransitions, taskStatuses, taskStatusTransitions,
     addPlotsToPlan, deletePlotFromPlan, optimisticallyUpdatePhaseTime, optimisticallyUpdateTaskTime,
     addPlanToState, fetchTaskAvailableStatuses, fetchPhaseAvailableStatuses,
-    getPhaseDetail, getTaskDetail
+    getPhaseDetail, getTaskDetail, updatePlansCache
   } = useSeasonPlans(farmId);
 
   const { user, accessToken } = useAuth();
@@ -693,6 +693,7 @@ export function SeasonPlanPage() {
             </div>
 
             <PlanDetailPanel
+              key={selectedItem ? `${selectedItem.type}-${selectedItem.id}` : 'none'}
               isOpen={!!selectedItem}
               selection={selectedData}
               onScrollToDate={(dateStr) => timelineRef.current?.scrollToDate(dateStr)}
@@ -735,6 +736,7 @@ export function SeasonPlanPage() {
               phaseStatusTransitions={planStageStatusTransitions}
               taskStatusOptions={taskStatusOptions}
               taskStatusTransitions={taskStatusTransitions}
+              updatePlansCache={updatePlansCache}
             />
           </>
         )}

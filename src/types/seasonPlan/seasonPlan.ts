@@ -102,6 +102,7 @@ export interface Task {
   completedAt?: string;
   createdBy?: string;
   createdAt?: string;
+  dependencies?: any[]; // Quan hệ phụ thuộc
   // Local/Extended fields for resource management
   assignedMembers?: string[];
   materials?: TaskMaterial[];

@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CreateSeasonPlanRequest, SeasonPlan } from '../../types/seasonPlan';
-import { seasonPlanService } from '../../services/seasonplan/seasonPlanService';
+import { CreateSeasonPlanRequest, SeasonPlan } from '@/types/seasonPlan';
+import { seasonPlanService } from '@/services/seasonplan/seasonPlanService';
 import { createUpdatePlansCache, PLAN_KEYS, withUnwrap } from './seasonPlanShared';
 import { useAuth } from '../auth/useAuth';
 
@@ -11,7 +11,9 @@ export const useSeasonPlanPlans = (farmId?: string) => {
   const [activeFarmId, setActiveFarmId] = useState<string | null>(farmId || currentFarmId);
   
   useEffect(() => {
-    if (currentFarmId && !farmId) {
+    if (farmId) {
+      setActiveFarmId(farmId);
+    } else if (currentFarmId) {
       setActiveFarmId(currentFarmId);
     }
   }, [currentFarmId, farmId]);
@@ -32,8 +34,8 @@ export const useSeasonPlanPlans = (farmId?: string) => {
         const existing = currentData?.find(p => p.id === newPlan.id);
         return {
           ...newPlan,
-          phases: (newPlan.phases && newPlan.phases.length > 0) ? newPlan.phases : (existing?.phases ?? []),
-          plots: (newPlan.plots && newPlan.plots.length > 0) ? newPlan.plots : (existing?.plots ?? []),
+          phases: newPlan.phases?.length ? newPlan.phases : (existing?.phases ?? []),
+          plots: newPlan.plots?.length ? newPlan.plots : (existing?.plots ?? []),
         };
       });
     }
@@ -59,7 +61,7 @@ export const useSeasonPlanPlans = (farmId?: string) => {
     onSuccess: (updatedPlan) => {
       updatePlansCache((prev) =>
         prev.map((plan) =>
-          plan.id === updatedPlan.id ? { ...updatedPlan, phases: plan.phases, plots: plan.plots } : plan,
+          plan.id === (updatedPlan as any).id ? { ...(updatedPlan as any), phases: plan.phases, plots: plan.plots } : plan,
         ),
       );
     },
