@@ -39,8 +39,8 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
               SELECT 1
               FROM UserRoleEntity ur
               JOIN ur.role r
-              WHERE ur.user = u
-                AND r.name = 'ROLE_ADMIN'
+              WHERE ur.user.id = u.id
+                AND r.name = 'ADMIN'
           )
     """)
     boolean existsByEmailAndRoleIsAdmin(@Param("email") String email);

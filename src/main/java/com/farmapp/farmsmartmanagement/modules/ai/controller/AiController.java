@@ -1,8 +1,10 @@
 package com.farmapp.farmsmartmanagement.modules.ai.controller;
 
 import com.farmapp.farmsmartmanagement.common.annotation.RequiresFarmToken;
+import com.farmapp.farmsmartmanagement.common.annotation.RequiresSubscription;
 import com.farmapp.farmsmartmanagement.common.response.ApiResponse;
 import com.farmapp.farmsmartmanagement.common.response.ResponseUtil;
+import com.farmapp.farmsmartmanagement.domain.enums.SubscriptionFeature;
 import com.farmapp.farmsmartmanagement.modules.ai.dto.request.AiChatRequest;
 import com.farmapp.farmsmartmanagement.modules.ai.dto.response.TaskSuggestion;
 import com.farmapp.farmsmartmanagement.modules.ai.service.GeminiService;
@@ -34,6 +36,7 @@ public class AiController {
     // ── 1. Free-form: nhập tay cropType + stage ───────────────────────────────
     @GetMapping("/suggest-tasks")
     @RequiresFarmToken
+    @RequiresSubscription(features = SubscriptionFeature.AI_DIAGNOSIS)
     @Operation(
             summary = "Gợi ý công việc theo loại cây và giai đoạn (free-form)",
             description = "Dùng Google Gemini để gợi ý danh sách công việc. " +
@@ -52,6 +55,7 @@ public class AiController {
     // ── 2. Context-aware: dựa trên planStage thực tế trong DB ─────────────────
     @GetMapping("/plans/{planId}/stages/{planStageId}/suggest-tasks")
     @RequiresFarmToken
+    @RequiresSubscription(features = SubscriptionFeature.AI_DIAGNOSIS)
     @Operation(
             summary = "Gợi ý công việc thông minh theo giai đoạn kế hoạch",
             description = "Lấy đầy đủ context từ DB (tên kế hoạch, thời gian, cây trồng, " +
@@ -73,6 +77,7 @@ public class AiController {
     // ── 3. Chat tự do với AI ──────────────────────────────────────────────────
     @PostMapping("/chat")
     @RequiresFarmToken
+    @RequiresSubscription(features = SubscriptionFeature.AI_DIAGNOSIS)
     @Operation(
             summary = "Chat với AI chuyên gia nông nghiệp",
             description = "Hỏi AI bất kỳ câu hỏi nào về canh tác. " +

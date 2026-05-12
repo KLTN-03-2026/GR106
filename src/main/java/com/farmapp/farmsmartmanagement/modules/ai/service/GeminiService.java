@@ -233,7 +233,7 @@ public class GeminiService {
                 - Giai đoạn canh tác  : %s
                 
                 Yêu cầu:
-                Gợi ý 6-8 công việc cần thực hiện trong giai đoạn này, theo thứ tự ưu tiên.
+                Gợi ý 5-6 công việc cần thực hiện trong giai đoạn này, theo thứ tự ưu tiên.
                 Mỗi công việc phải cụ thể, có liều lượng hoặc phương pháp thực hiện rõ ràng.
                 Phù hợp điều kiện khí hậu và tập quán canh tác Việt Nam.
                 
