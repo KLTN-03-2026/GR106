@@ -131,6 +131,14 @@ export function SeasonPlanPage() {
     isOpen: boolean; planId: string | null; isDeleting: boolean;
   }>({ isOpen: false, planId: null, isDeleting: false });
 
+  const [phaseDeleteConfirm, setPhaseDeleteConfirm] = useState<{
+    isOpen: boolean; planId: string | null; stageId: string | null; isDeleting: boolean;
+  }>({ isOpen: false, planId: null, stageId: null, isDeleting: false });
+
+  const [taskDeleteConfirm, setTaskDeleteConfirm] = useState<{
+    isOpen: boolean; planId: string | null; stageId: string | null; taskId: string | null; isDeleting: boolean;
+  }>({ isOpen: false, planId: null, stageId: null, taskId: null, isDeleting: false });
+
   // ── Derived data ──────────────────────────────────────────────────────────
   const farmPlans = plans.filter((p: SeasonPlan) => p.farmId === farmId || p.farmId === '');
   const currentPlan = planId ? farmPlans.find(p => p.id === planId) : null;
@@ -389,7 +397,16 @@ export function SeasonPlanPage() {
     }
   };
 
-  const handleDeletePhase = async (planId: string, stageId: string) => {
+  const handleDeletePhase = (planId: string, stageId: string) => {
+    setPhaseDeleteConfirm({ isOpen: true, planId, stageId, isDeleting: false });
+  };
+
+  const confirmDeletePhase = async () => {
+    const { planId, stageId } = phaseDeleteConfirm;
+    if (!planId || !stageId) return;
+
+    setPhaseDeleteConfirm(prev => ({ ...prev, isDeleting: true }));
+
     const cachedPhase = plans
       .find(p => p.id === planId)
       ?.phases?.find(ph => ph.id === stageId);
@@ -400,7 +417,10 @@ export function SeasonPlanPage() {
     try {
       await removePhase(planId, stageId).unwrap();
       setSelectedItem(null);
+      setPhaseDeleteConfirm({ isOpen: false, planId: null, stageId: null, isDeleting: false });
+      toast.success('Xóa giai đoạn thành công');
     } catch (err: any) {
+      setPhaseDeleteConfirm(prev => ({ ...prev, isDeleting: false, isOpen: false }));
       setNotification({
         isOpen: true,
         type: 'error',
@@ -410,7 +430,16 @@ export function SeasonPlanPage() {
     }
   };
 
-  const handleDeleteTask = async (planId: string, stageId: string, taskId: string) => {
+  const handleDeleteTask = (planId: string, stageId: string, taskId: string) => {
+    setTaskDeleteConfirm({ isOpen: true, planId, stageId, taskId, isDeleting: false });
+  };
+
+  const confirmDeleteTask = async () => {
+    const { planId, stageId, taskId } = taskDeleteConfirm;
+    if (!planId || !stageId || !taskId) return;
+
+    setTaskDeleteConfirm(prev => ({ ...prev, isDeleting: true }));
+
     const cachedTask = plans
       .find(p => p.id === planId)
       ?.phases?.find(ph => ph.id === stageId)
@@ -422,7 +451,10 @@ export function SeasonPlanPage() {
     try {
       await removeSeasonTask(planId, stageId, taskId).unwrap();
       setSelectedItem(null);
+      setTaskDeleteConfirm({ isOpen: false, planId: null, stageId: null, taskId: null, isDeleting: false });
+      toast.success('Xóa công việc thành công');
     } catch (err: any) {
+      setTaskDeleteConfirm(prev => ({ ...prev, isDeleting: false, isOpen: false }));
       setNotification({
         isOpen: true,
         type: 'error',
@@ -852,7 +884,6 @@ export function SeasonPlanPage() {
         </div>
       </Modal>
 
-      {/* Confirm delete */}
       <ConfirmModal
         isOpen={deleteConfirm.isOpen}
         onClose={() => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))}
@@ -861,6 +892,30 @@ export function SeasonPlanPage() {
         title="Xóa kế hoạch?"
         message="Bạn có chắc chắn muốn xóa kế hoạch mùa vụ này? Tất cả giai đoạn và công việc liên quan sẽ bị loại bỏ vĩnh viễn."
         confirmLabel="Xóa ngay"
+        type="danger"
+      />
+
+      {/* Confirm delete phase */}
+      <ConfirmModal
+        isOpen={phaseDeleteConfirm.isOpen}
+        onClose={() => setPhaseDeleteConfirm(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDeletePhase}
+        loading={phaseDeleteConfirm.isDeleting}
+        title="Xóa giai đoạn?"
+        message="Hành động này sẽ xóa vĩnh viễn giai đoạn này và tất cả các công việc liên quan. Bạn có chắc chắn muốn tiếp tục?"
+        confirmLabel="Xóa giai đoạn"
+        type="danger"
+      />
+
+      {/* Confirm delete task */}
+      <ConfirmModal
+        isOpen={taskDeleteConfirm.isOpen}
+        onClose={() => setTaskDeleteConfirm(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmDeleteTask}
+        loading={taskDeleteConfirm.isDeleting}
+        title="Xóa công việc?"
+        message="Hành động này sẽ xóa vĩnh viễn công việc này. Bạn có chắc chắn muốn tiếp tục?"
+        confirmLabel="Xóa công việc"
         type="danger"
       />
     </div>
