@@ -81,6 +81,7 @@ export default function DashboardLayout() {
     if (p.includes("/skus")) return "skus";
     if (p.includes("/sessions")) return "sessions";
     if (p.includes("/config")) return "config";
+    if (p.includes("/dashboard/notifications")) return "notifications";
     if (p.includes("/change-password")) return "settings";
 
     // If URL is /farms/:id/actions, maybe highlight 'tree' or nothing?
@@ -93,7 +94,7 @@ export default function DashboardLayout() {
 
   const [active, setActive] = useState(getActive());
 
-  const wideSidebarPaths = ["/members", "/land-plots", "/map", "/subscription", "/crop-catalog", "/season-plans", "/warehouses", "/suppliers", "/skus", "/config"];
+  const wideSidebarPaths = ["/members", "/land-plots", "/map", "/subscription", "/crop-catalog", "/season-plans", "/warehouses", "/suppliers", "/skus", "/config", "/dashboard/notifications"];
   const isWideSidebarPage =
     wideSidebarPaths.some(path => location.pathname.includes(path)) ||
     (location.pathname.startsWith("/farms") && location.pathname !== "/farms");
@@ -129,6 +130,10 @@ export default function DashboardLayout() {
     }
     if (key === "task") {
       navigate(currentFarmId ? `/farms/${currentFarmId}/task` : '/task');
+      return;
+    }
+    if (key === "notifications") {
+      navigate("/dashboard/notifications");
       return;
     }
 

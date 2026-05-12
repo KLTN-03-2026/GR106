@@ -22,11 +22,13 @@ import {
   ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
+  Bell,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "../../utils/cn";
 import { useAuth } from "../../hooks/auth/useAuth";
 import { useFarms } from "../../hooks/farms/useFarms";
+import { useNotifications } from "../../hooks/notifications/useNotifications";
 import { ConfirmModal } from "../ui/ConfirmModal";
 
 interface SidebarProps {
@@ -47,6 +49,7 @@ const NAV_GROUPS = [
   {
     title: "Tiện ích",
     items: [
+      { key: "notifications", label: "Thông báo", icon: Bell, roles: ["owner", "admin", "manager", "employee"] },
       { key: "wallet", label: "Ví & Thanh toán", icon: Wallet, roles: ["owner", "admin"] },
       { key: "activity", label: "Hoạt động", icon: History, roles: ["owner", "admin"] },
       { key: "task", label: "Nhiệm vụ", icon: GitFork, roles: ["owner", "admin", "employee"] },
@@ -87,6 +90,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const { user, currentFarmId, logout } = useAuth();
   const { farmSummary, farms } = useFarms();
+  const { unreadCount } = useNotifications();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [showScrollHint, setShowScrollHint] = useState(false);
@@ -142,8 +146,11 @@ export default function Sidebar({
   }, [effectiveRole, currentFarmId, active, collapsed]);
 
   const filterItem = (item: { key: string; roles?: string[] }) => {
+    if (location.pathname === "/dashboard/notifications") {
+      return item.key === "notifications";
+    }
     if (!currentFarmId) {
-      return ["dashboard", "tree", "wallet", "gemini"].includes(item.key);
+      return ["dashboard", "tree", "wallet", "gemini", "notifications"].includes(item.key);
     }
     if (!item.roles) return true;
     if (!effectiveRole) return false;
@@ -171,6 +178,8 @@ export default function Sidebar({
     icon: React.ElementType;
   }) => {
     const isActive = active === itemKey;
+    const isNotify = itemKey === "notifications" && unreadCount > 0;
+
     return (
       <div className="relative group/item">
         <button
@@ -183,8 +192,24 @@ export default function Sidebar({
               : "text-slate-600 hover:bg-emerald-50/40 hover:text-emerald-700"
           )}
         >
-          <Icon size={16} className="shrink-0 text-emerald-600" />
-          {!collapsed && <span className="truncate">{label}</span>}
+          <div className="relative">
+            <Icon size={16} className="shrink-0 text-emerald-600" />
+            {isNotify && collapsed && (
+              <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </div>
+            )}
+          </div>
+          {!collapsed && (
+            <div className="flex-1 flex items-center justify-between min-w-0">
+              <span className="truncate">{label}</span>
+              {isNotify && (
+                <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-black rounded-full min-w-[18px] text-center">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </div>
+          )}
         </button>
 
         {/* Tooltip khi collapsed */}
@@ -212,22 +237,30 @@ if (variant === "compact") {
           onScroll={checkScroll}
           className="flex flex-col items-center gap-2 w-full flex-1 min-h-0 overflow-y-auto no-scrollbar pb-4"
         >
-          {allNavItems.map((item) => (
-            <Button
-              key={item.key}
-              onClick={() => setActive(item.key)}
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "w-10 h-10 rounded-xl transition-all duration-200 shrink-0",
-                active === item.key
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "text-slate-600 hover:bg-emerald-50/40"
-              )}
-            >
-              <item.icon size={20} className="text-emerald-600" />
-            </Button>
-          ))}
+          {allNavItems.map((item) => {
+            const isNotify = item.key === "notifications" && unreadCount > 0;
+            return (
+              <Button
+                key={item.key}
+                onClick={() => setActive(item.key)}
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "w-10 h-10 rounded-xl transition-all duration-200 shrink-0 relative",
+                  active === item.key
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "text-slate-600 hover:bg-emerald-50/40"
+                )}
+              >
+                <item.icon size={20} className="text-emerald-600" />
+                {isNotify && (
+                  <div className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[8px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </div>
+                )}
+              </Button>
+            );
+          })}
 
           {allFooterItems.length > 0 && (
             <div className="w-full flex flex-col items-center gap-2 pt-2 border-t border-slate-100 mt-2 shrink-0">
@@ -321,9 +354,11 @@ if (variant === "compact") {
             collapsed && "justify-center px-2"
           )}
         >
-          <div className="w-8 h-8 bg-emerald-50 rounded-xl flex items-center justify-center border border-emerald-100 shrink-0">
-            <Trees size={16} className="text-emerald-600" />
-          </div>
+          {location.pathname !== "/dashboard/notifications" && (
+            <div className="w-8 h-8 bg-emerald-50 rounded-xl flex items-center justify-center border border-emerald-100 shrink-0">
+              <Trees size={16} className="text-emerald-600" />
+            </div>
+          )}
           {!collapsed && (
             <p className="text-sm font-semibold text-slate-900 truncate">
               {currentFarm
@@ -418,7 +453,7 @@ if (variant === "compact") {
 
             {/* Settings popup — wide only, hidden when collapsed */}
             {/* Settings — luôn hiển thị khi không có farmId */}
-{!currentFarmId && (
+{!currentFarmId && location.pathname !== "/dashboard/notifications" && (
   <div className="relative mt-0">
     <button
       onClick={() => setIsSettingsOpen((p) => !p)}
@@ -469,7 +504,7 @@ if (variant === "compact") {
 )}
 
             {/* Settings icon only when collapsed */}
-            {!currentFarmId && collapsed && (
+            {!currentFarmId && collapsed && location.pathname !== "/dashboard/notifications" && (
               <NavItem
                 itemKey="config"
                 label="Cài đặt"
