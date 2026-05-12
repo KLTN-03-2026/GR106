@@ -189,7 +189,7 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
             AND ta.removedAt IS NULL
             AND t.farm.id = :farmId
             AND COALESCE(t.actualStartDate, t.startDate) <= CURRENT_DATE
-            AND COALESCE(t.actualStartDate, CURRENT_DATE) >= CURRENT_DATE
+            AND COALESCE(t.actualEndDate, t.endDate) >= CURRENT_DATE
             AND t.deletedAt IS NULL
     """)
     List<TaskEntity> findAssignedTasksForToday(@Param("userId") UUID userId,@Param("farmId") UUID farmId);
