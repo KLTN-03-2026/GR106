@@ -77,7 +77,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="/activity" element={<Suspense fallback={<LoadingPage />}><ActivityPage /></Suspense>} />
           <Route path="/task" element={<Suspense fallback={<LoadingPage />}><TasksPage /></Suspense>} />
           <Route path="/gemini" element={<Suspense fallback={<LoadingPage />}><GeminiPage /></Suspense>} />
-          <Route path="/config" element={<Suspense fallback={<LoadingPage />}><ConfigPage /></Suspense>} />
+          {/* <Route path="/config" element={<Suspense fallback={<LoadingPage />}><ConfigPage /></Suspense>} /> */}
           <Route path="/subscription/pricing" element={<Suspense fallback={<LoadingPage />}><SubscriptionPage /></Suspense>} />
 
           {/* Farm selection — no farmId */}
@@ -105,6 +105,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="transactions" element={<Suspense fallback={<LoadingPage />}><FarmTransactionPage /></Suspense>} />
             <Route path="suppliers" element={<Suspense fallback={<LoadingPage />}><SupplierListPage /></Suspense>} />
             <Route path="skus" element={<Suspense fallback={<LoadingPage />}><SKUListPage /></Suspense>} />
+            <Route path="config" element={<Suspense fallback={<LoadingPage />}><ConfigPage /></Suspense>} />
 
           </Route>
         </Route>

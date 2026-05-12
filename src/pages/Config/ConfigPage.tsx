@@ -26,33 +26,33 @@ import type {
 type Tab = 'config' | 'shift' | 'wage';
 
 const TABS: { key: Tab; label: string; icon: string }[] = [
-  { key: 'config', label: 'Cấu hình trang trại của bạn',  icon: '⚙' },
-  { key: 'shift',  label: 'Ca làm việc',    icon: '⏱' },
-  { key: 'wage',   label: 'Cấu hình lương', icon: '₫' },
+  { key: 'config', label: 'Cấu hình trang trại của bạn', icon: '⚙' },
+  { key: 'shift', label: 'Ca làm việc', icon: '⏱' },
+  { key: 'wage', label: 'Cấu hình lương', icon: '₫' },
 ];
 
 // ─── Design tokens (AWS-style) ─────────────────────────────────────────────
 
 const aws = {
   // Surfaces
-  pageBg:       'bg-[#f2f3f3]',
-  navBg:        'bg-[#232f3e]',
-  cardBg:       'bg-white',
-  sectionBg:    'bg-[#f8f9f9]',
+  pageBg: 'bg-[#f2f3f3]',
+  navBg: 'bg-[#232f3e]',
+  cardBg: 'bg-white',
+  sectionBg: 'bg-[#f8f9f9]',
 
   // Borders
-  border:       'border border-[#c6c6c6]',
-  borderLight:  'border border-[#e9ebed]',
+  border: 'border border-[#c6c6c6]',
+  borderLight: 'border border-[#e9ebed]',
   borderBottom: 'border-b border-[#c6c6c6]',
 
   // Text
-  textPrimary:  'text-[#0d1117]',
-  textMuted:    'text-[#545b64]',
-  textLink:     'text-[#0073bb]',
+  textPrimary: 'text-[#0d1117]',
+  textMuted: 'text-[#545b64]',
+  textLink: 'text-[#0073bb]',
 
   // Interactive
-  orange:       '#ff9900',
-  blue:         '#0073bb',
+  orange: '#ff9900',
+  blue: '#0073bb',
 
   // Input
   input: [
@@ -223,11 +223,11 @@ function FarmConfigTab({ farmId }: { farmId: string }) {
     if (!config) return;
     try {
       await updateMutation.mutateAsync({
-        version:               config.version,
-        timezone:              form.timezone,
-        locale:                form.locale,
-        currency:              form.currency,
-        allowCropClone:        form.allowCropClone,
+        version: config.version,
+        timezone: form.timezone,
+        locale: form.locale,
+        currency: form.currency,
+        allowCropClone: form.allowCropClone,
         taskOverdueNotifyDays: form.taskOverdueNotifyDays,
       });
       toast.success('Cập nhật cấu hình thành công');
@@ -465,8 +465,8 @@ function WorkShiftTab({ farmId }: { farmId: string }) {
               {createMutation.isPending || updateMutation.isPending
                 ? 'Đang lưu...'
                 : editingId
-                ? 'Cập nhật ca'
-                : 'Tạo ca làm việc'}
+                  ? 'Cập nhật ca'
+                  : 'Tạo ca làm việc'}
             </Btn>
             <Btn variant="normal" onClick={resetForm}>
               Hủy
@@ -519,9 +519,8 @@ function WorkShiftTab({ farmId }: { farmId: string }) {
                 {shifts.map((s, idx) => (
                   <tr
                     key={s.id}
-                    className={`hover:bg-[#f5f5f5] transition-colors ${
-                      idx !== shifts.length - 1 ? 'border-b border-[#e9ebed]' : ''
-                    }`}
+                    className={`hover:bg-[#f5f5f5] transition-colors ${idx !== shifts.length - 1 ? 'border-b border-[#e9ebed]' : ''
+                      }`}
                   >
                     <td className="px-4 py-3 font-medium text-[#0d1117]">{s.name}</td>
                     <td className="px-4 py-3 text-[#0d1117] font-mono text-[12px]">
@@ -725,9 +724,8 @@ function WageConfigTab({ farmId }: { farmId: string }) {
                 {wages.map((w, idx) => (
                   <tr
                     key={w.id}
-                    className={`hover:bg-[#f5f5f5] transition-colors ${
-                      idx !== wages.length - 1 ? 'border-b border-[#e9ebed]' : ''
-                    }`}
+                    className={`hover:bg-[#f5f5f5] transition-colors ${idx !== wages.length - 1 ? 'border-b border-[#e9ebed]' : ''
+                      }`}
                   >
                     <td className="px-4 py-3 font-medium text-[#0073bb]">
                       {w.userFullName}
@@ -778,21 +776,6 @@ export function ConfigPage() {
 
   return (
     <div className="min-h-screen bg-[#f2f3f3] font-['Amazon_Ember',Arial,sans-serif]">
-      {/* Top navigation bar */}
-      <div className="bg-[#232f3e] border-b-2 border-[#ff9900]">
-        <div className="max-w-5xl mx-auto px-5 h-11 flex items-center gap-4">
-          <span className="text-white text-[15px] font-bold tracking-tight">
-            🌿 FarmConsole
-          </span>
-          <nav className="flex items-center gap-1 text-[#9dadb8] text-[12px]">
-            <span className="cursor-pointer hover:text-white transition-colors">Trang chủ</span>
-            <span className="mx-1.5 opacity-40">/</span>
-            <span className="cursor-pointer hover:text-white transition-colors">Farm Nguyễn</span>
-            <span className="mx-1.5 opacity-40">/</span>
-            <span className="text-[#c9d2d8]">Cấu hình hệ thống</span>
-          </nav>
-        </div>
-      </div>
 
       {/* Page header */}
       <div className="bg-white border-b border-[#c6c6c6]">
@@ -828,8 +811,8 @@ export function ConfigPage() {
       {/* Main content */}
       <div className="max-w-5xl mx-auto px-5 py-5">
         {tab === 'config' && <FarmConfigTab farmId={currentFarmId} />}
-        {tab === 'shift'  && <WorkShiftTab  farmId={currentFarmId} />}
-        {tab === 'wage'   && <WageConfigTab farmId={currentFarmId} />}
+        {tab === 'shift' && <WorkShiftTab farmId={currentFarmId} />}
+        {tab === 'wage' && <WageConfigTab farmId={currentFarmId} />}
       </div>
     </div>
   );

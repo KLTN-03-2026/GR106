@@ -80,6 +80,7 @@ export default function DashboardLayout() {
     if (p.includes("/suppliers")) return "suppliers";
     if (p.includes("/skus")) return "skus";
     if (p.includes("/sessions")) return "sessions";
+    if (p.includes("/config")) return "config";
     if (p.includes("/change-password")) return "settings";
 
     // If URL is /farms/:id/actions, maybe highlight 'tree' or nothing?
@@ -139,7 +140,7 @@ export default function DashboardLayout() {
     // Farm management routes (require farm selection)
     const farmSpecificKeys = [
       "map", "land-plots", "crop-catalog", "season-plans", 
-      "warehouses", "suppliers", "skus", "members"
+      "warehouses", "suppliers", "skus", "members", "config"
     ];
 
     if (farmSpecificKeys.includes(key)) {
@@ -170,11 +171,6 @@ export default function DashboardLayout() {
 
     if (key === "change-password") {
       navigate("/change-password");
-      return;
-    }
-
-    if (key === "config") {
-      navigate("/config");
       return;
     }
 
