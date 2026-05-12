@@ -21,14 +21,14 @@ export const useMembers = () => {
     queryKey: farmId ? MEMBER_KEYS.members(farmId) : ['members', 'inactive'],
     queryFn: async () => (await memberService.getMembers(farmId as string)).data ?? [],
     enabled: !!farmId,
-    refetchInterval: 10000, // Tự động cập nhật mỗi 10 giây
+    refetchInterval: 30000, // Tự động cập nhật mỗi 30 giây
   });
 
   const invitationsQuery = useQuery({
     queryKey: farmId ? MEMBER_KEYS.invitations(farmId) : ['members', 'invitations', 'inactive'],
     queryFn: async () => (await memberService.getInvitations(farmId as string)).data ?? [],
     enabled: !!farmId,
-    refetchInterval: 10000, // Tự động cập nhật mỗi 10 giây
+    refetchInterval: 30000, // Tự động cập nhật mỗi 30 giây
   });
 
   const inviteMutation = useMutation({
@@ -114,8 +114,10 @@ export const useMembers = () => {
   return {
     members: membersQuery.data ?? [],
     invitations: invitationsQuery.data ?? [],
-    loadingMembers: membersQuery.isLoading || membersQuery.isFetching,
-    loadingInvitations: invitationsQuery.isLoading || invitationsQuery.isFetching,
+    loadingMembers: membersQuery.isLoading,
+    loadingInvitations: invitationsQuery.isLoading,
+    isFetchingMembers: membersQuery.isFetching,
+    isFetchingInvitations: invitationsQuery.isFetching,
     submitting:
       inviteMutation.isPending ||
       cancelInvitationMutation.isPending ||
