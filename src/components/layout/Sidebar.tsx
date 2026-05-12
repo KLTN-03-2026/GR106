@@ -249,11 +249,7 @@ export default function Sidebar({
               </div>
             )}
           </div>
-<<<<<<< HEAD
           {/* Scroll Hint — Compact */}
-=======
-
->>>>>>> 417da6f2d39e6a10d9cdd17f303222c1e1184fd6
           {showScrollHint && (
             <div className="absolute bottom-16 left-[90px] animate-bounce text-emerald-600 pointer-events-none drop-shadow-md">
               <ChevronDown size={22} strokeWidth={3.5} />
@@ -424,13 +420,8 @@ export default function Sidebar({
               );
             })}
 
-<<<<<<< HEAD
             {/* Settings popup — wide only (Dashboard only) */}
-            {!currentFarmId && active === "dashboard" && (
-=======
-            {/* Settings popup — wide only, hidden when collapsed */}
-            {!currentFarmId && !collapsed && (
->>>>>>> 417da6f2d39e6a10d9cdd17f303222c1e1184fd6
+            {!currentFarmId && active === "dashboard" && !collapsed && (
               <div className="relative mt-0">
                 <button
                   onClick={() => setIsSettingsOpen((p) => !p)}
