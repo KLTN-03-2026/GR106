@@ -552,7 +552,7 @@ useEffect(() => {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-white">
+    <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden bg-white">
 
       <div className="flex items-center gap-3 px-5 py-2.5 border-b border-slate-200 bg-white shrink-0">
         {currentPlan && (
