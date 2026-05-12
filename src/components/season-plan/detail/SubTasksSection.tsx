@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Phase, SeasonPlan } from '@/types/seasonPlan';
 import { TaskSuggestion } from '@/types/ai';
 import { DateInput } from '@/components/ui/DateInput';
-import { cn } from '@/utils/cn';
 import { fmtDate, getStatusColor, statusLabel } from './DetailCommon';
 import { TaskSuggestionsSection } from './TaskSuggestionsSection';
 
@@ -158,18 +157,10 @@ export function SubTasksSection({
                       </p>
                     )}
 
-                    {/* Đúng 1 plot — hiển thị tag, không cần chọn */}
-                    {plan.plots && plan.plots.length === 1 && (
-                      <div className="flex items-center gap-1.5 px-2 py-1.5 bg-emerald-50 border border-emerald-100 rounded-lg">
-                        <span className="text-[10px] text-emerald-600 font-semibold truncate">
-                          📍 {plan.plots[0].plotName}
-                        </span>
-                        <span className="text-[9px] text-emerald-400 shrink-0">(mặc định)</span>
-                      </div>
-                    )}
+
 
                     {/* Nhiều plot — bắt chọn */}
-                    {plan.plots && plan.plots.length > 1 && (
+                    {plan.plots && (
                       <select
                         value={newTaskPlotId}
                         onChange={e => setNewTaskPlotId(e.target.value)}
