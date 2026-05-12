@@ -169,8 +169,7 @@ public class TaskService {
             task.setDescription(request.getDescription());
         }
 
-        if(request.getStartDate() != null ||  request.getEndDate() != null
-        &&workSessionRepository
+        if((request.getStartDate() != null ||  request.getEndDate() != null) && workSessionRepository
                 .existsOutsideRangeByTask_IdForCheckUpdateTaskTime(
                         task.getId(),
                         request.getStartDate(),
