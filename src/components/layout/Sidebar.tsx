@@ -147,7 +147,16 @@ export default function Sidebar({
 
   const filterItem = (item: { key: string; roles?: string[] }) => {
     if (!currentFarmId || location.pathname === "/dashboard/notifications") {
-      return ["dashboard", "tree", "notifications"].includes(item.key);
+      const dashboardItems = ["dashboard", "tree"];
+      if (location.pathname === "/dashboard" || location.pathname === "/dashboard/notifications") {
+        dashboardItems.push("notifications");
+      }
+      return dashboardItems.includes(item.key);
+    }
+    
+    // Hide Global items in Farm context
+    if (["notifications", "wallet"].includes(item.key)) {
+      return false;
     }
     if (!item.roles) return true;
     if (!effectiveRole) return false;
