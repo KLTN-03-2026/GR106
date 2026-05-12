@@ -51,11 +51,6 @@ function extractIdFromItem(item: unknown): string | null {
   return null;
 }
 
-/** Chuẩn hóa danh sách ID công việc phụ thuộc (đi ra) từ GET /api/v1/tasks/{id}/dependencies.
- *  Hỗ trợ cả hai dạng response:
- *  - Mảng trực tiếp: [id, ...] hoặc [{dependsOnTaskId,...}, ...]
- *  - Envelope mới:   { task: {...}, dependsOnTasks: [...] }
- */
 function parseDependencyIds(raw: unknown): string[] {
   // Envelope mới: { task, dependsOnTasks }
   if (raw && !Array.isArray(raw) && typeof raw === 'object') {

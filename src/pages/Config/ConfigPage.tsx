@@ -13,6 +13,7 @@ import {
   useCreateWageConfig,
   useDeleteWageConfig,
 } from '@/hooks/farm/useFarmConfig';
+import { useFarmMembers } from '@/hooks/farm/useFarmMembers';
 import type {
   FarmConfig,
   CreateWorkShiftRequest,
@@ -514,6 +515,7 @@ function WorkShiftTab({ farmId }: { farmId: string }) {
 
 function WageConfigTab({ farmId }: { farmId: string }) {
   const { data: wages = [], isLoading } = useWageConfigs(farmId);
+  const { members, loading: loadingMembers } = useFarmMembers(farmId);
   const createMutation = useCreateWageConfig(farmId);
   const deleteMutation = useDeleteWageConfig(farmId);
   const [showForm, setShowForm] = useState(false);
@@ -567,13 +569,20 @@ function WageConfigTab({ farmId }: { farmId: string }) {
           }
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <Field
-              label="User ID nhân viên"
+            <Drop
+              label="Nhân viên"
               required
-              placeholder="Nhập ID của nhân viên"
               value={form.userId}
               onChange={(e) => setForm((p) => ({ ...p, userId: e.target.value }))}
-            />
+              hint={loadingMembers ? 'Đang tải danh sách nhân viên...' : 'Chọn nhân viên cần thiết lập lương'}
+            >
+              <option value="">Chọn nhân viên </option>
+              {members.map((m) => (
+                <option key={m.userId} value={m.userId}>
+                  {m.fullName}
+                </option>
+              ))}
+            </Drop>
             <Field
               label="Lương ngày (VND)"
               type="number"
