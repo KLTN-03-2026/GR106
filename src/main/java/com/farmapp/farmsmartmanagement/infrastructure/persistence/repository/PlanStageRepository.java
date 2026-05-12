@@ -100,7 +100,7 @@ public interface PlanStageRepository extends JpaRepository<PlanStageEntity, UUID
               AND :date <= COALESCE(p.actualEndDate, p.endDate)
               AND p.deletedAt IS NULL
         ) THEN true ELSE false END
-    """)
+    """)// một ngày cụ thể có rơi vào khoảng thời gian của bất kỳ stage nào khác trong cùng plan
     boolean existsByPlanIdAndDateBetweenStartAndEndWithoutId(
             @Param("planId") UUID planId,
             @Param("date") LocalDate date,

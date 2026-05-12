@@ -64,4 +64,12 @@ public interface WarehouseStockRepository extends JpaRepository<WarehouseStockEn
     List<WarehouseStockEntity> findAvailableStockByItem(
             @Param("itemId") UUID itemId,
             @Param("farmId") UUID farmId);
+
+    // Thêm vào WarehouseStockRepository:
+
+    List<WarehouseStockEntity> findAllByWarehouseItem_IdAndFarm_IdAndQtyOnHandGreaterThan(
+            UUID warehouseItemId,
+            UUID farmId,
+            BigDecimal qty
+    );
 }

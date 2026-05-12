@@ -52,12 +52,6 @@ public class PlanStageEntity {
     @Column(name = "end_date")
     private LocalDate endDate;
 
-    @Column(name = "ai_suggestion_cache")
-    String aiSuggestionCache;
-
-    @Column(name = "ai_cached_at")
-    Instant aiCachedAt;
-
     @Column(name = "deleted_at")
     Instant deletedAt;
 

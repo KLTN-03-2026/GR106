@@ -24,3 +24,24 @@ spring:
     redis:
       host: localhost
       port: 6379
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:farm_user}
+    password: ${RABBITMQ_PASS:farm_pass}
+    virtual-host: ${RABBITMQ_VHOST:farm_vhost}
+    listener:
+      simple:
+        acknowledge-mode: manual          # ACK thủ công — tránh mất message
+        retry:
+          enabled: true
+          initial-interval: 3s
+          max-attempts: 3
+          multiplier: 2
+
+# ── Gemini AI ────────────────────────────────────────────────────────────────
+gemini:
+  api:
+    key: ${GEMINI_API_KEY}               # Lấy tại: https://aistudio.google.com/apikey
+    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent

@@ -1,0 +1,5 @@
+# ── Thêm vào application.yml hiện tại ──────────────────────────────────────
+
+
+# ── WebSocket ────────────────────────────────────────────────────────────────
+# Không cần config thêm — tự động qua Spring WebSocket

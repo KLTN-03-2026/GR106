@@ -99,6 +99,8 @@ public class WarehouseService {
         return warehouseLocationMapper.toResponses(warehouseLocationRepository.findByWarehouseIdAndNotDeleted(warehouseId));
     }
 
+
+
     @Transactional
     public WarehouseLocationResponse createWarehouseLocation(UUID warehouseId, CreateWarehouseLocationRequest request){
         FarmEntity farm = farmRepository.getReferenceById(securityUtils.getCurrentFarmId());
