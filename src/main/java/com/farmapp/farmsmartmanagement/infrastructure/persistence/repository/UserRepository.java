@@ -2,8 +2,11 @@ package com.farmapp.farmsmartmanagement.infrastructure.persistence.repository;
 
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.EmailVerificationTokenEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.UserEntity;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,17 +32,17 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
     List<UserEntity> findUsersNeedingNewVerificationToken();
 
     @Query("""
-    SELECT (COUNT(u) > 0)
-    FROM UserEntity u
-    WHERE u.email = :email
-      AND EXISTS (
-          SELECT 1
-          FROM UserRoleEntity ur
-          JOIN ur.role r
-          WHERE ur.user = u
-            AND r.name = 'ROLE_ADMIN'
-      )
-""")
+        SELECT (COUNT(u) > 0)
+        FROM UserEntity u
+        WHERE u.email = :email
+          AND EXISTS (
+              SELECT 1
+              FROM UserRoleEntity ur
+              JOIN ur.role r
+              WHERE ur.user = u
+                AND r.name = 'ROLE_ADMIN'
+          )
+    """)
     boolean existsByEmailAndRoleIsAdmin(@Param("email") String email);
 
 
