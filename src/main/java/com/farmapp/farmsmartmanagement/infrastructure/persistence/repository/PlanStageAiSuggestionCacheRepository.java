@@ -9,6 +9,9 @@ import java.util.UUID;
 public interface PlanStageAiSuggestionCacheRepository
         extends JpaRepository<PlanStageAiSuggestionCacheEntity, UUID> {
 
-    List<PlanStageAiSuggestionCacheEntity>
-    findByPlanStageId(UUID planStageId);
+    List<PlanStageAiSuggestionCacheEntity> findByPlanStageId(UUID planStageId);
+
+    boolean existsByPlanStageId(UUID id);
+
+    boolean existsByPlanStage_Id(UUID planStageId);
 }

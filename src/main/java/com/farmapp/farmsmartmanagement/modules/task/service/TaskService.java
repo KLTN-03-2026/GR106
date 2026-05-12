@@ -176,9 +176,7 @@ public class TaskService {
                         request.getEndDate())
         )
         {
-
-                throw new AppException(ErrorCode.TASK_HAVE_SESSION_OUT_SIDE_NEW_DATE_RANGE);
-
+            throw new AppException(ErrorCode.TASK_HAVE_SESSION_OUT_SIDE_NEW_DATE_RANGE);
         }
 
         if (request.getStartDate() != null)

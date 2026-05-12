@@ -1,9 +1,8 @@
 package com.farmapp.farmsmartmanagement.modules.ai.service;
 
 import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.CropEntity;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanEntity;
-import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlanStageEntity;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.PlanStageAiSuggestionCacheRepository;
 import com.farmapp.farmsmartmanagement.modules.ai.dto.response.TaskSuggestion;
 import com.farmapp.farmsmartmanagement.modules.plan.validation.PlanStageValidator;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -11,12 +10,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -30,6 +33,8 @@ public class GeminiService {
     private final ObjectMapper objectMapper;
     private final PlanStageValidator planStageValidator;
     private final SecurityUtils securityUtils;
+    private final PlanStageAiSuggestionCacheRepository planStageAiSuggestionCacheRepository;
+    private final AiCache aiCache;
 
     @Value("${gemini.api.key}")
     private String apiKey;
@@ -59,19 +64,35 @@ public class GeminiService {
         UUID farmId = securityUtils.getCurrentFarmId();
 
         PlanStageEntity planStage = planStageValidator.validateAndGetStage(planStageId, planId, farmId);
+
+        // ── 1. Trả cache nếu đã có ────────────────────────────────────────────
+        List<PlanStageAiSuggestionCacheEntity> cached =
+                planStageAiSuggestionCacheRepository.findByPlanStageId(planStage.getId());
+
+        if (!cached.isEmpty()) {
+            return cached.stream()
+                    .map(i -> TaskSuggestion.builder()
+                            .title(i.getTitle())
+                            .description(i.getDescription())
+                            .priority(convertPriority(i.getPriority()))
+                            .estimatedDays(i.getEstimatedDays())
+                            .category(i.getCategory())
+                            .build())
+                    .toList();
+        }
+
+        // ── 2. Gọi Gemini ─────────────────────────────────────────────────────
         PlanEntity plan = planStage.getPlan();
         CropEntity crop = plan.getCrop();
 
-        String cropTypeName = crop.getCropType() != null ? crop.getCropType().getName() : "Không rõ";
+        String cropTypeName = crop.getCropType() != null
+                ? crop.getCropType().getName() : "Không rõ";
         String cropStageName = planStage.getCropStage() != null
-                ? planStage.getCropStage().getName()
-                : planStage.getName();
+                ? planStage.getCropStage().getName() : planStage.getName();
         String cropStageDesc = planStage.getCropStage() != null
-                ? planStage.getCropStage().getDescription()
-                : null;
+                ? planStage.getCropStage().getDescription() : null;
         Integer stageDuration = planStage.getCropStage() != null
-                ? planStage.getCropStage().getDurationDays()
-                : null;
+                ? planStage.getCropStage().getDurationDays() : null;
 
         String prompt = buildContextualPrompt(
                 plan.getName(),
@@ -87,8 +108,15 @@ public class GeminiService {
                 stageDuration
         );
 
-        return callGemini(prompt, 0.25);
+        List<TaskSuggestion> suggestions = callGemini(prompt, 0.25);
+
+        // ── 3. Lưu cache — bỏ qua nếu race condition xảy ra ─────────────────
+        aiCache.trySaveCache(planStage.getId(), farmId, suggestions);
+
+        return suggestions;
     }
+
+
 
     /**
      * Chat tự do với AI, có context cây trồng + giai đoạn.
@@ -157,7 +185,7 @@ public class GeminiService {
                 ══════════════════════════════════════
                 YÊU CẦU OUTPUT
                 ══════════════════════════════════════
-                Gợi ý 6-8 công việc ĐẶC THÙ cho giai đoạn này, theo thứ tự ưu tiên thực hiện.
+                Gợi ý 5-6 công việc ĐẶC THÙ cho giai đoạn này, theo thứ tự ưu tiên thực hiện.
                 Mỗi công việc phải:
                 - Phù hợp đúng với đặc điểm sinh lý của cây %s ở giai đoạn %s
                 - Có thể hoàn thành trong %s ngày còn lại
@@ -271,7 +299,7 @@ public class GeminiService {
                 )),
                 "generationConfig", Map.of(
                         "temperature", temperature,
-                        "maxOutputTokens", 2048,
+                        "maxOutputTokens", 8192,
                         "responseMimeType", "application/json"
                 )
         );
@@ -308,4 +336,17 @@ public class GeminiService {
                 objectMapper.getTypeFactory().constructCollectionType(List.class, TaskSuggestion.class)
         );
     }
+
+    private String convertPriority(Short priority) {
+        if (priority == null) return null;
+        return switch (priority) {
+            case 1 -> "HIGH";
+            case 2 -> "MEDIUM";
+            case 3 -> "LOW";
+            default -> "UNKNOWN";
+        };
+    }
+
+
+
 }
