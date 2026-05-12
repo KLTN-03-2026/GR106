@@ -99,10 +99,10 @@ public class TaskDependencyService {
             throw new AppException(ErrorCode.TASK_DEPENDENCY_NOT_FOUND);
         }
 
-        if(taskRepository.existsByIdAndStatusIsNotTerminalAndPlanStageStatusIsNotTerminal(taskId))
+        if(!taskRepository.existsByIdAndStatusIsNotTerminalAndPlanStageStatusIsNotTerminal(taskId))
             throw new  AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
 
-        if(taskRepository.existsByIdAndStatusIsNotTerminalAndPlanStageStatusIsNotTerminal(dependsOnTaskId))
+        if(!taskRepository.existsByIdAndStatusIsNotTerminalAndPlanStageStatusIsNotTerminal(dependsOnTaskId))
             throw new  AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
 
         taskDependencyRepository.deleteByTask_IdAndDependsOnTask_Id(taskId, dependsOnTaskId);
