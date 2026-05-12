@@ -11,7 +11,9 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -24,9 +26,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Validated
 @Tag(name = "AI Suggestion API", description = "Gợi ý công việc bằng AI")
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AiController {
 
-    private final GeminiService geminiService;
+    GeminiService geminiService;
 
     // ── 1. Free-form: nhập tay cropType + stage ───────────────────────────────
     @GetMapping("/suggest-tasks")
