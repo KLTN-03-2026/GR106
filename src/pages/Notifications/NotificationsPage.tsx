@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Bell, CheckCircle2, Clock, Info, Trash2, MailOpen, ArrowLeft } from 'lucide-react';
+import { Bell, CheckCircle2, Clock, Info, MailOpen, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '@/hooks/notifications/useNotifications';
 import { cn } from '@/utils/cn';
@@ -138,9 +138,7 @@ export const NotificationsPage: React.FC = () => {
                     </p>
                   </div>
 
-                  <button className="opacity-0 group-hover:opacity-100 p-2 text-slate-300 hover:text-rose-500 transition-all">
-                    <Trash2 size={16} />
-                  </button>
+                  {/* Removed delete button as per request */}
                 </div>
               </motion.div>
             ))}
