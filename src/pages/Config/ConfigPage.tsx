@@ -9,6 +9,7 @@ import {
   useWorkShifts,
   useCreateWorkShift,
   useDeleteWorkShift,
+  useUpdateWorkShift,
   useWageConfigs,
   useCreateWageConfig,
   useDeleteWageConfig,
@@ -25,7 +26,7 @@ import type {
 type Tab = 'config' | 'shift' | 'wage';
 
 const TABS: { key: Tab; label: string; icon: string }[] = [
-  { key: 'config', label: 'Cấu hình Farm',  icon: '⚙' },
+  { key: 'config', label: 'Cấu hình trang trại của bạn',  icon: '⚙' },
   { key: 'shift',  label: 'Ca làm việc',    icon: '⏱' },
   { key: 'wage',   label: 'Cấu hình lương', icon: '₫' },
 ];
@@ -337,24 +338,49 @@ function FarmConfigTab({ farmId }: { farmId: string }) {
 function WorkShiftTab({ farmId }: { farmId: string }) {
   const { data: shifts = [], isLoading } = useWorkShifts(farmId);
   const createMutation = useCreateWorkShift(farmId);
+  const updateMutation = useUpdateWorkShift(farmId);
   const deleteMutation = useDeleteWorkShift(farmId);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<CreateWorkShiftRequest>({
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<CreateWorkShiftRequest & { isActive?: boolean }>({
     name: '',
     startTime: '',
     endTime: '',
     coefficient: 1.0,
+    isActive: true,
   });
 
-  const handleCreate = async () => {
+  const resetForm = () => {
+    setForm({ name: '', startTime: '', endTime: '', coefficient: 1.0, isActive: true });
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const handleSave = async () => {
     try {
-      await createMutation.mutateAsync(form);
-      toast.success('Tạo ca làm việc thành công');
-      setForm({ name: '', startTime: '', endTime: '', coefficient: 1.0 });
-      setShowForm(false);
+      if (editingId) {
+        await updateMutation.mutateAsync({ shiftId: editingId, data: form });
+        toast.success('Cập nhật ca làm việc thành công');
+      } else {
+        await createMutation.mutateAsync(form);
+        toast.success('Tạo ca làm việc thành công');
+      }
+      resetForm();
     } catch (err) {
       toast.error(extractErrorMessage(err));
     }
+  };
+
+  const handleEdit = (s: any) => {
+    setForm({
+      name: s.name,
+      startTime: s.startTime,
+      endTime: s.endTime,
+      coefficient: s.coefficient,
+      isActive: s.isActive,
+    });
+    setEditingId(s.id);
+    setShowForm(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -372,10 +398,10 @@ function WorkShiftTab({ farmId }: { farmId: string }) {
       {/* Create form */}
       {showForm && (
         <Section
-          title="Thêm ca làm việc mới"
+          title={editingId ? 'Chỉnh sửa ca làm việc' : 'Thêm ca làm việc mới'}
           action={
             <button
-              onClick={() => setShowForm(false)}
+              onClick={resetForm}
               className="text-[12px] text-[#0073bb] hover:underline"
             >
               Đóng ✕
@@ -416,16 +442,33 @@ function WorkShiftTab({ farmId }: { farmId: string }) {
               value={form.endTime}
               onChange={(e) => setForm((p) => ({ ...p, endTime: e.target.value }))}
             />
+            {editingId && (
+              <div className="md:col-span-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.isActive}
+                    onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))}
+                    className="w-4 h-4 accent-[#0073bb]"
+                  />
+                  <span className="text-[13px] text-[#0d1117]">Kích hoạt ca làm việc này</span>
+                </label>
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <Btn
               variant="primary"
-              onClick={handleCreate}
-              disabled={createMutation.isPending || shifts.length >= 24}
+              onClick={handleSave}
+              disabled={createMutation.isPending || updateMutation.isPending}
             >
-              {createMutation.isPending ? 'Đang tạo...' : 'Tạo ca làm việc'}
+              {createMutation.isPending || updateMutation.isPending
+                ? 'Đang lưu...'
+                : editingId
+                ? 'Cập nhật ca'
+                : 'Tạo ca làm việc'}
             </Btn>
-            <Btn variant="normal" onClick={() => setShowForm(false)}>
+            <Btn variant="normal" onClick={resetForm}>
               Hủy
             </Btn>
           </div>
@@ -492,13 +535,18 @@ function WorkShiftTab({ farmId }: { farmId: string }) {
                       <StatusBadge active={s.isActive} />
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Btn
-                        variant="danger"
-                        onClick={() => handleDelete(s.id)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        Xóa
-                      </Btn>
+                      <div className="flex justify-end gap-2">
+                        <Btn variant="normal" onClick={() => handleEdit(s)}>
+                          Sửa
+                        </Btn>
+                        <Btn
+                          variant="danger"
+                          onClick={() => handleDelete(s.id)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          Xóa
+                        </Btn>
+                      </div>
                     </td>
                   </tr>
                 ))}
