@@ -147,7 +147,7 @@ export default function Sidebar({
 
   const filterItem = (item: { key: string; roles?: string[] }) => {
     if (!currentFarmId || location.pathname === "/dashboard/notifications") {
-      return ["dashboard", "tree", "wallet", "gemini", "notifications"].includes(item.key);
+      return ["dashboard", "tree", "notifications"].includes(item.key);
     }
     if (!item.roles) return true;
     if (!effectiveRole) return false;
