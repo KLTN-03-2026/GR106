@@ -1,10 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Bell, CheckCircle2, Clock, Info, Trash2, MailOpen } from 'lucide-react';
+import { Bell, CheckCircle2, Clock, Info, Trash2, MailOpen, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '@/hooks/notifications/useNotifications';
 import { cn } from '@/utils/cn';
 
 export const NotificationsPage: React.FC = () => {
+  const navigate = useNavigate();
   const { 
     notifications, 
     isLoading, 
@@ -41,14 +43,23 @@ export const NotificationsPage: React.FC = () => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-              <Bell className="text-indigo-600" size={32} />
-              Thông báo
-            </h1>
-            <p className="text-slate-500 font-medium">
-              Bạn có <span className="text-indigo-600 font-bold">{unreadCount}</span> thông báo chưa đọc
-            </p>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="p-2 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-200 hover:shadow-sm text-slate-400 hover:text-indigo-600 group"
+              title="Quay lại Dashboard"
+            >
+              <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
+            </button>
+            <div className="space-y-1">
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                <Bell className="text-indigo-600" size={32} />
+                Thông báo
+              </h1>
+              <p className="text-slate-500 font-medium">
+                Bạn có <span className="text-indigo-600 font-bold">{unreadCount}</span> thông báo chưa đọc
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">

@@ -61,6 +61,7 @@ export default function DashboardLayout() {
 
   const getActive = () => {
     const p = location.pathname;
+    if (p.includes("/notifications")) return "notifications";
     if (p.includes("/actions")) return "home";
     if (p.includes("/dashboard")) return "dashboard";
     // Check for farm list or any farm-scoped page to highlight the 'tree' icon if needed, 
@@ -94,7 +95,7 @@ export default function DashboardLayout() {
 
   const [active, setActive] = useState(getActive());
 
-  const wideSidebarPaths = ["/members", "/land-plots", "/map", "/subscription", "/crop-catalog", "/season-plans", "/warehouses", "/suppliers", "/skus", "/config", "/dashboard/notifications"];
+  const wideSidebarPaths = ["/members", "/land-plots", "/map", "/subscription", "/crop-catalog", "/season-plans", "/warehouses", "/suppliers", "/skus", "/config"];
   const isWideSidebarPage =
     wideSidebarPaths.some(path => location.pathname.includes(path)) ||
     (location.pathname.startsWith("/farms") && location.pathname !== "/farms");
@@ -144,7 +145,7 @@ export default function DashboardLayout() {
 
     // Farm management routes (require farm selection)
     const farmSpecificKeys = [
-      "map", "land-plots", "crop-catalog", "season-plans", 
+      "map", "land-plots", "crop-catalog", "season-plans",
       "warehouses", "suppliers", "skus", "members", "config"
     ];
 
@@ -193,14 +194,14 @@ export default function DashboardLayout() {
         // Map 'task' key to 'tasks' route
         let routePart = key;
         if (key === "subscription") routePart = "subscription/history";
-        
+
         navigate(`/farms/${currentFarmId}/${routePart}`);
       } else {
         // Navigate to global route if no farm selected
         let routePart = key;
         if (key === "task") routePart = "task";
         if (key === "subscription") routePart = "subscription/history";
-        
+
         navigate(`/${routePart}`);
       }
       return;
