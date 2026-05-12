@@ -82,6 +82,9 @@ public class FarmInvitationService {
             throw new AppException(ErrorCode.CANNOT_INVITE_YOURSELF);
         }
 
+        if(!userRepository.existsByEmailAndRoleIsAdmin(request.getEmail()))
+            throw new AppException(ErrorCode.USER_NOT_EXISTED);
+
         FarmEntity farm = farmRepository.findById(farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.FARM_NOT_FOUND));
 
