@@ -174,11 +174,11 @@ export function WarehouseDetailPage() {
   const [logItemId, setLogItemId] = useState<string | null>(searchParams.get("itemId"));
 
   // Conditionally fetch transactions based on filter
-  const warehouseTx = useTransactionsByWarehouse(farmId, warehouseId!, undefined, { 
+  const warehouseTx = useTransactionsByWarehouse(farmId, warehouseId!, undefined, {
     enabled: activeTab === "transactions"
   });
 
-  const itemTx = useTransactionsByItem(logItemId, undefined, { 
+  const itemTx = useTransactionsByItem(logItemId, undefined, {
     enabled: activeTab === "item-history" && !!logItemId
   });
 
@@ -995,20 +995,20 @@ export function WarehouseDetailPage() {
                           </p>
                         )}
                       </div>
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-50">
-                          <div className="flex items-center gap-1.5">
-                            <div
-                              className={cn("w-1.5 h-1.5 rounded-full", c.dot)}
-                            />
-                            <span className="text-[11px] font-mono font-semibold text-slate-500">
-                              {loc.code}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1 text-[10px] font-bold text-violet-600 bg-violet-50 px-2 h-6 rounded-lg shadow-sm border border-violet-100/50 transition-all hover:bg-violet-100 shrink-0">
-                            <span className="leading-none">Chi tiết</span>
-                            <ChevronRight size={10} />
-                          </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-50">
+                        <div className="flex items-center gap-1.5">
+                          <div
+                            className={cn("w-1.5 h-1.5 rounded-full", c.dot)}
+                          />
+                          <span className="text-[11px] font-mono font-semibold text-slate-500">
+                            {loc.code}
+                          </span>
                         </div>
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-violet-600 bg-violet-50 px-2 h-6 rounded-lg shadow-sm border border-violet-100/50 transition-all hover:bg-violet-100 shrink-0">
+                          <span className="leading-none">Chi tiết</span>
+                          <ChevronRight size={10} />
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
@@ -1132,281 +1132,64 @@ export function WarehouseDetailPage() {
         {/* ══ TRANSACTIONS tab (Farm Wide) ══ */}
         {activeTab === "transactions" && (
           <div className="flex flex-col h-full space-y-4 min-h-0">
-             <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <History size={16} className="text-emerald-500" />
                 <span className="text-[14px] font-bold text-slate-700">Lịch sử giao dịch chung</span>
               </div>
               <div className="flex items-center gap-3">
-                 <p className="text-[13px] text-slate-600">
+                <p className="text-[13px] text-slate-600">
                   <span className="font-bold text-slate-900">{txData?.totalElements ?? 0}</span> giao dịch
                 </p>
               </div>
             </div>
 
             <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden shadow-sm">
-               <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sắp xếp:</span>
-                      <select
-                        value={txPageable.sort?.[0] || "createdAt,desc"}
-                        onChange={(e) => updateSort(e.target.value)}
-                        className="text-[12px] border-slate-200 rounded-lg py-1 px-2 bg-white shadow-sm outline-none focus:border-emerald-400"
-                      >
-                        <option value="createdAt,desc">Mới nhất</option>
-                        <option value="createdAt,asc">Cũ nhất</option>
-                      </select>
-                    </div>
-                  </div>
-
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+                <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Size:</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sắp xếp:</span>
                     <select
-                      value={txPageable.size}
-                      onChange={(e) => updatePageSize(Number(e.target.value))}
+                      value={txPageable.sort?.[0] || "createdAt,desc"}
+                      onChange={(e) => updateSort(e.target.value)}
                       className="text-[12px] border-slate-200 rounded-lg py-1 px-2 bg-white shadow-sm outline-none focus:border-emerald-400"
                     >
-                      <option value={10}>10</option>
-                      <option value={20}>20</option>
-                      <option value={50}>50</option>
+                      <option value="createdAt,desc">Mới nhất</option>
+                      <option value="createdAt,asc">Cũ nhất</option>
                     </select>
                   </div>
-               </div>
+                </div>
 
-               {txLoading ? (
-                 <div className="flex-1 flex flex-col items-center justify-center py-16 gap-3">
-                   <Loader2 size={32} className="animate-spin text-emerald-500" />
-                   <p className="text-[13px] text-slate-400 font-medium">Đang truy xuất nhật ký...</p>
-                 </div>
-               ) : transactions.length === 0 ? (
-                 <div className="flex-1 flex flex-col items-center justify-center py-16 gap-3 text-center">
-                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-2">
-                      <History size={32} className="text-slate-200" />
-                    </div>
-                    <p className="text-[15px] font-bold text-slate-700">Chưa có giao dịch</p>
-                    <p className="text-[12px] text-slate-400">Hiện tại chưa có biến động kho nào</p>
-                 </div>
-               ) : (
-                 <>
-                   <div className="flex-1 overflow-auto">
-                      <table className="w-full text-left border-collapse">
-                        <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-100">
-                          <tr>
-                            <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vật tư</th>
-                            <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Biến động</th>
-                            <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">Đơn vị</th>
-                            <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Đơn giá</th>
-                            <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Giá trị</th>
-                            <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Từ Vị trí</th>
-                            <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Đến Vị trí</th>
-                            <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Người thực hiện</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                          {transactions.map((tx: WarehouseTransaction) => {
-                            const isImport = tx.qtyChange > 0;
-                            const itemPrice = tx.warehouseItem.unitPrice ?? 0;
-                            const totalValue = Math.abs(tx.qtyChange) * itemPrice;
-
-                            return (
-                              <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
-                                <td className="px-6 py-4">
-                                  <span className="text-[13px] font-bold text-slate-700">{tx.warehouseItem.name}</span>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                  <div className="flex flex-col items-end">
-                                    <span className={cn(
-                                      "text-[14px] font-black",
-                                      isImport ? "text-emerald-600" : "text-rose-600"
-                                    )}>
-                                      {isImport ? "+" : "-"} {Math.abs(tx.qtyChange).toLocaleString("vi-VN")}
-                                    </span>
-                                    <span className={cn(
-                                      "text-[9px] font-bold px-1.5 rounded uppercase tracking-tighter w-fit",
-                                      isImport ? "bg-emerald-50 text-emerald-500" : "bg-rose-50 text-rose-500"
-                                    )}>
-                                      {isImport ? "Nhập kho" : "Xuất kho"}
-                                    </span>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 text-center">
-                                  <span className="text-[12px] font-medium text-slate-600">{tx.warehouseItem.unit.name}</span>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                  <span className="text-[13px] font-medium text-slate-600">
-                                    {itemPrice > 0 ? itemPrice.toLocaleString("vi-VN") + " ₫" : "—"}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                  <span className={cn(
-                                    "text-[13px] font-bold",
-                                    isImport ? "text-emerald-700" : "text-rose-700"
-                                  )}>
-                                    {totalValue > 0 ? (isImport ? "+" : "-") + totalValue.toLocaleString("vi-VN") + " ₫" : "—"}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4">
-                                  <span className="text-[12px] text-slate-500 font-medium truncate max-w-[120px] block">
-                                    {tx.fromLocation?.name || "—"}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4">
-                                  <span className="text-[12px] text-slate-700 font-bold truncate max-w-[120px] block">
-                                    {tx.toLocation?.name || "—"}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4">
-                                  <div className="flex flex-col">
-                                    <span className="text-[12px] font-bold text-slate-700 whitespace-nowrap">
-                                      {tx.performedBy?.fullName || "Hệ thống"}
-                                    </span>
-                                    <span className="text-[10px] text-slate-400 truncate max-w-[150px]">
-                                      {tx.performedBy?.email || "N/A"}
-                                    </span>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                   </div>
-
-                   {/* Pagination */}
-                   {txData && (
-                      <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-white shrink-0">
-                        <div className="text-[12px] text-slate-500">
-                          Hiển thị trang <span className="font-bold text-slate-700">{txData.pageNumber + 1}</span> / {txData.totalPages || 1}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => goToPage(txData.pageNumber - 1)}
-                            disabled={txData.first || txData.totalPages <= 1}
-                            className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 transition-all"
-                          >
-                            <ChevronLeft size={16} />
-                          </button>
-                          
-                          <div className="flex items-center gap-1">
-                            {Array.from({ length: Math.min(5, txData.totalPages) }).map(
-                              (_, i) => {
-                                const pageNum = i;
-                                const isActive = txData.pageNumber === pageNum;
-                                return (
-                                  <button
-                                    key={pageNum}
-                                    onClick={() => goToPage(pageNum)}
-                                    className={cn(
-                                      "w-8 h-8 rounded-lg text-[12px] font-semibold transition-all",
-                                      isActive
-                                        ? "bg-emerald-600 text-white shadow-md shadow-emerald-200"
-                                        : "text-slate-500 hover:bg-slate-100"
-                                    )}
-                                  >
-                                    {pageNum + 1}
-                                  </button>
-                                );
-                              },
-                            )}
-                          </div>
-
-                          <button
-                            onClick={() => goToPage(txData.pageNumber + 1)}
-                            disabled={txData.last || txData.totalPages <= 1}
-                            className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-slate-200"
-                          >
-                            <ChevronRight size={16} />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                 </>
-               )}
-            </div>
-          </div>
-        )}
-
-        {/* ══ ITEM HISTORY tab ══ */}
-        {activeTab === "item-history" && logItemId && (
-          <div className="flex flex-col h-full space-y-4 min-h-0">
-             {/* Header with Back Button */}
-             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => {
-                    setActiveTab("items");
-                    setLogItemId(null);
-                    const params = new URLSearchParams(searchParams);
-                    params.delete("itemId");
-                    params.delete("tab");
-                    setSearchParams(params, { replace: true });
-                  }}
-                  className="p-2 hover:bg-white rounded-xl text-slate-500 hover:text-slate-900 transition-all border border-transparent hover:border-slate-200 shadow-sm hover:shadow-md"
-                >
-                  <ArrowLeft size={18} />
-                </button>
-                <div>
-                  <h3 className="text-[16px] font-bold text-slate-900 flex items-center gap-2">
-                    <History size={18} className="text-emerald-500" />
-                    Chi tiết: <span className="text-emerald-600">{items.find(i => i.id === logItemId)?.name || "Vật tư"}</span>
-                  </h3>
-                  <p className="text-[11px] text-slate-400 font-medium">Chi tiết lịch sử biến động kho của vật tư này</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Size:</span>
+                  <select
+                    value={txPageable.size}
+                    onChange={(e) => updatePageSize(Number(e.target.value))}
+                    className="text-[12px] border-slate-200 rounded-lg py-1 px-2 bg-white shadow-sm outline-none focus:border-emerald-400"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                 <p className="text-[13px] text-slate-600">
-                  <span className="font-bold text-slate-900">{txData?.totalElements ?? 0}</span> giao dịch
-                </p>
-              </div>
-            </div>
 
-            <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden shadow-sm">
-               {/* Toolbar */}
-               <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sắp xếp:</span>
-                      <select
-                        value={txPageable.sort?.[0] || "createdAt,desc"}
-                        onChange={(e) => updateSort(e.target.value)}
-                        className="text-[12px] border-slate-200 rounded-lg py-1 px-2 bg-white shadow-sm outline-none focus:border-emerald-400"
-                      >
-                        <option value="createdAt,desc">Mới nhất</option>
-                        <option value="createdAt,asc">Cũ nhất</option>
-                      </select>
-                    </div>
+              {txLoading ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-16 gap-3">
+                  <Loader2 size={32} className="animate-spin text-emerald-500" />
+                  <p className="text-[13px] text-slate-400 font-medium">Đang truy xuất nhật ký...</p>
+                </div>
+              ) : transactions.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-16 gap-3 text-center">
+                  <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-2">
+                    <History size={32} className="text-slate-200" />
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Size:</span>
-                    <select
-                      value={txPageable.size}
-                      onChange={(e) => updatePageSize(Number(e.target.value))}
-                      className="text-[12px] border-slate-200 rounded-lg py-1 px-2 bg-white shadow-sm outline-none focus:border-emerald-400"
-                    >
-                      <option value={10}>10</option>
-                      <option value={20}>20</option>
-                      <option value={50}>50</option>
-                    </select>
-                  </div>
-               </div>
-
-               {txLoading ? (
-                 <div className="flex-1 flex flex-col items-center justify-center py-16 gap-3">
-                   <Loader2 size={32} className="animate-spin text-emerald-500" />
-                   <p className="text-[13px] text-slate-400 font-medium">Đang truy xuất nhật ký...</p>
-                 </div>
-               ) : transactions.length === 0 ? (
-                 <div className="flex-1 flex flex-col items-center justify-center py-16 gap-3 text-center">
-                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-2">
-                      <History size={32} className="text-slate-200" />
-                    </div>
-                    <p className="text-[15px] font-bold text-slate-700">Chưa có giao dịch</p>
-                    <p className="text-[12px] text-slate-400">Vật tư này hiện chưa có biến động kho nào</p>
-                 </div>
-               ) : (
-                 <div className="flex-1 overflow-auto">
+                  <p className="text-[15px] font-bold text-slate-700">Chưa có giao dịch</p>
+                  <p className="text-[12px] text-slate-400">Hiện tại chưa có biến động kho nào</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex-1 overflow-auto">
                     <table className="w-full text-left border-collapse">
                       <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-100">
                         <tr>
@@ -1488,60 +1271,277 @@ export function WarehouseDetailPage() {
                         })}
                       </tbody>
                     </table>
-                 </div>
-               )}
-
-               {/* Pagination */}
-               {txData && (
-                  <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-white shrink-0">
-                    <div className="text-[12px] text-slate-500">
-                      Hiển thị trang <span className="font-bold text-slate-700">{txData.pageNumber + 1}</span> / {txData.totalPages || 1}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => goToPage(txData.pageNumber - 1)}
-                        disabled={txData.first || txData.totalPages <= 1}
-                        className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 transition-all"
-                      >
-                        <ChevronLeft size={16} />
-                      </button>
-                      
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: Math.min(5, txData.totalPages) }).map(
-                          (_, i) => {
-                            const pageNum = i;
-                            const isActive = txData.pageNumber === pageNum;
-                            return (
-                              <button
-                                key={pageNum}
-                                onClick={() => goToPage(pageNum)}
-                                className={cn(
-                                  "w-8 h-8 rounded-lg text-[12px] font-semibold transition-all",
-                                  isActive
-                                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-200"
-                                    : "text-slate-500 hover:bg-slate-100"
-                                )}
-                              >
-                                {pageNum + 1}
-                              </button>
-                            );
-                          },
-                        )}
-                      </div>
-
-                      <button
-                        onClick={() => goToPage(txData.pageNumber + 1)}
-                        disabled={txData.last || txData.totalPages <= 1}
-                        className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-slate-200"
-                      >
-                        <ChevronRight size={16} />
-                      </button>
-                    </div>
                   </div>
-                )}
+
+                  {/* Pagination */}
+                  {txData && (
+                    <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-white shrink-0">
+                      <div className="text-[12px] text-slate-500">
+                        Hiển thị trang <span className="font-bold text-slate-700">{txData.pageNumber + 1}</span> / {txData.totalPages || 1}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => goToPage(txData.pageNumber - 1)}
+                          disabled={txData.first || txData.totalPages <= 1}
+                          className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 transition-all"
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(5, txData.totalPages) }).map(
+                            (_, i) => {
+                              const pageNum = i;
+                              const isActive = txData.pageNumber === pageNum;
+                              return (
+                                <button
+                                  key={pageNum}
+                                  onClick={() => goToPage(pageNum)}
+                                  className={cn(
+                                    "w-8 h-8 rounded-lg text-[12px] font-semibold transition-all",
+                                    isActive
+                                      ? "bg-emerald-600 text-white shadow-md shadow-emerald-200"
+                                      : "text-slate-500 hover:bg-slate-100"
+                                  )}
+                                >
+                                  {pageNum + 1}
+                                </button>
+                              );
+                            },
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => goToPage(txData.pageNumber + 1)}
+                          disabled={txData.last || txData.totalPages <= 1}
+                          className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-slate-200"
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ══ ITEM HISTORY tab ══ */}
+        {activeTab === "item-history" && logItemId && (
+          <div className="flex flex-col h-full space-y-4 min-h-0">
+            {/* Header with Back Button */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setActiveTab("items");
+                    setLogItemId(null);
+                    const params = new URLSearchParams(searchParams);
+                    params.delete("itemId");
+                    params.delete("tab");
+                    setSearchParams(params, { replace: true });
+                  }}
+                  className="p-2 hover:bg-white rounded-xl text-slate-500 hover:text-slate-900 transition-all border border-transparent hover:border-slate-200 shadow-sm hover:shadow-md"
+                >
+                  <ArrowLeft size={18} />
+                </button>
+                <div>
+                  <h3 className="text-[16px] font-bold text-slate-900 flex items-center gap-2">
+                    <History size={18} className="text-emerald-500" />
+                    Chi tiết: <span className="text-emerald-600">{items.find(i => i.id === logItemId)?.name || "Vật tư"}</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 font-medium">Chi tiết lịch sử biến động kho của vật tư này</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <p className="text-[13px] text-slate-600">
+                  <span className="font-bold text-slate-900">{txData?.totalElements ?? 0}</span> giao dịch
+                </p>
               </div>
             </div>
-          )}
+
+            <div className="flex-1 min-h-0 bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden shadow-sm">
+              {/* Toolbar */}
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sắp xếp:</span>
+                    <select
+                      value={txPageable.sort?.[0] || "createdAt,desc"}
+                      onChange={(e) => updateSort(e.target.value)}
+                      className="text-[12px] border-slate-200 rounded-lg py-1 px-2 bg-white shadow-sm outline-none focus:border-emerald-400"
+                    >
+                      <option value="createdAt,desc">Mới nhất</option>
+                      <option value="createdAt,asc">Cũ nhất</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Size:</span>
+                  <select
+                    value={txPageable.size}
+                    onChange={(e) => updatePageSize(Number(e.target.value))}
+                    className="text-[12px] border-slate-200 rounded-lg py-1 px-2 bg-white shadow-sm outline-none focus:border-emerald-400"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+              </div>
+
+              {txLoading ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-16 gap-3">
+                  <Loader2 size={32} className="animate-spin text-emerald-500" />
+                  <p className="text-[13px] text-slate-400 font-medium">Đang truy xuất nhật ký...</p>
+                </div>
+              ) : transactions.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-16 gap-3 text-center">
+                  <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-2">
+                    <History size={32} className="text-slate-200" />
+                  </div>
+                  <p className="text-[15px] font-bold text-slate-700">Chưa có giao dịch</p>
+                  <p className="text-[12px] text-slate-400">Vật tư này hiện chưa có biến động kho nào</p>
+                </div>
+              ) : (
+                <div className="flex-1 overflow-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-100">
+                      <tr>
+                        <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vật tư</th>
+                        <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Biến động</th>
+                        <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">Đơn vị</th>
+                        <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Đơn giá</th>
+                        <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">Giá trị</th>
+                        <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Từ Vị trí</th>
+                        <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Đến Vị trí</th>
+                        <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Người thực hiện</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {transactions.map((tx: WarehouseTransaction) => {
+                        const isImport = tx.qtyChange > 0;
+                        const itemPrice = tx.warehouseItem.unitPrice ?? 0;
+                        const totalValue = Math.abs(tx.qtyChange) * itemPrice;
+
+                        return (
+                          <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-6 py-4">
+                              <span className="text-[13px] font-bold text-slate-700">{tx.warehouseItem.name}</span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex flex-col items-end">
+                                <span className={cn(
+                                  "text-[14px] font-black",
+                                  isImport ? "text-emerald-600" : "text-rose-600"
+                                )}>
+                                  {isImport ? "+" : "-"} {Math.abs(tx.qtyChange).toLocaleString("vi-VN")}
+                                </span>
+                                <span className={cn(
+                                  "text-[9px] font-bold px-1.5 rounded uppercase tracking-tighter w-fit",
+                                  isImport ? "bg-emerald-50 text-emerald-500" : "bg-rose-50 text-rose-500"
+                                )}>
+                                  {isImport ? "Nhập kho" : "Xuất kho"}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <span className="text-[12px] font-medium text-slate-600">{tx.warehouseItem.unit.name}</span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <span className="text-[13px] font-medium text-slate-600">
+                                {itemPrice > 0 ? itemPrice.toLocaleString("vi-VN") + " ₫" : "—"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <span className={cn(
+                                "text-[13px] font-bold",
+                                isImport ? "text-emerald-700" : "text-rose-700"
+                              )}>
+                                {totalValue > 0 ? (isImport ? "+" : "-") + totalValue.toLocaleString("vi-VN") + " ₫" : "—"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-[12px] text-slate-500 font-medium truncate max-w-[120px] block">
+                                {tx.fromLocation?.name || "—"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="text-[12px] text-slate-700 font-bold truncate max-w-[120px] block">
+                                {tx.toLocation?.name || "—"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex flex-col">
+                                <span className="text-[12px] font-bold text-slate-700 whitespace-nowrap">
+                                  {tx.performedBy?.fullName || "Hệ thống"}
+                                </span>
+                                <span className="text-[10px] text-slate-400 truncate max-w-[150px]">
+                                  {tx.performedBy?.email || "N/A"}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {txData && (
+                <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-white shrink-0">
+                  <div className="text-[12px] text-slate-500">
+                    Hiển thị trang <span className="font-bold text-slate-700">{txData.pageNumber + 1}</span> / {txData.totalPages || 1}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => goToPage(txData.pageNumber - 1)}
+                      disabled={txData.first || txData.totalPages <= 1}
+                      className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 transition-all"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, txData.totalPages) }).map(
+                        (_, i) => {
+                          const pageNum = i;
+                          const isActive = txData.pageNumber === pageNum;
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => goToPage(pageNum)}
+                              className={cn(
+                                "w-8 h-8 rounded-lg text-[12px] font-semibold transition-all",
+                                isActive
+                                  ? "bg-emerald-600 text-white shadow-md shadow-emerald-200"
+                                  : "text-slate-500 hover:bg-slate-100"
+                              )}
+                            >
+                              {pageNum + 1}
+                            </button>
+                          );
+                        },
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => goToPage(txData.pageNumber + 1)}
+                      disabled={txData.last || txData.totalPages <= 1}
+                      className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-slate-200"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ══ MODAL: Tạo vật tư ══ */}
@@ -1559,112 +1559,112 @@ export function WarehouseDetailPage() {
               onSubmit={handleCreateItem}
               className="space-y-4"
             >
-               <div>
-                 <FieldLabel required>Tên vật tư</FieldLabel>
-                 <input
-                   // required
-                   value={itemForm.name}
-                   onChange={(e) =>
-                     setItemForm((p) => ({ ...p, name: e.target.value }))
-                   }
-                   className={inputCls}
-                   placeholder="VD: Phân bón NPK 20-20-15"
-                 />
-               </div>
+              <div>
+                <FieldLabel required>Tên vật tư</FieldLabel>
+                <input
+                  // required
+                  value={itemForm.name}
+                  onChange={(e) =>
+                    setItemForm((p) => ({ ...p, name: e.target.value }))
+                  }
+                  className={inputCls}
+                  placeholder="VD: Phân bón NPK 20-20-15"
+                />
+              </div>
 
-               <div className="grid grid-cols-2 gap-3">
-                 <div>
-                   <FieldLabel required>Đơn vị tính</FieldLabel>
-                   <select
-                     // required
-                     value={itemForm.unitId}
-                     onChange={(e) =>
-                       setItemForm((p) => ({ ...p, unitId: e.target.value }))
-                     }
-                     className={selectCls}
-                   >
-                     <option value="">Chọn đơn vị</option>
-                     {units.map((u: Unit) => (
-                       <option key={u.id} value={u.id}>
-                         {u.name} ({u.code})
-                       </option>
-                     ))}
-                   </select>
-                 </div>
-                 <div>
-                   <FieldLabel required>Mã SKU</FieldLabel>
-                   <select
-                     // required
-                     value={itemForm.sku}
-                     onChange={(e) =>
-                       setItemForm((p) => ({ ...p, sku: e.target.value }))
-                     }
-                     className={selectCls}
-                   >
-                     <option value="">Chọn SKU</option>
-                     {skus.map((s: Sku) => (
-                       <option key={s.sku} value={s.sku}>
-                         {s.sku}
-                       </option>
-                     ))}
-                   </select>
-                 </div>
-               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <FieldLabel required>Đơn vị tính</FieldLabel>
+                  <select
+                    // required
+                    value={itemForm.unitId}
+                    onChange={(e) =>
+                      setItemForm((p) => ({ ...p, unitId: e.target.value }))
+                    }
+                    className={selectCls}
+                  >
+                    <option value="">Chọn đơn vị</option>
+                    {units.map((u: Unit) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name} ({u.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <FieldLabel required>Mã SKU</FieldLabel>
+                  <select
+                    // required
+                    value={itemForm.sku}
+                    onChange={(e) =>
+                      setItemForm((p) => ({ ...p, sku: e.target.value }))
+                    }
+                    className={selectCls}
+                  >
+                    <option value="">Chọn SKU</option>
+                    {skus.map((s: Sku) => (
+                      <option key={s.sku} value={s.sku}>
+                        {s.sku}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
-               <div className="grid grid-cols-2 gap-3">
-                 <div>
-                   <FieldLabel>Nhà cung cấp</FieldLabel>
-                   <select
-                     value={itemForm.supplierId}
-                     onChange={(e) =>
-                       setItemForm((p) => ({ ...p, supplierId: e.target.value }))
-                     }
-                     className={selectCls}
-                   >
-                     <option value="">Chọn nhà cung cấp</option>
-                     {suppliers.map((s: Supplier) => (
-                       <option key={s.id} value={s.id}>
-                         {s.name}
-                       </option>
-                     ))}
-                   </select>
-                 </div>
-                 <div>
-                   <FieldLabel required>Vị trí trong kho</FieldLabel>
-                   <select
-                     // required
-                     value={itemForm.toLocationId}
-                     onChange={(e) =>
-                       setItemForm((p) => ({
-                         ...p,
-                         toLocationId: e.target.value,
-                       }))
-                     }
-                     className={selectCls}
-                   >
-                     <option value="">Chọn vị trí</option>
-                     {locations
-                       .filter((l: WarehouseLocation) => l.isActive)
-                       .map((l: WarehouseLocation) => (
-                         <option key={l.id} value={l.id}>
-                           {l.name} [{l.code}]
-                         </option>
-                       ))}
-                   </select>
-                 </div>
-               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <FieldLabel>Nhà cung cấp</FieldLabel>
+                  <select
+                    value={itemForm.supplierId}
+                    onChange={(e) =>
+                      setItemForm((p) => ({ ...p, supplierId: e.target.value }))
+                    }
+                    className={selectCls}
+                  >
+                    <option value="">Chọn nhà cung cấp</option>
+                    {suppliers.map((s: Supplier) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <FieldLabel required>Vị trí trong kho</FieldLabel>
+                  <select
+                    // required
+                    value={itemForm.toLocationId}
+                    onChange={(e) =>
+                      setItemForm((p) => ({
+                        ...p,
+                        toLocationId: e.target.value,
+                      }))
+                    }
+                    className={selectCls}
+                  >
+                    <option value="">Chọn vị trí</option>
+                    {locations
+                      .filter((l: WarehouseLocation) => l.isActive)
+                      .map((l: WarehouseLocation) => (
+                        <option key={l.id} value={l.id}>
+                          {l.name} [{l.code}]
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              </div>
 
-               <div className="grid grid-cols-3 gap-3">
-                 <div>
-                   <FieldLabel required>Số lượng tồn</FieldLabel>
-                   <input
-                     // required
-                     {...numericInput(itemForm.stock, (v) =>
-                       setItemForm((p) => ({ ...p, stock: v })),
-                     )}
-                     className={cn(inputCls, "font-bold text-emerald-700")}
-                   />
-                 </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <FieldLabel required>Số lượng tồn</FieldLabel>
+                  <input
+                    // required
+                    {...numericInput(itemForm.stock, (v) =>
+                      setItemForm((p) => ({ ...p, stock: v })),
+                    )}
+                    className={cn(inputCls, "font-bold text-emerald-700")}
+                  />
+                </div>
                 <div>
                   <FieldLabel>Đơn giá (₫)</FieldLabel>
                   <input
@@ -1723,40 +1723,40 @@ export function WarehouseDetailPage() {
             onClose={() => setIsLocationModalOpen(false)}
           />
 
-           <form
-             id="create-location-form"
-             onSubmit={handleCreateLocation}
-             className="px-6 py-5 space-y-4"
-           >
-             <div className="grid grid-cols-2 gap-3">
-               <div>
-                 <FieldLabel required>Mã vị trí</FieldLabel>
-                 <input
-                   // required
-                   value={locationForm.code}
-                   onChange={(e) =>
-                     setLocationForm((p) => ({
-                       ...p,
-                       code: e.target.value.toUpperCase(),
-                     }))
-                   }
-                   className={cn(inputCls, "font-mono uppercase")}
-                   placeholder="VD: A1, KEL-01"
-                   maxLength={20}
-                 />
-               </div>
-               <div>
-                 <FieldLabel required>Tên vị trí</FieldLabel>
-                 <input
-                   // required
-                   value={locationForm.name}
-                   onChange={(e) =>
-                     setLocationForm((p) => ({ ...p, name: e.target.value }))
-                   }
-                   className={inputCls}
-                   placeholder="VD: Kệ A hàng 1"
-                 />
-               </div>
+          <form
+            id="create-location-form"
+            onSubmit={handleCreateLocation}
+            className="px-6 py-5 space-y-4"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <FieldLabel required>Mã vị trí</FieldLabel>
+                <input
+                  // required
+                  value={locationForm.code}
+                  onChange={(e) =>
+                    setLocationForm((p) => ({
+                      ...p,
+                      code: e.target.value.toUpperCase(),
+                    }))
+                  }
+                  className={cn(inputCls, "font-mono uppercase")}
+                  placeholder="VD: A1, KEL-01"
+                  maxLength={20}
+                />
+              </div>
+              <div>
+                <FieldLabel required>Tên vị trí</FieldLabel>
+                <input
+                  // required
+                  value={locationForm.name}
+                  onChange={(e) =>
+                    setLocationForm((p) => ({ ...p, name: e.target.value }))
+                  }
+                  className={inputCls}
+                  placeholder="VD: Kệ A hàng 1"
+                />
+              </div>
             </div>
 
             <div>
