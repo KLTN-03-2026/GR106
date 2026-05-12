@@ -585,7 +585,7 @@ console.log("phase.plotId:", (selection as any).phase.plotId);
           exit={{ x: '100%', opacity: 0 }}
           style={{ width: panelWidth }}
           transition={{ type: 'spring', stiffness: 360, damping: 36 }}
-          className="relative flex-shrink-0 bg-white border-l border-slate-200 flex flex-col z-40 shadow-xl overflow-hidden"
+          className="relative flex-shrink-0 bg-white border-l border-slate-200 flex flex-col z-[150] shadow-xl overflow-hidden"
         >
             {/* Resize handle - đặt ở cạnh trái */}
   <div
