@@ -371,7 +371,6 @@ export function SeasonPlanPage() {
     if (!plan || !phase) return;
 
     let plotId = data.plotId;
-    if (!plotId && plan.plots?.length) plotId = plan.plots[0].plotId;
     try {
       await createSeasonTask(planId, phaseId, { ...data, plotId }).unwrap();
     } catch (err: any) {
