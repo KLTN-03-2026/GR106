@@ -27,4 +27,20 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
       )
 """)
     List<UserEntity> findUsersNeedingNewVerificationToken();
+
+    @Query("""
+    SELECT (COUNT(u) > 0)
+    FROM UserEntity u
+    WHERE u.email = :email
+      AND EXISTS (
+          SELECT 1
+          FROM UserRoleEntity ur
+          JOIN ur.role r
+          WHERE ur.user = u
+            AND r.name = 'ROLE_ADMIN'
+      )
+""")
+    boolean existsByEmailAndRoleIsAdmin(@Param("email") String email);
+
+
 }
