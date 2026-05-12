@@ -40,7 +40,11 @@ public class SecurityConfig {
                     "/api/v1/crop-types",
                     "/api/v1/crops",
 
-                    "/api/v1/invitations/*/preview"
+                    "/api/v1/invitations/*/preview",
+
+
+                    //websocket
+                    "/ws/**"
             };
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -58,13 +62,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("*"));
-        config.setAllowedMethods(List.of("*"));
+        config.setAllowedOriginPatterns(List.of("*")); // ← dùng Patterns thay vì Origins
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true); // ← SockJS cần cái này
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
-
         return source;
     }
 

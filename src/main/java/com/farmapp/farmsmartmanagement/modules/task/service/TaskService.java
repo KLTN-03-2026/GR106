@@ -6,6 +6,7 @@ import com.farmapp.farmsmartmanagement.common.response.PageableResponse;
 import com.farmapp.farmsmartmanagement.common.util.SecurityUtils;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.*;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.*;
+import com.farmapp.farmsmartmanagement.modules.notification.publisher.TaskEventPublisher;
 import com.farmapp.farmsmartmanagement.modules.plan.validation.PlanStageValidator;
 import com.farmapp.farmsmartmanagement.modules.task.dto.request.CreateTaskRequest;
 import com.farmapp.farmsmartmanagement.modules.task.dto.request.UpdateTaskRequest;
@@ -61,6 +62,9 @@ public class TaskService {
     SecurityUtils securityUtils;
 
     EntityManager entityManager;
+
+    TaskEventPublisher taskEventPublisher;
+    FarmMemberRepository farmMemberRepository;
 
     @Transactional
     public TaskResponse createTask(UUID planId, UUID planStageId, CreateTaskRequest request){
@@ -124,7 +128,24 @@ public class TaskService {
         task.setCreatedBy(user);
         task.setCreatedAt(Instant.now());
 
-        return taskMapper.toResponse(taskRepository.save(task));
+        // Fix: save trước
+        TaskEntity saved = taskRepository.save(task);
+
+        List<UUID> memberIds = farmMemberRepository.findAllByFarm_Id(farmId)
+                .stream()
+                .map(fm -> fm.getUser().getId() )
+                .toList();
+
+        taskEventPublisher.publishTaskCreated(
+                saved.getId(),
+                saved.getName(),
+                farmId,
+                userId,
+                user.getFullName(),
+                memberIds
+        );
+
+        return taskMapper.toResponse(saved);
     }
 
     @Transactional
