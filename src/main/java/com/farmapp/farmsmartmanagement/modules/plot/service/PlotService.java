@@ -151,6 +151,8 @@ public class PlotService {
         log.info("{}{}",farmId, plotId);
         PlotEntity plot = plotRepository.findByIdAndFarmId(plotId, farmId)
                 .orElseThrow(() -> new AppException(ErrorCode.PLOT_NOT_FOUND));
+        if(taskRepository.existsByPlot_Id(plot.getId()))
+            throw new AppException(ErrorCode.PLOT_IS_USING_BY_TASK);
 
         plot.setDeletedAt(Instant.now());
 
