@@ -49,6 +49,18 @@ public class PlotController {
                 );
     }
 
+    @RequiresFarmToken
+    @GetMapping("/{plotId}")
+    public ResponseEntity<ApiResponse<PlotResponse>> getAllPlots(
+            @PathVariable UUID plotId
+    ) {
+        return ResponseUtil
+                .success(
+                        plotService.getPlotById(plotId)
+                );
+    }
+
+
     // ========================= 2. CREATE =========================
     @Operation(
             summary = "Tạo lô đất mới",

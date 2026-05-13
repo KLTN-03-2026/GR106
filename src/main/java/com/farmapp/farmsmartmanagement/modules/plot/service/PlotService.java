@@ -47,6 +47,10 @@ public class PlotService {
         );
     }
 
+    public PlotResponse getPlotById(UUID id) {
+        return plotMapper.toResponse(plotRepository.findById(id).orElse(null));
+    }
+
 
     @Transactional
     public PlotResponse createPlot(UUID farmId, CreatePlotRequest request) {
