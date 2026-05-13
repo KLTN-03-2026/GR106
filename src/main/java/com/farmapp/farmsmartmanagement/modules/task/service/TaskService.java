@@ -66,6 +66,9 @@ public class TaskService {
     TaskEventPublisher taskEventPublisher;
     FarmMemberRepository farmMemberRepository;
 
+    WorkLogRepository workLogRepository;
+
+
     @Transactional
     public TaskResponse createTask(UUID planId, UUID planStageId, CreateTaskRequest request){
 
@@ -318,6 +321,12 @@ public class TaskService {
         TaskEntity task = taskRepository
                 .findByIdForUpdateAndStatusIsNotTerminal(taskId) // lấy lock
                 .orElseThrow(() -> new AppException(ErrorCode.TASK_NOT_FOUND));
+
+        if(workSessionRepository.existsOpenSessionByTask_Id(taskId))
+            throw new AppException(ErrorCode.TASK_HAVE_OPEN_SESSION_CANNOT_DELETE);
+
+        if(workLogRepository.existsByTask_Id(taskId))
+            throw new AppException(ErrorCode.TASK_HAVE_OPEN_SESSION_CANNOT_UPDATE_TO_STATUS_TERMINAL);
 
         validateTaskTerminalOrExpired(task);
         validateTaskReferences(taskId);

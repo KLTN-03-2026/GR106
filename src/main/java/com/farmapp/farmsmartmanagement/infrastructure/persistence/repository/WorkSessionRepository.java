@@ -139,4 +139,5 @@ public interface WorkSessionRepository extends JpaRepository<WorkSessionEntity, 
                                @Param("startDate") LocalDate startDate,
                                @Param("endDate") LocalDate endDate);
 
+    boolean existsOpenSessionByTask_Id(UUID taskId);
 }

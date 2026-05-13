@@ -166,6 +166,8 @@ public enum ErrorCode {
     PLAN_STAGE_HAVE_OPEN_SESSION_CANNOT_DELETE(409,"Giai đoạn đang có nhân công đang làm việc, không thể xoá. Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình (Chấm công tự động)",HttpStatus.CONFLICT ),
     PLAN_STAGE_HAVE_OPEN_SESSION_CANNOT_UPDATE_TO_STATUS_TERMINAL(409,"Giai đoạn đang có nhân công đang làm việc, không thể đưa giai đoạn về trạng thái cuối. Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình (Chấm công tự động)",HttpStatus.CONFLICT ),
     TASK_HAVE_OPEN_SESSION_CANNOT_UPDATE_TO_STATUS_TERMINAL(409,"Công việc đang có nhân công đang làm việc, không thể đưa công việc về trạng thái cuối. Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình (Chấm công tự động)",HttpStatus.CONFLICT ),
+    TASK_HAVE_ALREADY_WRITTEN_WORK_LOG(409,"Công việc đang có nhân công đang làm việc, không thể đưa công việc về trạng thái cuối. Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình (Chấm công tự động)",HttpStatus.CONFLICT ),
+    TASK_HAVE_OPEN_SESSION_CANNOT_DELETE(409,"Công việc đang có nhân công đang làm việc. Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình (Chấm công tự động)",HttpStatus.CONFLICT ),
     TASK_HAVE_SESSION_OUT_SIDE_NEW_DATE_RANGE(409,"Công việc đang có phiên làm việc nằm ngoài thời gian mới. Không thể cập nhật" , HttpStatus.CONFLICT ),
     EMPLOYEE_HAVE_OPEN_SESSION_CAN_NOT_DELETE_ASSIGNEE(409,"Người này đang có phiên làm việc với công việc này. Không thể xoá phân công người này(Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình)" ,HttpStatus.CONFLICT  ),
     EMPLOYEE_HAVE_OPEN_SESSION_CAN_NOT_DELETE_MEMBER(409,"Người này đang có phiên làm việc với công việc này. Không thể xoá thành viên này(Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình)" ,HttpStatus.CONFLICT  ),
@@ -175,7 +177,8 @@ public enum ErrorCode {
     WORK_SHIFT_LIMIT_EXCEEDED(409,"Tối đa chỉ tạo 24 ca làm việc" ,HttpStatus.CONFLICT ),
     WAGE_CONFIG_NOT_FOUND(404, "Không tìm thấy cấu hình lương",HttpStatus.CONFLICT ),
     WAGE_CONFIG_ALREADY_EXISTS(409, "Cấu hình lương đã tồn tại cho ngày hiệu lực này",HttpStatus.CONFLICT ),
-    WAGE_CONFIG_IN_USE(409, "Cấu hình lương đã được sử dụng trong chấm công, không thể xóa",HttpStatus.CONFLICT ),;
+    WAGE_CONFIG_IN_USE(409, "Cấu hình lương đã được sử dụng trong chấm công, không thể xóa",HttpStatus.CONFLICT ),
+    PLAN_STAGE_NOT_START(409,"Giai đoạn chưa bắt đầu" ,HttpStatus.CONFLICT );
 
 
 

@@ -91,6 +91,8 @@ public class TaskStatusService {
         // 1. Lock row — tránh race condition
         TaskEntity task = taskValidator.validateAndGetTaskForUpdate(taskId,stageId,planId,farmId);
 
+        PlanStageEntity planStage = planStageValidator.validateAndGetStage(stageId,planId,farmId);
+
         // 3. Kiểm tra toStatus tồn tại
         TaskStatusEntity toStatus = taskStatusRepository
                 .findById(taskStatusId)
@@ -105,6 +107,8 @@ public class TaskStatusService {
         // 6. Set actualStartDate khi bắt đầu thực sự (initial → non-initial)
         if (currentStatus.getIsInitial() && !toStatus.getIsInitial()
                 && task.getActualStartDate() == null) {
+            if(planStage.getStatus().getIsInitial())
+                throw new AppException(ErrorCode.PLAN_STAGE_NOT_START);
             task.setActualStartDate(LocalDate.now());
         }
 

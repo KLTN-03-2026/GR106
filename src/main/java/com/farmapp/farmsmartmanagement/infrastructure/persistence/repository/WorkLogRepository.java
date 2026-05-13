@@ -90,4 +90,6 @@ public interface WorkLogRepository extends JpaRepository<WorkLogEntity, UUID> {
     boolean existsByTask_IdAndLockedAtIsNotNull(UUID id);
 
     List<WorkLogEntity> findAllByTask_IdAndLockedAtIsNullAndDeletedAtIsNull(UUID taskId);
+
+    boolean existsByTask_Id(UUID taskId);
 }

@@ -48,7 +48,7 @@ public class PlotService {
     }
 
     public PlotResponse getPlotById(UUID id) {
-        return plotMapper.toResponse(plotRepository.findById(id).orElse(null));
+        return plotMapper.toResponse(plotRepository.findById(id).orElseThrow(()->new AppException(ErrorCode.PLOT_NOT_FOUND)));
     }
 
 

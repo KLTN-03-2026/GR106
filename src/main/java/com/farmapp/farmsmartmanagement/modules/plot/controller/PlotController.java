@@ -51,7 +51,7 @@ public class PlotController {
 
     @RequiresFarmToken
     @GetMapping("/{plotId}")
-    public ResponseEntity<ApiResponse<PlotResponse>> getAllPlots(
+    public ResponseEntity<ApiResponse<PlotResponse>> getPlotById(
             @PathVariable UUID plotId
     ) {
         return ResponseUtil
