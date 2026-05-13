@@ -7,6 +7,7 @@ import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.FarmEnt
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.PlotEntity;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.FarmRepository;
 import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.PlotRepository;
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.repository.TaskRepository;
 import com.farmapp.farmsmartmanagement.modules.plot.dto.request.CreatePlotRequest;
 import com.farmapp.farmsmartmanagement.modules.plot.dto.request.GeometryFormat;
 import com.farmapp.farmsmartmanagement.modules.plot.dto.request.UpdatePlotRequest;
@@ -36,6 +37,7 @@ public class PlotService {
     FarmRepository farmRepository;
     PlotMapper plotMapper;
     EntityManager entityManager;
+    TaskRepository taskRepository;
 
 
     @Transactional(readOnly = true)
