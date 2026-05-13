@@ -114,6 +114,8 @@ public interface WorkSessionRepository extends JpaRepository<WorkSessionEntity, 
 
     boolean existsByEmployee_IdAndCheckedOutAtIsNull(UUID userId);
 
+    boolean existsByTask_IdAndEmployee_IdAndCheckedOutAtIsNull(UUID task, UUID userId);
+
     List<WorkSessionEntity> findAllByTask_IdOrderByCheckedInAtDesc(UUID taskId);
 
     Page<WorkSessionEntity> findAllByEmployee_Id(UUID userId, Pageable pageable);

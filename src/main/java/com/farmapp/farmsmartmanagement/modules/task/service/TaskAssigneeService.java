@@ -138,7 +138,7 @@ public class TaskAssigneeService {
 //        if(taskAssignee.getTask().getPlanStage().getStatus().getIsTerminal())
 //            throw new AppException(ErrorCode.PLAN_STAGE_ALREADY_TERMINAL);
 
-        if(workSessionRepository.existsByEmployee_IdAndCheckedOutAtIsNull(taskAssignee.getUser().getId()))
+        if(workSessionRepository.existsByTask_IdAndEmployee_IdAndCheckedOutAtIsNull(taskId, taskAssignee.getUser().getId()))
             throw new AppException(ErrorCode.EMPLOYEE_HAVE_OPEN_SESSION_CAN_NOT_DELETE_ASSIGNEE);
 
         taskAssignee.setRemovalReason(request.getRemovalReason()!=null?request.getRemovalReason():"");
