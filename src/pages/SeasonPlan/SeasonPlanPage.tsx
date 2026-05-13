@@ -14,11 +14,6 @@ import {
   LayoutGrid,
   List,
   CalendarDays,
-  Target,
-  Code2,
-  Archive,
-  BookOpen,
-  Link2,
   Zap,
   Calendar,
   Clock,
@@ -55,15 +50,10 @@ export interface SelectionState {
 
 const NAV_TABS = [
   { key: 'summary', label: 'Tổng quan', icon: LayoutGrid },
-  { key: 'timeline', label: 'Timeline', icon: CalendarDays },
-  { key: 'backlog', label: 'Backlog', icon: List },
+  { key: 'timeline', label: 'Tiến độ', icon: CalendarDays },
+  { key: 'backlog', label: 'Nhật ký công', icon: List },
   { key: 'board', label: 'Phiên làm việc', icon: Clock },
-  { key: 'calendar', label: 'Lịch', icon: CalendarDays },
-  { key: 'goals', label: 'Mục tiêu', icon: Target },
-  { key: 'code', label: 'Phát triển', icon: Code2 },
-  { key: 'archive', label: 'Lưu trữ', icon: Archive },
-  { key: 'pages', label: 'Trang', icon: BookOpen },
-  { key: 'shortcuts', label: 'Phím tắt', icon: Link2 },
+
 ] as const;
 
 type NavTab = typeof NAV_TABS[number]['key'];
@@ -648,9 +638,6 @@ useEffect(() => {
             </button>
           );
         })}
-        <button className="flex items-center gap-1 px-3 py-2.5 text-[12px] text-slate-400 hover:text-slate-700 border-b-2 border-transparent whitespace-nowrap ml-1">
-          <span className="text-lg leading-none">+</span>
-        </button>
       </div>
 
       {activeTab === 'timeline' && !currentPlan && (
@@ -811,13 +798,13 @@ useEffect(() => {
               {NAV_TABS.find(t => t.key === activeTab)?.label}
             </p>
             <p className="text-[12px] text-slate-400 max-w-xs">
-              Tính năng này đang được phát triển. Chuyển sang tab <strong>Timeline</strong> để quản lý kế hoạch mùa vụ.
+              Tính năng này đang được phát triển. Chuyển sang tab <strong>Tiến độ</strong> để quản lý kế hoạch mùa vụ.
             </p>
             <button
               className="mt-4 px-4 py-1.5 text-[12px] font-bold text-indigo-600 border border-indigo-200 rounded-lg hover:bg-indigo-50 transition-colors"
               onClick={() => setActiveTab('timeline')}
             >
-              Xem Timeline
+              Xem Tiến độ
             </button>
           </div>
         )}
