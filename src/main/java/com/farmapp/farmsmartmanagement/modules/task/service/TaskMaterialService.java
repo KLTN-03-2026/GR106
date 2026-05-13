@@ -19,6 +19,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -55,16 +56,9 @@ public class TaskMaterialService {
 
         TaskEntity task = taskValidator.validateAndGetTask(taskId,stageId,planId,farmId);
 
-        // Vật tư là nullable = true
-        WarehouseItemEntity warehouseItem = null;
-        if(request.getWarehouseItemId()!=null){
-            warehouseItem = warehouseItemRepository
-                    .findByIdAndFarm_Id(request.getWarehouseItemId(), farmId)
-                    .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_ITEM_NOT_FOUND));
-
-            if(taskMaterialRepository.existsByTask_IdAndWarehouseItem_Id(task.getId(), request.getWarehouseItemId()))
-                throw new AppException(ErrorCode.TASK_ALREADY_TERMINAL);
-        }
+        WarehouseItemEntity warehouseItem = warehouseItemRepository
+                .findByIdAndFarm_Id(request.getWarehouseItemId(), farmId)
+                .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_ITEM_NOT_FOUND));;
 
         // Kiểm tra số lượng vật tư có đủ?
         boolean sufficient = warehouseItemRepository
@@ -76,6 +70,18 @@ public class TaskMaterialService {
 
         if (!sufficient)
             throw new AppException(ErrorCode.INSUFFICIENT_STOCK_FOR_PLAN);
+
+        if (taskMaterialRepository.existsByTask_IdAndWarehouseItem_Id(task.getId(), request.getWarehouseItemId())) {
+            TaskMaterialEntity existMaterial = taskMaterialRepository
+                    .findByTask_IdAndWarehouseItem_Id(taskId, warehouseItem.getId())
+                    .orElseThrow(() -> new AppException(ErrorCode.TASK_MATERIAL_NOT_FOUND));
+
+            BigDecimal addQty = request.getPlannedQty(); // số lượng cần cộng thêm
+            BigDecimal newQty = existMaterial.getPlannedQty().add(addQty);
+
+            existMaterial.setPlannedQty(newQty);
+            return taskMaterialMapper.toResponse(taskMaterialRepository.save(existMaterial));
+        }
 
         TaskMaterialEntity taskMaterial = new TaskMaterialEntity();
         taskMaterial.setTask(task);

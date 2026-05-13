@@ -7,11 +7,13 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface TaskMaterialRepository extends JpaRepository<TaskMaterialEntity, UUID> {
     boolean existsByTask_IdAndWarehouseItem_Id(UUID id, UUID id1);
 
+    Optional<TaskMaterialEntity> findByTask_IdAndWarehouseItem_Id(UUID id, UUID id1);
     List<TaskMaterialEntity> findAllByTask_Id(UUID taskId);
 
     void deleteByIdAndTask_Id(UUID taskMaterialId, UUID taskId);

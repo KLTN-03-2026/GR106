@@ -16,5 +16,7 @@ public class CreateTaskMaterialRequest {
     @Positive(message = "Số vật tư dự kiến phải lớn hơn 0")
     BigDecimal plannedQty;
 
+
+    @NotNull(message = "Vui lòng chọn vật tư")
     UUID warehouseItemId;
 }
