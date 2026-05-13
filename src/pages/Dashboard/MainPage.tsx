@@ -20,7 +20,7 @@ import {
  */
 function useDashboardData(farmId?: string) {
   const [isSyncing, setIsSyncing] = useState(false);
-  
+
   const { plots, plotsLoading, clearPlots } = usePlots(farmId);
   const { crops, systemCrops, cropTypes, loading: cropsLoading, cropTypesLoading, fetchFarmCrops } = useCrops();
   const { plans, loading: plansLoading, fetchPlans } = useSeasonPlans(farmId);
@@ -67,14 +67,14 @@ function useDashboardData(farmId?: string) {
   return {
     stats: {
       totalPlots: farmId ? plots.length : 0,
-      totalCrops: cropTypes.length > 0 ? cropTypes.length : (farmId ? Array.from(new Set(crops.map(c => c.cropType.id))).length : 0), 
-      totalArea: farmId 
+      totalCrops: cropTypes.length > 0 ? cropTypes.length : (farmId ? Array.from(new Set(crops.map(c => c.cropType.id))).length : 0),
+      totalArea: farmId
         ? plots.reduce((acc, p) => acc + (Number(p.areaHa) || 0), 0)
         : 0,
-      totalPlants: farmId ? crops.length : systemCrops.length, 
-      performancePct: calculatePerformance(), 
+      totalPlants: farmId ? crops.length : systemCrops.length,
+      performancePct: calculatePerformance(),
     },
-    npkData: [], 
+    npkData: [],
     isLoading
   };
 }
@@ -84,7 +84,7 @@ export default function MainPage() {
   const navigate = useNavigate();
   const { user, currentFarmId } = useAuth();
   const { tasks: assignedTasks, loading: assignedLoading } = useAssignedTasks(user?.id);
-  
+
   // Ưu tiên farmId từ URL, nếu không có thì lấy farmId hiện tại từ context
   const farmId = routeFarmId || currentFarmId || undefined;
 

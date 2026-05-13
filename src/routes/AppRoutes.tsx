@@ -78,7 +78,7 @@ export const AppRoutes: React.FC = () => {
           <Route path="/activity" element={<Suspense fallback={<LoadingPage />}><ActivityPage /></Suspense>} />
           <Route path="/task" element={<Suspense fallback={<LoadingPage />}><TasksPage /></Suspense>} />
           <Route path="/gemini" element={<Suspense fallback={<LoadingPage />}><GeminiPage /></Suspense>} />
-          <Route path="/dashboard/notifications" element={<Suspense fallback={<LoadingPage />}><NotificationsPage /></Suspense>} />
+          <Route path="/notifications" element={<Suspense fallback={<LoadingPage />}><NotificationsPage /></Suspense>} />
           {/* <Route path="/config" element={<Suspense fallback={<LoadingPage />}><ConfigPage /></Suspense>} /> */}
           <Route path="/subscription/pricing" element={<Suspense fallback={<LoadingPage />}><SubscriptionPage /></Suspense>} />
 
@@ -90,7 +90,9 @@ export const AppRoutes: React.FC = () => {
             <Route path="actions" element={<Suspense fallback={<LoadingPage />}><FarmActionsPage /></Suspense>} />
             <Route path="wallet" element={<Suspense fallback={<LoadingPage />}><WalletPage /></Suspense>} />
             <Route path="activity" element={<Suspense fallback={<LoadingPage />}><ActivityPage /></Suspense>} />
-            <Route path="metrics" element={<Suspense fallback={<LoadingPage />}><ActivityPage /></Suspense>} />
+            <Route path="dashboard" element={<Suspense fallback={<LoadingPage />}><MainPage /></Suspense>} />
+            <Route path="dashboard/notifications" element={<Suspense fallback={<LoadingPage />}><NotificationsPage /></Suspense>} />
+            <Route path="metrics" element={<Suspense fallback={<LoadingPage />}><MainPage /></Suspense>} />
             <Route path="task" element={<Suspense fallback={<LoadingPage />}><TasksPage /></Suspense>} />
             <Route path="season-plans" element={<Suspense fallback={<LoadingPage />}><SeasonPlanListPage /></Suspense>} />
             <Route path="season-plans/:planId" element={<Suspense fallback={<LoadingPage />}><SeasonPlanPage /></Suspense>} />

@@ -62,7 +62,9 @@ export default function DashboardLayout() {
   const getActive = () => {
     const p = location.pathname;
     if (p.includes("/notifications")) return "notifications";
+    if (p.includes("/farms/") && p.includes("/dashboard/notifications")) return "notifications";
     if (p.includes("/actions")) return "home";
+    if (p.includes("/farms/") && p.includes("/dashboard")) return "metrics";
     if (p.includes("/dashboard")) return "dashboard";
     // Check for farm list or any farm-scoped page to highlight the 'tree' icon if needed, 
     // but specific farm pages usually have their own keys.
@@ -114,7 +116,7 @@ export default function DashboardLayout() {
 
     // Navigation logic for specialized keys
     if (key === "metrics") {
-      navigate(currentFarmId ? `/farms/${currentFarmId}/metrics` : '/farms');
+      navigate(currentFarmId ? `/farms/${currentFarmId}/dashboard` : '/farms');
       return;
     }
     if (key === "wallet") {
@@ -134,7 +136,7 @@ export default function DashboardLayout() {
       return;
     }
     if (key === "notifications") {
-      navigate("/dashboard/notifications");
+      navigate(currentFarmId ? `/farms/${currentFarmId}/dashboard/notifications` : "/notifications");
       return;
     }
 
@@ -219,7 +221,7 @@ export default function DashboardLayout() {
       return;
     }
 
-    navigate("/dashboard");
+    navigate("/farms");
   };
 
 

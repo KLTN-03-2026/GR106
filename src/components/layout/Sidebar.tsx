@@ -43,13 +43,14 @@ const NAV_GROUPS = [
     items: [
       { key: "dashboard", label: "Bảng điều khiển", icon: Home },
       { key: "tree", label: "Trang trại của tôi", icon: Trees, roles: ["owner", "admin", "manager", "employee"] },
-      { key: "metrics", label: "Theo dõi chỉ số", icon: BarChart3, roles: ["owner", "admin"] },
+      { key: "metrics", label: "Theo dõi chỉ số", icon: BarChart3, roles: ["owner", "admin", "manager", "employee"] },
+      { key: "notifications", label: "Thông báo", icon: Bell },
     ],
   },
   {
     title: "Tiện ích",
     items: [
-      { key: "notifications", label: "Thông báo", icon: Bell, roles: ["owner", "admin", "manager", "employee"] },
+
       { key: "wallet", label: "Ví & Thanh toán", icon: Wallet, roles: ["owner", "admin"] },
       { key: "activity", label: "Hoạt động", icon: History, roles: ["owner", "admin"] },
       { key: "task", label: "Nhiệm vụ", icon: GitFork, roles: ["owner", "admin", "employee"] },
@@ -146,13 +147,13 @@ export default function Sidebar({
   }, [effectiveRole, currentFarmId, active, collapsed]);
 
   const filterItem = (item: { key: string; roles?: string[] }) => {
-    if (!currentFarmId || location.pathname === "/dashboard/notifications") {
-      const dashboardItems = ["dashboard", "tree", "notifications"];
+    if (!currentFarmId || location.pathname === "/notifications") {
+      const dashboardItems = ["tree", "notifications"];
       return dashboardItems.includes(item.key);
     }
     
     // Hide Global items in Farm context
-    if (["wallet"].includes(item.key)) {
+    if (["wallet", "dashboard", "notifications"].includes(item.key)) {
       return false;
     }
     if (!item.roles) return true;

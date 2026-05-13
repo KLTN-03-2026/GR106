@@ -51,31 +51,11 @@ export const useWeather = (): UseWeatherState => {
         tempMax: data.tempMax ?? DEFAULT_WEATHER_DATA.tempMax,
       };
 
-      sessionStorage.setItem(
-        "weather_cache",
-        JSON.stringify({ data: normalized, timestamp: Date.now() }),
-      );
       return normalized;
     },
-    staleTime: 30 * 60 * 1000,
-    gcTime: 60 * 60 * 1000,
+    staleTime: 0, // Luôn gọi API mới
+    gcTime: 0,
     retry: 0,
-    initialData: () => {
-      const cached = sessionStorage.getItem("weather_cache");
-      if (!cached) return undefined;
-      try {
-        const { data, timestamp } = JSON.parse(cached) as {
-          data: WeatherData;
-          timestamp: number;
-        };
-        if (Date.now() - timestamp < 30 * 60 * 1000) {
-          return data;
-        }
-      } catch {
-        return undefined;
-      }
-      return undefined;
-    },
   });
 
   const refetch = useCallback(() => {
