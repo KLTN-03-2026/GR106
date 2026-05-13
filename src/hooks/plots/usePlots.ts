@@ -73,7 +73,7 @@ export function usePlots(farmId?: string) {
 
   return {
     plots: plotsQuery.data ?? [],
-    plotsLoading: plotsQuery.isLoading || plotsQuery.isFetching,
+    plotsLoading: plotsQuery.isLoading,
     error: plotsQuery.error,
     fetchPlots: useCallback(() => {
       void invalidate();

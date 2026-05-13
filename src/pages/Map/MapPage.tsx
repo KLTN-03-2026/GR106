@@ -372,18 +372,23 @@ export function MapPage() {
         mapInstance={mapInstance}
         isOverlapping={!!overlappingPlotName}
       >
-        <MapSidebar
-          plots={plots}
-          warehouses={warehouses}
-          selectedPlot={selectedPlot}
-          selectedWarehouse={selectedWarehouse}
-          onSelectPlot={handleSelectPlot}
-          onSelectWarehouse={handleSelectWarehouse}
-          onEditPlot={setEditingPlot}
-          onEditBoundaries={handleEditBoundaries}
-          onStartDraw={handleStartDrawing}
-          onDeletePlot={handleDeletePlotClick}
-        />
+        <div 
+          className="absolute top-4 left-4 z-20 w-72 rounded-2xl border border-gray-200 shadow-xl overflow-hidden"
+          style={{ maxHeight: 'calc(100% - 2rem)' }}
+        >
+          <MapSidebar
+            plots={plots}
+            warehouses={warehouses}
+            selectedPlot={selectedPlot}
+            selectedWarehouse={selectedWarehouse}
+            onSelectPlot={handleSelectPlot}
+            onSelectWarehouse={handleSelectWarehouse}
+            onEditPlot={setEditingPlot}
+            onEditBoundaries={handleEditBoundaries}
+            onStartDraw={handleStartDrawing}
+            onDeletePlot={handleDeletePlotClick}
+          />
+        </div>
 
         <FarmMap
           ref={farmMapRef}
