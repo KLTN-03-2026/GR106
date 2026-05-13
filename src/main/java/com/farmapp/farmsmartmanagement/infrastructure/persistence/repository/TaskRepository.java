@@ -223,4 +223,6 @@ public interface TaskRepository extends JpaRepository<TaskEntity, UUID> {
                                                       Pageable pageable);
 
     Optional<TaskEntity> findByIdAndFarm_IdAndDeletedAtIsNull(UUID taskId, UUID farmId);
+
+    boolean existsByPlot_Id(UUID id);
 }

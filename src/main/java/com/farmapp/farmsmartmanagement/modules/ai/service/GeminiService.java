@@ -10,13 +10,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -42,18 +46,19 @@ public class GeminiService {
     private String apiUrl;
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
-    // ─── Regex bắt JSON array dù có markdown fence hay text thừa ─────────────
     private static final Pattern JSON_ARRAY_PATTERN =
             Pattern.compile("\\[\\s*\\{.*?\\}\\s*\\]", Pattern.DOTALL);
+
+    // Retry config: tối đa 3 lần, backoff 2s → 4s → 8s, chỉ retry khi 429 hoặc 5xx
+    private static final int    MAX_RETRY_ATTEMPTS  = 3;
+    private static final long   RETRY_BACKOFF_MS    = 2_000L;
 
     // ═════════════════════════════════════════════════════════════════════════
     // PUBLIC METHODS
     // ═════════════════════════════════════════════════════════════════════════
 
     public List<TaskSuggestion> suggestTasks(String cropType, String stage) {
-        String prompt = buildFreeFormPrompt(cropType, stage);
-        return callGemini(prompt, 0.3);
+        return callGemini(buildFreeFormPrompt(cropType, stage), 0.3);
     }
 
     public List<TaskSuggestion> suggestTasksByStageAndPlan(UUID planStageId, UUID planId) {
@@ -77,10 +82,9 @@ public class GeminiService {
         }
 
         // ── 2. Gọi Gemini ─────────────────────────────────────────────────────
-        PlanEntity plan = planStage.getPlan();
-        CropEntity crop = plan.getCrop();
-
-        String cropTypeName  = crop.getCropType() != null ? crop.getCropType().getName() : "Không rõ";
+        PlanEntity plan     = planStage.getPlan();
+        CropEntity crop     = plan.getCrop();
+        String cropTypeName = crop.getCropType() != null ? crop.getCropType().getName() : "Không rõ";
         String cropStageName = planStage.getCropStage() != null
                 ? planStage.getCropStage().getName() : planStage.getName();
         String cropStageDesc = planStage.getCropStage() != null
@@ -88,15 +92,14 @@ public class GeminiService {
         Integer stageDuration = planStage.getCropStage() != null
                 ? planStage.getCropStage().getDurationDays() : null;
 
-        String prompt = buildContextualPrompt(
-                plan.getName(), plan.getStartDate(), plan.getEndDate(),
-                planStage.getName(), planStage.getStartDate(), planStage.getEndDate(),
-                crop.getName(), cropTypeName, cropStageName, cropStageDesc, stageDuration
+        List<TaskSuggestion> suggestions = callGemini(
+                buildContextualPrompt(
+                        plan.getName(), plan.getStartDate(), plan.getEndDate(),
+                        planStage.getName(), planStage.getStartDate(), planStage.getEndDate(),
+                        crop.getName(), cropTypeName, cropStageName, cropStageDesc, stageDuration
+                ), 0.25
         );
 
-        List<TaskSuggestion> suggestions = callGemini(prompt, 0.25);
-
-        // ── 3. Lưu cache ──────────────────────────────────────────────────────
         if (!suggestions.isEmpty()) {
             aiCache.trySaveCache(planStage.getId(), farmId, suggestions);
         }
@@ -105,8 +108,7 @@ public class GeminiService {
     }
 
     public List<TaskSuggestion> chatWithAi(String message, String cropType, String stage) {
-        String prompt = buildChatPrompt(message, cropType, stage);
-        return callGemini(prompt, 0.4);
+        return callGemini(buildChatPrompt(message, cropType, stage), 0.4);
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -123,62 +125,28 @@ public class GeminiService {
                 ? ChronoUnit.DAYS.between(stageStart, stageEnd) + 1
                 : (stageDurationDays != null ? stageDurationDays : 0);
 
-        long daysUntilEnd = (stageEnd != null)
+        long daysUntilEnd = stageEnd != null
                 ? ChronoUnit.DAYS.between(LocalDate.now(), stageEnd) : -1;
 
         String urgencyNote = "";
         if (daysUntilEnd >= 0 && daysUntilEnd <= 3) {
-            urgencyNote = "\n⚠️ KHẨN: Giai đoạn này chỉ còn " + daysUntilEnd
-                    + " ngày — ưu tiên công việc cấp bách, thời gian thực hiện ngắn.";
+            urgencyNote = "\n⚠️ KHẨN: Giai đoạn này chỉ còn " + daysUntilEnd + " ngày.";
         } else if (daysUntilEnd > 3 && daysUntilEnd <= 7) {
-            urgencyNote = "\nLưu ý: Còn " + daysUntilEnd
-                    + " ngày — cân bằng giữa công việc định kỳ và chuẩn bị cho giai đoạn tiếp theo.";
+            urgencyNote = "\nLưu ý: Còn " + daysUntilEnd + " ngày.";
         }
 
         return """
                 Bạn là chuyên gia nông nghiệp Việt Nam với hơn 20 năm kinh nghiệm thực tiễn.
-                Nhiệm vụ: Gợi ý danh sách công việc canh tác cụ thể, khả thi và hiệu quả nhất.
 
-                ══════════════════════════════════════
-                THÔNG TIN KẾ HOẠCH CANH TÁC
-                ══════════════════════════════════════
-                Tên kế hoạch   : %s
-                Thời gian KH   : %s → %s
-                Cây trồng      : %s
-                Loại cây       : %s
-
-                ══════════════════════════════════════
-                THÔNG TIN GIAI ĐOẠN HIỆN TẠI
-                ══════════════════════════════════════
-                Tên giai đoạn     : %s
-                Giai đoạn canh tác: %s
-                Thời gian         : %s → %s (%s ngày)%s
+                KẾ HOẠCH: %s | %s → %s | Cây: %s | Loại: %s
+                GIAI ĐOẠN: %s (%s) | %s → %s (%s ngày)%s
                 %s
 
-                ══════════════════════════════════════
-                YÊU CẦU OUTPUT — ĐỌC KỸ TRƯỚC KHI TRẢ LỜI
-                ══════════════════════════════════════
-                - Gợi ý ĐÚNG 5 công việc, không hơn, không kém.
-                - Phù hợp đặc điểm sinh lý cây %s ở giai đoạn %s.
-                - Có thể hoàn thành trong %s ngày.
-                - Cụ thể về liều lượng, thời điểm, phương pháp.
-                - Phù hợp khí hậu miền Nam Việt Nam.
+                Gợi ý ĐÚNG 5 công việc đặc thù cho giai đoạn này.
+                Phù hợp sinh lý cây %s giai đoạn %s, hoàn thành trong %s ngày, khí hậu miền Nam VN.
 
-                QUAN TRỌNG: Chỉ trả về JSON array thuần túy như mẫu dưới đây.
-                Không có markdown, không có ```json, không có text giải thích trước hoặc sau.
-
-                [
-                  {
-                    "title": "Tên công việc tối đa 8 từ",
-                    "description": "Hướng dẫn cụ thể: liều lượng, thời điểm, cách thực hiện (2-4 câu)",
-                    "priority": "HIGH",
-                    "estimatedDays": 1,
-                    "category": "WATERING"
-                  }
-                ]
-
-                Giá trị hợp lệ — priority: HIGH | MEDIUM | LOW
-                Giá trị hợp lệ — category: WATERING | FERTILIZING | PEST_CONTROL | PRUNING | HARVESTING | SOIL | OTHER
+                CHỈ trả về JSON array thuần túy, không markdown, không text thừa:
+                [{"title":"tối đa 8 từ","description":"2-4 câu hướng dẫn cụ thể","priority":"HIGH|MEDIUM|LOW","estimatedDays":1,"category":"WATERING|FERTILIZING|PEST_CONTROL|PRUNING|HARVESTING|SOIL|OTHER"}]
                 """.formatted(
                 planName,
                 planStart != null ? planStart.format(DATE_FMT) : "?",
@@ -188,7 +156,7 @@ public class GeminiService {
                 stageStart != null ? stageStart.format(DATE_FMT) : "?",
                 stageEnd   != null ? stageEnd.format(DATE_FMT)   : "?",
                 stageWindowDays, urgencyNote,
-                cropStageDesc != null ? "Mô tả giai đoạn: " + cropStageDesc : "",
+                cropStageDesc != null ? "Mô tả: " + cropStageDesc : "",
                 cropName, cropStageName,
                 daysUntilEnd >= 0 ? daysUntilEnd : stageWindowDays
         );
@@ -197,71 +165,34 @@ public class GeminiService {
     private String buildFreeFormPrompt(String cropType, String stage) {
         return """
                 Bạn là chuyên gia nông nghiệp Việt Nam với hơn 20 năm kinh nghiệm.
+                Cây trồng: %s | Giai đoạn: %s
 
-                Thông tin canh tác:
-                - Loại/tên cây trồng : %s
-                - Giai đoạn canh tác  : %s
-
-                Gợi ý ĐÚNG 5 công việc cần thực hiện trong giai đoạn này, theo thứ tự ưu tiên.
-                Mỗi công việc phải cụ thể, có liều lượng hoặc phương pháp thực hiện rõ ràng.
-                Phù hợp điều kiện khí hậu và tập quán canh tác Việt Nam.
-
-                QUAN TRỌNG: Chỉ trả về JSON array thuần túy, không markdown, không text thừa.
-
-                [
-                  {
-                    "title": "Tên công việc ngắn gọn",
-                    "description": "Hướng dẫn cụ thể: liều lượng, thời điểm, cách thực hiện (2-3 câu)",
-                    "priority": "HIGH",
-                    "estimatedDays": 1,
-                    "category": "WATERING"
-                  }
-                ]
-
-                Giá trị hợp lệ — priority: HIGH | MEDIUM | LOW
-                Giá trị hợp lệ — category: WATERING | FERTILIZING | PEST_CONTROL | PRUNING | HARVESTING | SOIL | OTHER
+                Gợi ý ĐÚNG 5 công việc cần thực hiện, theo thứ tự ưu tiên, phù hợp khí hậu VN.
+                CHỈ trả về JSON array thuần túy, không markdown, không text thừa:
+                [{"title":"tên ngắn gọn","description":"2-3 câu hướng dẫn cụ thể","priority":"HIGH|MEDIUM|LOW","estimatedDays":1,"category":"WATERING|FERTILIZING|PEST_CONTROL|PRUNING|HARVESTING|SOIL|OTHER"}]
                 """.formatted(cropType, stage);
     }
 
     private String buildChatPrompt(String message, String cropType, String stage) {
-        String contextBlock = (cropType != null && !cropType.isBlank())
-                ? """
-                  Bối cảnh canh tác hiện tại:
-                  - Cây trồng  : %s
-                  - Giai đoạn  : %s
-
-                  """.formatted(cropType, stage != null ? stage : "không rõ")
+        String ctx = (cropType != null && !cropType.isBlank())
+                ? "Cây: %s | Giai đoạn: %s\n".formatted(cropType, stage != null ? stage : "không rõ")
                 : "";
 
         return """
-                Bạn là chuyên gia nông nghiệp Việt Nam, trả lời ngắn gọn và thực tiễn.
+                Bạn là chuyên gia nông nghiệp Việt Nam, trả lời thực tiễn.
+                %sCâu hỏi: "%s"
 
-                %sCâu hỏi của người dùng:
-                "%s"
+                Trả về 3-5 gợi ý/hành động liên quan.
+                CHỈ trả về JSON array thuần túy, không markdown, không text thừa:
+                [{"title":"hành động chính","description":"2-4 câu tiếng Việt","priority":"HIGH|MEDIUM|LOW","estimatedDays":1,"category":"WATERING|FERTILIZING|PEST_CONTROL|PRUNING|HARVESTING|SOIL|OTHER"}]
 
-                Trả về 3-5 gợi ý/hành động liên quan đến câu hỏi.
-
-                QUAN TRỌNG: Chỉ trả về JSON array thuần túy, không markdown, không text thừa.
-
-                [
-                  {
-                    "title": "Hành động hoặc khái niệm chính",
-                    "description": "Giải thích hoặc hướng dẫn cụ thể (2-4 câu, tiếng Việt)",
-                    "priority": "HIGH",
-                    "estimatedDays": 1,
-                    "category": "WATERING"
-                  }
-                ]
-
-                Giá trị hợp lệ — priority: HIGH | MEDIUM | LOW
-                Giá trị hợp lệ — category: WATERING | FERTILIZING | PEST_CONTROL | PRUNING | HARVESTING | SOIL | OTHER
-                Nếu câu hỏi về sâu bệnh → ưu tiên PEST_CONTROL với tên thuốc cụ thể.
-                Nếu câu hỏi về phân bón  → ghi rõ loại phân, liều lượng, thời điểm bón.
-                """.formatted(contextBlock, message);
+                Nếu hỏi sâu bệnh → PEST_CONTROL + tên thuốc cụ thể.
+                Nếu hỏi phân bón  → loại phân, liều lượng, thời điểm bón.
+                """.formatted(ctx, message);
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    // INTERNAL: API CALL + PARSE
+    // INTERNAL: API CALL + RETRY + PARSE
     // ═════════════════════════════════════════════════════════════════════════
 
     private List<TaskSuggestion> callGemini(String prompt, double temperature) {
@@ -270,8 +201,8 @@ public class GeminiService {
                         "parts", List.of(Map.of("text", prompt))
                 )),
                 "generationConfig", Map.of(
-                        "temperature", temperature,
-                        "maxOutputTokens", 2048,           // giảm từ 8192 → tránh response quá dài gây lỗi parse
+                        "temperature",      temperature,
+                        "maxOutputTokens",  2048,
                         "responseMimeType", "application/json"
                 )
         );
@@ -283,83 +214,97 @@ public class GeminiService {
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(String.class)
+                    // ── Retry: chỉ retry khi 429 hoặc 5xx ───────────────────
+                    .retryWhen(
+                            Retry.backoff(MAX_RETRY_ATTEMPTS, Duration.ofMillis(RETRY_BACKOFF_MS))
+                                    .jitter(0.5)                          // jitter 50% tránh thundering herd
+                                    .filter(this::isRetryable)
+                                    .doBeforeRetry(signal -> log.warn(
+                                            "[Gemini] Retry #{} sau lỗi: {}",
+                                            signal.totalRetries() + 1,
+                                            signal.failure().getMessage()
+                                    ))
+                                    .onRetryExhaustedThrow((spec, signal) ->
+                                            new RuntimeException(
+                                                    "[Gemini] Đã thử " + MAX_RETRY_ATTEMPTS
+                                                            + " lần nhưng vẫn thất bại: "
+                                                            + signal.failure().getMessage(),
+                                                    signal.failure()
+                                            )
+                                    )
+                    )
                     .block();
 
             log.debug("[Gemini] Raw response: {}", response);
             return parseResponse(response);
 
         } catch (Exception ex) {
-            log.error("[Gemini] API call failed: {}", ex.getMessage(), ex);
+            log.error("[Gemini] API call failed sau tất cả retry: {}", ex.getMessage());
             return List.of();
         }
     }
 
     /**
-     * Parse response từ Gemini với nhiều fallback:
-     * 1. Parse trực tiếp text từ candidate (happy path)
-     * 2. Strip markdown fences rồi parse lại
-     * 3. Dùng regex tìm JSON array trong text thừa
-     * 4. Trả List.of() thay vì throw — client không bị lỗi 500
+     * Chỉ retry khi:
+     * - 429 Too Many Requests (rate limit)
+     * - 5xx Server Error (lỗi phía Gemini)
+     * Không retry 4xx khác (400 bad request, 401 auth…)
      */
+    private boolean isRetryable(Throwable throwable) {
+        if (throwable instanceof WebClientResponseException ex) {
+            HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
+            if (status == null) return false;
+            return status == HttpStatus.TOO_MANY_REQUESTS || status.is5xxServerError();
+        }
+        // Retry lỗi network (timeout, connection reset…)
+        return throwable instanceof java.io.IOException;
+    }
+
+    // ── Parse với 3 chiến lược ────────────────────────────────────────────────
+
     private List<TaskSuggestion> parseResponse(String rawResponse) {
         if (rawResponse == null || rawResponse.isBlank()) {
-            log.warn("[Gemini] Empty response received");
+            log.warn("[Gemini] Empty response");
             return List.of();
         }
 
         try {
-            JsonNode root = objectMapper.readTree(rawResponse);
-
-            // Kiểm tra finish_reason — nếu bị cắt (MAX_TOKENS) thì log cảnh báo
+            JsonNode root       = objectMapper.readTree(rawResponse);
             JsonNode candidates = root.path("candidates");
+
             if (candidates.isEmpty()) {
-                log.warn("[Gemini] No candidates in response: {}", rawResponse);
+                log.warn("[Gemini] No candidates: {}", rawResponse);
                 return List.of();
             }
 
-            JsonNode firstCandidate = candidates.get(0);
-            String finishReason = firstCandidate.path("finishReason").asText("");
+            JsonNode first = candidates.get(0);
+            String finishReason = first.path("finishReason").asText("");
             if ("MAX_TOKENS".equals(finishReason)) {
-                log.warn("[Gemini] Response truncated by MAX_TOKENS — consider increasing maxOutputTokens or shortening prompt");
+                log.warn("[Gemini] Response bị cắt do MAX_TOKENS");
             }
 
-            String jsonText = firstCandidate
-                    .path("content")
-                    .path("parts").get(0)
-                    .path("text")
-                    .asText();
-
+            String jsonText = first.path("content").path("parts").get(0).path("text").asText();
             if (jsonText == null || jsonText.isBlank()) {
-                log.warn("[Gemini] Empty text in candidate");
+                log.warn("[Gemini] Candidate text rỗng");
                 return List.of();
             }
 
             return tryParseJsonText(jsonText);
 
         } catch (Exception ex) {
-            log.error("[Gemini] Failed to parse response structure: {}", ex.getMessage());
+            log.error("[Gemini] Parse response thất bại: {}", ex.getMessage());
             return List.of();
         }
     }
 
-    /**
-     * Thử parse JSON text với 3 chiến lược:
-     * 1. Parse thẳng (model đã trả JSON sạch)
-     * 2. Strip markdown fences (```json ... ```)
-     * 3. Regex tìm [...] đầu tiên trong chuỗi
-     */
     private List<TaskSuggestion> tryParseJsonText(String jsonText) {
         String trimmed = jsonText.trim();
 
         // Chiến lược 1: parse thẳng
         try {
-            return objectMapper.readValue(
-                    trimmed,
-                    objectMapper.getTypeFactory().constructCollectionType(List.class, TaskSuggestion.class)
-            );
-        } catch (Exception ignored) {
-            log.debug("[Gemini] Direct parse failed, trying strip markdown...");
-        }
+            return objectMapper.readValue(trimmed,
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, TaskSuggestion.class));
+        } catch (Exception ignored) { }
 
         // Chiến lược 2: strip markdown fences
         String stripped = trimmed
@@ -367,31 +312,23 @@ public class GeminiService {
                 .replaceAll("(?s)^```\\s*",     "")
                 .replaceAll("(?s)\\s*```$",      "")
                 .trim();
-
         try {
-            return objectMapper.readValue(
-                    stripped,
-                    objectMapper.getTypeFactory().constructCollectionType(List.class, TaskSuggestion.class)
-            );
-        } catch (Exception ignored) {
-            log.debug("[Gemini] Stripped parse failed, trying regex extraction...");
-        }
+            return objectMapper.readValue(stripped,
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, TaskSuggestion.class));
+        } catch (Exception ignored) { }
 
-        // Chiến lược 3: regex tìm JSON array trong text thừa
+        // Chiến lược 3: regex tìm JSON array
         Matcher matcher = JSON_ARRAY_PATTERN.matcher(trimmed);
         if (matcher.find()) {
-            String extracted = matcher.group();
             try {
-                return objectMapper.readValue(
-                        extracted,
-                        objectMapper.getTypeFactory().constructCollectionType(List.class, TaskSuggestion.class)
-                );
+                return objectMapper.readValue(matcher.group(),
+                        objectMapper.getTypeFactory().constructCollectionType(List.class, TaskSuggestion.class));
             } catch (Exception ex) {
-                log.error("[Gemini] Regex-extracted JSON still invalid: {}", ex.getMessage());
+                log.error("[Gemini] Regex parse thất bại: {}", ex.getMessage());
             }
         }
 
-        log.error("[Gemini] All parse strategies failed. Raw text: {}", jsonText);
+        log.error("[Gemini] Tất cả chiến lược parse thất bại. Text: {}", jsonText);
         return List.of();
     }
 
