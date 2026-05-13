@@ -138,6 +138,7 @@ const FarmActionsPage: React.FC = () => {
                     plansCount={plans.length}
                     planProgress={planProgress}
                     loading={plotsLoading || systemCropsLoading || loadingPlans}
+                    showWeather={true}
                 />
 
                 {/* Quick Actions Grid */}
