@@ -49,7 +49,6 @@ export interface SelectionState {
 // ─── Nav tabs (Jira-style project nav) ────────────────────────────────────────
 
 const NAV_TABS = [
-  { key: 'summary', label: 'Tổng quan', icon: LayoutGrid },
   { key: 'timeline', label: 'Tiến độ', icon: CalendarDays },
   { key: 'backlog', label: 'Nhật ký công', icon: List },
   { key: 'board', label: 'Phiên làm việc', icon: Clock },
