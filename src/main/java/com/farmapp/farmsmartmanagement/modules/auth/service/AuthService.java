@@ -141,7 +141,7 @@ public class AuthService {
                 }
 
                 // Check chưa verify email
-                if (user.getStatus() == UserStatus.PENDING) {
+                if (user.getStatus().equals(UserStatus.PENDING)) {
                     throw new AppException(ErrorCode.ACCOUNT_NOT_VERIFIED);
                 }
 
