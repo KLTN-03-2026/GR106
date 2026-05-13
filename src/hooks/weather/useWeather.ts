@@ -20,7 +20,7 @@ const DEFAULT_WEATHER_DATA: WeatherData = {
   condition: "clouds"
 };
 
-export const useWeather = (): UseWeatherState => {
+export const useWeather = (enabled: boolean = true): UseWeatherState => {
   const weatherQuery = useQuery({
     queryKey: ["weather", "current-location"],
     queryFn: async () => {
@@ -38,7 +38,7 @@ export const useWeather = (): UseWeatherState => {
                 lon: position.coords.longitude,
               }),
             () => resolve({ lat: DEFAULT_LAT, lon: DEFAULT_LON }),
-            { timeout: 10000, maximumAge: 60000 },
+            { timeout: 10000, maximumAge: 0 },
           );
         });
 
@@ -53,6 +53,7 @@ export const useWeather = (): UseWeatherState => {
 
       return normalized;
     },
+    enabled,
     staleTime: 0, // Luôn gọi API mới
     gcTime: 0,
     retry: 0,
