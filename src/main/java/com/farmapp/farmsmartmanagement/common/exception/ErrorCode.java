@@ -178,7 +178,10 @@ public enum ErrorCode {
     WAGE_CONFIG_NOT_FOUND(404, "Không tìm thấy cấu hình lương",HttpStatus.CONFLICT ),
     WAGE_CONFIG_ALREADY_EXISTS(409, "Cấu hình lương đã tồn tại cho ngày hiệu lực này",HttpStatus.CONFLICT ),
     WAGE_CONFIG_IN_USE(409, "Cấu hình lương đã được sử dụng trong chấm công, không thể xóa",HttpStatus.CONFLICT ),
-    PLAN_STAGE_NOT_START(409,"Giai đoạn chưa bắt đầu" ,HttpStatus.CONFLICT );
+    PLAN_STAGE_NOT_START(409,"Giai đoạn chưa bắt đầu" ,HttpStatus.CONFLICT ),
+    SOIL_RECORD_ALREADY_SAMPLED_AT_SAME_TIME(409,"Hồ sơ phân tích mẫu đất này đã có mẫu ngày bạn nhập" ,HttpStatus.CONFLICT ),
+    SOIL_RECORD_NOT_FOUND(404,"Không tìm thấy hồ sơ phân tích đất" ,HttpStatus.NOT_FOUND ),
+    SOIL_RECORD_ALREADY_BLOCKED(409,"Hồ sơ này đã bị khoá" ,HttpStatus.CONFLICT );
 
 
 
