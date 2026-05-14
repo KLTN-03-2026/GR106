@@ -140,10 +140,10 @@ public class AuthService {
                     throw new AppException(ErrorCode.ACCOUNT_HAS_BEEN_BLOCKED);
                 }
 
-                // Check chưa verify email
-                if (user.getStatus().equals(UserStatus.PENDING)) {
-                    throw new AppException(ErrorCode.ACCOUNT_NOT_VERIFIED);
-                }
+//                // Check chưa verify email
+//                if (user.getStatus().equals(UserStatus.PENDING)) {
+//                    throw new AppException(ErrorCode.ACCOUNT_NOT_VERIFIED);
+//                }
 
                 if(user.getStatus().equals(UserStatus.SUSPENDED) || user.getIsLocked()) {
                     throw new AppException(ErrorCode.USER_SUSPENDED);
