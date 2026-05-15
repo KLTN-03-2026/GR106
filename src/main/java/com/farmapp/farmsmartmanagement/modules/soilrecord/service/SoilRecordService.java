@@ -41,13 +41,13 @@ public class SoilRecordService {
     @Transactional(readOnly = true)
     public List<SoilRecordResponse> findAllByFarmId() {
         UUID farmId = securityUtils.getCurrentFarmId();
-        return soilRecordMapper.toResponses(soilRecordRepository.findByFarm_Id(farmId));
+        return soilRecordMapper.toResponses(soilRecordRepository.findByFarm_IdAndDeletedAtIsNull(farmId));
     }
 
 
     @Transactional(readOnly = true)
     public List<SoilRecordResponse> findAllByPlotId(UUID plotId) {
-        return soilRecordMapper.toResponses(soilRecordRepository.findByPlot_Id(plotId));
+        return soilRecordMapper.toResponses(soilRecordRepository.findByPlot_IdAndDeletedAtIsNull(plotId));
     }
 
 
