@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+  # ── RabbitMQ ────────────────────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: farm_rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"    # AMQP protocol
+      - "15672:15672"  # Management UI  →  http://localhost:15672
+    environment:
+      RABBITMQ_DEFAULT_USER: farm_user
+      RABBITMQ_DEFAULT_PASS: farm_pass
+      RABBITMQ_DEFAULT_VHOST: farm_vhost
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  rabbitmq_data:

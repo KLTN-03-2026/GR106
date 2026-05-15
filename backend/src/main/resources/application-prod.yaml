@@ -1,0 +1,50 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  flyway:
+    enabled: false
+    locations: classpath:db/migration
+
+
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:farm_user}
+    password: ${RABBITMQ_PASS:farm_pass}
+    virtual-host: ${RABBITMQ_VHOST:farm_vhost}
+    ssl:
+      enabled: ${RABBITMQ_SSL:true}
+    listener:
+      simple:
+        acknowledge-mode: manual          # ACK thủ công — tránh mất message
+        retry:
+          enabled: true
+          initial-interval: 3s
+          max-attempts: 3
+          multiplier: 2
+
+# ── Gemini AI ────────────────────────────────────────────────────────────────
+gemini:
+  api:
+    key: ${GEMINI_API_KEY}               # Lấy tại: https://aistudio.google.com/apikey
+    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent
+
+cloudflare:
+  r2:
+    account-id: ${CLOUDFLARE_R2_ACCOUNT_ID}
+    access-key-id: ${CLOUDFLARE_R2_ACCESS_KEY_ID}
+    secret-access-key: ${CLOUDFLARE_R2_SECRET_ACCESS_KEY}
+    bucket-name: ${CLOUDFLARE_R2_BUCKET_NAME}
+    # URL public domain bạn gắn vào bucket R2 (R2 free cho phép custom domain)
+    # VD: https://files.yourdomain.com  hoặc  https://pub-xxx.r2.dev (nếu bật public access)
+    public-base-url: ${CLOUDFLARE_R2_PUBLIC_BASE_URL}
+    presigned-url-expiration-seconds: 300  # 5 phút

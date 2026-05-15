@@ -1,0 +1,198 @@
+package com.farmapp.farmsmartmanagement.common.exception;
+
+import lombok.Getter;
+import org.springframework.http.HttpStatus;
+
+@Getter
+public enum ErrorCode {
+
+    // --- System ---
+    INTERNAL_SERVER_ERROR(500, "Lỗi hệ thống, vui lòng thử lại sau", HttpStatus.INTERNAL_SERVER_ERROR),
+    PAYMENT_GATEWAY_ERROR(502, "Payment gateway error", HttpStatus.BAD_GATEWAY), // 502 → BAD_GATEWAY
+
+    // --- Request ---
+    INVALID_REQUEST(400, "Dữ liệu đầu vào không hợp lệ", HttpStatus.BAD_REQUEST),
+    INVALID_PAYMENT_AMOUNT(400, "Số tiền thanh toán không hợp lệ", HttpStatus.BAD_REQUEST),
+    PAYMENT_INVALID_SIGNATURE(400, "Invalid payment signature", HttpStatus.BAD_REQUEST),
+
+    // --- Auth ---
+    UNAUTHORIZED(401, "Bạn chưa đăng nhập", HttpStatus.UNAUTHORIZED),
+    FORBIDDEN(403, "Bạn không có quyền thực hiện hành động này", HttpStatus.FORBIDDEN),
+    FARM_TOKEN_REQUIRED(403, "Endpoint này yêu cầu farm token", HttpStatus.FORBIDDEN),
+
+    // --- Token ---
+    INVALID_REFRESH_TOKEN(401, "Refresh token không hợp lệ", HttpStatus.UNAUTHORIZED),
+    REFRESH_TOKEN_EXPIRED(401, "Refresh token đã hết hạn", HttpStatus.UNAUTHORIZED),
+    REFRESH_TOKEN_REUSED(401, "Phát hiện token bị đánh cắp, đã đăng xuất tất cả thiết bị", HttpStatus.UNAUTHORIZED),
+
+    // --- Account ---
+    ACCOUNT_HAS_BEEN_BLOCKED(409, "Tài khoản đã bị khoá", HttpStatus.CONFLICT),      // sửa code 401→409
+    ACCOUNT_NOT_VERIFIED(401, "Tài khoản chưa được xác nhận", HttpStatus.UNAUTHORIZED),
+    EMAIL_EXISTED(409, "Email đã tồn tại", HttpStatus.CONFLICT),                      // sửa code 401→409
+    EMAIL_NOT_FOUND(404, "Không tìm thấy Email, vui lòng đăng ký", HttpStatus.NOT_FOUND),
+    USER_NOT_EXISTED(404, "Không tìm thấy người dùng", HttpStatus.NOT_FOUND),
+    ROLE_NOT_FOUND(404, "Không tìm thấy vai trò", HttpStatus.NOT_FOUND),
+
+    // --- Not found ---
+    FARM_NOT_FOUND(404, "Không tìm thấy trang trại", HttpStatus.NOT_FOUND),
+    FARM_CONFIG_NOT_FOUND(404, "Không tìm thấy cấu hình trang trại", HttpStatus.NOT_FOUND),
+    FARM_SUBSCRIPTION_NOT_FOUND(404, "Không tìm thấy trang trại đang đăng ký gói nào", HttpStatus.NOT_FOUND),
+    SUBSCRIPTION_PLAN_NOT_FOUND(404, "Không tìm thấy gói đăng ký", HttpStatus.NOT_FOUND),
+    DEFAULT_SUBSCRIPTION_PLAN_NOT_FOUND(404, "Không tìm thấy gói đăng ký mặc định", HttpStatus.NOT_FOUND),
+    FARM_ROLE_NOT_FOUND(404, "Không tìm thấy vai trò trong trang trại", HttpStatus.NOT_FOUND),
+    CROP_TYPE_NOT_FOUND(404,"Không tìm thấy loại cây trồng" , HttpStatus.NOT_FOUND),
+    PLAN_NOT_FOUND(404,"Không tìm thấy kế hoạch", HttpStatus.NOT_FOUND),
+    CROP_NOT_FOUND(404, "Không tìm thấy cây trồng" , HttpStatus.NOT_FOUND ),
+    PLOT_NOT_FOUND(404,"Không tìm thấy lô đất" , HttpStatus.NOT_FOUND),
+    PLAN_STAGE_STATUS_INITIAL_NOT_FOUND(404, "Không tìm thấy trạng thái khởi tạo ban đầu", HttpStatus.NOT_FOUND),
+    TASK_STATUS_INITIAL_NOT_FOUND(404, "Không tìm thấy trạng thái khởi tạo ban đầu", HttpStatus.NOT_FOUND),
+    PLAN_STAGE_NOT_FOUND(404, "Không tìm thấy giai đoạn của kế hoạch", HttpStatus.NOT_FOUND),
+    TASK_NOT_FOUND(404,"Không tìm thấy công việc" ,HttpStatus.NOT_FOUND ),
+    WAREHOUSE_NOT_FOUND(404, "Không tìm thấy kho", HttpStatus.NOT_FOUND),
+    WAREHOUSE_ITEM_NOT_FOUND(404, "Không tìm thấy vật tư", HttpStatus.NOT_FOUND),
+
+    // --- Payment conflict ---
+    PAYMENT_ALREADY_PROCESSED(409, "Payment already processed", HttpStatus.CONFLICT),
+    PAYMENT_EXPIRED(410, "Payment link has expired", HttpStatus.GONE),               // 410 → GONE
+    PAYMENT_AMOUNT_MISMATCH(422, "Payment amount does not match", HttpStatus.UNPROCESSABLE_ENTITY), // 422 → UNPROCESSABLE_ENTITY
+
+    // --- Existed ---
+    PLOT_ALREADY_EXISTS(409, "Tên lô đất đã tồn tại", HttpStatus.CONFLICT),
+
+    CROP_ALREADY_EXISTS(409, "Tên cây trồng đã tồn tại", HttpStatus.CONFLICT),
+    CROP_TYPE_ALREADY_EXISTS(409, "Tên loại cây trồng đã tồn tại", HttpStatus.CONFLICT),
+
+    PLAN_ALREADY_EXISTS(409,"Tên kế hoạch đã tồn tại", HttpStatus.CONFLICT),
+    PLOT_ALREADY_IN_PLAN(409, "Lô đất này đã ở trong kế hoạch",  HttpStatus.CONFLICT),
+    FARM_ALREADY_EXISTS(409, "Tên trang trại đã tồn tại", HttpStatus.CONFLICT),
+
+    CROP_TYPE_IN_USE(409, "Loại cây trồng đang được sử dụng" ,HttpStatus.CONFLICT ),
+
+    PLAN_STAGE_ALREADY_EXISTS(409,"Tên giai đoạn đã tồn tại", HttpStatus.CONFLICT),
+    PLAN_STAGE_OVERLAP(409,"Thời gian bị trùng với giai đoạn khác" , HttpStatus.CONFLICT ),
+
+    WAREHOUSE_ALREADY_EXISTS(409, "Tên kho đã tồn tại", HttpStatus.CONFLICT),
+
+    // --- Invalid ---
+    INVALID_DATE_RANGE(400, "Thời gian bắt đầu phải trước thời gian kết thúc" , HttpStatus.BAD_REQUEST ),
+    INVALID_DATE_NOW(400,"Thời gian kết thúc không được ở quá khứ", HttpStatus.BAD_REQUEST ),
+    TASK_OUT_OF_TIME_PLAN_STAGE(400,"Thơi gian công việc phải nằm trong thời gian giai đoạn" ,HttpStatus.BAD_REQUEST ),
+    PLAN_TIME_CANNOT_LESS_STAGE(409, "Thời gian kế hoạch phải bao phủ toàn bộ giai đoạn", HttpStatus.CONFLICT),
+    PLAN_STAGE_TIME_MUST_BE_IN_PLAN_TIME(409, "Thời gian giai đoạn phải nằm trong thời gian kế hoạch", HttpStatus.CONFLICT),
+    FARM_MEMBER_ALREADY_EXISTS(409,"Thành viên đã tồn tại trong trang trại" ,HttpStatus.CONFLICT ),
+    PAYMENT_NOT_FOUND(404,"Không tìm thấy giao dịch" ,HttpStatus.NOT_FOUND ),
+    YOU_HAVE_NOT_ANY_INVITATION(404,"Bạn không có bất kỳ lời mời vào trang trại nào" ,HttpStatus.NOT_FOUND ),
+    PLAN_STAGE_NOT_COVER_TASK(409, "Thời gian giai đoạn không bao phủ được công việc", HttpStatus.CONFLICT),
+
+    INVITATION_ALREADY_SENT(409,"Bạn đã mời người dùng này" , HttpStatus.CONFLICT),
+    INVITATION_NOT_FOUND(404,"Không tìm thấy lời mời" ,HttpStatus.NOT_FOUND ),
+    INVITATION_ALREADY_USED(409, "Lời mời đã được sử dụng", HttpStatus.CONFLICT),
+    INVITATION_EXPIRED(409, "Lời mời đã hết hạn", HttpStatus.CONFLICT),
+
+    CANNOT_INVITE_YOURSELF(409,"Bạn không thể tự mời chính mình" ,HttpStatus.CONFLICT ),
+    CANNOT_REMOVE_OWNER(409,"Không thể xoá chủ trang trại" ,HttpStatus.CONFLICT ),
+    FARM_MEMBER_NOT_FOUND(404,"Không tìm thấy thành viên",HttpStatus.NOT_FOUND),
+    CANNOT_REMOVE_YOURSELF(409,"Bạn không thể tự xoá chính mình" ,HttpStatus.CONFLICT ),
+    SKU_ALREADY_EXISTS(409,"Mã hàng đã tồn tại" ,HttpStatus.CONFLICT ),
+    SUPPLIER_ALREADY_EXISTS(409,"Mã nhà cung cấp đã tồn tại" ,HttpStatus.CONFLICT ),
+    SKU_IS_USING(409,"Mã hàng đang được sử dụng" ,HttpStatus.CONFLICT ),
+
+    SUPPLIER_IS_USING(409,"Mã hàng đang được sử dụng" ,HttpStatus.CONFLICT ), WAREHOUSE_ITEM_ALREADY_EXISTS(409,"Tên vật tư đã tồn tai" ,HttpStatus.CONFLICT ),
+    UNIT_NOT_FOUND(404,"Không tìm thấy đơn vị" ,HttpStatus.NOT_FOUND ),
+    SUPPLIER_NOT_FOUND(404,"Không tìm thấy nhà cung cấp" ,HttpStatus.NOT_FOUND ),
+    SKU_NOT_FOUND(404,"Không tìm thấy mã vật tư" , HttpStatus.NOT_FOUND),
+    TASK_ALREADY_TERMINAL(409,"Công việc đã kết thúc" ,HttpStatus.CONFLICT ),
+    TASK_MATERIAL_ALREADY_EXISTS(409, "Vật tư này đã được thêm vào task, vui lòng cập nhật số lượng thay vì thêm mới",  HttpStatus.CONFLICT ),
+    INSUFFICIENT_STOCK_FOR_PLAN(409, "Số lượng tồn kho không đủ cho kế hoạch", HttpStatus.CONFLICT),
+
+
+    WAREHOUSE_LOCATION_ALREADY_EXISTS(409,"Vị trí trong kho đã tồn tại" ,HttpStatus.CONFLICT ),
+    WAREHOUSE_LOCATION_NOT_FOUND(404,"Vị trí này không tồn tại trong kho" ,HttpStatus.NOT_FOUND ),
+    TASK_ASSIGNEE_ALREADY_USER(409,"Người này đã được gán vào công việc" ,HttpStatus.CONFLICT ),
+    TASK_ASSIGNEE_NOT_FOUND(404,"Không tìm thấy việc được giao" ,HttpStatus.CONFLICT ),
+    TASK_STATUS_NOT_FOUND(404,"Không tìm thấy trạng thái công việc" ,HttpStatus.NOT_FOUND ),
+    TASK_STATUS_TRANSITION_NOT_FOUND(404,"Không tìm thấy chuyển đổi giữa 2 trạng thái của công việc" ,HttpStatus.NOT_FOUND ),
+    PLAN_STAGE_STATUS_NOT_FOUND(404,"Không tìm thấy trạng thái giai đoạn" ,HttpStatus.NOT_FOUND ),
+    PLAN_STAGE_STATUS_TRANSITION_NOT_FOUND(404,"Không tìm thấy chuyển đổi giữa 2 trạng thái của giai đoạn" ,HttpStatus.NOT_FOUND ),
+    USER_HAS_BEEN_ACTIVE(409,"Tài khoản đã được kich hoạt" ,HttpStatus.CONFLICT ), USER_SUSPENDED(409,"Tài khoản đã bị tạm dừng" ,HttpStatus.CONFLICT ),
+    WRONG_PASSWORD(409,"Sai mật khẩu" ,HttpStatus.CONFLICT ), TOO_MANY_REQUESTS(429,"Vui lòng sống chậm lại" , HttpStatus.TOO_MANY_REQUESTS),
+    WAREHOUSE_ITEM_HAS_STOCK(409,"Vật tư vẫn còn số lượng trong kho" , HttpStatus.CONFLICT),
+    WAREHOUSE_ITEM_IN_USE(409,"Vật tư đang được sử dụng" ,HttpStatus.CONFLICT ),
+    CONCURRENT_MODIFICATION(409,"Dữ liệu đã thay đổi vui lòng load lại" ,HttpStatus.CONFLICT ),
+    TASK_NOT_FOUND_OR_TASK_IS_TERMINAL(404,"Không tìm thấy công việc hoặc công việc đã kết thúc" ,HttpStatus.NOT_FOUND ),
+    TASK_DEPENDENCY_ALREADY_EXISTS(409,"Đã có sự phụ thuộc giữa 2 công việc" ,HttpStatus.CONFLICT ),
+    TASK_DEPENDENCY_NOT_FOUND(404,"Không tìm thấy sự phụ thuộc giữa 2 công việc" ,HttpStatus.NOT_FOUND ),
+    TASK_DEPENDENCY_SELF_NOT_ALLOWED(409,"Công việc không thể tự phụ thuộc vào chính nó" ,HttpStatus.CONFLICT ),
+    TASK_MATERIAL_NOT_FOUND(404,"Không tìm thấy vật tư được gán" ,HttpStatus.NOT_FOUND ),
+    WORK_SHIFT_NOT_FOUND(404,"Không tìm thấy ca làm việc" ,HttpStatus.NOT_FOUND ),
+    WORK_DATE_CANNOT_BE_FUTURE(490,"Ngày làm việc không được nằm trong tương la" ,HttpStatus.CONFLICT ),
+    WORK_DATE_IS_SKIP_DAY(409,"Ngày chấm công này đã bị bỏ qua (Nghỉ)" ,HttpStatus.CONFLICT ),
+    WORK_LOG_ALREADY_EXISTS(409,"Ngày này đã được chấm công" ,HttpStatus.CONFLICT  ),
+    WORK_DATE_OUT_OF_TASK_RANGE(409,"Ngày chấm công nằm ngoài thời gian của công việc" ,HttpStatus.CONFLICT ), INSUFFICIENT_STOCK(409,"Tồn kho không đủ" ,HttpStatus.CONFLICT ),
+    LOCATION_NOT_IN_SAME_WAREHOUSE(409,"Địa chỉ nằy không cùng nằm 1 kho" ,HttpStatus.CONFLICT ),
+    DATE_RANGE_REQUIRED(400,"Vui lòng chọn khoảng thời gian" ,HttpStatus.BAD_REQUEST), WORK_LOG_NOT_FOUND(404,"Không tìm thấy chấm công" ,HttpStatus.NOT_FOUND ), DATE_RANGE_TOO_LARGE(400,"Không thời gian quá lớn" ,HttpStatus.BAD_REQUEST ),
+    WORK_LOG_ALREADY_LOCKED(409,"Ngày chấm công này đã bị khoá" ,HttpStatus.CONFLICT ),
+    WAREHOUSE_LOCATION_IN_USE(409,"Vị trí này đang được sử dụng" ,HttpStatus.CONFLICT ),
+
+    SUBSCRIPTION_EXPIRED(403, "Gói đăng ký đã hết hạn, vui lòng gia hạn để tiếp tục sử dụng", HttpStatus.FORBIDDEN),
+    SUBSCRIPTION_NOT_ACTIVE(403, "Gói đăng ký chưa được kích hoạt", HttpStatus.FORBIDDEN),
+    FEATURE_NOT_AVAILABLE(403, "Tính năng này không có trong gói đăng ký hiện tại",HttpStatus.FORBIDDEN),
+    PLOT_LIMIT_EXCEEDED(403, "Đã đạt giới hạn số lô đất của gói đăng ký",HttpStatus.FORBIDDEN),
+    MEMBER_LIMIT_EXCEEDED(403, "Đã đạt giới hạn số thành viên của gói đăng ký",HttpStatus.FORBIDDEN),
+    PLAN_STAGE_ALREADY_TERMINAL(409,"Gia đoạn này đã kết thúc" ,HttpStatus.CONFLICT ),
+    TASK_HAS_REFERENCE(409,"Công việc đã được chấm công hoặc đã được báo cáo (không thể xoá công việc)" ,HttpStatus.CONFLICT   ),
+    TASK_IS_TERMINAL_OR_EXPIRED_CANNOT_DELETE(409,"Không thể xoá công việc vì công việc đã kết thúc" ,HttpStatus.CONFLICT   ),
+    TASK_EXPIRED_CANNOT_ASSIGN(409,"Công việc đã hết hạn, không thể giao việc" ,HttpStatus.CONFLICT ),
+    PLAN_IS_TERMINAL(409,"Kế hoạch đã kết thúc" ,HttpStatus.CONFLICT ),
+    PLAN_STAGE_HAS_HARVEST_RECORD(409,"Giai đoạn này đã có dữ liệu thu hoạch" ,HttpStatus.CONFLICT ),
+    PLAN_STAGE_HAS_LOCKED_WORK_LOG(409,"Giai đoạn này đã có chấm công bị khoá" ,HttpStatus.CONFLICT ),
+    CROP_STAGE_NOT_FOUND(404, "Không tìm thấy giai đoạn của cây trồng" ,HttpStatus.NOT_FOUND ),
+    CROP_STAGE_NOT_BELONG_TO_PLAN_CROP(403,"Giai đoạn cây trồng này không thuộc cây trồng trong kế hoạch" ,HttpStatus.FORBIDDEN ),
+    PLAN_PLOT_NOT_FOUND(404,"Không tìm thấy lô đất được gán vào kế hoạch" , HttpStatus.NOT_FOUND),
+    PLOT_IS_USING_BY_TASK(409,"Lô đất đang được sử dụng bởi công việc" ,HttpStatus.CONFLICT),
+    PLAN_STAGE_CANNOT_START_CAUSE_STAGE_IN_FUTURE(409,"Giai đoạn không thể bắt đầu vì nó nằm ở tương lai" ,HttpStatus.CONFLICT),
+    TASK_ALREADY_EXPIRED(409,"Công việc đã quá hạn" , HttpStatus.CONFLICT),
+    TASK_DEPENDENCY_CIRCULAR_NOT_ALLOWED(409,"Công việc phụ thuộc bị nối vòng" ,HttpStatus.CONFLICT ),
+    PLAN_STAGE_ALREADY_EXPIRED(409,"Giai đoạn đã quá hạn" , HttpStatus.CONFLICT),
+    TASK_START_DATE_AFTER_END_DATE(409, "Thời gian bắt đầu phải nằm trước thời gian kết thúc" ,HttpStatus.CONFLICT ),
+    PLAN_STAGE_ALREADY_STARTED(409,"Giai đoạn đã bắt đầu" ,HttpStatus.CONFLICT ),
+    SESSION_ALREADY_OPEN(400, "Bạn đang có một phiên làm việc chưa kết thúc", HttpStatus.BAD_REQUEST),
+    SESSION_ALREADY_CLOSED(400, "Phiên làm việc này đã kết thúc", HttpStatus.BAD_REQUEST),
+    SESSION_NOT_FOUND(404, "Không tìm thấy phiên làm việc", HttpStatus.NOT_FOUND),
+    MANUAL_CHECKOUT_NOT_ALLOWED(403, "Farm này không cho phép tự điều chỉnh giờ check-out", HttpStatus.FORBIDDEN ),
+    INVALID_CHECKOUT_TIME(400, "Giờ check-out phải sau giờ check-in", HttpStatus.BAD_REQUEST),
+    WORK_LOG_NOT_LOCKED(400, "WorkLog chưa được khoá",HttpStatus.BAD_REQUEST),
+    PLAN_HAVE_OPEN_SESSION_CANNOT_DELETE_PLAN(409,"Kế hoạch đang có nhân công đang làm việc, không thể xoá. Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình (Chấm công tự động)",HttpStatus.CONFLICT ),
+    PLAN_STAGE_HAVE_OPEN_SESSION_CANNOT_DELETE(409,"Giai đoạn đang có nhân công đang làm việc, không thể xoá. Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình (Chấm công tự động)",HttpStatus.CONFLICT ),
+    PLAN_STAGE_HAVE_OPEN_SESSION_CANNOT_UPDATE_TO_STATUS_TERMINAL(409,"Giai đoạn đang có nhân công đang làm việc, không thể đưa giai đoạn về trạng thái cuối. Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình (Chấm công tự động)",HttpStatus.CONFLICT ),
+    TASK_HAVE_OPEN_SESSION_CANNOT_UPDATE_TO_STATUS_TERMINAL(409,"Công việc đang có nhân công đang làm việc, không thể đưa công việc về trạng thái cuối. Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình (Chấm công tự động)",HttpStatus.CONFLICT ),
+    TASK_HAVE_ALREADY_WRITTEN_WORK_LOG(409,"Công việc đang có nhân công đang làm việc, không thể đưa công việc về trạng thái cuối. Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình (Chấm công tự động)",HttpStatus.CONFLICT ),
+    TASK_HAVE_OPEN_SESSION_CANNOT_DELETE(409,"Công việc đang có nhân công đang làm việc. Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình (Chấm công tự động)",HttpStatus.CONFLICT ),
+    TASK_HAVE_SESSION_OUT_SIDE_NEW_DATE_RANGE(409,"Công việc đang có phiên làm việc nằm ngoài thời gian mới. Không thể cập nhật" , HttpStatus.CONFLICT ),
+    EMPLOYEE_HAVE_OPEN_SESSION_CAN_NOT_DELETE_ASSIGNEE(409,"Người này đang có phiên làm việc với công việc này. Không thể xoá phân công người này(Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình)" ,HttpStatus.CONFLICT  ),
+    EMPLOYEE_HAVE_OPEN_SESSION_CAN_NOT_DELETE_MEMBER(409,"Người này đang có phiên làm việc với công việc này. Không thể xoá thành viên này(Bạn có thể thực hiện hành động này sau thời gian đã được cấu hình)" ,HttpStatus.CONFLICT  ),
+    WAREHOUSE_ITEM_MUST_HAVE_STOCK(409,"Số lượng vật tư phải lớn hơn 0" ,HttpStatus.CONFLICT  ),
+    WORK_SHIFT_IN_USE(409,"Ca làm việc này đang được sử dụng (Xoá hoặc cập nhật sẽ gây sai sót dữ liệu)" ,HttpStatus.CONFLICT ),
+    WORK_SHIFT_INVALID_TIME_RANGE(409,"Thời gian ca làm việc không hợp lệ" ,HttpStatus.CONFLICT ), WORK_SHIFT_NAME_ALREADY_EXISTS(409,"Tên ca làm việc đã tồn tại" ,HttpStatus.CONFLICT ),
+    WORK_SHIFT_LIMIT_EXCEEDED(409,"Tối đa chỉ tạo 24 ca làm việc" ,HttpStatus.CONFLICT ),
+    WAGE_CONFIG_NOT_FOUND(404, "Không tìm thấy cấu hình lương",HttpStatus.CONFLICT ),
+    WAGE_CONFIG_ALREADY_EXISTS(409, "Cấu hình lương đã tồn tại cho ngày hiệu lực này",HttpStatus.CONFLICT ),
+    WAGE_CONFIG_IN_USE(409, "Cấu hình lương đã được sử dụng trong chấm công, không thể xóa",HttpStatus.CONFLICT ),
+    PLAN_STAGE_NOT_START(409,"Giai đoạn chưa bắt đầu" ,HttpStatus.CONFLICT ),
+    SOIL_RECORD_ALREADY_SAMPLED_AT_SAME_TIME(409,"Hồ sơ phân tích mẫu đất này đã có mẫu ngày bạn nhập" ,HttpStatus.CONFLICT ),
+    SOIL_RECORD_NOT_FOUND(404,"Không tìm thấy hồ sơ phân tích đất" ,HttpStatus.NOT_FOUND ),
+    SOIL_RECORD_ALREADY_BLOCKED(409,"Hồ sơ này đã bị khoá" ,HttpStatus.CONFLICT );
+
+
+
+
+    private final int code;
+    private final String message;
+    private final HttpStatus httpStatus;
+
+    ErrorCode(int code, String message, HttpStatus httpStatus) {
+        this.code = code;
+        this.message = message;
+        this.httpStatus = httpStatus;
+    }
+}

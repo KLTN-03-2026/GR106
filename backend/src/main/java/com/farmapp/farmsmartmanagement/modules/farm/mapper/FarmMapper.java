@@ -1,0 +1,24 @@
+package com.farmapp.farmsmartmanagement.modules.farm.mapper;
+
+import com.farmapp.farmsmartmanagement.infrastructure.persistence.entity.FarmEntity;
+import com.farmapp.farmsmartmanagement.modules.farm.dto.request.CreateFarmRequest;
+import com.farmapp.farmsmartmanagement.modules.farm.dto.request.UpdateFarmRequest;
+import com.farmapp.farmsmartmanagement.modules.farm.dto.response.FarmResponse;
+import org.mapstruct.*;
+
+import java.lang.annotation.Target;
+import java.util.List;
+
+@Mapper(componentModel = "spring")
+public interface FarmMapper {
+
+    @Mapping(source = "owner.id", target = "ownerId")
+    FarmResponse toResponse(FarmEntity entity);
+
+    List<FarmResponse> toResponseList(List<FarmEntity> entities);
+
+    // map từ request sang entity đã load từ DB
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    void updateEntityFromRequest(UpdateFarmRequest request, @MappingTarget FarmEntity entity);
+    
+}

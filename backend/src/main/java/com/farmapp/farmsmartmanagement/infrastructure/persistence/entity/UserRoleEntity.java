@@ -1,0 +1,30 @@
+package com.farmapp.farmsmartmanagement.infrastructure.persistence.entity;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Table(name = "user_roles")
+@NoArgsConstructor
+@Getter
+@Setter
+@IdClass(UserRoleId.class)
+public class UserRoleEntity {
+
+    @Id
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private UserEntity user;
+
+    @Id
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "role_id")
+    private RoleEntity role;
+
+    public UserRoleEntity(UserEntity user, RoleEntity userRole) {
+        this.user = user;
+        this.role = userRole;
+    }
+}

@@ -1,0 +1,18 @@
+package com.farmapp.farmsmartmanagement.config.flyway;
+
+import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class FlywayConfig {
+
+    @Bean
+    public FlywayMigrationStrategy strategy() {
+        return flyway -> {
+            flyway.repair();
+            flyway.migrate();
+        };
+    }
+
+}
