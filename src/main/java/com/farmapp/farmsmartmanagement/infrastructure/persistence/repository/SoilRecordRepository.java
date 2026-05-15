@@ -25,4 +25,8 @@ public interface SoilRecordRepository extends JpaRepository<SoilRecordEntity, UU
     List<SoilRecordEntity> findByFarm_Id(UUID farmId);
 
     List<SoilRecordEntity> findByPlot_Id(UUID plotId);
+
+    List<SoilRecordEntity> findByPlot_IdAndDeletedAtIsNull(UUID plotId);
+
+    List<SoilRecordEntity> findByFarm_IdAndDeletedAtIsNull(UUID farmId);
 }
