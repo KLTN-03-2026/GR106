@@ -10,6 +10,7 @@ import { useWarehouseItems } from '../../hooks/warehouseItems/useWarehouseItems'
 import { useMembers } from '../../hooks/members/useMembers';
 import { useFarmWorkLogs } from '../../hooks/workLog/useWorkLogs';
 import { useTransactionsByFarm } from '../../hooks/warehouseTransactions/useWarehouseTransactions';
+import { useFarmTaskStats } from '../../hooks/seasonPlans/useFarmTaskStats';
 import ActivityFeed, { Activity } from '../../components/dashboard/ActivityFeed';
 import {
   StatCard,
@@ -29,7 +30,7 @@ function useDashboardData(farmId?: string) {
   const { plots, plotsLoading, clearPlots, fetchPlots } = usePlots(farmId);
   const { warehouses, loading: warehousesLoading, fetchWarehouses } = useWarehouses();
   const { crops, systemCrops, cropTypes, loading: cropsLoading, cropTypesLoading, fetchFarmCrops } = useCrops();
-  const { plans, loading: plansLoading, fetchPlans, fetchStages } = useSeasonPlans(farmId);
+  const { plans, loading: plansLoading, fetchPlans, fetchStages, fetchTasks } = useSeasonPlans(farmId);
   const { items: warehouseItems, loading: itemsLoading, fetchAllItems } = useWarehouseItems(farmId);
   const { members, loadingMembers, fetchMembers } = useMembers();
   
@@ -50,11 +51,17 @@ function useDashboardData(farmId?: string) {
         await Promise.allSettled([
           fetchFarmCrops(),
           fetchPlans().then(async (plansData) => {
-             // Sau khi lấy danh sách plans, fetch chi tiết stages cho từng plan để có dữ liệu thực tế tính hiệu suất
+             // Sau khi lấy danh sách plans, fetch chi tiết stages và tasks cho từng plan để có dữ liệu thực tế
              if (plansData && plansData.length > 0) {
-               await Promise.allSettled(
-                 plansData.map(p => fetchStages(p.id))
-               );
+               const detailPromises = plansData.map(async (p) => {
+                 const { phases } = await fetchStages(p.id);
+                 if (phases && phases.length > 0) {
+                   await Promise.allSettled(
+                     phases.map(ph => fetchTasks(p.id, ph.id))
+                   );
+                 }
+               });
+               await Promise.allSettled(detailPromises);
              }
           }),
           fetchPlots(),
@@ -146,7 +153,7 @@ function useDashboardData(farmId?: string) {
     activities,
     isLoading,
     isSyncing,
-    plans
+    plans,
   };
 }
 
@@ -157,7 +164,7 @@ export default function MainPage() {
   // Ưu tiên farmId từ URL, nếu không có thì lấy farmId hiện tại từ context
   const farmId = routeFarmId || currentFarmId || undefined;
 
-  const { tasks: assignedTasks, loading: assignedLoading } = useAssignedTasks(user?.id);
+  const { loading: assignedLoading } = useAssignedTasks(user?.id);
 
   // Force Admin to system dashboard if they land here
   useEffect(() => {
@@ -168,11 +175,12 @@ export default function MainPage() {
   }, [user, navigate]);
 
   const { stats, activities, plots, warehouses, isLoading: dashboardLoading, plans } = useDashboardData(farmId);
+  const { stats: taskStats, loading: taskStatsLoading } = useFarmTaskStats(farmId);
   const isLoading = dashboardLoading || assignedLoading;
 
   // Tính toán số lượng task hoàn thành và chưa hoàn thành cho riêng user hiện tại
-  const completedCount = assignedTasks.filter(t => t.status?.isTerminal).length;
-  const pendingCount = assignedTasks.length - completedCount;
+  // const completedCount = assignedTasks.filter(t => t.status?.isTerminal).length;
+  // const pendingCount = assignedTasks.length - completedCount;
 
   // Tính toán hiệu suất nông trại (Tính trên TOÀN BỘ giai đoạn của farm)
   const calculatePerformance = () => {
@@ -201,15 +209,24 @@ export default function MainPage() {
 
   const performancePct = calculatePerformance();
 
+  const handleAddTask = () => {
+    if (farmId) {
+      navigate(`/farms/${farmId}/season-plans`);
+    } else {
+      navigate('/farms');
+    }
+  };
+
   return (
     <div className="flex h-full w-full overflow-hidden p-3 gap-3">
       {/* Main Content */}
       <div className="flex flex-col flex-1 gap-3 overflow-hidden">
 
         <TaskBar
-          completed={completedCount}
-          pending={pendingCount}
-          isLoading={isLoading}
+          completed={taskStats.completed}
+          pending={taskStats.pending}
+          isLoading={taskStatsLoading}
+          onAddTask={handleAddTask}
         />
 
         {/* Row 1 */}

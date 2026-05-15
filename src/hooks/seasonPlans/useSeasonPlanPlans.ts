@@ -36,8 +36,16 @@ export const useSeasonPlanPlans = (farmId?: string) => {
         const existing = currentData?.find(p => p.id === newPlan.id);
         return {
           ...newPlan,
-          phases: newPlan.phases?.length ? newPlan.phases : (existing?.phases ?? []),
-          plots: newPlan.plots?.length ? newPlan.plots : (existing?.plots ?? []),
+          phases: (newPlan.phases && newPlan.phases.length > 0) 
+            ? newPlan.phases.map(ph => {
+                const existingPh = existing?.phases?.find(eph => eph.id === ph.id);
+                return {
+                  ...ph,
+                  tasks: (ph.tasks && ph.tasks.length > 0) ? ph.tasks : (existingPh?.tasks ?? [])
+                };
+              })
+            : (existing?.phases ?? []),
+          plots: (newPlan.plots && newPlan.plots.length > 0) ? newPlan.plots : (existing?.plots ?? []),
         };
       });
     }

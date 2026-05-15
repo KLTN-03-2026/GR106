@@ -6,12 +6,14 @@ interface TaskBarProps {
   completed?: number;
   pending?: number;
   isLoading?: boolean;
+  onAddTask?: () => void;
 }
 
 export default function TaskBar({
   completed = 0,
   pending = 0,
   isLoading = false,
+  onAddTask,
 }: TaskBarProps) {
   return (
     <div className="flex items-center gap-2 w-full select-none">
@@ -48,6 +50,7 @@ export default function TaskBar({
       {/* Add new task button (Dark Blue) */}
       <Button
         variant="dark-nav"
+        onClick={onAddTask}
         className="h-[42px] px-5 rounded-full bg-[#1a1a2e] hover:bg-[#252545] border-none flex items-center gap-2 shadow-sm transition-all active:scale-95 shrink-0"
       >
         <div className="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center">

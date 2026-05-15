@@ -406,21 +406,26 @@ useEffect(() => {
         const newStatusCode = statusCodeOf(tempPhase.status);
         const newStatusId = (tempPhase.status as any)?.id;
         
-        // Cập nhật thông tin giai đoạn
+        // Cập nhật thông tin giai đoạn (tên, ngày,...)
         await onUpdatePhase(tempPlan.id, tempPhase, selection.phase);
         
         // Chỉ cập nhật trạng thái nếu trạng thái thực sự thay đổi
         if (newStatusCode !== currentStatusCode && newStatusId) {
-          // Nếu cập nhật trạng thái thất bại (ví dụ: giai đoạn chưa bắt đầu),
-          // handleUpdateStatus sẽ throw và chúng ta KHÔNG đóng form edit
-          await handleUpdateStatus(newStatusId, true);
+          try {
+            await handleUpdateStatus(newStatusId, true);
+          } catch {
+            // Cập nhật trạng thái thất bại → Hoàn tác lại status về trạng thái gốc trong tempPhase
+            setTempPhase({ ...tempPhase, status: selection.phase.status });
+            // Không đóng form, để user thấy badge đã về trạng thái cũ và toast lỗi
+            return;
+          }
         }
       } else if (selection.type === 'TASK' && tempPhase && tempTask) {
         const currentStatusCode = statusCodeOf(selection.task.status);
         const newStatusCode = statusCodeOf(tempTask.status);
         const newStatusId = (tempTask.status as any)?.id;
 
-        // Cập nhật thông tin task
+        // Cập nhật thông tin task (tên, ngày, mô tả,...)
         await onUpdateTask(tempPlan.id, tempPhase.id, {
           ...tempTask,
           statusCode: statusCodeOf(tempTask.status)
@@ -428,17 +433,21 @@ useEffect(() => {
 
         // Chỉ cập nhật trạng thái nếu trạng thái thực sự thay đổi
         if (newStatusCode !== currentStatusCode && newStatusId) {
-          // Nếu cập nhật trạng thái thất bại (ví dụ: giai đoạn chưa bắt đầu),
-          // handleUpdateStatus sẽ throw và chúng ta KHÔNG đóng form edit,
-          // trạng thái UI sẽ KHÔNG được cập nhật do không có optimistic update ở đây
-          await handleUpdateStatus(newStatusId, true);
+          try {
+            await handleUpdateStatus(newStatusId, true);
+          } catch {
+            // Cập nhật trạng thái thất bại → Hoàn tác lại status về trạng thái gốc trong tempTask
+            setTempTask({ ...tempTask, status: selection.task.status });
+            // Không đóng form, để user thấy badge đã về trạng thái cũ và toast lỗi
+            return;
+          }
         }
       }
       
       // Chỉ đóng form khi TẤT CẢ thao tác thành công
       setIsEditing(false);
     } catch (err) {
-      // Lỗi đã được hiển thị bởi toast trong từng hàm con.
+      // Lỗi từ onUpdateTask / onUpdatePhase đã được hiển thị bởi toast.
       // Giữ nguyên form đang edit để user có thể sửa lại.
       console.error('Lỗi khi lưu, giữ nguyên form:', err);
     }
