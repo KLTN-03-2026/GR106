@@ -73,7 +73,7 @@ export default function TaskBar({
         <div className="w-5 h-5 rounded-full border-2 border-white flex items-center justify-center">
           <Plus size={12} strokeWidth={3} className="text-white" />
         </div>
-        <span className="text-white text-xs font-bold">Add new task</span>
+        <span className="text-white text-xs font-bold">Add a new task</span>
       </Button>
     </div>
   );
