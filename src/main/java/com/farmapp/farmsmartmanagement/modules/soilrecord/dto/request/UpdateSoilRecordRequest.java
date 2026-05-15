@@ -28,14 +28,17 @@ public class UpdateSoilRecordRequest {
     BigDecimal ph;
 
     @DecimalMin(value = "0.0", message = "Nitrogen Mg Kg phải >= 0")
+    @DecimalMax(value = "500.0", message = "Nitơ N phải nhỏ hơn hoặc bằng 500")
     @Digits(integer = 6, fraction = 2, message = "Số Nitrogen Mg Kg không hợp lệ (Ví dụ: 999999.99)")
     BigDecimal nitrogenMgKg;
 
     @DecimalMin(value = "0.0", message = "Phosphorus Mg Kg phải >= 0")
+    @DecimalMax(value = "500.0", message = "Lân P phải nhỏ hơn hoặc bằng 500")
     @Digits(integer = 6, fraction = 2, message = "Số Phosphorus Mg Kg không hợp lệ (Ví dụ: 999999.99)")
     BigDecimal phosphorusMgKg;
 
     @DecimalMin(value = "0.0", message = "Potassium Mg Kg phải >= 0")
+    @DecimalMax(value = "1000.0", message = "Kali K phải nhỏ hơn hoặc bằng 1000")
     @Digits(integer = 6, fraction = 2, message = "Số Potassium Mg Kg không hợp lệ (Ví dụ: 999999.99)")
     BigDecimal potassiumMgKg;
 
