@@ -402,35 +402,45 @@ useEffect(() => {
       if (selection.type === 'PLAN') {
         await onUpdatePlan(tempPlan);
       } else if (selection.type === 'PHASE' && tempPhase) {
-        // Kiểm tra nếu trạng thái thay đổi
         const currentStatusCode = statusCodeOf(selection.phase.status);
         const newStatusCode = statusCodeOf(tempPhase.status);
         const newStatusId = (tempPhase.status as any)?.id;
         
+        // Cập nhật thông tin giai đoạn
         await onUpdatePhase(tempPlan.id, tempPhase, selection.phase);
         
+        // Chỉ cập nhật trạng thái nếu trạng thái thực sự thay đổi
         if (newStatusCode !== currentStatusCode && newStatusId) {
+          // Nếu cập nhật trạng thái thất bại (ví dụ: giai đoạn chưa bắt đầu),
+          // handleUpdateStatus sẽ throw và chúng ta KHÔNG đóng form edit
           await handleUpdateStatus(newStatusId, true);
         }
       } else if (selection.type === 'TASK' && tempPhase && tempTask) {
-        // Kiểm tra nếu trạng thái thay đổi
         const currentStatusCode = statusCodeOf(selection.task.status);
         const newStatusCode = statusCodeOf(tempTask.status);
         const newStatusId = (tempTask.status as any)?.id;
 
+        // Cập nhật thông tin task
         await onUpdateTask(tempPlan.id, tempPhase.id, {
           ...tempTask,
           statusCode: statusCodeOf(tempTask.status)
         } as any, selection.task);
 
+        // Chỉ cập nhật trạng thái nếu trạng thái thực sự thay đổi
         if (newStatusCode !== currentStatusCode && newStatusId) {
+          // Nếu cập nhật trạng thái thất bại (ví dụ: giai đoạn chưa bắt đầu),
+          // handleUpdateStatus sẽ throw và chúng ta KHÔNG đóng form edit,
+          // trạng thái UI sẽ KHÔNG được cập nhật do không có optimistic update ở đây
           await handleUpdateStatus(newStatusId, true);
         }
       }
       
+      // Chỉ đóng form khi TẤT CẢ thao tác thành công
       setIsEditing(false);
     } catch (err) {
-      console.error('Lỗi khi lưu:', err);
+      // Lỗi đã được hiển thị bởi toast trong từng hàm con.
+      // Giữ nguyên form đang edit để user có thể sửa lại.
+      console.error('Lỗi khi lưu, giữ nguyên form:', err);
     }
   };
 
@@ -539,7 +549,10 @@ console.log("phase.plotId:", (selection as any).phase.plotId);
         toast.success('Cập nhật trạng thái thành công');
       }
     } catch (error: any) {
+      // Luôn hiển thị lỗi cho user
       toast.error(extractErrorMessage(error));
+      // Re-throw để caller (ví dụ: handleSaveEdit) có thể xử lý đúng
+      throw error;
     }
   };
 
