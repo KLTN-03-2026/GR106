@@ -410,7 +410,7 @@ useEffect(() => {
         await onUpdatePhase(tempPlan.id, tempPhase, selection.phase);
         
         if (newStatusCode !== currentStatusCode && newStatusId) {
-          await handleUpdateStatus(newStatusId);
+          await handleUpdateStatus(newStatusId, true);
         }
       } else if (selection.type === 'TASK' && tempPhase && tempTask) {
         // Kiểm tra nếu trạng thái thay đổi
@@ -424,7 +424,7 @@ useEffect(() => {
         } as any, selection.task);
 
         if (newStatusCode !== currentStatusCode && newStatusId) {
-          await handleUpdateStatus(newStatusId);
+          await handleUpdateStatus(newStatusId, true);
         }
       }
       
@@ -512,7 +512,7 @@ console.log("phase.plotId:", (selection as any).phase.plotId);
     }
   };
 
-  const handleUpdateStatus = async (statusId: string) => {
+  const handleUpdateStatus = async (statusId: string, skipToast: boolean = false) => {
     if (!selection || selection.type === 'PLAN') return;
 
     try {
@@ -535,7 +535,9 @@ console.log("phase.plotId:", (selection as any).phase.plotId);
           queryClient.invalidateQueries({ queryKey: ['availableTaskStatuses'] });
         }
       }
-      toast.success('Cập nhật trạng thái thành công');
+      if (!skipToast) {
+        toast.success('Cập nhật trạng thái thành công');
+      }
     } catch (error: any) {
       toast.error(extractErrorMessage(error));
     }

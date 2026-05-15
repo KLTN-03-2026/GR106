@@ -320,6 +320,7 @@ useEffect(() => {
           endDate: data.endDate,
         }).unwrap();
       }
+      toast.success('Cập nhật giai đoạn thành công');
     } catch (err: any) {
       showError('Lỗi cập nhật giai đoạn', err);
     }

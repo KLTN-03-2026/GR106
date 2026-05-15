@@ -24,6 +24,8 @@ export const useSeasonPlanPlans = (farmId?: string) => {
     queryKey: activeFarmId ? PLAN_KEYS.byFarm(activeFarmId) : PLAN_KEYS.list,
     queryFn: () => seasonPlanService.getPlans(),
     enabled: !!activeFarmId || !farmId,
+    refetchInterval: 30000, // Tự động cập nhật mỗi 30 giây để đảm bảo hiệu suất nông trại luôn mới
+    refetchOnWindowFocus: true,
     // Merge existing phases/plots from cache when refetching list
     select: (newData: SeasonPlan[]) => {
       const currentData = queryClient.getQueryData<SeasonPlan[]>(
@@ -71,7 +73,8 @@ export const useSeasonPlanPlans = (farmId?: string) => {
 
   return {
     plans: plansQuery.data ?? [],
-    loading: plansQuery.isLoading || plansQuery.isFetching,
+    loading: plansQuery.isLoading, // Chỉ hiển thị loading ở lần tải đầu tiên
+    isFetching: plansQuery.isFetching,
     createLoading: createPlanMutation.isPending,
     error,
     createError: createPlanMutation.error,

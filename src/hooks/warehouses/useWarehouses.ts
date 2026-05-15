@@ -67,7 +67,8 @@ export const useWarehouses = () => {
     },
   });
 
-  const loading = warehousesQuery.isLoading || warehousesQuery.isFetching;
+  const loading = warehousesQuery.isLoading; // Chỉ hiển thị loading ở lần tải đầu tiên
+  const isFetching = warehousesQuery.isFetching;
   const submitting = createWarehouseMutation.isPending || updateWarehouseMutation.isPending || deleteWarehouseMutation.isPending;
   const error = useMemo(
     () => warehousesQuery.error ?? createWarehouseMutation.error ?? updateWarehouseMutation.error ?? deleteWarehouseMutation.error ?? null,
